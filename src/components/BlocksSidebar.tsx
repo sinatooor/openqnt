@@ -94,19 +94,18 @@ export const BlocksSidebar = () => {
   return (
     <div className="flex h-full border-r border-border">
       {/* Category buttons sidebar */}
-      <div className="w-16 bg-secondary flex flex-col gap-2 p-2 border-r border-border">
+      <div className="w-24 bg-secondary flex flex-col gap-2 p-2 border-r border-border">
         {categories.map((category) => (
           <Button
             key={category.id}
             variant={selectedCategory === category.id ? "default" : "ghost"}
-            size="icon"
             className={cn(
-              "h-14 flex flex-col items-center justify-center text-xs font-semibold p-1",
+              "h-16 flex flex-col items-center justify-center text-xs font-semibold p-2 whitespace-normal",
               selectedCategory === category.id && "bg-primary"
             )}
             onClick={() => setSelectedCategory(category.id)}
           >
-            <span className="text-center leading-tight break-words">
+            <span className="text-center leading-tight">
               {category.label}
             </span>
           </Button>
@@ -114,7 +113,7 @@ export const BlocksSidebar = () => {
       </div>
 
       {/* Blocks panel */}
-      <div className="w-56 bg-card overflow-y-auto p-4">
+      <div className="w-64 bg-card overflow-y-auto p-4">
         <h3 className="font-bold text-lg mb-4 text-foreground">
           {categories.find((c) => c.id === selectedCategory)?.label}
         </h3>
