@@ -1,5 +1,5 @@
-import { useState, useCallback, useRef } from "react";
-import { useDrop } from "react-dnd";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { useDrop, useDragLayer } from "react-dnd";
 import { BlockItem, BlockData } from "./BlockItem";
 
 export interface PlacedBlock extends BlockData {
@@ -11,26 +11,54 @@ export interface PlacedBlock extends BlockData {
 
 const GRID_SIZE = 20;
 const SNAP_DISTANCE = 40; // Distance for blocks to snap together
+const BLOCK_HEIGHT = 50; // Approximate height of a block
 
 export const Canvas = () => {
   const [blocks, setBlocks] = useState<PlacedBlock[]>([]);
   const [draggingBlockId, setDraggingBlockId] = useState<string | null>(null);
+  const [snapTarget, setSnapTarget] = useState<string | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  const findNearbyBlock = (x: number, y: number, currentBlockId: string) => {
+  // Use drag layer to track cursor position for snap preview
+  const { isDragging, currentOffset } = useDragLayer((monitor) => ({
+    isDragging: monitor.isDragging(),
+    currentOffset: monitor.getClientOffset(),
+  }));
+
+  const findNearbyBlock = useCallback((x: number, y: number, currentBlockId: string) => {
     for (const block of blocks) {
       if (block.uniqueId === currentBlockId) continue;
       
       // Check if this block is directly above (within snap distance)
       const isHorizontallyAligned = Math.abs(block.x - x) < SNAP_DISTANCE;
-      const isVerticallyNear = Math.abs((block.y + 50) - y) < SNAP_DISTANCE; // 50px is approximate block height
+      const isVerticallyNear = Math.abs((block.y + BLOCK_HEIGHT) - y) < SNAP_DISTANCE;
       
       if (isHorizontallyAligned && isVerticallyNear) {
         return block;
       }
     }
     return null;
-  };
+  }, [blocks]);
+
+  // Update snap target when dragging
+  const updateSnapTarget = useCallback(() => {
+    if (!isDragging || !currentOffset || !canvasRef.current) {
+      setSnapTarget(null);
+      return;
+    }
+
+    const canvasRect = canvasRef.current.getBoundingClientRect();
+    const x = Math.round((currentOffset.x - canvasRect.left) / GRID_SIZE) * GRID_SIZE;
+    const y = Math.round((currentOffset.y - canvasRect.top) / GRID_SIZE) * GRID_SIZE;
+
+    const nearbyBlock = findNearbyBlock(x, y, draggingBlockId || "");
+    setSnapTarget(nearbyBlock?.uniqueId || null);
+  }, [isDragging, currentOffset, findNearbyBlock, draggingBlockId]);
+
+  // Update snap target whenever drag position changes
+  useEffect(() => {
+    updateSnapTarget();
+  }, [updateSnapTarget]);
 
   const [{ isOver }, drop] = useDrop(() => ({
     accept: "block",
@@ -51,6 +79,7 @@ export const Canvas = () => {
             setBlocks((prev) => prev.filter((b) => b.uniqueId !== draggingBlockId));
             setDraggingBlockId(null);
           }
+          setSnapTarget(null);
           return;
         }
 
@@ -67,7 +96,7 @@ export const Canvas = () => {
         if (nearbyBlock) {
           // Snap below the nearby block
           x = nearbyBlock.x;
-          y = nearbyBlock.y + 50; // Stack vertically
+          y = nearbyBlock.y + BLOCK_HEIGHT;
           connectedTo = nearbyBlock.uniqueId;
         }
 
@@ -94,12 +123,13 @@ export const Canvas = () => {
             },
           ]);
         }
+        setSnapTarget(null);
       }
     },
     collect: (monitor) => ({
       isOver: monitor.isOver(),
     }),
-  }), [blocks, draggingBlockId]);
+  }), [blocks, draggingBlockId, findNearbyBlock]);
 
   const handleBlockDrag = useCallback((blockId: string) => {
     setDraggingBlockId(blockId);
@@ -136,12 +166,13 @@ export const Canvas = () => {
       {isOver && (
         <div className="absolute inset-0 bg-primary/10 pointer-events-none" />
       )}
+      
       {blocks.map((block) => {
         // Only render blocks that aren't connected (top-level blocks)
-        // Connected blocks will be rendered as part of their parent chain
         if (block.connectedTo) return null;
         
         const chain = getBlockChain(block.uniqueId);
+        const isSnapTarget = snapTarget === block.uniqueId;
         
         return (
           <div
@@ -155,10 +186,16 @@ export const Canvas = () => {
             {chain.map((chainBlock, index) => (
               <div
                 key={chainBlock.uniqueId}
+                className="relative"
                 style={{
                   marginTop: index > 0 ? "2px" : "0",
                 }}
               >
+                {/* Snap indicator - show at the bottom of this block if it's the snap target */}
+                {chainBlock.uniqueId === snapTarget && (
+                  <div className="absolute -bottom-1 left-0 right-0 h-2 bg-primary/60 rounded-full animate-pulse z-10" />
+                )}
+                
                 <BlockItem
                   block={chainBlock}
                   onDrag={() => handleBlockDrag(chainBlock.uniqueId)}
