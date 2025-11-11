@@ -1,7 +1,9 @@
-import { BlockCategory } from "./BlockCategory";
-import { BlockData } from "./BlockItem";
+import { useState } from "react";
+import { BlockItem, BlockData } from "./BlockItem";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-const environmentBlocks: BlockData[] = [
+export const environmentBlocks: BlockData[] = [
   { id: "env-1", type: "environment", label: "Price", shape: "pill" },
   { id: "env-2", type: "environment", label: "Spread", shape: "pill" },
   { id: "env-3", type: "environment", label: "Prev. open", shape: "pill", hasInput: true },
@@ -13,7 +15,7 @@ const environmentBlocks: BlockData[] = [
   { id: "env-9", type: "environment", label: "New candle close", shape: "pill", hasInput: true },
 ];
 
-const operatorBlocks: BlockData[] = [
+export const operatorBlocks: BlockData[] = [
   { id: "op-1", type: "operator", label: "AND", shape: "pill" },
   { id: "op-2", type: "operator", label: "OR", shape: "pill" },
   { id: "op-3", type: "operator", label: "NOT", shape: "pill" },
@@ -29,7 +31,7 @@ const operatorBlocks: BlockData[] = [
   { id: "op-13", type: "operator", label: "Mod", shape: "pill" },
 ];
 
-const controlBlocks: BlockData[] = [
+export const controlBlocks: BlockData[] = [
   { id: "ctrl-1", type: "control", label: "Define function", shape: "block", hasInput: true, inputLabel: "Name" },
   { id: "ctrl-2", type: "control", label: "Define", shape: "block", hasInput: true, inputLabel: "as" },
   { id: "ctrl-3", type: "control", label: "Start", shape: "block" },
@@ -46,7 +48,7 @@ const controlBlocks: BlockData[] = [
   { id: "ctrl-14", type: "control", label: "Stop", shape: "block" },
 ];
 
-const tradeBlocks: BlockData[] = [
+export const tradeBlocks: BlockData[] = [
   { id: "trade-1", type: "trade", label: "Trade", shape: "block", hasInput: true, inputLabel: "long" },
   { id: "trade-2", type: "trade", label: "Size", shape: "block", hasInput: true, inputLabel: "value" },
   { id: "trade-3", type: "trade", label: "Leverage", shape: "block", hasInput: true, inputLabel: "contracts" },
@@ -58,7 +60,7 @@ const tradeBlocks: BlockData[] = [
   { id: "trade-9", type: "trade", label: "Position size of", shape: "block", hasInput: true },
 ];
 
-const taBlocks: BlockData[] = [
+export const taBlocks: BlockData[] = [
   { id: "ta-1", type: "ta", label: "Support level", shape: "pill", hasInput: true, inputLabel: "Close" },
   { id: "ta-2", type: "ta", label: "Resistance level", shape: "pill", hasInput: true, inputLabel: "Close" },
   { id: "ta-3", type: "ta", label: "RSI", shape: "pill", hasInput: true },
@@ -68,14 +70,62 @@ const taBlocks: BlockData[] = [
   { id: "ta-7", type: "ta", label: "VWAP", shape: "pill", hasInput: true },
 ];
 
+type Category = "environment" | "operators" | "control" | "trade" | "ta";
+
+interface CategoryData {
+  id: Category;
+  label: string;
+  blocks: BlockData[];
+}
+
+const categories: CategoryData[] = [
+  { id: "environment", label: "Environment", blocks: environmentBlocks },
+  { id: "operators", label: "Operators", blocks: operatorBlocks },
+  { id: "control", label: "Control", blocks: controlBlocks },
+  { id: "trade", label: "Trade", blocks: tradeBlocks },
+  { id: "ta", label: "TA Tools", blocks: taBlocks },
+];
+
 export const BlocksSidebar = () => {
+  const [selectedCategory, setSelectedCategory] = useState<Category>("environment");
+
+  const currentBlocks = categories.find((c) => c.id === selectedCategory)?.blocks || [];
+
   return (
-    <div className="w-64 bg-card border-r border-border h-full overflow-y-auto p-4">
-      <BlockCategory title="Environment" blocks={environmentBlocks} defaultOpen />
-      <BlockCategory title="Operators" blocks={operatorBlocks} />
-      <BlockCategory title="Control" blocks={controlBlocks} />
-      <BlockCategory title="Trade" blocks={tradeBlocks} />
-      <BlockCategory title="TA Tools" blocks={taBlocks} />
+    <div className="flex h-full border-r border-border">
+      {/* Category buttons sidebar */}
+      <div className="w-16 bg-secondary flex flex-col gap-2 p-2 border-r border-border">
+        {categories.map((category) => (
+          <Button
+            key={category.id}
+            variant={selectedCategory === category.id ? "default" : "ghost"}
+            size="icon"
+            className={cn(
+              "h-14 flex flex-col items-center justify-center text-xs font-semibold p-1",
+              selectedCategory === category.id && "bg-primary"
+            )}
+            onClick={() => setSelectedCategory(category.id)}
+          >
+            <span className="text-center leading-tight break-words">
+              {category.label}
+            </span>
+          </Button>
+        ))}
+      </div>
+
+      {/* Blocks panel */}
+      <div className="w-56 bg-card overflow-y-auto p-4">
+        <h3 className="font-bold text-lg mb-4 text-foreground">
+          {categories.find((c) => c.id === selectedCategory)?.label}
+        </h3>
+        <div className="space-y-2">
+          {currentBlocks.map((block) => (
+            <div key={block.id}>
+              <BlockItem block={block} isInSidebar />
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
