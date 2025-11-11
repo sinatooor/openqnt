@@ -15,16 +15,21 @@ export interface BlockData {
 interface BlockItemProps {
   block: BlockData;
   isInSidebar?: boolean;
+  onDrag?: () => void;
 }
 
-export const BlockItem = ({ block, isInSidebar = false }: BlockItemProps) => {
+export const BlockItem = ({ block, isInSidebar = false, onDrag }: BlockItemProps) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: "block",
     item: block,
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
-  }));
+  }), [block]);
+
+  if (isDragging && onDrag) {
+    onDrag();
+  }
 
   const isPill = block.shape === "pill";
 
