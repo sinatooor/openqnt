@@ -1,13 +1,18 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
+import { BlocksSidebar } from "@/components/BlocksSidebar";
+import { Canvas } from "@/components/Canvas";
+import { SettingsPanel } from "@/components/SettingsPanel";
 
 const Index = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <DndProvider backend={HTML5Backend}>
+      <div className="flex h-screen bg-background text-foreground overflow-hidden">
+        <BlocksSidebar />
+        <Canvas />
+        <SettingsPanel />
       </div>
-    </div>
+    </DndProvider>
   );
 };
 
