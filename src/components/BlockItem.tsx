@@ -39,11 +39,11 @@ export const BlockItem = ({
 }: BlockItemProps) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: "block",
-    item: block,
+    item: { ...block, isFromCanvas: !isInSidebar },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
-  }), [block]);
+  }), [block, isInSidebar]);
 
   if (isDragging && onDrag) {
     onDrag();
@@ -61,7 +61,7 @@ export const BlockItem = ({
 
   return (
     <div
-      ref={isInSidebar ? drag : undefined}
+      ref={drag}
       className={cn(
         "cursor-move select-none transition-opacity font-medium text-sm",
         isDragging && "opacity-50",
