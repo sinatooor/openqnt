@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useDrop, useDragLayer } from "react-dnd";
 import { BlockItem, BlockData } from "./BlockItem";
+import { TrashBin } from "./TrashBin";
 
 export interface PlacedBlock extends BlockData {
   uniqueId: string;
@@ -93,25 +94,124 @@ export const Canvas = () => {
 
   const [{ isOver }, drop] = useDrop(() => ({
     accept: "block",
-    drop: (item: BlockData, monitor) => {
+    drop: (item: BlockData & { uniqueId?: string; isFromCanvas?: boolean }, monitor) => {
+      // Handle moving existing block from canvas
+      if (item.isFromCanvas && item.uniqueId) {
+        const offset = monitor.getSourceClientOffset();
+        if (!offset || !canvasRef.current) return;
+
+        const canvasRect = canvasRef.current.getBoundingClientRect();
+        let x = offset.x - canvasRect.left;
+        let y = offset.y - canvasRect.top;
+
+        const target = findSnapTarget(x, y, item, item.uniqueId);
+
+        // Disconnect from parent
+        setBlocks((prev) => {
+          const blockToMove = prev.find((b) => b.uniqueId === item.uniqueId);
+          if (!blockToMove) return prev;
+
+          // Clean up old connections
+          const updatedBlocks = prev.map((block) => {
+            if (block.connectedBelow === item.uniqueId) {
+              return { ...block, connectedBelow: undefined };
+            }
+            if (block.nestedBlocks?.includes(item.uniqueId)) {
+              return {
+                ...block,
+                nestedBlocks: block.nestedBlocks.filter((id) => id !== item.uniqueId),
+              };
+            }
+            if (block.inputBlocks) {
+              const hasInInput = Object.values(block.inputBlocks).includes(item.uniqueId);
+              if (hasInInput) {
+                const newInputBlocks = { ...block.inputBlocks };
+                Object.keys(newInputBlocks).forEach((key) => {
+                  if (newInputBlocks[key] === item.uniqueId) {
+                    delete newInputBlocks[key];
+                  }
+                });
+                return { ...block, inputBlocks: newInputBlocks };
+              }
+            }
+            return block;
+          });
+
+          // Handle snapping for moved block
+          if (target) {
+            const targetBlock = updatedBlocks.find(b => b.uniqueId === target.blockId);
+            if (!targetBlock) return updatedBlocks;
+
+            if (target.type === 'slot' && target.slotId) {
+              x = targetBlock.x + 100;
+              y = targetBlock.y + 10;
+              
+              return updatedBlocks.map((b) => {
+                if (b.uniqueId === target.blockId) {
+                  return {
+                    ...b,
+                    inputBlocks: { ...b.inputBlocks, [target.slotId!]: item.uniqueId }
+                  };
+                }
+                if (b.uniqueId === item.uniqueId) {
+                  return { ...b, x, y, parentBlock: target.blockId, parentSlot: target.slotId };
+                }
+                return b;
+              });
+            } else if (target.type === 'nested') {
+              x = targetBlock.x + 20;
+              y = targetBlock.y + 60;
+              
+              return updatedBlocks.map((b) => {
+                if (b.uniqueId === target.blockId) {
+                  const nestedBlocks = b.nestedBlocks || [];
+                  return {
+                    ...b,
+                    nestedBlocks: [...nestedBlocks, item.uniqueId]
+                  };
+                }
+                if (b.uniqueId === item.uniqueId) {
+                  return { ...b, x, y, parentBlock: target.blockId, parentSlot: 'nested' };
+                }
+                return b;
+              });
+            } else {
+              x = targetBlock.x;
+              const blockHeight = targetBlock.acceptsNesting ? 120 : 50;
+              y = targetBlock.y + blockHeight;
+              
+              return updatedBlocks.map((b) => {
+                if (b.uniqueId === item.uniqueId) {
+                  return { ...b, x, y, parentBlock: target.blockId };
+                }
+                if (b.uniqueId === target.blockId) {
+                  return { ...b, connectedBelow: item.uniqueId };
+                }
+                return b;
+              });
+            }
+          } else {
+            // Place freely on grid
+            x = Math.round(x / GRID_SIZE) * GRID_SIZE;
+            y = Math.round(y / GRID_SIZE) * GRID_SIZE;
+
+            return updatedBlocks.map((block) =>
+              block.uniqueId === item.uniqueId
+                ? { ...block, x, y, parentBlock: undefined, parentSlot: undefined }
+                : block
+            );
+          }
+        });
+
+        setDraggingBlockId(null);
+        setSnapTarget(null);
+        return;
+      }
+
+      // Handle new block from sidebar
       const offset = monitor.getClientOffset();
       if (offset && canvasRef.current) {
         const canvasRect = canvasRef.current.getBoundingClientRect();
-        
-        // Check if dropped outside canvas (for deletion)
-        if (
-          offset.x < canvasRect.left ||
-          offset.x > canvasRect.right ||
-          offset.y < canvasRect.top ||
-          offset.y > canvasRect.bottom
-        ) {
-          if (draggingBlockId) {
-            setBlocks((prev) => prev.filter((b) => b.uniqueId !== draggingBlockId));
-            setDraggingBlockId(null);
-          }
-          setSnapTarget(null);
-          return;
-        }
 
         let x = offset.x - canvasRect.left;
         let y = offset.y - canvasRect.top;
@@ -255,6 +355,64 @@ export const Canvas = () => {
     setDraggingBlockId(blockId);
   }, []);
 
+  const handleDeleteBlock = useCallback((blockId: string) => {
+    setBlocks((prev) => {
+      // Get all block IDs to delete (including nested and connected)
+      const getBlockChain = (id: string): string[] => {
+        const block = prev.find((b) => b.uniqueId === id);
+        if (!block) return [id];
+
+        const chain = [id];
+        
+        if (block.connectedBelow) {
+          chain.push(...getBlockChain(block.connectedBelow));
+        }
+        
+        if (block.nestedBlocks) {
+          block.nestedBlocks.forEach((nestedId) => {
+            chain.push(...getBlockChain(nestedId));
+          });
+        }
+        
+        if (block.inputBlocks) {
+          Object.values(block.inputBlocks).forEach((inputId) => {
+            if (inputId) chain.push(...getBlockChain(inputId));
+          });
+        }
+        
+        return chain;
+      };
+
+      const idsToDelete = getBlockChain(blockId);
+
+      return prev
+        .filter((block) => !idsToDelete.includes(block.uniqueId))
+        .map((block) => {
+          const updated = { ...block };
+          
+          if (updated.connectedBelow && idsToDelete.includes(updated.connectedBelow)) {
+            updated.connectedBelow = undefined;
+          }
+          
+          if (updated.nestedBlocks) {
+            updated.nestedBlocks = updated.nestedBlocks.filter(
+              (id) => !idsToDelete.includes(id)
+            );
+          }
+          
+          if (updated.inputBlocks) {
+            Object.keys(updated.inputBlocks).forEach((key) => {
+              if (updated.inputBlocks![key] && idsToDelete.includes(updated.inputBlocks![key]!)) {
+                delete updated.inputBlocks![key];
+              }
+            });
+          }
+          
+          return updated;
+        });
+    });
+  }, []);
+
   const renderBlock = (block: PlacedBlock): React.ReactNode => {
     const inputBlockElements: Record<string, React.ReactNode> = {};
     
@@ -344,6 +502,7 @@ export const Canvas = () => {
           </div>
         );
       })}
+      <TrashBin onDelete={handleDeleteBlock} />
     </div>
   );
 };
