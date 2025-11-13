@@ -37,13 +37,13 @@ export const operatorBlocksToolbox = [
 ];
 
 export const controlBlocksToolbox = [
-  { kind: 'block', type: 'control_if' },
-  { kind: 'block', type: 'control_if_else' },
   { kind: 'block', type: 'control_repeat' },
   { kind: 'block', type: 'control_repeat_until' },
+  { kind: 'block', type: 'control_forever' },
+  { kind: 'block', type: 'control_if' },
+  { kind: 'block', type: 'control_if_else' },
   { kind: 'block', type: 'control_wait' },
   { kind: 'block', type: 'control_wait_until' },
-  { kind: 'block', type: 'control_forever' },
   { kind: 'block', type: 'control_stop' },
 ];
 

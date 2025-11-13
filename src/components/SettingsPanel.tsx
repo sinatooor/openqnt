@@ -18,7 +18,6 @@ export const SettingsPanel = () => {
   const [mode, setMode] = useState<"backtest" | "live">("live");
   const [tradingSymbol, setTradingSymbol] = useState("BTC/USDT");
   const [broker, setBroker] = useState("td");
-  const [leverage, setLeverage] = useState("50");
   const [isConnected, setIsConnected] = useState(false);
   const [tradingOpen, setTradingOpen] = useState(true);
   const [executionOpen, setExecutionOpen] = useState(true);
@@ -83,10 +82,6 @@ export const SettingsPanel = () => {
             <span className="text-muted-foreground">Symbol:</span>
             <span className="font-medium text-foreground">{tradingSymbol}</span>
           </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Leverage:</span>
-            <span className="font-medium text-foreground">{leverage}x</span>
-          </div>
           <Separator className="my-2" />
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Status:</span>
@@ -141,34 +136,6 @@ export const SettingsPanel = () => {
                   <SelectItem value="SOL/USDT">SOL/USDT</SelectItem>
                   <SelectItem value="XRP/USDT">XRP/USDT</SelectItem>
                   <SelectItem value="ADA/USDT">ADA/USDT</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <label className="text-sm font-medium text-muted-foreground mb-2 block cursor-help">
-                    Leverage
-                  </label>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Trading leverage multiplier</p>
-                  <p className="text-xs text-yellow-500 mt-1">⚠️ Higher leverage = Higher risk</p>
-                </TooltipContent>
-              </Tooltip>
-              <Select value={leverage} onValueChange={setLeverage}>
-                <SelectTrigger className="bg-secondary">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">1x</SelectItem>
-                  <SelectItem value="2">2x</SelectItem>
-                  <SelectItem value="5">5x</SelectItem>
-                  <SelectItem value="10">10x</SelectItem>
-                  <SelectItem value="20">20x</SelectItem>
-                  <SelectItem value="50">50x</SelectItem>
-                  <SelectItem value="100">100x</SelectItem>
                 </SelectContent>
               </Select>
             </div>
