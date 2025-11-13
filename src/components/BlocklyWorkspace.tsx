@@ -13,8 +13,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, Undo2, Redo2, Blocks, Wand2, FileCode, BarChart3 } from 'lucide-react';
+import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, Undo2, Redo2, Blocks, Wand2, FileCode, BarChart3, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
+import { BacktestingPanel } from './BacktestingPanel';
+import { runBacktest, BacktestResult } from '@/lib/backtestEngine';
 
 export const BlocklyWorkspace = () => {
   const blocklyDiv = useRef<HTMLDivElement>(null);
@@ -27,6 +29,9 @@ export const BlocklyWorkspace = () => {
   const [isEmpty, setIsEmpty] = useState(true);
   const [showLineNumbers, setShowLineNumbers] = useState(true);
   const [beautified, setBeautified] = useState(false);
+  const [backtestResult, setBacktestResult] = useState<BacktestResult | null>(null);
+  const [isBacktesting, setIsBacktesting] = useState(false);
+  const [showBacktest, setShowBacktest] = useState(false);
 
   useEffect(() => {
     if (!blocklyDiv.current) return;
@@ -311,6 +316,51 @@ export const BlocklyWorkspace = () => {
     workspaceRef.current.undo(true);
   };
 
+  const handlePreviewBacktest = async () => {
+    // Validate workspace has blocks
+    if (!workspaceRef.current || isEmpty) {
+      toast.error('Add blocks to your workspace first to run a backtest.');
+      return;
+    }
+
+    if (!generatedCode) {
+      toast.error('No strategy code generated. Add blocks to create a strategy.');
+      return;
+    }
+
+    // Start backtesting
+    setIsBacktesting(true);
+    setShowBacktest(true);
+    toast.info('Running backtest simulation...', {
+      description: 'Analyzing historical data with your strategy',
+    });
+
+    try {
+      // Run backtest with generated code
+      const result = await runBacktest(generatedCode, 'BTC/USDT', 90);
+      
+      setBacktestResult(result);
+      
+      // Show success toast with key metrics
+      toast.success('Backtest completed!', {
+        description: `Total Return: ${result.metrics.totalReturn.toFixed(2)}% | Win Rate: ${result.metrics.winRate.toFixed(1)}% | ${result.metrics.totalTrades} trades`,
+      });
+    } catch (error) {
+      console.error('Backtest error:', error);
+      toast.error('Backtest failed', {
+        description: 'Failed to run backtest simulation. Check your strategy blocks.',
+      });
+      setShowBacktest(false);
+    } finally {
+      setIsBacktesting(false);
+    }
+  };
+
+  const handleCloseBacktest = () => {
+    setShowBacktest(false);
+    setBacktestResult(null);
+  };
+
   const beautifyCode = (code: string): string => {
     if (!code) return code;
     
@@ -490,6 +540,24 @@ export const BlocklyWorkspace = () => {
             </TooltipContent>
           </Tooltip>
 
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handlePreviewBacktest}
+                disabled={isBacktesting || isEmpty}
+              >
+                <TrendingUp className="w-4 h-4 mr-2" />
+                {isBacktesting ? 'Testing...' : 'Preview Backtest'}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Run backtest simulation</p>
+              <p className="text-xs text-muted-foreground mt-1">Test your strategy on historical data</p>
+            </TooltipContent>
+          </Tooltip>
+
           <Separator orientation="vertical" className="h-6" />
 
           {/* Workspace Controls */}
@@ -602,11 +670,20 @@ export const BlocklyWorkspace = () => {
       {/* Main Content */}
       <div className="flex-1 relative flex">
         {/* Blockly Workspace */}
-        <div className={showCode ? "flex-1" : "w-full"}>
+        <div className="flex-1">
           <div 
             ref={blocklyDiv} 
             className="absolute inset-0"
-            style={{ height: '100%', width: showCode ? 'calc(100% - 450px)' : '100%' }}
+            style={{ 
+              height: '100%', 
+              width: showCode 
+                ? showBacktest 
+                  ? 'calc(100% - 450px - 500px)' 
+                  : 'calc(100% - 450px)'
+                : showBacktest
+                  ? 'calc(100% - 500px)'
+                  : '100%'
+            }}
           />
           
           {/* Welcome Screen */}
@@ -759,6 +836,16 @@ export const BlocklyWorkspace = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Backtesting Panel */}
+        {showBacktest && (
+          <BacktestingPanel
+            result={backtestResult}
+            isLoading={isBacktesting}
+            symbol="BTC/USDT"
+            onClose={handleCloseBacktest}
+          />
         )}
       </div>
     </div>
