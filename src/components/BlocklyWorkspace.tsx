@@ -38,6 +38,7 @@ import {
 import { toast } from "sonner";
 import { BacktestingPanel } from "./BacktestingPanel";
 import { StrategyTemplatesDialog } from "./StrategyTemplatesDialog";
+import { FloatingChartModal } from "./FloatingChartModal";
 import { runBacktest, BacktestResult } from "@/lib/backtestEngine";
 import { StrategyTemplate } from "@/lib/strategyTemplates";
 import { cn } from "@/lib/utils";
@@ -57,6 +58,7 @@ export const BlocklyWorkspace = () => {
   const [isBacktesting, setIsBacktesting] = useState(false);
   const [showBacktest, setShowBacktest] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showFloatingChart, setShowFloatingChart] = useState(false);
 
   useEffect(() => {
     if (!blocklyDiv.current) return;
@@ -677,6 +679,24 @@ export const BlocklyWorkspace = () => {
             </TooltipContent>
           </Tooltip>
 
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFloatingChart(!showFloatingChart)}
+                className="transition-all duration-200"
+              >
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Live Chart
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Open floating live chart</p>
+              <p className="text-xs text-muted-foreground mt-1">Drag to reposition</p>
+            </TooltipContent>
+          </Tooltip>
+
           <Separator orientation="vertical" className="h-6" />
 
           {/* Workspace Controls */}
@@ -940,6 +960,14 @@ export const BlocklyWorkspace = () => {
         open={showTemplates}
         onOpenChange={setShowTemplates}
         onLoadTemplate={handleLoadTemplate}
+      />
+
+      {/* Floating Chart Modal */}
+      <FloatingChartModal
+        isOpen={showFloatingChart}
+        onClose={() => setShowFloatingChart(false)}
+        symbol="BTC/USDT"
+        interval="1D"
       />
     </div>
   );
