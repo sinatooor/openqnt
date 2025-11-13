@@ -99,20 +99,6 @@ export const taBlocksToolbox = [
   { kind: 'block', type: 'ta_pivot' },
 ];
 
-export const riskManagementBlocksToolbox = [
-  { kind: 'label', text: 'Position Sizing' },
-  { kind: 'block', type: 'risk_position_percent' },
-  { kind: 'block', type: 'risk_kelly_criterion' },
-  { kind: 'block', type: 'risk_fixed_amount' },
-  { kind: 'label', text: 'Exit Strategy' },
-  { kind: 'block', type: 'risk_trailing_stop' },
-  { kind: 'block', type: 'risk_scale_in' },
-  { kind: 'block', type: 'risk_scale_out' },
-  { kind: 'label', text: 'Protection' },
-  { kind: 'block', type: 'risk_max_drawdown' },
-  { kind: 'block', type: 'risk_daily_loss_limit' },
-];
-
 export const multiTimeframeBlocksToolbox = [
   { kind: 'block', type: 'mtf_condition' },
   { kind: 'block', type: 'mtf_price' },
@@ -121,7 +107,7 @@ export const multiTimeframeBlocksToolbox = [
   { kind: 'block', type: 'mtf_higher_timeframe_bias' },
 ];
 
-export const variableBlocksToolbox = [
+export const myBlocksToolbox = [
   { kind: 'label', text: 'Variables' },
   { kind: 'block', type: 'variables_set' },
   { kind: 'block', type: 'variables_get' },
