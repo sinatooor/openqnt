@@ -170,6 +170,148 @@ javascriptGenerator.forBlock['ta_bb'] = function(block: Blockly.Block) {
   return [code, Order.ATOMIC];
 };
 
+// Additional TA indicators
+javascriptGenerator.forBlock['ta_vwap'] = function() {
+  const code = 'vwap()';
+  return [code, Order.ATOMIC];
+};
+
+javascriptGenerator.forBlock['ta_atr'] = function(block: Blockly.Block) {
+  const period = javascriptGenerator.valueToCode(block, 'PERIOD', Order.NONE) || '14';
+  const code = `atr(${period})`;
+  return [code, Order.ATOMIC];
+};
+
+javascriptGenerator.forBlock['ta_stochastic'] = function(block: Blockly.Block) {
+  const kPeriod = javascriptGenerator.valueToCode(block, 'K_PERIOD', Order.NONE) || '14';
+  const dPeriod = javascriptGenerator.valueToCode(block, 'D_PERIOD', Order.NONE) || '3';
+  const code = `stochastic(${kPeriod}, ${dPeriod})`;
+  return [code, Order.ATOMIC];
+};
+
+javascriptGenerator.forBlock['ta_adx'] = function(block: Blockly.Block) {
+  const period = javascriptGenerator.valueToCode(block, 'PERIOD', Order.NONE) || '14';
+  const code = `adx(${period})`;
+  return [code, Order.ATOMIC];
+};
+
+javascriptGenerator.forBlock['ta_cci'] = function(block: Blockly.Block) {
+  const period = javascriptGenerator.valueToCode(block, 'PERIOD', Order.NONE) || '20';
+  const code = `cci(${period})`;
+  return [code, Order.ATOMIC];
+};
+
+javascriptGenerator.forBlock['ta_williams_r'] = function(block: Blockly.Block) {
+  const period = javascriptGenerator.valueToCode(block, 'PERIOD', Order.NONE) || '14';
+  const code = `williamsR(${period})`;
+  return [code, Order.ATOMIC];
+};
+
+javascriptGenerator.forBlock['ta_obv'] = function() {
+  const code = 'obv()';
+  return [code, Order.ATOMIC];
+};
+
+javascriptGenerator.forBlock['ta_mfi'] = function(block: Blockly.Block) {
+  const period = javascriptGenerator.valueToCode(block, 'PERIOD', Order.NONE) || '14';
+  const code = `mfi(${period})`;
+  return [code, Order.ATOMIC];
+};
+
+javascriptGenerator.forBlock['ta_sar'] = function(block: Blockly.Block) {
+  const acceleration = javascriptGenerator.valueToCode(block, 'ACCELERATION', Order.NONE) || '0.02';
+  const max = javascriptGenerator.valueToCode(block, 'MAX', Order.NONE) || '0.2';
+  const code = `parabolicSAR(${acceleration}, ${max})`;
+  return [code, Order.ATOMIC];
+};
+
+javascriptGenerator.forBlock['ta_ichimoku'] = function() {
+  const code = 'ichimoku()';
+  return [code, Order.ATOMIC];
+};
+
+javascriptGenerator.forBlock['ta_vp'] = function(block: Blockly.Block) {
+  const period = javascriptGenerator.valueToCode(block, 'PERIOD', Order.NONE) || '100';
+  const code = `volumeProfile(${period})`;
+  return [code, Order.ATOMIC];
+};
+
+javascriptGenerator.forBlock['ta_keltner'] = function(block: Blockly.Block) {
+  const period = javascriptGenerator.valueToCode(block, 'PERIOD', Order.NONE) || '20';
+  const code = `keltner(${period})`;
+  return [code, Order.ATOMIC];
+};
+
+javascriptGenerator.forBlock['ta_dmi'] = function(block: Blockly.Block) {
+  const period = javascriptGenerator.valueToCode(block, 'PERIOD', Order.NONE) || '14';
+  const code = `dmi(${period})`;
+  return [code, Order.ATOMIC];
+};
+
+javascriptGenerator.forBlock['ta_supertrend'] = function(block: Blockly.Block) {
+  const period = javascriptGenerator.valueToCode(block, 'PERIOD', Order.NONE) || '10';
+  const multiplier = javascriptGenerator.valueToCode(block, 'MULTIPLIER', Order.NONE) || '3';
+  const code = `supertrend(${period}, ${multiplier})`;
+  return [code, Order.ATOMIC];
+};
+
+javascriptGenerator.forBlock['ta_pivot'] = function() {
+  const code = 'pivotPoints()';
+  return [code, Order.ATOMIC];
+};
+
+// Risk Management blocks
+javascriptGenerator.forBlock['risk_position_percent'] = function(block: Blockly.Block) {
+  const percent = javascriptGenerator.valueToCode(block, 'PERCENT', Order.NONE) || '2';
+  const code = `positionSize(${percent})`;
+  return [code, Order.ATOMIC];
+};
+
+javascriptGenerator.forBlock['risk_kelly_criterion'] = function(block: Blockly.Block) {
+  const winRate = javascriptGenerator.valueToCode(block, 'WIN_RATE', Order.NONE) || '0.6';
+  const winLossRatio = javascriptGenerator.valueToCode(block, 'WIN_LOSS_RATIO', Order.NONE) || '1.5';
+  const code = `kellyCriterion(${winRate}, ${winLossRatio})`;
+  return [code, Order.ATOMIC];
+};
+
+javascriptGenerator.forBlock['risk_fixed_amount'] = function(block: Blockly.Block) {
+  const amount = javascriptGenerator.valueToCode(block, 'AMOUNT', Order.NONE) || '100';
+  const code = `${amount}`;
+  return [code, Order.ATOMIC];
+};
+
+javascriptGenerator.forBlock['risk_trailing_stop'] = function(block: Blockly.Block) {
+  const percent = javascriptGenerator.valueToCode(block, 'PERCENT', Order.NONE) || '2';
+  const code = `setTrailingStop(${percent});\n`;
+  return code;
+};
+
+javascriptGenerator.forBlock['risk_scale_in'] = function(block: Blockly.Block) {
+  const amount = javascriptGenerator.valueToCode(block, 'AMOUNT', Order.NONE) || '100';
+  const intervals = javascriptGenerator.valueToCode(block, 'INTERVALS', Order.NONE) || '3';
+  const code = `scaleIn(${amount}, ${intervals});\n`;
+  return code;
+};
+
+javascriptGenerator.forBlock['risk_scale_out'] = function(block: Blockly.Block) {
+  const amount = javascriptGenerator.valueToCode(block, 'AMOUNT', Order.NONE) || '100';
+  const intervals = javascriptGenerator.valueToCode(block, 'INTERVALS', Order.NONE) || '3';
+  const code = `scaleOut(${amount}, ${intervals});\n`;
+  return code;
+};
+
+javascriptGenerator.forBlock['risk_max_drawdown'] = function(block: Blockly.Block) {
+  const percent = javascriptGenerator.valueToCode(block, 'PERCENT', Order.NONE) || '10';
+  const code = `setMaxDrawdown(${percent});\n`;
+  return code;
+};
+
+javascriptGenerator.forBlock['risk_daily_loss_limit'] = function(block: Blockly.Block) {
+  const amount = javascriptGenerator.valueToCode(block, 'AMOUNT', Order.NONE) || '500';
+  const code = `setDailyLossLimit(${amount});\n`;
+  return code;
+};
+
 // Export function to generate code from workspace
 export function generateCode(workspace: Blockly.WorkspaceSvg): string {
   return javascriptGenerator.workspaceToCode(workspace);

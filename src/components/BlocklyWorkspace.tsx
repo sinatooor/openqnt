@@ -6,6 +6,7 @@ import {
   controlBlocksToolbox,
   tradeBlocksToolbox,
   taBlocksToolbox,
+  riskManagementBlocksToolbox,
 } from '@/blockly/blocks';
 import { generateCode } from '@/blockly/generators/javascript';
 import { Button } from '@/components/ui/button';
@@ -79,6 +80,11 @@ export const BlocklyWorkspace = () => {
           colourSecondary: '#7c3aed',
           colourTertiary: '#6d28d9',
         },
+        risk_blocks: {
+          colourPrimary: '#ec4899',
+          colourSecondary: '#db2777',
+          colourTertiary: '#be185d',
+        },
       },
     });
 
@@ -146,6 +152,18 @@ export const BlocklyWorkspace = () => {
                 text: 'Technical Indicators',
               },
               ...taBlocksToolbox,
+            ],
+          },
+          {
+            kind: 'category',
+            name: 'Risk Management',
+            colour: '#ec4899',
+            contents: [
+              {
+                kind: 'label',
+                text: 'Position Sizing & Protection',
+              },
+              ...riskManagementBlocksToolbox,
             ],
           },
         ],

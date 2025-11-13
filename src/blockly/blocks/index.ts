@@ -4,6 +4,7 @@ import './operatorBlocks';
 import './controlBlocks';
 import './tradeBlocks';
 import './taBlocks';
+import './riskManagementBlocks';
 
 // Export block configurations for toolbox
 export const environmentBlocksToolbox = [
@@ -45,4 +46,30 @@ export const taBlocksToolbox = [
   { kind: 'block', type: 'ta_rsi' },
   { kind: 'block', type: 'ta_macd' },
   { kind: 'block', type: 'ta_bb' },
+  { kind: 'block', type: 'ta_vwap' },
+  { kind: 'block', type: 'ta_atr' },
+  { kind: 'block', type: 'ta_stochastic' },
+  { kind: 'block', type: 'ta_adx' },
+  { kind: 'block', type: 'ta_cci' },
+  { kind: 'block', type: 'ta_williams_r' },
+  { kind: 'block', type: 'ta_obv' },
+  { kind: 'block', type: 'ta_mfi' },
+  { kind: 'block', type: 'ta_sar' },
+  { kind: 'block', type: 'ta_ichimoku' },
+  { kind: 'block', type: 'ta_vp' },
+  { kind: 'block', type: 'ta_keltner' },
+  { kind: 'block', type: 'ta_dmi' },
+  { kind: 'block', type: 'ta_supertrend' },
+  { kind: 'block', type: 'ta_pivot' },
+];
+
+export const riskManagementBlocksToolbox = [
+  { kind: 'block', type: 'risk_position_percent' },
+  { kind: 'block', type: 'risk_kelly_criterion' },
+  { kind: 'block', type: 'risk_fixed_amount' },
+  { kind: 'block', type: 'risk_trailing_stop' },
+  { kind: 'block', type: 'risk_scale_in' },
+  { kind: 'block', type: 'risk_scale_out' },
+  { kind: 'block', type: 'risk_max_drawdown' },
+  { kind: 'block', type: 'risk_daily_loss_limit' },
 ];
