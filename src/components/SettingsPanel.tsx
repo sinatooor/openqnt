@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { X, TrendingUp, History, Network, Zap, AlertCircle, CheckCircle2, ChevronDown } from "lucide-react";
+import { X, TrendingUp, History, Network, Zap, AlertCircle, CheckCircle2, ChevronDown, Shield, DollarSign } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -23,6 +23,9 @@ export const SettingsPanel = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [tradingOpen, setTradingOpen] = useState(true);
   const [executionOpen, setExecutionOpen] = useState(true);
+  const [capitalOpen, setCapitalOpen] = useState(true);
+  const [riskOpen, setRiskOpen] = useState(true);
+  const [capitalAllocation, setCapitalAllocation] = useState("10000");
   const [dailyLossLimit, setDailyLossLimit] = useState("500");
   const [maxDrawdown, setMaxDrawdown] = useState("10");
 
@@ -200,36 +203,86 @@ export const SettingsPanel = () => {
           </CollapsibleContent>
         </Collapsible>
 
-        {/* Risk Protection */}
-        <Collapsible open={executionOpen} onOpenChange={setExecutionOpen}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-medium text-foreground hover:text-foreground/80 transition-colors py-2">
-            <span>Risk Protection</span>
-            <ChevronDown className={`w-4 h-4 transition-transform ${executionOpen ? 'transform rotate-180' : ''}`} />
+        {/* Capital Allocation */}
+        <Collapsible open={capitalOpen} onOpenChange={setCapitalOpen}>
+          <CollapsibleTrigger className="flex items-center justify-between w-full group">
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-primary" />
+              <span className="font-medium text-foreground">Capital Allocation</span>
+            </div>
+            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${capitalOpen ? 'rotate-180' : ''}`} />
           </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-3 pt-2">
-            <div className="space-y-2">
-              <Label htmlFor="dailyLossLimit" className="text-sm text-muted-foreground">
-                Daily Loss Limit ($)
-              </Label>
+          <CollapsibleContent className="space-y-4 mt-4 animate-accordion-down">
+            <div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block cursor-help">
+                    Strategy Capital ($)
+                  </label>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Total capital allocated to this strategy</p>
+                </TooltipContent>
+              </Tooltip>
+              <Input
+                id="capitalAllocation"
+                type="number"
+                value={capitalAllocation}
+                onChange={(e) => setCapitalAllocation(e.target.value)}
+                className="bg-secondary"
+                placeholder="10000"
+              />
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* Risk Protection */}
+        <Collapsible open={riskOpen} onOpenChange={setRiskOpen}>
+          <CollapsibleTrigger className="flex items-center justify-between w-full group">
+            <div className="flex items-center gap-2">
+              <Shield className="w-4 h-4 text-primary" />
+              <span className="font-medium text-foreground">Risk Protection</span>
+            </div>
+            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${riskOpen ? 'rotate-180' : ''}`} />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-4 mt-4 animate-accordion-down">
+            <div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block cursor-help">
+                    Daily Loss Limit ($)
+                  </label>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Maximum loss allowed per day</p>
+                </TooltipContent>
+              </Tooltip>
               <Input
                 id="dailyLossLimit"
                 type="number"
                 value={dailyLossLimit}
                 onChange={(e) => setDailyLossLimit(e.target.value)}
-                className="h-9 bg-background"
+                className="bg-secondary"
                 placeholder="500"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="maxDrawdown" className="text-sm text-muted-foreground">
-                Max Drawdown (%)
-              </Label>
+            <div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block cursor-help">
+                    Max Drawdown (%)
+                  </label>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Maximum portfolio drawdown allowed</p>
+                </TooltipContent>
+              </Tooltip>
               <Input
                 id="maxDrawdown"
                 type="number"
                 value={maxDrawdown}
                 onChange={(e) => setMaxDrawdown(e.target.value)}
-                className="h-9 bg-background"
+                className="bg-secondary"
                 placeholder="10"
               />
             </div>

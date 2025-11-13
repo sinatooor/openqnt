@@ -3,9 +3,8 @@ import * as Blockly from "blockly";
 Blockly.Blocks["trade_order"] = {
   init: function () {
     this.appendDummyInput()
-      .appendField("Trade ID:");
-    this.appendValueInput("TRADE_ID")
-      .setCheck("String");
+      .appendField("Trade ID:")
+      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
     this.appendDummyInput()
       .appendField("Trade")
       .appendField(
@@ -83,10 +82,8 @@ Blockly.Blocks["trade_stop_loss"] = {
         "CLOSE_TYPE",
       );
     this.appendDummyInput()
-      .appendField("for trade");
-    this.appendValueInput("TRADE_ID")
-      .setCheck("String")
-      .appendField("id");
+      .appendField("for trade ID")
+      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
     this.setPreviousStatement(true, "TradeAction");
     this.setNextStatement(true, "TradeAction");
     this.setStyle("trade_blocks");
@@ -97,8 +94,7 @@ Blockly.Blocks["trade_stop_loss"] = {
   updateCloseType_: function(value: string) {
     const percentInput = this.getInput('PERCENT');
     if (value === 'partial' && !percentInput) {
-      // Find the position to insert after CLOSE_TYPE
-      const closeTypeIndex = this.inputList.findIndex(input => input.name === 'CLOSE_TYPE');
+      const tradeIdIndex = this.inputList.findIndex(input => input.name === 'TRADE_ID');
       this.appendValueInput("PERCENT")
         .setCheck("Number")
         .appendField("close")
@@ -111,8 +107,7 @@ Blockly.Blocks["trade_stop_loss"] = {
           "PERCENT_VALUE",
         )
         .appendField("of trade");
-      // Move PERCENT input after CLOSE_TYPE
-      if (closeTypeIndex >= 0) {
+      if (tradeIdIndex >= 0) {
         this.moveInputBefore('PERCENT', 'TRADE_ID');
       }
     } else if (value === 'full' && percentInput) {
@@ -135,10 +130,8 @@ Blockly.Blocks["trade_take_profit"] = {
         "CLOSE_TYPE",
       );
     this.appendDummyInput()
-      .appendField("for trade");
-    this.appendValueInput("TRADE_ID")
-      .setCheck("String")
-      .appendField("id");
+      .appendField("for trade ID")
+      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
     this.setPreviousStatement(true, "TradeAction");
     this.setNextStatement(true, "TradeAction");
     this.setStyle("trade_blocks");
@@ -149,7 +142,7 @@ Blockly.Blocks["trade_take_profit"] = {
   updateCloseType_: function(value: string) {
     const percentInput = this.getInput('PERCENT');
     if (value === 'partial' && !percentInput) {
-      const closeTypeIndex = this.inputList.findIndex(input => input.name === 'CLOSE_TYPE');
+      const tradeIdIndex = this.inputList.findIndex(input => input.name === 'TRADE_ID');
       this.appendValueInput("PERCENT")
         .setCheck("Number")
         .appendField("close")
@@ -162,7 +155,7 @@ Blockly.Blocks["trade_take_profit"] = {
           "PERCENT_VALUE",
         )
         .appendField("of trade");
-      if (closeTypeIndex >= 0) {
+      if (tradeIdIndex >= 0) {
         this.moveInputBefore('PERCENT', 'TRADE_ID');
       }
     } else if (value === 'full' && percentInput) {
@@ -177,10 +170,8 @@ Blockly.Blocks["trade_close"] = {
       .appendField("Close");
     this.appendValueInput("PERCENT")
       .setCheck("Number")
-      .appendField("% of trade");
-    this.appendValueInput("TRADE_ID")
-      .setCheck("String")
-      .appendField("id");
+      .appendField("% of trade ID")
+      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
     this.setPreviousStatement(true, "TradeAction");
     this.setNextStatement(true, "TradeAction");
     this.setStyle("trade_blocks");
@@ -192,10 +183,8 @@ Blockly.Blocks["trade_close"] = {
 Blockly.Blocks["trade_pnl_of"] = {
   init: function () {
     this.appendDummyInput()
-      .appendField("P&L for trade");
-    this.appendValueInput("TRADE_ID")
-      .setCheck("String")
-      .appendField("id");
+      .appendField("P&L for trade ID")
+      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
     this.setOutput(true, "Number");
     this.setStyle("trade_blocks");
     this.setTooltip("Get profit/loss of trade by ID");
@@ -206,10 +195,8 @@ Blockly.Blocks["trade_pnl_of"] = {
 Blockly.Blocks["trade_entry_price"] = {
   init: function () {
     this.appendDummyInput()
-      .appendField("Entry price for trade");
-    this.appendValueInput("TRADE_ID")
-      .setCheck("String")
-      .appendField("id");
+      .appendField("Entry price for trade ID")
+      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
     this.setOutput(true, "Number");
     this.setStyle("trade_blocks");
     this.setTooltip("Get entry price of trade by ID");
@@ -220,10 +207,8 @@ Blockly.Blocks["trade_entry_price"] = {
 Blockly.Blocks["trade_position_size"] = {
   init: function () {
     this.appendDummyInput()
-      .appendField("Position size for trade");
-    this.appendValueInput("TRADE_ID")
-      .setCheck("String")
-      .appendField("id");
+      .appendField("Position size for trade ID")
+      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
     this.setOutput(true, "Number");
     this.setStyle("trade_blocks");
     this.setTooltip("Get size of trade by ID");
