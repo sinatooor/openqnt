@@ -11,7 +11,8 @@ import { generateCode } from '@/blockly/generators/javascript';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
-import { Code2, Copy, Check, Download, Play, Upload } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, Undo2, Redo2, Blocks } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const BlocklyWorkspace = () => {
@@ -20,6 +21,9 @@ export const BlocklyWorkspace = () => {
   const [generatedCode, setGeneratedCode] = useState<string>('');
   const [showCode, setShowCode] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [blockCount, setBlockCount] = useState(0);
+  const [zoomLevel, setZoomLevel] = useState(100);
+  const [isEmpty, setIsEmpty] = useState(true);
 
   useEffect(() => {
     if (!blocklyDiv.current) return;
@@ -164,10 +168,22 @@ export const BlocklyWorkspace = () => {
 
     workspaceRef.current = workspace;
 
-    // Listen to workspace changes to update code
+    // Listen to workspace changes to update code and stats
     workspace.addChangeListener(() => {
       const code = generateCode(workspace);
       setGeneratedCode(code);
+      
+      // Update block count
+      const allBlocks = workspace.getAllBlocks(false);
+      setBlockCount(allBlocks.length);
+      setIsEmpty(allBlocks.length === 0);
+      
+      // Update zoom level
+      const metrics = workspace.getMetrics();
+      if (metrics) {
+        const currentZoom = workspace.scale;
+        setZoomLevel(Math.round(currentZoom * 100));
+      }
     });
 
     // Cleanup on unmount
@@ -255,11 +271,54 @@ export const BlocklyWorkspace = () => {
     input.click();
   };
 
+  const handleZoom = (direction: 'in' | 'out' | 'reset' | number) => {
+    if (!workspaceRef.current) return;
+    
+    const workspace = workspaceRef.current;
+    const currentZoom = workspace.scale;
+    
+    if (typeof direction === 'number') {
+      workspace.setScale(direction / 100);
+    } else if (direction === 'in') {
+      workspace.setScale(currentZoom * 1.2);
+    } else if (direction === 'out') {
+      workspace.setScale(currentZoom / 1.2);
+    } else if (direction === 'reset') {
+      workspace.setScale(1.0);
+      workspace.scrollCenter();
+    }
+    
+    const newZoom = workspace.scale;
+    setZoomLevel(Math.round(newZoom * 100));
+  };
+
+  const handleCenterWorkspace = () => {
+    if (!workspaceRef.current) return;
+    workspaceRef.current.scrollCenter();
+    toast.success('Workspace centered');
+  };
+
+  const handleUndo = () => {
+    if (!workspaceRef.current) return;
+    workspaceRef.current.undo(false);
+  };
+
+  const handleRedo = () => {
+    if (!workspaceRef.current) return;
+    workspaceRef.current.undo(true);
+  };
+
   return (
     <div className="flex-1 relative flex flex-col">
       {/* Action Bar */}
       <div className="h-14 bg-card border-b border-border flex items-center justify-between px-4 gap-3">
-        <h2 className="font-semibold text-foreground">Trading Strategy Builder</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="font-semibold text-foreground">Trading Strategy Builder</h2>
+          <Badge variant="secondary" className="flex items-center gap-1">
+            <Blocks className="w-3 h-3" />
+            {blockCount} blocks
+          </Badge>
+        </div>
         <div className="flex items-center gap-2">
           {/* File Operations Group */}
           <Tooltip>
@@ -318,6 +377,93 @@ export const BlocklyWorkspace = () => {
 
           <Separator orientation="vertical" className="h-6" />
 
+          {/* Workspace Controls */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleUndo}
+              >
+                <Undo2 className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Undo</p>
+              <p className="text-xs text-muted-foreground mt-1">Ctrl+Z</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRedo}
+              >
+                <Redo2 className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Redo</p>
+              <p className="text-xs text-muted-foreground mt-1">Ctrl+Y</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Separator orientation="vertical" className="h-6" />
+
+          {/* Zoom Controls */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleZoom('out')}
+              >
+                <ZoomOut className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Zoom out</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Badge variant="secondary" className="px-2 min-w-[60px] justify-center">
+            {zoomLevel}%
+          </Badge>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleZoom('in')}
+              >
+                <ZoomIn className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Zoom in</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCenterWorkspace}
+              >
+                <Maximize2 className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Center workspace</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Separator orientation="vertical" className="h-6" />
+
           {/* View Group */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -347,6 +493,33 @@ export const BlocklyWorkspace = () => {
             className="absolute inset-0"
             style={{ height: '100%', width: showCode ? 'calc(100% - 400px)' : '100%' }}
           />
+          
+          {/* Welcome Screen */}
+          {isEmpty && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="bg-card/95 border border-border rounded-lg p-8 max-w-md text-center shadow-lg backdrop-blur-sm">
+                <Blocks className="w-16 h-16 mx-auto mb-4 text-primary" />
+                <h3 className="text-xl font-semibold text-foreground mb-2">Welcome to Strategy Builder</h3>
+                <p className="text-muted-foreground mb-6">
+                  Start building your trading strategy by dragging blocks from the toolbox on the left.
+                </p>
+                <div className="space-y-2 text-sm text-left text-muted-foreground">
+                  <div className="flex items-start gap-2">
+                    <span className="text-primary font-bold">1.</span>
+                    <span>Choose blocks from the categories: Environment, Operators, Control, Trade, and TA Tools</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-primary font-bold">2.</span>
+                    <span>Connect blocks together to create your trading logic</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-primary font-bold">3.</span>
+                    <span>Preview the generated code and test your strategy</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Code Preview Panel */}
