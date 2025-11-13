@@ -59,15 +59,16 @@ export const BlocklyWorkspace = () => {
   const [showTemplates, setShowTemplates] = useState(false);
   const [showFloatingChart, setShowFloatingChart] = useState(false);
   const [taSearchQuery, setTaSearchQuery] = useState("");
+  const [selectedIndicators, setSelectedIndicators] = useState<string[]>([]);
   // Dynamic TA Tools category callback
   const getTAToolsContents = (workspace: Blockly.WorkspaceSvg) => {
     const contents: any[] = [];
     
-    // Add search label
+    // Add custom HTML search button that will open a search interface
     contents.push({
-      kind: 'label',
-      text: 'Search for any TA tool',
-      'web-class': 'ta-search-label'
+      kind: 'button',
+      text: '🔍 Search for any TA tool',
+      callbackKey: 'TA_SEARCH'
     });
     
     // Commonly Used section
@@ -77,43 +78,17 @@ export const BlocklyWorkspace = () => {
     contents.push({ kind: 'block', type: 'ta_support' });
     contents.push({ kind: 'block', type: 'ta_resistance' });
     
-    // Other commonly used indicators
-    commonlyUsedIndicators.forEach((indicatorId: string) => {
-      contents.push({ kind: 'block', type: `ta_${indicatorId}` });
-    });
+    // RSI, MACD, SMA, ATR
+    contents.push({ kind: 'block', type: 'ta_rsi' });
+    contents.push({ kind: 'block', type: 'ta_macd' });
+    contents.push({ kind: 'block', type: 'ta_sma' });
+    contents.push({ kind: 'block', type: 'ta_atr' });
     
-    // Filter indicators based on search
-    const searchLower = taSearchQuery.toLowerCase();
-    const filteredIndicators = searchLower 
-      ? taIndicators.filter(ind => 
-          ind.name.toLowerCase().includes(searchLower) || 
-          ind.description.toLowerCase().includes(searchLower) ||
-          ind.category.toLowerCase().includes(searchLower)
-        )
-      : taIndicators;
-    
-    if (searchLower) {
-      // Show search results
-      contents.push({ kind: 'label', text: `Search Results (${filteredIndicators.length})` });
-      filteredIndicators.forEach(indicator => {
-        contents.push({ kind: 'block', type: `ta_${indicator.id}` });
-      });
-    } else {
-      // Show categorized list
-      contents.push({ kind: 'label', text: 'Other TA Tools' });
-      
-      // Group by category
-      const categories = ['overlap', 'momentum', 'volatility', 'trend', 'volume', 'statistics'];
-      categories.forEach(category => {
-        const categoryIndicators = filteredIndicators.filter(ind => ind.category === category);
-        if (categoryIndicators.length > 0) {
-          contents.push({ kind: 'label', text: category.charAt(0).toUpperCase() + category.slice(1) });
-          categoryIndicators.forEach(indicator => {
-            if (!commonlyUsedIndicators.includes(indicator.id)) {
-              contents.push({ kind: 'block', type: `ta_${indicator.id}` });
-            }
-          });
-        }
+    // Show selected indicators from search
+    if (selectedIndicators.length > 0) {
+      contents.push({ kind: 'label', text: 'Selected Indicators' });
+      selectedIndicators.forEach(indicatorId => {
+        contents.push({ kind: 'block', type: `ta_${indicatorId}` });
       });
     }
     
@@ -283,6 +258,49 @@ export const BlocklyWorkspace = () => {
       return getTAToolsContents(workspace);
     });
 
+    // Register search button callback
+    workspace.registerButtonCallback('TA_SEARCH', () => {
+      // Create search dialog
+      const searchTerm = prompt('Search for a TA indicator (e.g., RSI, Bollinger Bands, MACD):');
+      if (!searchTerm) return;
+      
+      const searchLower = searchTerm.toLowerCase();
+      const results = taIndicators.filter(ind => 
+        ind.name.toLowerCase().includes(searchLower) || 
+        ind.description.toLowerCase().includes(searchLower) ||
+        ind.id.toLowerCase().includes(searchLower)
+      );
+      
+      if (results.length === 0) {
+        alert('No indicators found matching "' + searchTerm + '"');
+        return;
+      }
+      
+      // Show results and let user select
+      const resultsList = results.map((ind, i) => `${i + 1}. ${ind.name} - ${ind.description}`).join('\n');
+      const selection = prompt(
+        `Found ${results.length} indicator(s):\n\n${resultsList}\n\nEnter number to add (or cancel):`,
+        '1'
+      );
+      
+      if (!selection) return;
+      
+      const index = parseInt(selection) - 1;
+      if (index >= 0 && index < results.length) {
+        const selectedId = results[index].id;
+        setSelectedIndicators(prev => {
+          if (!prev.includes(selectedId)) {
+            return [...prev, selectedId];
+          }
+          return prev;
+        });
+        
+        // Force refresh the toolbox
+        workspace.getToolbox()?.clearSelection();
+        workspace.refreshToolboxSelection();
+      }
+    });
+
     // Add custom context menu for indicator settings
     const originalBlockContextMenu = Blockly.ContextMenuRegistry.registry.getItem('blockContextMenu');
     Blockly.ContextMenuRegistry.registry.register({
@@ -367,6 +385,14 @@ export const BlocklyWorkspace = () => {
       workspace.dispose();
     };
   }, []);
+
+  // Update toolbox when selected indicators change
+  useEffect(() => {
+    if (workspaceRef.current && selectedIndicators.length > 0) {
+      workspaceRef.current.getToolbox()?.clearSelection();
+      workspaceRef.current.refreshToolboxSelection();
+    }
+  }, [selectedIndicators]);
   const handleCopyCode = () => {
     navigator.clipboard.writeText(generatedCode);
     setCopied(true);
