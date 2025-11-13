@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import * as Blockly from 'blockly';
+import { useEffect, useRef, useState } from "react";
+import * as Blockly from "blockly";
 import {
   environmentBlocksToolbox,
   operatorBlocksToolbox,
@@ -8,25 +8,44 @@ import {
   taBlocksToolbox,
   riskManagementBlocksToolbox,
   multiTimeframeBlocksToolbox,
-} from '@/blockly/blocks';
-import { generateCode } from '@/blockly/generators/javascript';
-import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, Undo2, Redo2, Blocks, Wand2, FileCode, BarChart3, TrendingUp, BookOpen } from 'lucide-react';
-import { toast } from 'sonner';
-import { BacktestingPanel } from './BacktestingPanel';
-import { StrategyTemplatesDialog } from './StrategyTemplatesDialog';
-import { runBacktest, BacktestResult } from '@/lib/backtestEngine';
-import { StrategyTemplate } from '@/lib/strategyTemplates';
-import { cn } from '@/lib/utils';
+} from "@/blockly/blocks";
+import { generateCode } from "@/blockly/generators/javascript";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Code2,
+  Copy,
+  Check,
+  Download,
+  Play,
+  Upload,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  RotateCcw,
+  Undo2,
+  Redo2,
+  Blocks,
+  Wand2,
+  FileCode,
+  BarChart3,
+  TrendingUp,
+  BookOpen,
+} from "lucide-react";
+import { toast } from "sonner";
+import { BacktestingPanel } from "./BacktestingPanel";
+import { StrategyTemplatesDialog } from "./StrategyTemplatesDialog";
+import { runBacktest, BacktestResult } from "@/lib/backtestEngine";
+import { StrategyTemplate } from "@/lib/strategyTemplates";
+import { cn } from "@/lib/utils";
 
 export const BlocklyWorkspace = () => {
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
-  const [generatedCode, setGeneratedCode] = useState<string>('');
+  const [generatedCode, setGeneratedCode] = useState<string>("");
   const [showCode, setShowCode] = useState(false);
   const [copied, setCopied] = useState(false);
   const [blockCount, setBlockCount] = useState(0);
@@ -43,56 +62,56 @@ export const BlocklyWorkspace = () => {
     if (!blocklyDiv.current) return;
 
     // Create custom dark theme matching the app design
-    const darkTheme = Blockly.Theme.defineTheme('dark', {
-      name: 'dark',
+    const darkTheme = Blockly.Theme.defineTheme("dark", {
+      name: "dark",
       base: Blockly.Themes.Classic,
       componentStyles: {
-        workspaceBackgroundColour: '#181c23',
-        toolboxBackgroundColour: '#1c2028',
-        toolboxForegroundColour: '#f8fafc',
-        flyoutBackgroundColour: '#1c2028',
-        flyoutForegroundColour: '#94a3b8',
+        workspaceBackgroundColour: "#181c23",
+        toolboxBackgroundColour: "#1c2028",
+        toolboxForegroundColour: "#f8fafc",
+        flyoutBackgroundColour: "#1c2028",
+        flyoutForegroundColour: "#94a3b8",
         flyoutOpacity: 0.95,
-        scrollbarColour: '#25292f',
+        scrollbarColour: "#25292f",
         scrollbarOpacity: 0.5,
-        insertionMarkerColour: '#3b82f6',
+        insertionMarkerColour: "#3b82f6",
         insertionMarkerOpacity: 0.3,
       },
       blockStyles: {
         environment_blocks: {
-          colourPrimary: '#10b981',
-          colourSecondary: '#059669',
-          colourTertiary: '#047857',
+          colourPrimary: "#10b981",
+          colourSecondary: "#059669",
+          colourTertiary: "#047857",
         },
         operator_blocks: {
-          colourPrimary: '#3b82f6',
-          colourSecondary: '#2563eb',
-          colourTertiary: '#1d4ed8',
+          colourPrimary: "#3b82f6",
+          colourSecondary: "#2563eb",
+          colourTertiary: "#1d4ed8",
         },
         control_blocks: {
-          colourPrimary: '#f59e0b',
-          colourSecondary: '#d97706',
-          colourTertiary: '#b45309',
+          colourPrimary: "#f59e0b",
+          colourSecondary: "#d97706",
+          colourTertiary: "#b45309",
         },
         trade_blocks: {
-          colourPrimary: '#ef4444',
-          colourSecondary: '#dc2626',
-          colourTertiary: '#b91c1c',
+          colourPrimary: "#ef4444",
+          colourSecondary: "#dc2626",
+          colourTertiary: "#b91c1c",
         },
         ta_blocks: {
-          colourPrimary: '#8b5cf6',
-          colourSecondary: '#7c3aed',
-          colourTertiary: '#6d28d9',
+          colourPrimary: "#8b5cf6",
+          colourSecondary: "#7c3aed",
+          colourTertiary: "#6d28d9",
         },
         risk_blocks: {
-          colourPrimary: '#ec4899',
-          colourSecondary: '#db2777',
-          colourTertiary: '#be185d',
+          colourPrimary: "#ec4899",
+          colourSecondary: "#db2777",
+          colourTertiary: "#be185d",
         },
         mtf_blocks: {
-          colourPrimary: '#06b6d4',
-          colourSecondary: '#0891b2',
-          colourTertiary: '#0e7490',
+          colourPrimary: "#06b6d4",
+          colourSecondary: "#0891b2",
+          colourTertiary: "#0e7490",
         },
       },
     });
@@ -101,107 +120,107 @@ export const BlocklyWorkspace = () => {
     const workspace = Blockly.inject(blocklyDiv.current, {
       theme: darkTheme,
       toolbox: {
-        kind: 'categoryToolbox',
+        kind: "categoryToolbox",
         contents: [
           {
-            kind: 'category',
-            name: 'Environment',
-            colour: '#10b981',
+            kind: "category",
+            name: "Environment",
+            colour: "#10b981",
             contents: [
               {
-                kind: 'label',
-                text: 'Market Data',
+                kind: "label",
+                text: "Market Data",
               },
               ...environmentBlocksToolbox,
             ],
           },
           {
-            kind: 'category',
-            name: 'Operators',
-            colour: '#3b82f6',
+            kind: "category",
+            name: "Operators",
+            colour: "#3b82f6",
             contents: [
               {
-                kind: 'label',
-                text: 'Comparisons & Math',
+                kind: "label",
+                text: "Comparisons & Math",
               },
               ...operatorBlocksToolbox,
             ],
           },
           {
-            kind: 'category',
-            name: 'Control',
-            colour: '#f59e0b',
+            kind: "category",
+            name: "Control",
+            colour: "#f59e0b",
             contents: [
               {
-                kind: 'label',
-                text: 'Logic & Loops',
+                kind: "label",
+                text: "Logic & Loops",
               },
               ...controlBlocksToolbox,
             ],
           },
           {
-            kind: 'category',
-            name: 'Trade',
-            colour: '#ef4444',
+            kind: "category",
+            name: "Trade",
+            colour: "#ef4444",
             contents: [
               {
-                kind: 'label',
-                text: 'Order Actions',
+                kind: "label",
+                text: "Order Actions",
               },
               ...tradeBlocksToolbox,
             ],
           },
           {
-            kind: 'category',
-            name: 'TA Tools',
-            colour: '#8b5cf6',
+            kind: "category",
+            name: "TA Tools",
+            colour: "#8b5cf6",
             contents: [
               {
-                kind: 'label',
-                text: 'Technical Indicators',
+                kind: "label",
+                text: "Technical Indicators",
               },
               ...taBlocksToolbox,
             ],
           },
           {
-            kind: 'category',
-            name: 'Risk Management',
-            colour: '#ec4899',
+            kind: "category",
+            name: "Risk Management",
+            colour: "#ec4899",
             contents: [
               {
-                kind: 'label',
-                text: 'Position Sizing & Protection',
+                kind: "label",
+                text: "Position Sizing & Protection",
               },
               ...riskManagementBlocksToolbox,
             ],
           },
           {
-            kind: 'category',
-            name: 'Multi-Timeframe',
-            colour: '#06b6d4',
+            kind: "category",
+            name: "Multi-Timeframe",
+            colour: "#06b6d4",
             contents: [
               {
-                kind: 'label',
-                text: 'Cross-Timeframe Analysis',
+                kind: "label",
+                text: "Cross-Timeframe Analysis",
               },
               ...multiTimeframeBlocksToolbox,
             ],
           },
           {
-            kind: 'category',
-            name: 'Values',
-            colour: '#64748b',
+            kind: "category",
+            name: "Values",
+            colour: "#64748b",
             contents: [
               {
-                kind: 'label',
-                text: 'Numbers & Constants',
+                kind: "label",
+                text: "Numbers & Constants",
               },
               {
-                kind: 'block',
-                type: 'math_number',
+                kind: "block",
+                type: "math_number",
                 fields: {
-                  NUM: 0
-                }
+                  NUM: 0,
+                },
               },
             ],
           },
@@ -210,7 +229,7 @@ export const BlocklyWorkspace = () => {
       grid: {
         spacing: 20,
         length: 3,
-        colour: '#2a2e35',
+        colour: "#2a2e35",
         snap: true,
       },
       zoom: {
@@ -238,12 +257,12 @@ export const BlocklyWorkspace = () => {
     workspace.addChangeListener(() => {
       const code = generateCode(workspace);
       setGeneratedCode(code);
-      
+
       // Update block count
       const allBlocks = workspace.getAllBlocks(false);
       setBlockCount(allBlocks.length);
       setIsEmpty(allBlocks.length === 0);
-      
+
       // Update zoom level
       const metrics = workspace.getMetrics();
       if (metrics) {
@@ -261,60 +280,60 @@ export const BlocklyWorkspace = () => {
   const handleCopyCode = () => {
     navigator.clipboard.writeText(generatedCode);
     setCopied(true);
-    toast.success('Code copied to clipboard!');
+    toast.success("Code copied to clipboard!");
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleExportCode = () => {
     if (!generatedCode) {
-      toast.error('No code to export. Add blocks to your workspace first.');
+      toast.error("No code to export. Add blocks to your workspace first.");
       return;
     }
 
-    const blob = new Blob([generatedCode], { type: 'text/javascript' });
+    const blob = new Blob([generatedCode], { type: "text/javascript" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = 'trading-strategy.js';
+    a.download = "trading-strategy.js";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success('Strategy exported successfully!');
+    toast.success("Strategy exported successfully!");
   };
 
   const handleRunStrategy = () => {
     if (!generatedCode) {
-      toast.error('No strategy to run. Add blocks to your workspace first.');
+      toast.error("No strategy to run. Add blocks to your workspace first.");
       return;
     }
 
-    toast.info('Strategy execution would run here. Connect to a trading platform to execute live.');
-    console.log('Generated Strategy Code:\n', generatedCode);
+    toast.info("Strategy execution would run here. Connect to a trading platform to execute live.");
+    console.log("Generated Strategy Code:\n", generatedCode);
   };
 
   const handleSaveWorkspace = () => {
     if (!workspaceRef.current) return;
-    
+
     const xml = Blockly.Xml.workspaceToDom(workspaceRef.current);
     const xmlText = Blockly.Xml.domToText(xml);
-    
-    const blob = new Blob([xmlText], { type: 'application/xml' });
+
+    const blob = new Blob([xmlText], { type: "application/xml" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = 'trading-strategy-blocks.xml';
+    a.download = "trading-strategy-blocks.xml";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success('Workspace saved successfully!');
+    toast.success("Workspace saved successfully!");
   };
 
   const handleLoadWorkspace = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.xml';
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".xml";
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file || !workspaceRef.current) return;
@@ -326,9 +345,9 @@ export const BlocklyWorkspace = () => {
           const xml = Blockly.utils.xml.textToDom(xmlText);
           workspaceRef.current?.clear();
           Blockly.Xml.domToWorkspace(xml, workspaceRef.current!);
-          toast.success('Workspace loaded successfully!');
+          toast.success("Workspace loaded successfully!");
         } catch (error) {
-          toast.error('Failed to load workspace. Invalid file format.');
+          toast.error("Failed to load workspace. Invalid file format.");
           console.error(error);
         }
       };
@@ -339,7 +358,7 @@ export const BlocklyWorkspace = () => {
 
   const handleLoadTemplate = (template: StrategyTemplate) => {
     if (!workspaceRef.current) return;
-    
+
     try {
       const xml = Blockly.utils.xml.textToDom(template.workspace);
       workspaceRef.current.clear();
@@ -349,28 +368,28 @@ export const BlocklyWorkspace = () => {
         duration: 4000,
       });
     } catch (error) {
-      toast.error('Failed to load template.');
+      toast.error("Failed to load template.");
       console.error(error);
     }
   };
 
-  const handleZoom = (direction: 'in' | 'out' | 'reset' | number) => {
+  const handleZoom = (direction: "in" | "out" | "reset" | number) => {
     if (!workspaceRef.current) return;
-    
+
     const workspace = workspaceRef.current;
     const currentZoom = workspace.scale;
-    
-    if (typeof direction === 'number') {
+
+    if (typeof direction === "number") {
       workspace.setScale(direction / 100);
-    } else if (direction === 'in') {
+    } else if (direction === "in") {
       workspace.setScale(currentZoom * 1.2);
-    } else if (direction === 'out') {
+    } else if (direction === "out") {
       workspace.setScale(currentZoom / 1.2);
-    } else if (direction === 'reset') {
+    } else if (direction === "reset") {
       workspace.setScale(1.0);
       workspace.scrollCenter();
     }
-    
+
     const newZoom = workspace.scale;
     setZoomLevel(Math.round(newZoom * 100));
   };
@@ -378,7 +397,7 @@ export const BlocklyWorkspace = () => {
   const handleCenterWorkspace = () => {
     if (!workspaceRef.current) return;
     workspaceRef.current.scrollCenter();
-    toast.success('Workspace centered');
+    toast.success("Workspace centered");
   };
 
   const handleUndo = () => {
@@ -394,46 +413,43 @@ export const BlocklyWorkspace = () => {
   const handlePreviewBacktest = async () => {
     // Validate workspace has blocks
     if (!workspaceRef.current || isEmpty) {
-      toast.error('Add blocks to your workspace first to run a backtest.');
+      toast.error("Add blocks to your workspace first to run a backtest.");
       return;
     }
 
     if (!generatedCode) {
-      toast.error('No strategy code generated. Add blocks to create a strategy.');
+      toast.error("No strategy code generated. Add blocks to create a strategy.");
       return;
     }
 
     // Start backtesting
     setIsBacktesting(true);
     setShowBacktest(true);
-    
-    const loadingToast = toast.loading('Running backtest simulation...', {
-      description: 'Analyzing historical data with your strategy',
+
+    const loadingToast = toast.loading("Running backtest simulation...", {
+      description: "Analyzing historical data with your strategy",
     });
 
     try {
       // Run backtest with generated code
-      const result = await runBacktest(generatedCode, 'BTC/USDT', 90);
-      
+      const result = await runBacktest(generatedCode, "BTC/USDT", 90);
+
       setBacktestResult(result);
-      
+
       // Dismiss loading toast
       toast.dismiss(loadingToast);
-      
+
       // Show success toast with key metrics and visual feedback
       const isProfit = result.metrics.totalReturn >= 0;
-      toast.success(
-        isProfit ? '🎉 Backtest completed successfully!' : 'Backtest completed',
-        {
-          description: `${isProfit ? '📈' : '📉'} Return: ${result.metrics.totalReturn.toFixed(2)}% | Win Rate: ${result.metrics.winRate.toFixed(1)}% | ${result.metrics.totalTrades} trades`,
-          duration: 5000,
-        }
-      );
+      toast.success(isProfit ? "🎉 Backtest completed successfully!" : "Backtest completed", {
+        description: `${isProfit ? "📈" : "📉"} Return: ${result.metrics.totalReturn.toFixed(2)}% | Win Rate: ${result.metrics.winRate.toFixed(1)}% | ${result.metrics.totalTrades} trades`,
+        duration: 5000,
+      });
     } catch (error) {
-      console.error('Backtest error:', error);
+      console.error("Backtest error:", error);
       toast.dismiss(loadingToast);
-      toast.error('Backtest failed', {
-        description: 'Failed to run backtest simulation. Check your strategy blocks.',
+      toast.error("Backtest failed", {
+        description: "Failed to run backtest simulation. Check your strategy blocks.",
       });
       setShowBacktest(false);
     } finally {
@@ -448,43 +464,43 @@ export const BlocklyWorkspace = () => {
 
   const beautifyCode = (code: string): string => {
     if (!code) return code;
-    
-    let result = '';
+
+    let result = "";
     let indent = 0;
-    const lines = code.split('\n');
-    
+    const lines = code.split("\n");
+
     for (let line of lines) {
       const trimmed = line.trim();
       if (!trimmed) continue;
-      
+
       // Decrease indent for closing braces
-      if (trimmed.startsWith('}')) {
+      if (trimmed.startsWith("}")) {
         indent = Math.max(0, indent - 1);
       }
-      
+
       // Add indentation
-      result += '  '.repeat(indent) + trimmed + '\n';
-      
+      result += "  ".repeat(indent) + trimmed + "\n";
+
       // Increase indent for opening braces
-      if (trimmed.endsWith('{')) {
+      if (trimmed.endsWith("{")) {
         indent++;
       }
     }
-    
+
     return result;
   };
 
   const getCodeStatistics = () => {
     if (!generatedCode) return { lines: 0, chars: 0, complexity: 0 };
-    
-    const lines = generatedCode.split('\n').filter(line => line.trim()).length;
+
+    const lines = generatedCode.split("\n").filter((line) => line.trim()).length;
     const chars = generatedCode.length;
-    
+
     // Simple complexity estimation based on control structures
     const ifCount = (generatedCode.match(/if\s*\(/g) || []).length;
     const loopCount = (generatedCode.match(/while\s*\(|for\s*\(/g) || []).length;
-    const complexity = ifCount + (loopCount * 2) + Math.floor(blockCount / 5);
-    
+    const complexity = ifCount + loopCount * 2 + Math.floor(blockCount / 5);
+
     return { lines, chars, complexity };
   };
 
@@ -500,7 +516,7 @@ export const BlocklyWorkspace = () => {
     }
 
     const displayCode = beautified ? beautifyCode(code) : code;
-    const lines = displayCode.split('\n');
+    const lines = displayCode.split("\n");
 
     return (
       <div className="flex font-mono text-sm">
@@ -525,31 +541,47 @@ export const BlocklyWorkspace = () => {
   };
 
   const highlightSyntax = (line: string) => {
-    if (!line.trim()) return ' ';
-    
+    if (!line.trim()) return " ";
+
     // Simple syntax highlighting for JavaScript
-    const keywords = ['if', 'else', 'while', 'for', 'function', 'return', 'var', 'let', 'const'];
+    const keywords = ["if", "else", "while", "for", "function", "return", "var", "let", "const"];
     const parts: JSX.Element[] = [];
     let remaining = line;
     let key = 0;
 
     // Handle comments
-    if (line.trim().startsWith('//')) {
+    if (line.trim().startsWith("//")) {
       return <span className="text-green-500/70">{line}</span>;
     }
 
     // Simple tokenization
     const tokens = remaining.split(/(\s+|[{}();,])/);
-    
+
     tokens.forEach((token) => {
       if (keywords.includes(token)) {
-        parts.push(<span key={key++} className="text-purple-400 font-semibold">{token}</span>);
+        parts.push(
+          <span key={key++} className="text-purple-400 font-semibold">
+            {token}
+          </span>,
+        );
       } else if (token.match(/^['"].*['"]$/)) {
-        parts.push(<span key={key++} className="text-green-400">{token}</span>);
+        parts.push(
+          <span key={key++} className="text-green-400">
+            {token}
+          </span>,
+        );
       } else if (token.match(/^\d+$/)) {
-        parts.push(<span key={key++} className="text-orange-400">{token}</span>);
+        parts.push(
+          <span key={key++} className="text-orange-400">
+            {token}
+          </span>,
+        );
       } else if (token.match(/^[{}();,]$/)) {
-        parts.push(<span key={key++} className="text-muted-foreground">{token}</span>);
+        parts.push(
+          <span key={key++} className="text-muted-foreground">
+            {token}
+          </span>,
+        );
       } else {
         parts.push(<span key={key++}>{token}</span>);
       }
@@ -573,11 +605,7 @@ export const BlocklyWorkspace = () => {
           {/* File Operations Group */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSaveWorkspace}
-              >
+              <Button variant="outline" size="sm" onClick={handleSaveWorkspace}>
                 <Download className="w-4 h-4 mr-2" />
                 Save
               </Button>
@@ -587,14 +615,10 @@ export const BlocklyWorkspace = () => {
               <p className="text-xs text-muted-foreground mt-1">Ctrl+S</p>
             </TooltipContent>
           </Tooltip>
-          
+
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLoadWorkspace}
-              >
+              <Button variant="outline" size="sm" onClick={handleLoadWorkspace}>
                 <Upload className="w-4 h-4 mr-2" />
                 Load
               </Button>
@@ -607,11 +631,7 @@ export const BlocklyWorkspace = () => {
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowTemplates(true)}
-              >
+              <Button variant="outline" size="sm" onClick={() => setShowTemplates(true)}>
                 <BookOpen className="w-4 h-4 mr-2" />
                 Templates
               </Button>
@@ -627,11 +647,7 @@ export const BlocklyWorkspace = () => {
           {/* Execution Group */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleRunStrategy}
-              >
+              <Button variant="default" size="sm" onClick={handleRunStrategy}>
                 <Play className="w-4 h-4 mr-2" />
                 Run
               </Button>
@@ -649,13 +665,10 @@ export const BlocklyWorkspace = () => {
                 size="sm"
                 onClick={handlePreviewBacktest}
                 disabled={isBacktesting || isEmpty}
-                className={cn(
-                  "transition-all duration-200",
-                  isBacktesting && "animate-pulse"
-                )}
+                className={cn("transition-all duration-200", isBacktesting && "animate-pulse")}
               >
                 <TrendingUp className={cn("w-4 h-4 mr-2", isBacktesting && "animate-bounce")} />
-                {isBacktesting ? 'Testing...' : 'Preview Backtest'}
+                {isBacktesting ? "Testing..." : "Backtest"}
               </Button>
             </TooltipTrigger>
             <TooltipContent>
@@ -669,11 +682,7 @@ export const BlocklyWorkspace = () => {
           {/* Workspace Controls */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleUndo}
-              >
+              <Button variant="outline" size="sm" onClick={handleUndo}>
                 <Undo2 className="w-4 h-4" />
               </Button>
             </TooltipTrigger>
@@ -685,11 +694,7 @@ export const BlocklyWorkspace = () => {
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRedo}
-              >
+              <Button variant="outline" size="sm" onClick={handleRedo}>
                 <Redo2 className="w-4 h-4" />
               </Button>
             </TooltipTrigger>
@@ -704,11 +709,7 @@ export const BlocklyWorkspace = () => {
           {/* Zoom Controls */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleZoom('out')}
-              >
+              <Button variant="outline" size="sm" onClick={() => handleZoom("out")}>
                 <ZoomOut className="w-4 h-4" />
               </Button>
             </TooltipTrigger>
@@ -723,11 +724,7 @@ export const BlocklyWorkspace = () => {
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleZoom('in')}
-              >
+              <Button variant="outline" size="sm" onClick={() => handleZoom("in")}>
                 <ZoomIn className="w-4 h-4" />
               </Button>
             </TooltipTrigger>
@@ -738,11 +735,7 @@ export const BlocklyWorkspace = () => {
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCenterWorkspace}
-              >
+              <Button variant="outline" size="sm" onClick={handleCenterWorkspace}>
                 <Maximize2 className="w-4 h-4" />
               </Button>
             </TooltipTrigger>
@@ -763,7 +756,7 @@ export const BlocklyWorkspace = () => {
                 className="transition-all duration-200 hover-scale"
               >
                 <Code2 className="w-4 h-4 mr-2" />
-                {showCode ? 'Hide' : 'Code'}
+                {showCode ? "Hide" : "Code"}
               </Button>
             </TooltipTrigger>
             <TooltipContent>
@@ -778,15 +771,15 @@ export const BlocklyWorkspace = () => {
       <div className="flex-1 relative flex overflow-hidden">
         {/* Blockly Workspace */}
         <div className="flex-1 relative overflow-hidden">
-          <div 
-            ref={blocklyDiv} 
+          <div
+            ref={blocklyDiv}
             className="absolute inset-0"
-            style={{ 
-              height: '100%', 
-              width: '100%'
+            style={{
+              height: "100%",
+              width: "100%",
             }}
           />
-          
+
           {/* Welcome Screen */}
           {isEmpty && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none animate-fade-in">
@@ -797,15 +790,15 @@ export const BlocklyWorkspace = () => {
                   Start building your trading strategy by dragging blocks from the toolbox on the left.
                 </p>
                 <div className="space-y-2 text-sm text-left text-muted-foreground">
-                  <div className="flex items-start gap-2 animate-fade-in" style={{ animationDelay: '200ms' }}>
+                  <div className="flex items-start gap-2 animate-fade-in" style={{ animationDelay: "200ms" }}>
                     <span className="text-primary font-bold">1.</span>
                     <span>Choose blocks from the categories: Environment, Operators, Control, Trade, and TA Tools</span>
                   </div>
-                  <div className="flex items-start gap-2 animate-fade-in" style={{ animationDelay: '400ms' }}>
+                  <div className="flex items-start gap-2 animate-fade-in" style={{ animationDelay: "400ms" }}>
                     <span className="text-primary font-bold">2.</span>
                     <span>Connect blocks together to create your trading logic</span>
                   </div>
-                  <div className="flex items-start gap-2 animate-fade-in" style={{ animationDelay: '600ms' }}>
+                  <div className="flex items-start gap-2 animate-fade-in" style={{ animationDelay: "600ms" }}>
                     <span className="text-primary font-bold">3.</span>
                     <span>Preview the generated code and test your strategy</span>
                   </div>
@@ -857,14 +850,10 @@ export const BlocklyWorkspace = () => {
                   </Tooltip>
 
                   <Separator orientation="vertical" className="h-6 mx-1" />
-                  
+
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleExportCode}
-                      >
+                      <Button variant="ghost" size="sm" onClick={handleExportCode}>
                         <Download className="w-4 h-4" />
                       </Button>
                     </TooltipTrigger>
@@ -872,19 +861,11 @@ export const BlocklyWorkspace = () => {
                       <p>Export as .js file</p>
                     </TooltipContent>
                   </Tooltip>
-                  
+
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleCopyCode}
-                      >
-                        {copied ? (
-                          <Check className="w-4 h-4 text-green-500" />
-                        ) : (
-                          <Copy className="w-4 h-4" />
-                        )}
+                      <Button variant="ghost" size="sm" onClick={handleCopyCode}>
+                        {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -910,17 +891,21 @@ export const BlocklyWorkspace = () => {
                         </div>
                         <div>
                           <span className="text-muted-foreground">Complexity:</span>
-                          <Badge 
+                          <Badge
                             variant={
-                              getCodeStatistics().complexity < 5 ? "default" : 
-                              getCodeStatistics().complexity < 10 ? "secondary" : 
-                              "destructive"
+                              getCodeStatistics().complexity < 5
+                                ? "default"
+                                : getCodeStatistics().complexity < 10
+                                  ? "secondary"
+                                  : "destructive"
                             }
                             className="ml-1 text-xs"
                           >
-                            {getCodeStatistics().complexity < 5 ? 'Low' : 
-                             getCodeStatistics().complexity < 10 ? 'Medium' : 
-                             'High'}
+                            {getCodeStatistics().complexity < 5
+                              ? "Low"
+                              : getCodeStatistics().complexity < 10
+                                ? "Medium"
+                                : "High"}
                           </Badge>
                         </div>
                       </div>
