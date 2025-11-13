@@ -1,284 +1,99 @@
 import * as Blockly from 'blockly';
+import { taIndicators, supportResistanceIndicators } from '@/lib/taIndicators';
 
-Blockly.Blocks['ta_sma'] = {
-  init: function() {
-    this.appendValueInput("PERIOD")
-      .setCheck("Number")
-      .appendField("SMA");
-    this.appendDummyInput()
-      .appendField("period");
-    this.setInputsInline(true);
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("Simple Moving Average");
-    this.setHelpUrl("");
-  }
-};
-
-Blockly.Blocks['ta_ema'] = {
-  init: function() {
-    this.appendValueInput("PERIOD")
-      .setCheck("Number")
-      .appendField("EMA");
-    this.appendDummyInput()
-      .appendField("period");
-    this.setInputsInline(true);
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("Exponential Moving Average");
-    this.setHelpUrl("");
-  }
-};
-
-Blockly.Blocks['ta_rsi'] = {
-  init: function() {
-    this.appendValueInput("PERIOD")
-      .setCheck("Number")
-      .appendField("RSI");
-    this.appendDummyInput()
-      .appendField("period");
-    this.setInputsInline(true);
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("Relative Strength Index");
-    this.setHelpUrl("");
-  }
-};
-
-Blockly.Blocks['ta_macd'] = {
+// Support and Resistance blocks with timeframe
+Blockly.Blocks['ta_support'] = {
   init: function() {
     this.appendDummyInput()
-      .appendField("MACD");
+      .appendField("Nearest support level")
+      .appendField(new Blockly.FieldDropdown([
+        ["1m", "1m"],
+        ["5m", "5m"],
+        ["15m", "15m"],
+        ["30m", "30m"],
+        ["1h", "1h"],
+        ["4h", "4h"],
+        ["1d", "1d"],
+        ["1w", "1w"]
+      ]), "TIMEFRAME");
     this.setOutput(true, "TAValue");
     this.setStyle('ta_blocks');
-    this.setTooltip("Moving Average Convergence Divergence");
+    this.setTooltip("Nearest support level on selected timeframe");
     this.setHelpUrl("");
   }
 };
 
-Blockly.Blocks['ta_bb'] = {
-  init: function() {
-    this.appendValueInput("PERIOD")
-      .setCheck("Number")
-      .appendField("BB");
-    this.appendDummyInput()
-      .appendField("period");
-    this.setInputsInline(true);
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("Bollinger Bands");
-    this.setHelpUrl("");
-  }
-};
-
-Blockly.Blocks['ta_vwap'] = {
+Blockly.Blocks['ta_resistance'] = {
   init: function() {
     this.appendDummyInput()
-      .appendField("VWAP");
+      .appendField("Nearest resistance level")
+      .appendField(new Blockly.FieldDropdown([
+        ["1m", "1m"],
+        ["5m", "5m"],
+        ["15m", "15m"],
+        ["30m", "30m"],
+        ["1h", "1h"],
+        ["4h", "4h"],
+        ["1d", "1d"],
+        ["1w", "1w"]
+      ]), "TIMEFRAME");
     this.setOutput(true, "TAValue");
     this.setStyle('ta_blocks');
-    this.setTooltip("Volume Weighted Average Price");
+    this.setTooltip("Nearest resistance level on selected timeframe");
     this.setHelpUrl("");
   }
 };
 
-Blockly.Blocks['ta_atr'] = {
-  init: function() {
-    this.appendValueInput("PERIOD")
-      .setCheck("Number")
-      .appendField("ATR");
-    this.appendDummyInput()
-      .appendField("period");
-    this.setInputsInline(true);
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("Average True Range - volatility indicator");
-    this.setHelpUrl("");
-  }
-};
-
-Blockly.Blocks['ta_stochastic'] = {
-  init: function() {
-    this.appendValueInput("K_PERIOD")
-      .setCheck("Number")
-      .appendField("Stochastic K");
-    this.appendValueInput("D_PERIOD")
-      .setCheck("Number")
-      .appendField("D");
-    this.setInputsInline(true);
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("Stochastic Oscillator");
-    this.setHelpUrl("");
-  }
-};
-
-Blockly.Blocks['ta_adx'] = {
-  init: function() {
-    this.appendValueInput("PERIOD")
-      .setCheck("Number")
-      .appendField("ADX");
-    this.appendDummyInput()
-      .appendField("period");
-    this.setInputsInline(true);
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("Average Directional Index - trend strength");
-    this.setHelpUrl("");
-  }
-};
-
-Blockly.Blocks['ta_cci'] = {
-  init: function() {
-    this.appendValueInput("PERIOD")
-      .setCheck("Number")
-      .appendField("CCI");
-    this.appendDummyInput()
-      .appendField("period");
-    this.setInputsInline(true);
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("Commodity Channel Index");
-    this.setHelpUrl("");
-  }
-};
-
-Blockly.Blocks['ta_williams_r'] = {
-  init: function() {
-    this.appendValueInput("PERIOD")
-      .setCheck("Number")
-      .appendField("Williams %R");
-    this.appendDummyInput()
-      .appendField("period");
-    this.setInputsInline(true);
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("Williams %R - momentum indicator");
-    this.setHelpUrl("");
-  }
-};
-
-Blockly.Blocks['ta_obv'] = {
-  init: function() {
-    this.appendDummyInput()
-      .appendField("OBV");
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("On Balance Volume");
-    this.setHelpUrl("");
-  }
-};
-
-Blockly.Blocks['ta_mfi'] = {
-  init: function() {
-    this.appendValueInput("PERIOD")
-      .setCheck("Number")
-      .appendField("MFI");
-    this.appendDummyInput()
-      .appendField("period");
-    this.setInputsInline(true);
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("Money Flow Index");
-    this.setHelpUrl("");
-  }
-};
-
-Blockly.Blocks['ta_sar'] = {
-  init: function() {
-    this.appendValueInput("ACCELERATION")
-      .setCheck("Number")
-      .appendField("Parabolic SAR - Accel");
-    this.appendValueInput("MAX")
-      .setCheck("Number")
-      .appendField("Max");
-    this.setInputsInline(true);
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("Parabolic Stop and Reverse");
-    this.setHelpUrl("");
-  }
-};
-
-Blockly.Blocks['ta_ichimoku'] = {
-  init: function() {
-    this.appendDummyInput()
-      .appendField("Ichimoku Cloud");
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("Ichimoku Cloud indicator");
-    this.setHelpUrl("");
-  }
-};
-
-Blockly.Blocks['ta_vp'] = {
-  init: function() {
-    this.appendValueInput("PERIOD")
-      .setCheck("Number")
-      .appendField("Volume Profile");
-    this.appendDummyInput()
-      .appendField("period");
-    this.setInputsInline(true);
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("Volume Profile");
-    this.setHelpUrl("");
-  }
-};
-
-Blockly.Blocks['ta_keltner'] = {
-  init: function() {
-    this.appendValueInput("PERIOD")
-      .setCheck("Number")
-      .appendField("Keltner Channel");
-    this.appendDummyInput()
-      .appendField("period");
-    this.setInputsInline(true);
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("Keltner Channels");
-    this.setHelpUrl("");
-  }
-};
-
-Blockly.Blocks['ta_dmi'] = {
-  init: function() {
-    this.appendValueInput("PERIOD")
-      .setCheck("Number")
-      .appendField("DMI");
-    this.appendDummyInput()
-      .appendField("period");
-    this.setInputsInline(true);
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("Directional Movement Index");
-    this.setHelpUrl("");
-  }
-};
-
-Blockly.Blocks['ta_supertrend'] = {
-  init: function() {
-    this.appendValueInput("PERIOD")
-      .setCheck("Number")
-      .appendField("SuperTrend");
-    this.appendValueInput("MULTIPLIER")
-      .setCheck("Number")
-      .appendField("Multiplier");
-    this.setInputsInline(true);
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("SuperTrend indicator");
-    this.setHelpUrl("");
-  }
-};
-
-Blockly.Blocks['ta_pivot'] = {
-  init: function() {
-    this.appendDummyInput()
-      .appendField("Pivot Points");
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("Pivot Points (support/resistance)");
-    this.setHelpUrl("");
-  }
-};
+// Dynamically create blocks for all pandas-ta indicators
+taIndicators.forEach(indicator => {
+  const blockType = `ta_${indicator.id}`;
+  
+  Blockly.Blocks[blockType] = {
+    init: function(this: any) {
+      // Store default parameters
+      this.params = indicator.parameters.reduce((acc, param) => {
+        acc[param.name] = param.default;
+        return acc;
+      }, {} as Record<string, any>);
+      
+      // Create main field with settings button
+      const mainInput = this.appendDummyInput('MAIN');
+      mainInput.appendField(indicator.name);
+      
+      // Add settings gear icon if there are parameters
+      if (indicator.parameters.length > 0) {
+        mainInput.appendField(new Blockly.FieldImage(
+          'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTEyLjIyIDJoLS40NGExIDEgMCAwIDAtLjk3Ljc1TDEwLjA5IDZINmExIDEgMCAwIDAtMSAxdjJsNS4yNCAyLjE1TDguNSAxNS4yOWExIDEgMCAwIDAgLjI5Ljk3bDEuNDQgMS40NGExIDEgMCAwIDAgLjk3LjI5bDQuMjktMS43MUwyMCAxOHYtMmExIDEgMCAwIDAtMS0xaC00LjA5bC0uNzItMy44MUExIDEgMCAwIDAgMTIuMjIgMTBWMloiLz48L3N2Zz4=',
+          15,
+          15,
+          "Settings"
+        ));
+      }
+      
+      this.setOutput(true, "TAValue");
+      this.setStyle('ta_blocks');
+      this.setTooltip(indicator.description);
+      this.setHelpUrl("");
+    },
+    
+    // Mutation methods for saving/loading parameters
+    mutationToDom: function(this: any) {
+      const container = Blockly.utils.xml.createElement('mutation');
+      if (this.params) {
+        Object.entries(this.params).forEach(([key, value]) => {
+          container.setAttribute(key, String(value));
+        });
+      }
+      return container;
+    },
+    
+    domToMutation: function(this: any, xmlElement: Element) {
+      this.params = this.params || {};
+      const attributes = xmlElement.attributes;
+      for (let i = 0; i < attributes.length; i++) {
+        const attr = attributes[i];
+        this.params[attr.name] = parseFloat(attr.value);
+      }
+    }
+  };
+});
