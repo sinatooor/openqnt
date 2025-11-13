@@ -7,7 +7,10 @@ Blockly.Blocks['trade_order'] = {
       .appendField(new Blockly.FieldDropdown([
         ["long", "long"],
         ["short", "short"]
-      ]), "DIRECTION");
+      ]), "DIRECTION")
+      .appendField("ID");
+    this.appendValueInput("TRADE_ID")
+      .setCheck("String");
     this.appendValueInput("SIZE")
       .setCheck("Number")
       .appendField("Size");
@@ -28,7 +31,7 @@ Blockly.Blocks['trade_order'] = {
     this.setPreviousStatement(true, "TradeAction");
     this.setNextStatement(true, "TradeAction");
     this.setStyle('trade_blocks');
-    this.setTooltip("Place a trading order");
+    this.setTooltip("Place a trading order with unique ID");
     this.setHelpUrl("");
   }
 };
@@ -40,16 +43,14 @@ Blockly.Blocks['trade_stop_loss'] = {
     this.appendValueInput("PRICE")
       .setCheck("Number");
     this.appendDummyInput()
-      .appendField("for")
-      .appendField(new Blockly.FieldDropdown([
-        ["complete trade", "complete"],
-        ["partial", "partial"]
-      ]), "TYPE");
+      .appendField("for trade ID");
+    this.appendValueInput("TRADE_ID")
+      .setCheck("String");
     this.setInputsInline(true);
     this.setPreviousStatement(true, "TradeAction");
     this.setNextStatement(true, "TradeAction");
     this.setStyle('trade_blocks');
-    this.setTooltip("Set stop loss at price");
+    this.setTooltip("Set stop loss at price for specific trade");
     this.setHelpUrl("");
   }
 };
@@ -61,16 +62,14 @@ Blockly.Blocks['trade_take_profit'] = {
     this.appendValueInput("PRICE")
       .setCheck("Number");
     this.appendDummyInput()
-      .appendField("for")
-      .appendField(new Blockly.FieldDropdown([
-        ["complete trade", "complete"],
-        ["partial", "partial"]
-      ]), "TYPE");
+      .appendField("for trade ID");
+    this.appendValueInput("TRADE_ID")
+      .setCheck("String");
     this.setInputsInline(true);
     this.setPreviousStatement(true, "TradeAction");
     this.setNextStatement(true, "TradeAction");
     this.setStyle('trade_blocks');
-    this.setTooltip("Set take profit at price");
+    this.setTooltip("Set take profit at price for specific trade");
     this.setHelpUrl("");
   }
 };
@@ -85,14 +84,14 @@ Blockly.Blocks['trade_close'] = {
         ["75%", "75"],
         ["100%", "100"]
       ]), "PERCENT")
-      .appendField("of");
-    this.appendValueInput("POSITION")
+      .appendField("of trade ID");
+    this.appendValueInput("TRADE_ID")
       .setCheck("String");
     this.setInputsInline(true);
     this.setPreviousStatement(true, "TradeAction");
     this.setNextStatement(true, "TradeAction");
     this.setStyle('trade_blocks');
-    this.setTooltip("Close percentage of position");
+    this.setTooltip("Close percentage of trade by ID");
     this.setHelpUrl("");
   }
 };
@@ -100,13 +99,13 @@ Blockly.Blocks['trade_close'] = {
 Blockly.Blocks['trade_pnl_of'] = {
   init: function() {
     this.appendDummyInput()
-      .appendField("P&L of");
-    this.appendValueInput("POSITION")
+      .appendField("P&L of trade ID");
+    this.appendValueInput("TRADE_ID")
       .setCheck("String");
     this.setInputsInline(true);
     this.setOutput(true, "Number");
     this.setStyle('trade_blocks');
-    this.setTooltip("Get profit/loss of position");
+    this.setTooltip("Get profit/loss of trade by ID");
     this.setHelpUrl("");
   }
 };
@@ -114,13 +113,13 @@ Blockly.Blocks['trade_pnl_of'] = {
 Blockly.Blocks['trade_entry_price'] = {
   init: function() {
     this.appendDummyInput()
-      .appendField("Entry price of");
-    this.appendValueInput("POSITION")
+      .appendField("Entry price of trade ID");
+    this.appendValueInput("TRADE_ID")
       .setCheck("String");
     this.setInputsInline(true);
     this.setOutput(true, "Number");
     this.setStyle('trade_blocks');
-    this.setTooltip("Get entry price of position");
+    this.setTooltip("Get entry price of trade by ID");
     this.setHelpUrl("");
   }
 };
@@ -128,13 +127,13 @@ Blockly.Blocks['trade_entry_price'] = {
 Blockly.Blocks['trade_position_size'] = {
   init: function() {
     this.appendDummyInput()
-      .appendField("Position size of");
-    this.appendValueInput("POSITION")
+      .appendField("Position size of trade ID");
+    this.appendValueInput("TRADE_ID")
       .setCheck("String");
     this.setInputsInline(true);
     this.setOutput(true, "Number");
     this.setStyle('trade_blocks');
-    this.setTooltip("Get size of position");
+    this.setTooltip("Get size of trade by ID");
     this.setHelpUrl("");
   }
 };

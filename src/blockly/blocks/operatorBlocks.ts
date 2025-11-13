@@ -137,3 +137,56 @@ Blockly.Blocks['operator_or'] = {
     this.setTooltip("Returns true if at least one condition is true");
   }
 };
+
+Blockly.Blocks['operator_not'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("NOT");
+    this.appendValueInput("VALUE")
+      .setCheck("Boolean");
+    this.setInputsInline(true);
+    this.setOutput(true, "Boolean");
+    this.setStyle('operator_blocks');
+    this.setTooltip("Inverts the boolean value");
+  }
+};
+
+Blockly.Blocks['operator_not_equals'] = {
+  init: function() {
+    this.appendValueInput("LEFT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.appendDummyInput()
+      .appendField("≠");
+    this.appendValueInput("RIGHT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.setInputsInline(true);
+    this.setOutput(true, "Boolean");
+    this.setStyle('operator_blocks');
+    this.setTooltip("Check if two values are not equal");
+  }
+};
+
+Blockly.Blocks['operator_advanced_math'] = {
+  init: function() {
+    this.appendValueInput("VALUE")
+      .setCheck("Number");
+    this.appendDummyInput()
+      .appendField(new Blockly.FieldDropdown([
+        ["abs", "abs"],
+        ["sqrt", "sqrt"],
+        ["sin", "sin"],
+        ["cos", "cos"],
+        ["tan", "tan"],
+        ["log", "log"],
+        ["ln", "ln"],
+        ["exp", "exp"],
+        ["round", "round"],
+        ["floor", "floor"],
+        ["ceil", "ceil"]
+      ]), "FUNCTION");
+    this.setInputsInline(true);
+    this.setOutput(true, "Number");
+    this.setStyle('operator_blocks');
+    this.setTooltip("Apply advanced math function");
+  }
+};
