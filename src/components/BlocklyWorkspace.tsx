@@ -1,5 +1,12 @@
 import { useEffect, useRef } from 'react';
 import * as Blockly from 'blockly';
+import {
+  environmentBlocksToolbox,
+  operatorBlocksToolbox,
+  controlBlocksToolbox,
+  tradeBlocksToolbox,
+  taBlocksToolbox,
+} from '@/blockly/blocks';
 
 export const BlocklyWorkspace = () => {
   const blocklyDiv = useRef<HTMLDivElement>(null);
@@ -68,7 +75,7 @@ export const BlocklyWorkspace = () => {
                 kind: 'label',
                 text: 'Market Data',
               },
-              // Blocks will be added in Phase 2
+              ...environmentBlocksToolbox,
             ],
           },
           {
@@ -80,7 +87,7 @@ export const BlocklyWorkspace = () => {
                 kind: 'label',
                 text: 'Comparisons & Math',
               },
-              // Blocks will be added in Phase 2
+              ...operatorBlocksToolbox,
             ],
           },
           {
@@ -92,7 +99,7 @@ export const BlocklyWorkspace = () => {
                 kind: 'label',
                 text: 'Logic & Loops',
               },
-              // Blocks will be added in Phase 2
+              ...controlBlocksToolbox,
             ],
           },
           {
@@ -104,7 +111,7 @@ export const BlocklyWorkspace = () => {
                 kind: 'label',
                 text: 'Order Actions',
               },
-              // Blocks will be added in Phase 2
+              ...tradeBlocksToolbox,
             ],
           },
           {
@@ -116,7 +123,7 @@ export const BlocklyWorkspace = () => {
                 kind: 'label',
                 text: 'Technical Indicators',
               },
-              // Blocks will be added in Phase 2
+              ...taBlocksToolbox,
             ],
           },
         ],
