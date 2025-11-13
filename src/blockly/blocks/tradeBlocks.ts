@@ -2,8 +2,7 @@ import * as Blockly from "blockly";
 
 Blockly.Blocks["trade_order"] = {
   init: function () {
-    this.appendValueInput("TRADE_ID")
-      .setCheck("String")
+    this.appendDummyInput()
       .appendField("Trade")
       .appendField(
         new Blockly.FieldDropdown([
@@ -12,7 +11,8 @@ Blockly.Blocks["trade_order"] = {
         ]),
         "DIRECTION",
       )
-      .appendField("ID");
+      .appendField("ID")
+      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
     this.appendValueInput("SIZE").setCheck("Number").appendField("size");
     this.appendDummyInput().appendField(
       new Blockly.FieldDropdown([
@@ -21,7 +21,21 @@ Blockly.Blocks["trade_order"] = {
       ]),
       "SIZE_TYPE",
     );
-    this.appendValueInput("LEVERAGE").setCheck("Number").appendField("leverage");
+    this.appendDummyInput()
+      .appendField("leverage")
+      .appendField(
+        new Blockly.FieldDropdown([
+          ["1x", "1"],
+          ["2x", "2"],
+          ["3x", "3"],
+          ["5x", "5"],
+          ["10x", "10"],
+          ["20x", "20"],
+          ["50x", "50"],
+          ["100x", "100"],
+        ]),
+        "LEVERAGE",
+      );
     this.appendDummyInput().appendField(
       new Blockly.FieldDropdown([
         ["market", "market"],
@@ -40,7 +54,9 @@ Blockly.Blocks["trade_order"] = {
 
 Blockly.Blocks["trade_stop_loss"] = {
   init: function () {
-    this.appendValueInput("TRADE_ID").setCheck("String").appendField("ID");
+    this.appendDummyInput()
+      .appendField("ID")
+      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
     this.appendValueInput("PRICE").setCheck("Number").appendField("place stop loss at");
     this.setInputsInline(true);
     this.setPreviousStatement(true, "TradeAction");
@@ -53,7 +69,9 @@ Blockly.Blocks["trade_stop_loss"] = {
 
 Blockly.Blocks["trade_take_profit"] = {
   init: function () {
-    this.appendValueInput("TRADE_ID").setCheck("String").appendField("ID");
+    this.appendDummyInput()
+      .appendField("ID")
+      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
     this.appendValueInput("PRICE").setCheck("Number").appendField("place take profit at");
     this.setInputsInline(true);
     this.setPreviousStatement(true, "TradeAction");
@@ -66,7 +84,9 @@ Blockly.Blocks["trade_take_profit"] = {
 
 Blockly.Blocks["trade_close"] = {
   init: function () {
-    this.appendValueInput("TRADE_ID").setCheck("String").appendField("ID");
+    this.appendDummyInput()
+      .appendField("ID")
+      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
     this.appendDummyInput()
       .appendField("close")
       .appendField(
@@ -89,8 +109,10 @@ Blockly.Blocks["trade_close"] = {
 
 Blockly.Blocks["trade_pnl_of"] = {
   init: function () {
-    this.appendValueInput("TRADE_ID").setCheck("String").appendField("ID");
-    this.appendDummyInput().appendField("P&L");
+    this.appendDummyInput()
+      .appendField("ID")
+      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID")
+      .appendField("P&L");
     this.setInputsInline(true);
     this.setOutput(true, "Number");
     this.setStyle("trade_blocks");
@@ -101,8 +123,10 @@ Blockly.Blocks["trade_pnl_of"] = {
 
 Blockly.Blocks["trade_entry_price"] = {
   init: function () {
-    this.appendValueInput("TRADE_ID").setCheck("String").appendField("ID");
-    this.appendDummyInput().appendField("entry price");
+    this.appendDummyInput()
+      .appendField("ID")
+      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID")
+      .appendField("entry price");
     this.setInputsInline(true);
     this.setOutput(true, "Number");
     this.setStyle("trade_blocks");
@@ -113,8 +137,10 @@ Blockly.Blocks["trade_entry_price"] = {
 
 Blockly.Blocks["trade_position_size"] = {
   init: function () {
-    this.appendValueInput("TRADE_ID").setCheck("String").appendField("ID");
-    this.appendDummyInput().appendField("position size");
+    this.appendDummyInput()
+      .appendField("ID")
+      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID")
+      .appendField("position size");
     this.setInputsInline(true);
     this.setOutput(true, "Number");
     this.setStyle("trade_blocks");

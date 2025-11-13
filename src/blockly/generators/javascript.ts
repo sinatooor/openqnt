@@ -201,51 +201,51 @@ javascriptGenerator.forBlock['control_stop'] = function() {
 // Trade blocks
 javascriptGenerator.forBlock['trade_order'] = function(block: Blockly.Block) {
   const direction = block.getFieldValue('DIRECTION');
-  const tradeId = javascriptGenerator.valueToCode(block, 'TRADE_ID', Order.NONE) || '"trade1"';
+  const tradeId = block.getFieldValue('TRADE_ID');
   const size = javascriptGenerator.valueToCode(block, 'SIZE', Order.NONE) || '0';
   const sizeType = block.getFieldValue('SIZE_TYPE');
-  const leverage = javascriptGenerator.valueToCode(block, 'LEVERAGE', Order.NONE) || '1';
+  const leverage = block.getFieldValue('LEVERAGE');
   const orderType = block.getFieldValue('ORDER_TYPE');
-  const code = `placeOrder(${tradeId}, "${direction}", ${size}, "${sizeType}", ${leverage}, "${orderType}");\n`;
+  const code = `placeOrder("${tradeId}", "${direction}", ${size}, "${sizeType}", ${leverage}, "${orderType}");\n`;
   return code;
 };
 
 javascriptGenerator.forBlock['trade_stop_loss'] = function(block: Blockly.Block) {
+  const tradeId = block.getFieldValue('TRADE_ID');
   const price = javascriptGenerator.valueToCode(block, 'PRICE', Order.NONE) || '0';
-  const tradeId = javascriptGenerator.valueToCode(block, 'TRADE_ID', Order.NONE) || '"trade1"';
-  const code = `setStopLoss(${tradeId}, ${price});\n`;
+  const code = `setStopLoss("${tradeId}", ${price});\n`;
   return code;
 };
 
 javascriptGenerator.forBlock['trade_take_profit'] = function(block: Blockly.Block) {
+  const tradeId = block.getFieldValue('TRADE_ID');
   const price = javascriptGenerator.valueToCode(block, 'PRICE', Order.NONE) || '0';
-  const tradeId = javascriptGenerator.valueToCode(block, 'TRADE_ID', Order.NONE) || '"trade1"';
-  const code = `setTakeProfit(${tradeId}, ${price});\n`;
+  const code = `setTakeProfit("${tradeId}", ${price});\n`;
   return code;
 };
 
 javascriptGenerator.forBlock['trade_close'] = function(block: Blockly.Block) {
+  const tradeId = block.getFieldValue('TRADE_ID');
   const percent = block.getFieldValue('PERCENT');
-  const tradeId = javascriptGenerator.valueToCode(block, 'TRADE_ID', Order.NONE) || '"trade1"';
-  const code = `closeTrade(${tradeId}, ${percent});\n`;
+  const code = `closeTrade("${tradeId}", ${percent});\n`;
   return code;
 };
 
 javascriptGenerator.forBlock['trade_pnl_of'] = function(block: Blockly.Block) {
-  const tradeId = javascriptGenerator.valueToCode(block, 'TRADE_ID', Order.NONE) || '"trade1"';
-  const code = `getPnL(${tradeId})`;
+  const tradeId = block.getFieldValue('TRADE_ID');
+  const code = `getPnL("${tradeId}")`;
   return [code, Order.ATOMIC];
 };
 
 javascriptGenerator.forBlock['trade_entry_price'] = function(block: Blockly.Block) {
-  const tradeId = javascriptGenerator.valueToCode(block, 'TRADE_ID', Order.NONE) || '"trade1"';
-  const code = `getEntryPrice(${tradeId})`;
+  const tradeId = block.getFieldValue('TRADE_ID');
+  const code = `getEntryPrice("${tradeId}")`;
   return [code, Order.ATOMIC];
 };
 
 javascriptGenerator.forBlock['trade_position_size'] = function(block: Blockly.Block) {
-  const tradeId = javascriptGenerator.valueToCode(block, 'TRADE_ID', Order.NONE) || '"trade1"';
-  const code = `getPositionSize(${tradeId})`;
+  const tradeId = block.getFieldValue('TRADE_ID');
+  const code = `getPositionSize("${tradeId}")`;
   return [code, Order.ATOMIC];
 };
 
