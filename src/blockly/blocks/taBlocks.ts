@@ -60,14 +60,53 @@ taIndicators.forEach(indicator => {
       const mainInput = this.appendDummyInput('MAIN');
       mainInput.appendField(indicator.name);
       
-      // Add settings gear icon if there are parameters
+      // Add settings gear icon if there are parameters - clickable
       if (indicator.parameters.length > 0) {
-        mainInput.appendField(new Blockly.FieldImage(
-          'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTEyLjIyIDJoLS40NGExIDEgMCAwIDAtLjk3Ljc1TDEwLjA5IDZINmExIDEgMCAwIDAtMSAxdjJsNS4yNCAyLjE1TDguNSAxNS4yOWExIDEgMCAwIDAgLjI5Ljk3bDEuNDQgMS40NGExIDEgMCAwIDAgLjk3LjI5bDQuMjktMS43MUwyMCAxOHYtMmExIDEgMCAwIDAtMS0xaC00LjA5bC0uNzItMy44MUExIDEgMCAwIDAgMTIuMjIgMTBWMloiLz48L3N2Zz4=',
+        const settingsImage = new Blockly.FieldImage(
+          'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTEyIDIwYTggOCAwIDEgMCAwLTE2IDggOCAwIDAgMCAwIDE2WiIvPjxwYXRoIGQ9Ik0xMiAxNmguMDEiLz48cGF0aCBkPSJNMTIgOHY0Ii8+PC9zdmc+',
           15,
           15,
           "Settings"
-        ));
+        );
+        
+        // Make settings icon clickable
+        (settingsImage as any).setOnClickHandler(() => {
+          const block = this as any;
+          const indicator = taIndicators.find(ind => ind.id === block.type.replace('ta_', ''));
+          if (!indicator) return;
+          
+          // Create configuration dialog
+          let configText = `Configure ${indicator.name}:\n\n`;
+          indicator.parameters.forEach(param => {
+            const currentValue = block.params[param.name] || param.default;
+            configText += `${param.description || param.name}: ${currentValue}\n`;
+          });
+          
+          const newValues: Record<string, number> = {};
+          indicator.parameters.forEach(param => {
+            const currentValue = block.params[param.name] || param.default;
+            const input = prompt(
+              `${param.description || param.name}\nRange: ${param.min} - ${param.max}\nCurrent: ${currentValue}`,
+              String(currentValue)
+            );
+            
+            if (input !== null) {
+              const value = parseFloat(input);
+              if (!isNaN(value) && value >= param.min! && value <= param.max!) {
+                newValues[param.name] = value;
+              } else {
+                newValues[param.name] = currentValue;
+              }
+            } else {
+              newValues[param.name] = currentValue;
+            }
+          });
+          
+          block.params = newValues;
+          block.workspace?.render();
+        });
+        
+        mainInput.appendField(settingsImage);
       }
       
       this.setOutput(true, "TAValue");
