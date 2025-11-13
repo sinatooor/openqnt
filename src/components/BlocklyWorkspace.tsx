@@ -208,6 +208,12 @@ export const BlocklyWorkspace = () => {
           },
           {
             kind: "category",
+            name: "My Blocks",
+            colour: "#a855f7",
+            custom: "PROCEDURE",
+          },
+          {
+            kind: "category",
             name: "Values",
             colour: "#64748b",
             contents: [
