@@ -10,9 +10,13 @@ import './multiTimeframeBlocks';
 // Export block configurations for toolbox
 export const environmentBlocksToolbox = [
   { kind: 'block', type: 'environment_price' },
-  { kind: 'block', type: 'environment_volume' },
-  { kind: 'block', type: 'environment_time' },
   { kind: 'block', type: 'environment_spread' },
+  { kind: 'block', type: 'environment_prev_candle_open' },
+  { kind: 'block', type: 'environment_prev_ticker_close' },
+  { kind: 'block', type: 'environment_is_market_open' },
+  { kind: 'block', type: 'environment_time' },
+  { kind: 'block', type: 'environment_day_of_week' },
+  { kind: 'block', type: 'environment_new_candle_open' },
 ];
 
 export const operatorBlocksToolbox = [
@@ -35,10 +39,13 @@ export const controlBlocksToolbox = [
 ];
 
 export const tradeBlocksToolbox = [
-  { kind: 'block', type: 'trade_buy' },
-  { kind: 'block', type: 'trade_sell' },
+  { kind: 'block', type: 'trade_order' },
   { kind: 'block', type: 'trade_stop_loss' },
   { kind: 'block', type: 'trade_take_profit' },
+  { kind: 'block', type: 'trade_close' },
+  { kind: 'block', type: 'trade_pnl_of' },
+  { kind: 'block', type: 'trade_entry_price' },
+  { kind: 'block', type: 'trade_position_size' },
 ];
 
 export const taBlocksToolbox = [
