@@ -559,7 +559,7 @@ export const BlocklyWorkspace = () => {
   };
 
   return (
-    <div className="flex-1 relative flex flex-col">
+    <div className="flex-1 h-full relative flex flex-col">
       {/* Action Bar */}
       <div className="h-14 bg-card border-b border-border flex items-center justify-between px-4 gap-3">
         <div className="flex items-center gap-3">
