@@ -595,7 +595,7 @@ export const BlocklyWorkspace = () => {
       {/* Action Bar */}
       <div className="h-14 bg-card border-b border-border flex items-center justify-between px-4 gap-3">
         <div className="flex items-center gap-3">
-          <h2 className="font-semibold text-foreground">Trading Strategy Builder</h2>
+          <h2 className="font-semibold text-foreground">Fire</h2>
           <Badge variant="secondary" className="flex items-center gap-1">
             <Blocks className="w-3 h-3" />
             {blockCount} blocks
