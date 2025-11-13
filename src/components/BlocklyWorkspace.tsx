@@ -7,8 +7,7 @@ import {
   tradeBlocksToolbox,
   taBlocksToolbox,
   multiTimeframeBlocksToolbox,
-  variableBlocksToolbox,
-  riskManagementBlocksToolbox,
+  myBlocksToolbox,
 } from "@/blockly/blocks";
 import { generateCode } from "@/blockly/generators/javascript";
 import { Button } from "@/components/ui/button";
@@ -165,27 +164,15 @@ export const BlocklyWorkspace = () => {
           },
           {
             kind: "category",
-            name: "Risk",
-            colour: "#ec4899",
-            contents: riskManagementBlocksToolbox,
-          },
-          {
-            kind: "category",
             name: "Multi-Timeframe",
             colour: "#06b6d4",
             contents: multiTimeframeBlocksToolbox,
           },
           {
             kind: "category",
-            name: "Variables",
-            colour: "#64748b",
-            contents: variableBlocksToolbox,
-          },
-          {
-            kind: "category",
             name: "My Blocks",
-            colour: "#a855f7",
-            custom: "PROCEDURE",
+            colour: "#f59e0b",
+            contents: myBlocksToolbox,
           },
           {
             kind: "category",

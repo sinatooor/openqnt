@@ -8,6 +8,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +23,8 @@ export const SettingsPanel = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [tradingOpen, setTradingOpen] = useState(true);
   const [executionOpen, setExecutionOpen] = useState(true);
+  const [dailyLossLimit, setDailyLossLimit] = useState("500");
+  const [maxDrawdown, setMaxDrawdown] = useState("10");
 
   return (
     <div className="w-80 bg-card border-r border-border flex flex-col overflow-hidden animate-fade-in">
@@ -192,6 +196,42 @@ export const SettingsPanel = () => {
                   Connect to Broker
                 </Button>
               )}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* Risk Protection */}
+        <Collapsible open={executionOpen} onOpenChange={setExecutionOpen}>
+          <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-medium text-foreground hover:text-foreground/80 transition-colors py-2">
+            <span>Risk Protection</span>
+            <ChevronDown className={`w-4 h-4 transition-transform ${executionOpen ? 'transform rotate-180' : ''}`} />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-3 pt-2">
+            <div className="space-y-2">
+              <Label htmlFor="dailyLossLimit" className="text-sm text-muted-foreground">
+                Daily Loss Limit ($)
+              </Label>
+              <Input
+                id="dailyLossLimit"
+                type="number"
+                value={dailyLossLimit}
+                onChange={(e) => setDailyLossLimit(e.target.value)}
+                className="h-9 bg-background"
+                placeholder="500"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="maxDrawdown" className="text-sm text-muted-foreground">
+                Max Drawdown (%)
+              </Label>
+              <Input
+                id="maxDrawdown"
+                type="number"
+                value={maxDrawdown}
+                onChange={(e) => setMaxDrawdown(e.target.value)}
+                className="h-9 bg-background"
+                placeholder="10"
+              />
             </div>
           </CollapsibleContent>
         </Collapsible>

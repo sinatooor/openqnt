@@ -207,21 +207,26 @@ javascriptGenerator.forBlock['trade_order'] = function(block: Blockly.Block) {
   const sizeType = block.getFieldValue('SIZE_TYPE');
   const leverage = block.getFieldValue('LEVERAGE');
   const orderType = block.getFieldValue('ORDER_TYPE');
-  const code = `placeOrder("${tradeId}", "${direction}", ${size}, "${sizeType}", ${leverage}, "${orderType}");\n`;
+  const limitPrice = orderType === 'limit' 
+    ? javascriptGenerator.valueToCode(block, 'LIMIT_PRICE', Order.NONE) || '0'
+    : 'null';
+  const code = `placeOrder("${tradeId}", "${direction}", ${size}, "${sizeType}", ${leverage}, "${orderType}", ${limitPrice});\n`;
   return code;
 };
 
 javascriptGenerator.forBlock['trade_stop_loss'] = function(block: Blockly.Block) {
   const tradeId = block.getFieldValue('TRADE_ID');
   const price = javascriptGenerator.valueToCode(block, 'PRICE', Order.NONE) || '0';
-  const code = `setStopLoss("${tradeId}", ${price});\n`;
+  const percent = javascriptGenerator.valueToCode(block, 'PERCENT', Order.NONE) || '100';
+  const code = `setStopLoss("${tradeId}", ${price}, ${percent});\n`;
   return code;
 };
 
 javascriptGenerator.forBlock['trade_take_profit'] = function(block: Blockly.Block) {
   const tradeId = block.getFieldValue('TRADE_ID');
   const price = javascriptGenerator.valueToCode(block, 'PRICE', Order.NONE) || '0';
-  const code = `setTakeProfit("${tradeId}", ${price});\n`;
+  const percent = javascriptGenerator.valueToCode(block, 'PERCENT', Order.NONE) || '100';
+  const code = `setTakeProfit("${tradeId}", ${price}, ${percent});\n`;
   return code;
 };
 
