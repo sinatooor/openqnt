@@ -47,15 +47,15 @@ export const BlocklyWorkspace = () => {
       name: 'dark',
       base: Blockly.Themes.Classic,
       componentStyles: {
-        workspaceBackgroundColour: 'hsl(var(--background))',
-        toolboxBackgroundColour: 'hsl(var(--card))',
-        toolboxForegroundColour: 'hsl(var(--foreground))',
-        flyoutBackgroundColour: 'hsl(var(--card))',
-        flyoutForegroundColour: 'hsl(var(--muted-foreground))',
+        workspaceBackgroundColour: '#181c23',
+        toolboxBackgroundColour: '#1c2028',
+        toolboxForegroundColour: '#f8fafc',
+        flyoutBackgroundColour: '#1c2028',
+        flyoutForegroundColour: '#94a3b8',
         flyoutOpacity: 0.95,
-        scrollbarColour: 'hsl(var(--muted))',
+        scrollbarColour: '#25292f',
         scrollbarOpacity: 0.5,
-        insertionMarkerColour: 'hsl(var(--primary))',
+        insertionMarkerColour: '#3b82f6',
         insertionMarkerOpacity: 0.3,
       },
       blockStyles: {
@@ -210,7 +210,7 @@ export const BlocklyWorkspace = () => {
       grid: {
         spacing: 20,
         length: 3,
-        colour: 'hsl(var(--border))',
+        colour: '#2a2e35',
         snap: true,
       },
       zoom: {
