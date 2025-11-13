@@ -676,13 +676,7 @@ export const BlocklyWorkspace = () => {
             className="absolute inset-0"
             style={{ 
               height: '100%', 
-              width: showCode 
-                ? showBacktest 
-                  ? 'calc(100% - 450px - 500px)' 
-                  : 'calc(100% - 450px)'
-                : showBacktest
-                  ? 'calc(100% - 500px)'
-                  : '100%'
+              width: '100%'
             }}
           />
           
