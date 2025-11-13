@@ -564,8 +564,7 @@ export const BlocklyWorkspace = () => {
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" onClick={() => setShowFloatingChart(!showFloatingChart)} className="transition-all duration-200">
-                <BarChart3 className="w-4 h-4 mr-2" />
+              <Button variant="outline" size="sm" onClick={() => setShowFloatingChart(!showFloatingChart)} className="transition-all duration-200">Chart<BarChart3 className="w-4 h-4 mr-2" />
                 Live Chart
               </Button>
             </TooltipTrigger>
