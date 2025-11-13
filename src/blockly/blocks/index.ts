@@ -6,6 +6,7 @@ import './tradeBlocks';
 import './taBlocks';
 import './riskManagementBlocks';
 import './multiTimeframeBlocks';
+import './variableBlocks';
 
 // Export block configurations for toolbox
 export const environmentBlocksToolbox = [
@@ -118,4 +119,15 @@ export const multiTimeframeBlocksToolbox = [
   { kind: 'block', type: 'mtf_indicator' },
   { kind: 'block', type: 'mtf_trend_aligned' },
   { kind: 'block', type: 'mtf_higher_timeframe_bias' },
+];
+
+export const variableBlocksToolbox = [
+  { kind: 'label', text: 'Variables' },
+  { kind: 'block', type: 'variables_set' },
+  { kind: 'block', type: 'variables_get' },
+  { kind: 'block', type: 'variables_change' },
+  { kind: 'label', text: 'Functions' },
+  { kind: 'block', type: 'function_define' },
+  { kind: 'block', type: 'function_call' },
+  { kind: 'block', type: 'function_return' },
 ];

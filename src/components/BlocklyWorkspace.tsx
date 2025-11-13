@@ -7,6 +7,8 @@ import {
   tradeBlocksToolbox,
   taBlocksToolbox,
   multiTimeframeBlocksToolbox,
+  variableBlocksToolbox,
+  riskManagementBlocksToolbox,
 } from "@/blockly/blocks";
 import { generateCode } from "@/blockly/generators/javascript";
 import { Button } from "@/components/ui/button";
@@ -112,6 +114,16 @@ export const BlocklyWorkspace = () => {
           colourSecondary: "#0891b2",
           colourTertiary: "#0e7490",
         },
+        variable_blocks: {
+          colourPrimary: "#64748b",
+          colourSecondary: "#475569",
+          colourTertiary: "#334155",
+        },
+        function_blocks: {
+          colourPrimary: "#a855f7",
+          colourSecondary: "#9333ea",
+          colourTertiary: "#7e22ce",
+        },
       },
     });
 
@@ -125,73 +137,49 @@ export const BlocklyWorkspace = () => {
             kind: "category",
             name: "Environment",
             colour: "#10b981",
-            contents: [
-              {
-                kind: "label",
-                text: "Market Data",
-              },
-              ...environmentBlocksToolbox,
-            ],
+            contents: environmentBlocksToolbox,
           },
           {
             kind: "category",
             name: "Operators",
             colour: "#3b82f6",
-            contents: [
-              {
-                kind: "label",
-                text: "Comparisons & Math",
-              },
-              ...operatorBlocksToolbox,
-            ],
+            contents: operatorBlocksToolbox,
           },
           {
             kind: "category",
             name: "Control",
             colour: "#f59e0b",
-            contents: [
-              {
-                kind: "label",
-                text: "Logic & Loops",
-              },
-              ...controlBlocksToolbox,
-            ],
+            contents: controlBlocksToolbox,
           },
           {
             kind: "category",
             name: "Trade",
             colour: "#06b6d4",
-            contents: [
-              {
-                kind: "label",
-                text: "Order Actions",
-              },
-              ...tradeBlocksToolbox,
-            ],
+            contents: tradeBlocksToolbox,
           },
           {
             kind: "category",
             name: "TA Tools",
             colour: "#8b5cf6",
-            contents: [
-              {
-                kind: "label",
-                text: "Technical Indicators",
-              },
-              ...taBlocksToolbox,
-            ],
+            contents: taBlocksToolbox,
+          },
+          {
+            kind: "category",
+            name: "Risk",
+            colour: "#ec4899",
+            contents: riskManagementBlocksToolbox,
           },
           {
             kind: "category",
             name: "Multi-Timeframe",
             colour: "#06b6d4",
-            contents: [
-              {
-                kind: "label",
-                text: "Cross-Timeframe Analysis",
-              },
-              ...multiTimeframeBlocksToolbox,
-            ],
+            contents: multiTimeframeBlocksToolbox,
+          },
+          {
+            kind: "category",
+            name: "Variables",
+            colour: "#64748b",
+            contents: variableBlocksToolbox,
           },
           {
             kind: "category",
@@ -204,10 +192,6 @@ export const BlocklyWorkspace = () => {
             name: "Values",
             colour: "#64748b",
             contents: [
-              {
-                kind: "label",
-                text: "Numbers & Constants",
-              },
               {
                 kind: "block",
                 type: "math_number",
