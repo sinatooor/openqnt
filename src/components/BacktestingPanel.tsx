@@ -51,7 +51,9 @@ export const BacktestingPanel = ({
     <div
       className={cn(
         'relative h-full bg-card border-l border-border transition-all duration-300 flex flex-col',
-        isExpanded ? 'w-[500px]' : 'w-12'
+        isExpanded ? 'w-[500px]' : 'w-12',
+        'md:w-[500px] md:max-w-[500px]', // Responsive width
+        !isExpanded && 'md:w-12'
       )}
     >
       {/* Toggle Button */}

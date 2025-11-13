@@ -24,14 +24,11 @@ export const SettingsPanel = () => {
   const [executionOpen, setExecutionOpen] = useState(true);
 
   return (
-    <div className="w-80 bg-card border-l border-border flex flex-col overflow-hidden">
+    <div className="w-80 bg-card border-r border-border flex flex-col overflow-hidden animate-fade-in">
       {/* Header */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-foreground">Settings</h2>
-          <Button variant="ghost" size="icon">
-            <X size={20} />
-          </Button>
         </div>
 
         {/* Mode Selector */}
