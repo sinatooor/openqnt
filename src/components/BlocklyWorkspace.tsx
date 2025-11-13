@@ -775,9 +775,9 @@ export const BlocklyWorkspace = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 relative flex">
+      <div className="flex-1 relative flex overflow-hidden">
         {/* Blockly Workspace */}
-        <div className="flex-1">
+        <div className="flex-1 relative overflow-hidden">
           <div 
             ref={blocklyDiv} 
             className="absolute inset-0"
