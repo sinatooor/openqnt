@@ -3,10 +3,13 @@ import Draggable from 'react-draggable';
 import { TradingViewChart } from './TradingViewChart';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader } from './ui/card';
-import { X, GripHorizontal, Maximize2, Minimize2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { X, GripHorizontal } from 'lucide-react';
 import { generateMockData } from '@/lib/marketData';
 import { CandlestickData } from 'lightweight-charts';
 import { cn } from '@/lib/utils';
+
+const SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'SOL/USDT', 'XRP/USDT', 'ADA/USDT'];
 interface FloatingChartModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -41,8 +44,16 @@ export const FloatingChartModal = ({
   // Update data when interval changes
   const handleIntervalChange = (newInterval: string) => {
     setCurrentInterval(newInterval);
-    // In a real app, this would fetch data for the new interval
     const data = generateMockData(currentSymbol, 90, {
+      trend: 'up'
+    });
+    setChartData(data);
+  };
+
+  // Update data when symbol changes
+  const handleSymbolChange = (newSymbol: string) => {
+    setCurrentSymbol(newSymbol);
+    const data = generateMockData(newSymbol, 90, {
       trend: 'up'
     });
     setChartData(data);
@@ -68,10 +79,20 @@ export const FloatingChartModal = ({
                 <div className="flex items-center gap-2">
                   <GripHorizontal className="w-4 h-4 text-muted-foreground" />
                   <h3 className="font-semibold text-sm">Live Chart</h3>
-                  <span className="text-xs text-muted-foreground">• {currentSymbol}</span>
+                  <Select value={currentSymbol} onValueChange={handleSymbolChange}>
+                    <SelectTrigger className="h-7 w-[140px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SYMBOLS.map((sym) => (
+                        <SelectItem key={sym} value={sym} className="text-xs">
+                          {sym}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="flex items-center gap-1">
-                  
                   <Button variant="ghost" size="sm" onClick={onClose} className="h-7 w-7 p-0 hover:bg-destructive/20 hover:text-destructive">
                     <X className="w-4 h-4" />
                   </Button>
@@ -80,7 +101,7 @@ export const FloatingChartModal = ({
             </CardHeader>
 
             {/* Chart Content */}
-            <CardContent className="flex-1 p-0 overflow-hidden">
+            <CardContent className="flex-1 p-4 overflow-hidden">
               <TradingViewChart data={chartData} symbol={currentSymbol} interval={currentInterval} onIntervalChange={handleIntervalChange} />
             </CardContent>
           </Card>
