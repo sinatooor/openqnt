@@ -1,6 +1,5 @@
 import { BlocklyWorkspace } from "@/components/BlocklyWorkspace";
 import { SettingsPanel } from "@/components/SettingsPanel";
-import { TAToolsPanel } from "@/components/TAToolsPanel";
 
 const Index = () => {
   return (
@@ -11,11 +10,6 @@ const Index = () => {
       {/* Right Panel - Settings (hidden on mobile, shown on tablet+) */}
       <div className="hidden md:block">
         <SettingsPanel />
-      </div>
-
-      {/* TA Tools Panel (hidden on mobile, shown on lg+) */}
-      <div className="hidden lg:block">
-        <TAToolsPanel />
       </div>
     </div>
   );
