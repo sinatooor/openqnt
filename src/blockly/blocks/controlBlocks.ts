@@ -64,3 +64,65 @@ Blockly.Blocks['control_forever'] = {
     this.setHelpUrl("");
   }
 };
+
+Blockly.Blocks['control_repeat_until'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Repeat until");
+    this.appendValueInput("CONDITION")
+      .setCheck("Boolean");
+    this.appendStatementInput("DO")
+      .setCheck(["TradeAction", "Control"])
+      .appendField("do");
+    this.setPreviousStatement(true, ["Control", "TradeAction"]);
+    this.setNextStatement(true, ["Control", "TradeAction"]);
+    this.setStyle('control_blocks');
+    this.setTooltip("Repeat actions until condition is true");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['control_if_else'] = {
+  init: function() {
+    this.appendValueInput("CONDITION")
+      .setCheck("Boolean")
+      .appendField("If");
+    this.appendStatementInput("DO")
+      .setCheck(["TradeAction", "Control"])
+      .appendField("then");
+    this.appendStatementInput("ELSE")
+      .setCheck(["TradeAction", "Control"])
+      .appendField("else");
+    this.setPreviousStatement(true, ["Control", "TradeAction"]);
+    this.setNextStatement(true, ["Control", "TradeAction"]);
+    this.setStyle('control_blocks');
+    this.setTooltip("Execute actions if condition is true, otherwise execute else actions");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['control_wait_until'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Wait until");
+    this.appendValueInput("CONDITION")
+      .setCheck("Boolean");
+    this.setInputsInline(true);
+    this.setPreviousStatement(true, ["Control", "TradeAction"]);
+    this.setNextStatement(true, ["Control", "TradeAction"]);
+    this.setStyle('control_blocks');
+    this.setTooltip("Pause execution until condition is true");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['control_stop'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Stop");
+    this.setPreviousStatement(true, ["Control", "TradeAction"]);
+    this.setStyle('control_blocks');
+    this.setTooltip("Stop execution");
+    this.setHelpUrl("");
+  }
+};

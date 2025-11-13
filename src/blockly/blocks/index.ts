@@ -21,21 +21,28 @@ export const environmentBlocksToolbox = [
 
 export const operatorBlocksToolbox = [
   { kind: 'block', type: 'operator_equals' },
+  { kind: 'block', type: 'operator_not_equals' },
   { kind: 'block', type: 'operator_greater' },
   { kind: 'block', type: 'operator_less' },
   { kind: 'block', type: 'operator_add' },
   { kind: 'block', type: 'operator_subtract' },
   { kind: 'block', type: 'operator_multiply' },
   { kind: 'block', type: 'operator_divide' },
+  { kind: 'block', type: 'operator_advanced_math' },
   { kind: 'block', type: 'operator_and' },
   { kind: 'block', type: 'operator_or' },
+  { kind: 'block', type: 'operator_not' },
 ];
 
 export const controlBlocksToolbox = [
   { kind: 'block', type: 'control_if' },
+  { kind: 'block', type: 'control_if_else' },
   { kind: 'block', type: 'control_repeat' },
+  { kind: 'block', type: 'control_repeat_until' },
   { kind: 'block', type: 'control_wait' },
+  { kind: 'block', type: 'control_wait_until' },
   { kind: 'block', type: 'control_forever' },
+  { kind: 'block', type: 'control_stop' },
 ];
 
 export const tradeBlocksToolbox = [
