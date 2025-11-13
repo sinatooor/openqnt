@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as Blockly from 'blockly';
 import {
   environmentBlocksToolbox,
@@ -7,10 +7,17 @@ import {
   tradeBlocksToolbox,
   taBlocksToolbox,
 } from '@/blockly/blocks';
+import { generateCode } from '@/blockly/generators/javascript';
+import { Button } from '@/components/ui/button';
+import { Code2, Copy, Check } from 'lucide-react';
+import { toast } from 'sonner';
 
 export const BlocklyWorkspace = () => {
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
+  const [generatedCode, setGeneratedCode] = useState<string>('');
+  const [showCode, setShowCode] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!blocklyDiv.current) return;
@@ -155,19 +162,76 @@ export const BlocklyWorkspace = () => {
 
     workspaceRef.current = workspace;
 
+    // Listen to workspace changes to update code
+    workspace.addChangeListener(() => {
+      const code = generateCode(workspace);
+      setGeneratedCode(code);
+    });
+
     // Cleanup on unmount
     return () => {
       workspace.dispose();
     };
   }, []);
 
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(generatedCode);
+    setCopied(true);
+    toast.success('Code copied to clipboard!');
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
-    <div className="flex-1 relative">
-      <div 
-        ref={blocklyDiv} 
-        className="absolute inset-0"
-        style={{ height: '100%', width: '100%' }}
-      />
+    <div className="flex-1 relative flex flex-col">
+      {/* Action Bar */}
+      <div className="h-12 bg-card border-b border-border flex items-center justify-between px-4">
+        <h2 className="font-semibold text-foreground">Trading Strategy Builder</h2>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowCode(!showCode)}
+        >
+          <Code2 className="w-4 h-4 mr-2" />
+          {showCode ? 'Hide Code' : 'View Code'}
+        </Button>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 relative flex">
+        {/* Blockly Workspace */}
+        <div className={showCode ? "flex-1" : "w-full"}>
+          <div 
+            ref={blocklyDiv} 
+            className="absolute inset-0"
+            style={{ height: '100%', width: showCode ? 'calc(100% - 400px)' : '100%' }}
+          />
+        </div>
+
+        {/* Code Preview Panel */}
+        {showCode && (
+          <div className="w-[400px] bg-card border-l border-border flex flex-col">
+            <div className="h-12 border-b border-border flex items-center justify-between px-4">
+              <h3 className="font-semibold text-foreground">Generated Code</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCopyCode}
+              >
+                {copied ? (
+                  <Check className="w-4 h-4 text-green-500" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
+            <div className="flex-1 overflow-auto p-4">
+              <pre className="text-sm text-foreground font-mono bg-secondary/50 p-4 rounded-lg">
+                {generatedCode || '// No blocks yet\n// Drag blocks from the toolbox to start building your strategy'}
+              </pre>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
