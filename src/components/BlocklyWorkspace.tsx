@@ -12,7 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, Undo2, Redo2, Blocks } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, Undo2, Redo2, Blocks, Wand2, FileCode, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const BlocklyWorkspace = () => {
@@ -24,6 +25,8 @@ export const BlocklyWorkspace = () => {
   const [blockCount, setBlockCount] = useState(0);
   const [zoomLevel, setZoomLevel] = useState(100);
   const [isEmpty, setIsEmpty] = useState(true);
+  const [showLineNumbers, setShowLineNumbers] = useState(true);
+  const [beautified, setBeautified] = useState(false);
 
   useEffect(() => {
     if (!blocklyDiv.current) return;
@@ -308,6 +311,118 @@ export const BlocklyWorkspace = () => {
     workspaceRef.current.undo(true);
   };
 
+  const beautifyCode = (code: string): string => {
+    if (!code) return code;
+    
+    let result = '';
+    let indent = 0;
+    const lines = code.split('\n');
+    
+    for (let line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      
+      // Decrease indent for closing braces
+      if (trimmed.startsWith('}')) {
+        indent = Math.max(0, indent - 1);
+      }
+      
+      // Add indentation
+      result += '  '.repeat(indent) + trimmed + '\n';
+      
+      // Increase indent for opening braces
+      if (trimmed.endsWith('{')) {
+        indent++;
+      }
+    }
+    
+    return result;
+  };
+
+  const getCodeStatistics = () => {
+    if (!generatedCode) return { lines: 0, chars: 0, complexity: 0 };
+    
+    const lines = generatedCode.split('\n').filter(line => line.trim()).length;
+    const chars = generatedCode.length;
+    
+    // Simple complexity estimation based on control structures
+    const ifCount = (generatedCode.match(/if\s*\(/g) || []).length;
+    const loopCount = (generatedCode.match(/while\s*\(|for\s*\(/g) || []).length;
+    const complexity = ifCount + (loopCount * 2) + Math.floor(blockCount / 5);
+    
+    return { lines, chars, complexity };
+  };
+
+  const renderCodeWithLineNumbers = (code: string) => {
+    if (!code) {
+      return (
+        <div className="text-muted-foreground italic">
+          // No blocks yet
+          <br />
+          // Drag blocks from the toolbox to start building your strategy
+        </div>
+      );
+    }
+
+    const displayCode = beautified ? beautifyCode(code) : code;
+    const lines = displayCode.split('\n');
+
+    return (
+      <div className="flex font-mono text-sm">
+        {showLineNumbers && (
+          <div className="select-none pr-4 text-muted-foreground/50 text-right border-r border-border">
+            {lines.map((_, i) => (
+              <div key={i} className="leading-6">
+                {i + 1}
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="flex-1 pl-4">
+          {lines.map((line, i) => (
+            <div key={i} className="leading-6">
+              <code className="syntax-highlight">{highlightSyntax(line)}</code>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const highlightSyntax = (line: string) => {
+    if (!line.trim()) return ' ';
+    
+    // Simple syntax highlighting for JavaScript
+    const keywords = ['if', 'else', 'while', 'for', 'function', 'return', 'var', 'let', 'const'];
+    const parts: JSX.Element[] = [];
+    let remaining = line;
+    let key = 0;
+
+    // Handle comments
+    if (line.trim().startsWith('//')) {
+      return <span className="text-green-500/70">{line}</span>;
+    }
+
+    // Simple tokenization
+    const tokens = remaining.split(/(\s+|[{}();,])/);
+    
+    tokens.forEach((token) => {
+      if (keywords.includes(token)) {
+        parts.push(<span key={key++} className="text-purple-400 font-semibold">{token}</span>);
+      } else if (token.match(/^['"].*['"]$/)) {
+        parts.push(<span key={key++} className="text-green-400">{token}</span>);
+      } else if (token.match(/^\d+$/)) {
+        parts.push(<span key={key++} className="text-orange-400">{token}</span>);
+      } else if (token.match(/^[{}();,]$/)) {
+        parts.push(<span key={key++} className="text-muted-foreground">{token}</span>);
+      } else {
+        parts.push(<span key={key++}>{token}</span>);
+      }
+    });
+
+    return <>{parts}</>;
+  };
+
   return (
     <div className="flex-1 relative flex flex-col">
       {/* Action Bar */}
@@ -491,7 +606,7 @@ export const BlocklyWorkspace = () => {
           <div 
             ref={blocklyDiv} 
             className="absolute inset-0"
-            style={{ height: '100%', width: showCode ? 'calc(100% - 400px)' : '100%' }}
+            style={{ height: '100%', width: showCode ? 'calc(100% - 450px)' : '100%' }}
           />
           
           {/* Welcome Screen */}
@@ -524,49 +639,124 @@ export const BlocklyWorkspace = () => {
 
         {/* Code Preview Panel */}
         {showCode && (
-          <div className="w-[400px] bg-card border-l border-border flex flex-col">
-            <div className="h-12 border-b border-border flex items-center justify-between px-4">
-              <h3 className="font-semibold text-foreground">Generated Code</h3>
-              <div className="flex gap-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleExportCode}
-                    >
-                      <Download className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Export as .js file</p>
-                  </TooltipContent>
-                </Tooltip>
-                
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleCopyCode}
-                    >
-                      {copied ? (
-                        <Check className="w-4 h-4 text-green-500" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Copy to clipboard</p>
-                  </TooltipContent>
-                </Tooltip>
+          <div className="w-[450px] bg-card border-l border-border flex flex-col">
+            {/* Code Panel Header */}
+            <div className="border-b border-border p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-foreground flex items-center gap-2">
+                  <FileCode className="w-4 h-4" />
+                  Generated Code
+                </h3>
+                <div className="flex gap-1">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={beautified ? "secondary" : "ghost"}
+                        size="sm"
+                        onClick={() => setBeautified(!beautified)}
+                      >
+                        <Wand2 className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Beautify code</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={showLineNumbers ? "secondary" : "ghost"}
+                        size="sm"
+                        onClick={() => setShowLineNumbers(!showLineNumbers)}
+                      >
+                        <BarChart3 className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Toggle line numbers</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Separator orientation="vertical" className="h-6 mx-1" />
+                  
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleExportCode}
+                      >
+                        <Download className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Export as .js file</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleCopyCode}
+                      >
+                        {copied ? (
+                          <Check className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Copy to clipboard</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
               </div>
+
+              {/* Code Statistics */}
+              {generatedCode && (
+                <Card className="bg-secondary/30">
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-4">
+                        <div>
+                          <span className="text-muted-foreground">Lines:</span>
+                          <span className="ml-1 font-semibold text-foreground">{getCodeStatistics().lines}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Blocks:</span>
+                          <span className="ml-1 font-semibold text-foreground">{blockCount}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Complexity:</span>
+                          <Badge 
+                            variant={
+                              getCodeStatistics().complexity < 5 ? "default" : 
+                              getCodeStatistics().complexity < 10 ? "secondary" : 
+                              "destructive"
+                            }
+                            className="ml-1 text-xs"
+                          >
+                            {getCodeStatistics().complexity < 5 ? 'Low' : 
+                             getCodeStatistics().complexity < 10 ? 'Medium' : 
+                             'High'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
-            <div className="flex-1 overflow-auto p-4">
-              <pre className="text-sm text-foreground font-mono bg-secondary/50 p-4 rounded-lg whitespace-pre-wrap break-words">
-                {generatedCode || '// No blocks yet\n// Drag blocks from the toolbox to start building your strategy'}
-              </pre>
+
+            {/* Code Display Area */}
+            <div className="flex-1 overflow-auto p-4 bg-secondary/20">
+              <div className="bg-background/50 rounded-lg p-4 border border-border">
+                {renderCodeWithLineNumbers(generatedCode)}
+              </div>
             </div>
           </div>
         )}
