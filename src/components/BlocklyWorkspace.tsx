@@ -9,7 +9,9 @@ import {
 } from '@/blockly/blocks';
 import { generateCode } from '@/blockly/generators/javascript';
 import { Button } from '@/components/ui/button';
-import { Code2, Copy, Check, Download, Play } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Separator } from '@/components/ui/separator';
+import { Code2, Copy, Check, Download, Play, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const BlocklyWorkspace = () => {
@@ -259,37 +261,80 @@ export const BlocklyWorkspace = () => {
       <div className="h-14 bg-card border-b border-border flex items-center justify-between px-4 gap-3">
         <h2 className="font-semibold text-foreground">Trading Strategy Builder</h2>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSaveWorkspace}
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Save
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleLoadWorkspace}
-          >
-            Load
-          </Button>
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handleRunStrategy}
-          >
-            <Play className="w-4 h-4 mr-2" />
-            Run
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowCode(!showCode)}
-          >
-            <Code2 className="w-4 h-4 mr-2" />
-            {showCode ? 'Hide' : 'Code'}
-          </Button>
+          {/* File Operations Group */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSaveWorkspace}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Save
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Save workspace as XML file</p>
+              <p className="text-xs text-muted-foreground mt-1">Ctrl+S</p>
+            </TooltipContent>
+          </Tooltip>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLoadWorkspace}
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Load
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Load workspace from XML file</p>
+              <p className="text-xs text-muted-foreground mt-1">Ctrl+O</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Separator orientation="vertical" className="h-6" />
+
+          {/* Execution Group */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleRunStrategy}
+              >
+                <Play className="w-4 h-4 mr-2" />
+                Run
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Execute trading strategy</p>
+              <p className="text-xs text-muted-foreground mt-1">Ctrl+Enter</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Separator orientation="vertical" className="h-6" />
+
+          {/* View Group */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCode(!showCode)}
+              >
+                <Code2 className="w-4 h-4 mr-2" />
+                {showCode ? 'Hide' : 'Code'}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Toggle code preview panel</p>
+              <p className="text-xs text-muted-foreground mt-1">Ctrl+K</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
@@ -310,26 +355,39 @@ export const BlocklyWorkspace = () => {
             <div className="h-12 border-b border-border flex items-center justify-between px-4">
               <h3 className="font-semibold text-foreground">Generated Code</h3>
               <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleExportCode}
-                  title="Export as .js file"
-                >
-                  <Download className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCopyCode}
-                  title="Copy to clipboard"
-                >
-                  {copied ? (
-                    <Check className="w-4 h-4 text-green-500" />
-                  ) : (
-                    <Copy className="w-4 h-4" />
-                  )}
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleExportCode}
+                    >
+                      <Download className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Export as .js file</p>
+                  </TooltipContent>
+                </Tooltip>
+                
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleCopyCode}
+                    >
+                      {copied ? (
+                        <Check className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Copy to clipboard</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
             </div>
             <div className="flex-1 overflow-auto p-4">
