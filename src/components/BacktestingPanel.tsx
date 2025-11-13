@@ -86,6 +86,25 @@ export const BacktestingPanel = ({
             )}
           </div>
 
+          {/* Loading State */}
+          {isLoading && (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 gap-4">
+              <div className="relative">
+                <div className="h-20 w-20 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                <Activity className="h-8 w-8 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+              </div>
+              <div className="text-center space-y-2">
+                <h3 className="font-semibold text-foreground">Running Backtest</h3>
+                <p className="text-sm text-muted-foreground">Analyzing historical data with your strategy...</p>
+                <div className="flex items-center gap-2 justify-center mt-4">
+                  <div className="h-2 w-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="h-2 w-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="h-2 w-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Content */}
           {result && !isLoading && (
             <ScrollArea className="flex-1">
@@ -99,7 +118,7 @@ export const BacktestingPanel = ({
                   
                   <div className="grid grid-cols-2 gap-3">
                     {/* Total Return */}
-                    <Card className="bg-background/50">
+                    <Card className="bg-background/50 animate-scale-in hover-scale transition-all duration-200">
                       <CardHeader className="pb-2">
                         <CardTitle className="text-xs text-muted-foreground flex items-center gap-1">
                           <DollarSign className="h-3 w-3" />
@@ -109,14 +128,14 @@ export const BacktestingPanel = ({
                       <CardContent>
                         <div
                           className={cn(
-                            'text-2xl font-bold flex items-center gap-1',
+                            'text-2xl font-bold flex items-center gap-1 transition-colors duration-300',
                             result.metrics.totalReturn >= 0 ? 'text-block-environment' : 'text-destructive'
                           )}
                         >
                           {result.metrics.totalReturn >= 0 ? (
-                            <TrendingUp className="h-5 w-5" />
+                            <TrendingUp className="h-5 w-5 animate-pulse" />
                           ) : (
-                            <TrendingDown className="h-5 w-5" />
+                            <TrendingDown className="h-5 w-5 animate-pulse" />
                           )}
                           {result.metrics.totalReturn.toFixed(2)}%
                         </div>
@@ -124,7 +143,7 @@ export const BacktestingPanel = ({
                     </Card>
 
                     {/* Win Rate */}
-                    <Card className="bg-background/50">
+                    <Card className="bg-background/50 animate-scale-in hover-scale transition-all duration-200" style={{ animationDelay: '50ms' }}>
                       <CardHeader className="pb-2">
                         <CardTitle className="text-xs text-muted-foreground flex items-center gap-1">
                           <Target className="h-3 w-3" />
@@ -140,7 +159,7 @@ export const BacktestingPanel = ({
                     </Card>
 
                     {/* Max Drawdown */}
-                    <Card className="bg-background/50">
+                    <Card className="bg-background/50 animate-scale-in hover-scale transition-all duration-200" style={{ animationDelay: '100ms' }}>
                       <CardHeader className="pb-2">
                         <CardTitle className="text-xs text-muted-foreground">Max Drawdown</CardTitle>
                       </CardHeader>
@@ -152,7 +171,7 @@ export const BacktestingPanel = ({
                     </Card>
 
                     {/* Sharpe Ratio */}
-                    <Card className="bg-background/50">
+                    <Card className="bg-background/50 animate-scale-in hover-scale transition-all duration-200" style={{ animationDelay: '150ms' }}>
                       <CardHeader className="pb-2">
                         <CardTitle className="text-xs text-muted-foreground">Sharpe Ratio</CardTitle>
                       </CardHeader>
@@ -164,7 +183,7 @@ export const BacktestingPanel = ({
                     </Card>
 
                     {/* Total Trades */}
-                    <Card className="bg-background/50">
+                    <Card className="bg-background/50 animate-scale-in hover-scale transition-all duration-200" style={{ animationDelay: '200ms' }}>
                       <CardHeader className="pb-2">
                         <CardTitle className="text-xs text-muted-foreground">Total Trades</CardTitle>
                       </CardHeader>
@@ -180,7 +199,7 @@ export const BacktestingPanel = ({
                     </Card>
 
                     {/* Profit Factor */}
-                    <Card className="bg-background/50">
+                    <Card className="bg-background/50 animate-scale-in hover-scale transition-all duration-200" style={{ animationDelay: '250ms' }}>
                       <CardHeader className="pb-2">
                         <CardTitle className="text-xs text-muted-foreground">Profit Factor</CardTitle>
                       </CardHeader>
@@ -223,14 +242,18 @@ export const BacktestingPanel = ({
                       </Card>
                     ) : (
                       result.trades.map((trade, index) => (
-                        <Card key={index} className="bg-background/50">
+                        <Card 
+                          key={index} 
+                          className="bg-background/50 animate-fade-in hover-scale transition-all duration-200"
+                          style={{ animationDelay: `${index * 30}ms` }}
+                        >
                           <CardContent className="py-3 px-4">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <Badge
                                   variant={trade.type === 'buy' ? 'default' : 'secondary'}
                                   className={cn(
-                                    'font-semibold',
+                                    'font-semibold transition-all duration-200',
                                     trade.type === 'buy'
                                       ? 'bg-block-environment text-block-environment-foreground'
                                       : 'bg-destructive text-destructive-foreground'
@@ -246,7 +269,7 @@ export const BacktestingPanel = ({
                                 {trade.profit !== undefined && (
                                   <span
                                     className={cn(
-                                      'text-sm font-semibold',
+                                      'text-sm font-semibold transition-colors duration-200',
                                       trade.profit >= 0 ? 'text-block-environment' : 'text-destructive'
                                     )}
                                   >

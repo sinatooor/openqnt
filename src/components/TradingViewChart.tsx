@@ -9,7 +9,8 @@ import {
 } from 'lightweight-charts';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export interface TradeMarker {
   time: Time;
@@ -18,9 +19,17 @@ export interface TradeMarker {
   profit?: number;
 }
 
+export interface Indicator {
+  type: 'sma' | 'ema' | 'bb-upper' | 'bb-lower' | 'bb-middle';
+  period: number;
+  data: Array<{ time: Time; value: number }>;
+  color: string;
+}
+
 export interface ChartProps {
   data: CandlestickData[];
   trades?: TradeMarker[];
+  indicators?: Indicator[];
   symbol?: string;
   interval?: string;
   onIntervalChange?: (interval: string) => void;
@@ -31,6 +40,7 @@ const INTERVALS = ['1H', '4H', '1D', '1W'];
 export const TradingViewChart = ({
   data,
   trades = [],
+  indicators = [],
   symbol = 'BTC/USDT',
   interval = '1D',
   onIntervalChange,
@@ -38,7 +48,9 @@ export const TradingViewChart = ({
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candlestickSeriesRef = useRef<any>(null);
+  const indicatorSeriesRefs = useRef<any[]>([]);
   const [mounted, setMounted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Initialize chart
   useEffect(() => {
@@ -97,6 +109,7 @@ export const TradingViewChart = ({
     chartRef.current = chart;
     candlestickSeriesRef.current = candlestickSeries;
     setMounted(true);
+    setIsLoading(false);
 
     // Handle resize
     const handleResize = () => {
@@ -126,6 +139,46 @@ export const TradingViewChart = ({
     chartRef.current?.timeScale().fitContent();
   }, [data, mounted]);
 
+  // Add indicator overlays
+  useEffect(() => {
+    if (!chartRef.current || !mounted || indicators.length === 0) return;
+
+    // Clear existing indicator series
+    indicatorSeriesRefs.current.forEach((series) => {
+      try {
+        chartRef.current?.removeSeries(series);
+      } catch (e) {
+        // Series might already be removed
+      }
+    });
+    indicatorSeriesRefs.current = [];
+
+    // Add new indicator series
+    indicators.forEach((indicator) => {
+      const lineSeries = (chartRef.current as any).addLineSeries({
+        color: indicator.color,
+        lineWidth: 2,
+        lineStyle: indicator.type.includes('bb') ? LineStyle.Dashed : LineStyle.Solid,
+        priceLineVisible: false,
+        lastValueVisible: false,
+      });
+
+      lineSeries.setData(indicator.data);
+      indicatorSeriesRefs.current.push(lineSeries);
+    });
+
+    return () => {
+      indicatorSeriesRefs.current.forEach((series) => {
+        try {
+          chartRef.current?.removeSeries(series);
+        } catch (e) {
+          // Series might already be removed
+        }
+      });
+      indicatorSeriesRefs.current = [];
+    };
+  }, [indicators, mounted]);
+
   // Add trade markers
   useEffect(() => {
     if (!candlestickSeriesRef.current || !mounted || trades.length === 0) return;
@@ -146,25 +199,31 @@ export const TradingViewChart = ({
   const sellTrades = trades.filter((t) => t.type === 'sell').length;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 animate-fade-in">
       {/* Chart Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h3 className="text-lg font-semibold text-foreground">{symbol}</h3>
-          <Badge variant="secondary">{interval}</Badge>
+          <Badge variant="secondary" className="animate-scale-in">{interval}</Badge>
         </div>
         <div className="flex items-center gap-2">
           {totalTrades > 0 && (
             <>
-              <Badge variant="outline" className="gap-1">
+              <Badge variant="outline" className="gap-1 animate-scale-in hover-scale">
                 <TrendingUp className="h-3 w-3 text-block-environment" />
                 {buyTrades}
               </Badge>
-              <Badge variant="outline" className="gap-1">
+              <Badge variant="outline" className="gap-1 animate-scale-in hover-scale">
                 <TrendingDown className="h-3 w-3 text-destructive" />
                 {sellTrades}
               </Badge>
             </>
+          )}
+          {indicators.length > 0 && (
+            <Badge variant="outline" className="gap-1 animate-scale-in">
+              <Activity className="h-3 w-3" />
+              {indicators.length} indicators
+            </Badge>
           )}
         </div>
       </div>
@@ -177,6 +236,7 @@ export const TradingViewChart = ({
             variant={interval === int ? 'default' : 'outline'}
             size="sm"
             onClick={() => onIntervalChange?.(int)}
+            className="transition-all duration-200 hover-scale"
           >
             {int}
           </Button>
@@ -186,8 +246,20 @@ export const TradingViewChart = ({
       {/* Chart Container */}
       <div
         ref={chartContainerRef}
-        className="w-full rounded-lg border border-border bg-card overflow-hidden"
-      />
+        className={cn(
+          "w-full rounded-lg border border-border bg-card overflow-hidden relative transition-all duration-300",
+          isLoading && "animate-pulse"
+        )}
+      >
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-card/50 backdrop-blur-sm z-10">
+            <div className="flex flex-col items-center gap-2">
+              <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm text-muted-foreground">Loading chart...</span>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

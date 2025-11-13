@@ -17,6 +17,7 @@ import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2,
 import { toast } from 'sonner';
 import { BacktestingPanel } from './BacktestingPanel';
 import { runBacktest, BacktestResult } from '@/lib/backtestEngine';
+import { cn } from '@/lib/utils';
 
 export const BlocklyWorkspace = () => {
   const blocklyDiv = useRef<HTMLDivElement>(null);
@@ -331,7 +332,8 @@ export const BlocklyWorkspace = () => {
     // Start backtesting
     setIsBacktesting(true);
     setShowBacktest(true);
-    toast.info('Running backtest simulation...', {
+    
+    const loadingToast = toast.loading('Running backtest simulation...', {
       description: 'Analyzing historical data with your strategy',
     });
 
@@ -341,12 +343,21 @@ export const BlocklyWorkspace = () => {
       
       setBacktestResult(result);
       
-      // Show success toast with key metrics
-      toast.success('Backtest completed!', {
-        description: `Total Return: ${result.metrics.totalReturn.toFixed(2)}% | Win Rate: ${result.metrics.winRate.toFixed(1)}% | ${result.metrics.totalTrades} trades`,
-      });
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
+      
+      // Show success toast with key metrics and visual feedback
+      const isProfit = result.metrics.totalReturn >= 0;
+      toast.success(
+        isProfit ? '🎉 Backtest completed successfully!' : 'Backtest completed',
+        {
+          description: `${isProfit ? '📈' : '📉'} Return: ${result.metrics.totalReturn.toFixed(2)}% | Win Rate: ${result.metrics.winRate.toFixed(1)}% | ${result.metrics.totalTrades} trades`,
+          duration: 5000,
+        }
+      );
     } catch (error) {
       console.error('Backtest error:', error);
+      toast.dismiss(loadingToast);
       toast.error('Backtest failed', {
         description: 'Failed to run backtest simulation. Check your strategy blocks.',
       });
@@ -547,8 +558,12 @@ export const BlocklyWorkspace = () => {
                 size="sm"
                 onClick={handlePreviewBacktest}
                 disabled={isBacktesting || isEmpty}
+                className={cn(
+                  "transition-all duration-200",
+                  isBacktesting && "animate-pulse"
+                )}
               >
-                <TrendingUp className="w-4 h-4 mr-2" />
+                <TrendingUp className={cn("w-4 h-4 mr-2", isBacktesting && "animate-bounce")} />
                 {isBacktesting ? 'Testing...' : 'Preview Backtest'}
               </Button>
             </TooltipTrigger>
@@ -654,6 +669,7 @@ export const BlocklyWorkspace = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowCode(!showCode)}
+                className="transition-all duration-200 hover-scale"
               >
                 <Code2 className="w-4 h-4 mr-2" />
                 {showCode ? 'Hide' : 'Code'}
@@ -682,23 +698,23 @@ export const BlocklyWorkspace = () => {
           
           {/* Welcome Screen */}
           {isEmpty && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="bg-card/95 border border-border rounded-lg p-8 max-w-md text-center shadow-lg backdrop-blur-sm">
-                <Blocks className="w-16 h-16 mx-auto mb-4 text-primary" />
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none animate-fade-in">
+              <div className="bg-card/95 border border-border rounded-lg p-8 max-w-md text-center shadow-lg backdrop-blur-sm animate-scale-in">
+                <Blocks className="w-16 h-16 mx-auto mb-4 text-primary animate-pulse" />
                 <h3 className="text-xl font-semibold text-foreground mb-2">Welcome to Strategy Builder</h3>
                 <p className="text-muted-foreground mb-6">
                   Start building your trading strategy by dragging blocks from the toolbox on the left.
                 </p>
                 <div className="space-y-2 text-sm text-left text-muted-foreground">
-                  <div className="flex items-start gap-2">
+                  <div className="flex items-start gap-2 animate-fade-in" style={{ animationDelay: '200ms' }}>
                     <span className="text-primary font-bold">1.</span>
                     <span>Choose blocks from the categories: Environment, Operators, Control, Trade, and TA Tools</span>
                   </div>
-                  <div className="flex items-start gap-2">
+                  <div className="flex items-start gap-2 animate-fade-in" style={{ animationDelay: '400ms' }}>
                     <span className="text-primary font-bold">2.</span>
                     <span>Connect blocks together to create your trading logic</span>
                   </div>
-                  <div className="flex items-start gap-2">
+                  <div className="flex items-start gap-2 animate-fade-in" style={{ animationDelay: '600ms' }}>
                     <span className="text-primary font-bold">3.</span>
                     <span>Preview the generated code and test your strategy</span>
                   </div>
