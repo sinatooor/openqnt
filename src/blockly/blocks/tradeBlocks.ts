@@ -3,8 +3,9 @@ import * as Blockly from "blockly";
 Blockly.Blocks["trade_order"] = {
   init: function () {
     this.appendDummyInput()
-      .appendField("Set trade ID as")
-      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
+      .appendField("Trade ID:");
+    this.appendValueInput("TRADE_ID")
+      .setCheck("String");
     this.appendDummyInput()
       .appendField("Trade")
       .appendField(
@@ -14,16 +15,19 @@ Blockly.Blocks["trade_order"] = {
         ]),
         "DIRECTION",
       );
-    this.appendValueInput("SIZE").setCheck("Number").appendField("size");
-    this.appendDummyInput().appendField(
-      new Blockly.FieldDropdown([
-        ["value", "value"],
-        ["percent", "percent"],
-      ]),
-      "SIZE_TYPE",
-    );
+    this.appendValueInput("SIZE")
+      .setCheck("Number")
+      .appendField("Size");
     this.appendDummyInput()
-      .appendField("leverage")
+      .appendField(
+        new Blockly.FieldDropdown([
+          ["trade value", "value"],
+          ["percent of capital", "percent"],
+        ]),
+        "SIZE_TYPE",
+      );
+    this.appendDummyInput()
+      .appendField("Leverage")
       .appendField(
         new Blockly.FieldDropdown([
           ["1x", "1"],
@@ -38,6 +42,7 @@ Blockly.Blocks["trade_order"] = {
         "LEVERAGE",
       );
     this.appendDummyInput()
+      .appendField("Order type:")
       .appendField(
         new Blockly.FieldDropdown([
           ["market", "market"],
@@ -57,7 +62,7 @@ Blockly.Blocks["trade_order"] = {
     if (value === 'limit' && !limitPriceInput) {
       this.appendValueInput("LIMIT_PRICE")
         .setCheck("Number")
-        .appendField("at price");
+        .appendField("At price");
     } else if (value === 'market' && limitPriceInput) {
       this.removeInput('LIMIT_PRICE');
     }
@@ -66,54 +71,116 @@ Blockly.Blocks["trade_order"] = {
 
 Blockly.Blocks["trade_stop_loss"] = {
   init: function () {
-    this.appendValueInput("PRICE").setCheck("Number").appendField("Place stop loss at");
-    this.appendValueInput("PERCENT").setCheck("Number").appendField("close");
+    this.appendValueInput("PRICE")
+      .setCheck("Number")
+      .appendField("Place stop loss at");
     this.appendDummyInput()
-      .appendField("%")
-      .appendField("for trade ID")
-      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
-    this.setInputsInline(true);
+      .appendField(
+        new Blockly.FieldDropdown([
+          ["full", "full"],
+          ["partial", "partial"],
+        ], this.updateCloseType_.bind(this)),
+        "CLOSE_TYPE",
+      );
+    this.appendDummyInput()
+      .appendField("for trade");
+    this.appendValueInput("TRADE_ID")
+      .setCheck("String")
+      .appendField("id");
     this.setPreviousStatement(true, "TradeAction");
     this.setNextStatement(true, "TradeAction");
     this.setStyle("trade_blocks");
-    this.setTooltip("Set stop loss at price with percentage to close");
+    this.setTooltip("Set stop loss at price");
     this.setHelpUrl("");
   },
+  
+  updateCloseType_: function(value: string) {
+    const percentInput = this.getInput('PERCENT');
+    if (value === 'partial' && !percentInput) {
+      // Find the position to insert after CLOSE_TYPE
+      const closeTypeIndex = this.inputList.findIndex(input => input.name === 'CLOSE_TYPE');
+      this.appendValueInput("PERCENT")
+        .setCheck("Number")
+        .appendField("close")
+        .appendField(
+          new Blockly.FieldDropdown([
+            ["25%", "25"],
+            ["50%", "50"],
+            ["75%", "75"],
+          ]),
+          "PERCENT_VALUE",
+        )
+        .appendField("of trade");
+      // Move PERCENT input after CLOSE_TYPE
+      if (closeTypeIndex >= 0) {
+        this.moveInputBefore('PERCENT', 'TRADE_ID');
+      }
+    } else if (value === 'full' && percentInput) {
+      this.removeInput('PERCENT');
+    }
+  }
 };
 
 Blockly.Blocks["trade_take_profit"] = {
   init: function () {
-    this.appendValueInput("PRICE").setCheck("Number").appendField("Place take profit at");
-    this.appendValueInput("PERCENT").setCheck("Number").appendField("close");
+    this.appendValueInput("PRICE")
+      .setCheck("Number")
+      .appendField("Place take profit at");
     this.appendDummyInput()
-      .appendField("%")
-      .appendField("for trade ID")
-      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
-    this.setInputsInline(true);
+      .appendField(
+        new Blockly.FieldDropdown([
+          ["full", "full"],
+          ["partial", "partial"],
+        ], this.updateCloseType_.bind(this)),
+        "CLOSE_TYPE",
+      );
+    this.appendDummyInput()
+      .appendField("for trade");
+    this.appendValueInput("TRADE_ID")
+      .setCheck("String")
+      .appendField("id");
     this.setPreviousStatement(true, "TradeAction");
     this.setNextStatement(true, "TradeAction");
     this.setStyle("trade_blocks");
-    this.setTooltip("Set take profit at price with percentage to close");
+    this.setTooltip("Set take profit at price");
     this.setHelpUrl("");
   },
+  
+  updateCloseType_: function(value: string) {
+    const percentInput = this.getInput('PERCENT');
+    if (value === 'partial' && !percentInput) {
+      const closeTypeIndex = this.inputList.findIndex(input => input.name === 'CLOSE_TYPE');
+      this.appendValueInput("PERCENT")
+        .setCheck("Number")
+        .appendField("close")
+        .appendField(
+          new Blockly.FieldDropdown([
+            ["25%", "25"],
+            ["50%", "50"],
+            ["75%", "75"],
+          ]),
+          "PERCENT_VALUE",
+        )
+        .appendField("of trade");
+      if (closeTypeIndex >= 0) {
+        this.moveInputBefore('PERCENT', 'TRADE_ID');
+      }
+    } else if (value === 'full' && percentInput) {
+      this.removeInput('PERCENT');
+    }
+  }
 };
 
 Blockly.Blocks["trade_close"] = {
   init: function () {
     this.appendDummyInput()
-      .appendField("Close")
-      .appendField(
-        new Blockly.FieldDropdown([
-          ["25%", "25"],
-          ["50%", "50"],
-          ["75%", "75"],
-          ["100%", "100"],
-        ]),
-        "PERCENT",
-      )
-      .appendField("for trade ID")
-      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
-    this.setInputsInline(true);
+      .appendField("Close");
+    this.appendValueInput("PERCENT")
+      .setCheck("Number")
+      .appendField("% of trade");
+    this.appendValueInput("TRADE_ID")
+      .setCheck("String")
+      .appendField("id");
     this.setPreviousStatement(true, "TradeAction");
     this.setNextStatement(true, "TradeAction");
     this.setStyle("trade_blocks");
@@ -125,9 +192,10 @@ Blockly.Blocks["trade_close"] = {
 Blockly.Blocks["trade_pnl_of"] = {
   init: function () {
     this.appendDummyInput()
-      .appendField("P&L for trade ID")
-      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
-    this.setInputsInline(true);
+      .appendField("P&L for trade");
+    this.appendValueInput("TRADE_ID")
+      .setCheck("String")
+      .appendField("id");
     this.setOutput(true, "Number");
     this.setStyle("trade_blocks");
     this.setTooltip("Get profit/loss of trade by ID");
@@ -138,9 +206,10 @@ Blockly.Blocks["trade_pnl_of"] = {
 Blockly.Blocks["trade_entry_price"] = {
   init: function () {
     this.appendDummyInput()
-      .appendField("Entry price for trade ID")
-      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
-    this.setInputsInline(true);
+      .appendField("Entry price for trade");
+    this.appendValueInput("TRADE_ID")
+      .setCheck("String")
+      .appendField("id");
     this.setOutput(true, "Number");
     this.setStyle("trade_blocks");
     this.setTooltip("Get entry price of trade by ID");
@@ -151,9 +220,10 @@ Blockly.Blocks["trade_entry_price"] = {
 Blockly.Blocks["trade_position_size"] = {
   init: function () {
     this.appendDummyInput()
-      .appendField("Position size for trade ID")
-      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
-    this.setInputsInline(true);
+      .appendField("Position size for trade");
+    this.appendValueInput("TRADE_ID")
+      .setCheck("String")
+      .appendField("id");
     this.setOutput(true, "Number");
     this.setStyle("trade_blocks");
     this.setTooltip("Get size of trade by ID");
