@@ -44,6 +44,20 @@ javascriptGenerator.forBlock['operator_less'] = function(block: Blockly.Block) {
   return [code, Order.RELATIONAL];
 };
 
+javascriptGenerator.forBlock['operator_greater_equals'] = function(block: Blockly.Block) {
+  const left = javascriptGenerator.valueToCode(block, 'LEFT', Order.RELATIONAL) || '0';
+  const right = javascriptGenerator.valueToCode(block, 'RIGHT', Order.RELATIONAL) || '0';
+  const code = `${left} >= ${right}`;
+  return [code, Order.RELATIONAL];
+};
+
+javascriptGenerator.forBlock['operator_less_equals'] = function(block: Blockly.Block) {
+  const left = javascriptGenerator.valueToCode(block, 'LEFT', Order.RELATIONAL) || '0';
+  const right = javascriptGenerator.valueToCode(block, 'RIGHT', Order.RELATIONAL) || '0';
+  const code = `${left} <= ${right}`;
+  return [code, Order.RELATIONAL];
+};
+
 // Operator blocks - Math
 javascriptGenerator.forBlock['operator_add'] = function(block: Blockly.Block) {
   const left = javascriptGenerator.valueToCode(block, 'LEFT', Order.ADDITION) || '0';

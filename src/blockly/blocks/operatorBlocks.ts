@@ -46,6 +46,36 @@ Blockly.Blocks['operator_less'] = {
   }
 };
 
+Blockly.Blocks['operator_greater_equals'] = {
+  init: function() {
+    this.appendValueInput("LEFT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.appendDummyInput()
+      .appendField("≥");
+    this.appendValueInput("RIGHT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.setInputsInline(true);
+    this.setOutput(true, "Boolean");
+    this.setStyle('operator_blocks');
+    this.setTooltip("Check if left value is greater than or equal to right value");
+  }
+};
+
+Blockly.Blocks['operator_less_equals'] = {
+  init: function() {
+    this.appendValueInput("LEFT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.appendDummyInput()
+      .appendField("≤");
+    this.appendValueInput("RIGHT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.setInputsInline(true);
+    this.setOutput(true, "Boolean");
+    this.setStyle('operator_blocks');
+    this.setTooltip("Check if left value is less than or equal to right value");
+  }
+};
+
 // Math operators
 Blockly.Blocks['operator_add'] = {
   init: function() {
