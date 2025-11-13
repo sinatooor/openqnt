@@ -7,6 +7,7 @@ import {
   tradeBlocksToolbox,
   taBlocksToolbox,
   riskManagementBlocksToolbox,
+  multiTimeframeBlocksToolbox,
 } from '@/blockly/blocks';
 import { generateCode } from '@/blockly/generators/javascript';
 import { Button } from '@/components/ui/button';
@@ -14,10 +15,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, Undo2, Redo2, Blocks, Wand2, FileCode, BarChart3, TrendingUp } from 'lucide-react';
+import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, Undo2, Redo2, Blocks, Wand2, FileCode, BarChart3, TrendingUp, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { BacktestingPanel } from './BacktestingPanel';
+import { StrategyTemplatesDialog } from './StrategyTemplatesDialog';
 import { runBacktest, BacktestResult } from '@/lib/backtestEngine';
+import { StrategyTemplate } from '@/lib/strategyTemplates';
 import { cn } from '@/lib/utils';
 
 export const BlocklyWorkspace = () => {
@@ -34,6 +37,7 @@ export const BlocklyWorkspace = () => {
   const [backtestResult, setBacktestResult] = useState<BacktestResult | null>(null);
   const [isBacktesting, setIsBacktesting] = useState(false);
   const [showBacktest, setShowBacktest] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   useEffect(() => {
     if (!blocklyDiv.current) return;
@@ -84,6 +88,11 @@ export const BlocklyWorkspace = () => {
           colourPrimary: '#ec4899',
           colourSecondary: '#db2777',
           colourTertiary: '#be185d',
+        },
+        mtf_blocks: {
+          colourPrimary: '#06b6d4',
+          colourSecondary: '#0891b2',
+          colourTertiary: '#0e7490',
         },
       },
     });
@@ -164,6 +173,36 @@ export const BlocklyWorkspace = () => {
                 text: 'Position Sizing & Protection',
               },
               ...riskManagementBlocksToolbox,
+            ],
+          },
+          {
+            kind: 'category',
+            name: 'Multi-Timeframe',
+            colour: '#06b6d4',
+            contents: [
+              {
+                kind: 'label',
+                text: 'Cross-Timeframe Analysis',
+              },
+              ...multiTimeframeBlocksToolbox,
+            ],
+          },
+          {
+            kind: 'category',
+            name: 'Values',
+            colour: '#64748b',
+            contents: [
+              {
+                kind: 'label',
+                text: 'Numbers & Constants',
+              },
+              {
+                kind: 'block',
+                type: 'math_number',
+                fields: {
+                  NUM: 0
+                }
+              },
             ],
           },
         ],
@@ -296,6 +335,23 @@ export const BlocklyWorkspace = () => {
       reader.readAsText(file);
     };
     input.click();
+  };
+
+  const handleLoadTemplate = (template: StrategyTemplate) => {
+    if (!workspaceRef.current) return;
+    
+    try {
+      const xml = Blockly.utils.xml.textToDom(template.workspace);
+      workspaceRef.current.clear();
+      Blockly.Xml.domToWorkspace(xml, workspaceRef.current);
+      toast.success(`${template.name} template loaded successfully!`, {
+        description: template.description,
+        duration: 4000,
+      });
+    } catch (error) {
+      toast.error('Failed to load template.');
+      console.error(error);
+    }
   };
 
   const handleZoom = (direction: 'in' | 'out' | 'reset' | number) => {
@@ -546,6 +602,23 @@ export const BlocklyWorkspace = () => {
             <TooltipContent>
               <p>Load workspace from XML file</p>
               <p className="text-xs text-muted-foreground mt-1">Ctrl+O</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowTemplates(true)}
+              >
+                <BookOpen className="w-4 h-4 mr-2" />
+                Templates
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Load pre-built strategy templates</p>
+              <p className="text-xs text-muted-foreground mt-1">Learn from examples</p>
             </TooltipContent>
           </Tooltip>
 
@@ -876,6 +949,13 @@ export const BlocklyWorkspace = () => {
           />
         )}
       </div>
+
+      {/* Strategy Templates Dialog */}
+      <StrategyTemplatesDialog
+        open={showTemplates}
+        onOpenChange={setShowTemplates}
+        onLoadTemplate={handleLoadTemplate}
+      />
     </div>
   );
 };

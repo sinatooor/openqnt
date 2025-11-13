@@ -312,6 +312,41 @@ javascriptGenerator.forBlock['risk_daily_loss_limit'] = function(block: Blockly.
   return code;
 };
 
+// Multi-Timeframe blocks
+javascriptGenerator.forBlock['mtf_condition'] = function(block: Blockly.Block) {
+  const timeframe = block.getFieldValue('TIMEFRAME');
+  const condition = javascriptGenerator.valueToCode(block, 'CONDITION', Order.NONE) || 'false';
+  const code = `checkTimeframe('${timeframe}', ${condition})`;
+  return [code, Order.FUNCTION_CALL];
+};
+
+javascriptGenerator.forBlock['mtf_price'] = function(block: Blockly.Block) {
+  const timeframe = block.getFieldValue('TIMEFRAME');
+  const code = `getPrice('${timeframe}')`;
+  return [code, Order.ATOMIC];
+};
+
+javascriptGenerator.forBlock['mtf_indicator'] = function(block: Blockly.Block) {
+  const indicator = block.getFieldValue('INDICATOR');
+  const timeframe = block.getFieldValue('TIMEFRAME');
+  const period = javascriptGenerator.valueToCode(block, 'PERIOD', Order.NONE) || '14';
+  const code = `${indicator}(${period}, '${timeframe}')`;
+  return [code, Order.FUNCTION_CALL];
+};
+
+javascriptGenerator.forBlock['mtf_trend_aligned'] = function(block: Blockly.Block) {
+  const direction = block.getFieldValue('DIRECTION');
+  const timeframes = block.getFieldValue('TIMEFRAMES');
+  const code = `isTrendAligned('${direction}', '${timeframes}')`;
+  return [code, Order.FUNCTION_CALL];
+};
+
+javascriptGenerator.forBlock['mtf_higher_timeframe_bias'] = function(block: Blockly.Block) {
+  const timeframe = block.getFieldValue('TIMEFRAME');
+  const code = `getHigherTimeframeBias('${timeframe}')`;
+  return [code, Order.ATOMIC];
+};
+
 // Export function to generate code from workspace
 export function generateCode(workspace: Blockly.WorkspaceSvg): string {
   return javascriptGenerator.workspaceToCode(workspace);
