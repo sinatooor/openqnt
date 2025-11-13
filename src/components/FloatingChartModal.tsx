@@ -70,7 +70,7 @@ export const FloatingChartModal = ({
       {/* Draggable Modal */}
       <Draggable
         handle=".drag-handle"
-        bounds="parent"
+        bounds="body"
         position={position}
         onStop={(e, data) =>
           setPosition({
@@ -83,7 +83,9 @@ export const FloatingChartModal = ({
         <div
           className={cn(
             "fixed z-50 pointer-events-auto transition-all duration-300",
-            isMaximized ? "inset-4" : "w-[900px] h-[600px]",
+            isMaximized 
+              ? "inset-4" 
+              : "w-full sm:w-[600px] md:w-[750px] lg:w-[900px] h-[400px] sm:h-[500px] md:h-[600px]",
           )}
         >
           <Card className="w-full h-full flex flex-col shadow-2xl border-2 animate-scale-in">
@@ -107,6 +109,21 @@ export const FloatingChartModal = ({
                   </Select>
                 </div>
                 <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleMaximize}
+                    className="h-7 w-7 p-0 hover:bg-accent"
+                    title={isMaximized ? "Restore" : "Maximize"}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      {isMaximized ? (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
+                      ) : (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                      )}
+                    </svg>
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"

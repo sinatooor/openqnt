@@ -16,7 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 export const SettingsPanel = () => {
   const [mode, setMode] = useState<"backtest" | "live">("live");
-  const [tradingSymbol, setTradingSymbol] = useState("tsla");
+  const [tradingSymbol, setTradingSymbol] = useState("BTC/USDT");
   const [broker, setBroker] = useState("td");
   const [leverage, setLeverage] = useState("50");
   const [isConnected, setIsConnected] = useState(false);
@@ -81,7 +81,7 @@ export const SettingsPanel = () => {
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Symbol:</span>
-            <span className="font-medium text-foreground">{tradingSymbol.toUpperCase()}</span>
+            <span className="font-medium text-foreground">{tradingSymbol}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Leverage:</span>
@@ -135,10 +135,12 @@ export const SettingsPanel = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="tsla">NASDAQ: TSLA</SelectItem>
-                  <SelectItem value="aapl">NASDAQ: AAPL</SelectItem>
-                  <SelectItem value="googl">NASDAQ: GOOGL</SelectItem>
-                  <SelectItem value="msft">NASDAQ: MSFT</SelectItem>
+                  <SelectItem value="BTC/USDT">BTC/USDT</SelectItem>
+                  <SelectItem value="ETH/USDT">ETH/USDT</SelectItem>
+                  <SelectItem value="BNB/USDT">BNB/USDT</SelectItem>
+                  <SelectItem value="SOL/USDT">SOL/USDT</SelectItem>
+                  <SelectItem value="XRP/USDT">XRP/USDT</SelectItem>
+                  <SelectItem value="ADA/USDT">ADA/USDT</SelectItem>
                 </SelectContent>
               </Select>
             </div>
