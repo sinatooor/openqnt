@@ -2,18 +2,17 @@ import * as Blockly from 'blockly';
 
 Blockly.Blocks['trade_order'] = {
   init: function() {
-    this.appendDummyInput()
+    this.appendValueInput("TRADE_ID")
+      .setCheck("String")
       .appendField("Trade")
       .appendField(new Blockly.FieldDropdown([
         ["long", "long"],
         ["short", "short"]
       ]), "DIRECTION")
       .appendField("ID");
-    this.appendValueInput("TRADE_ID")
-      .setCheck("String");
     this.appendValueInput("SIZE")
       .setCheck("Number")
-      .appendField("Size");
+      .appendField("size");
     this.appendDummyInput()
       .appendField(new Blockly.FieldDropdown([
         ["value", "value"],
@@ -21,13 +20,13 @@ Blockly.Blocks['trade_order'] = {
       ]), "SIZE_TYPE");
     this.appendValueInput("LEVERAGE")
       .setCheck("Number")
-      .appendField("Leverage");
+      .appendField("leverage");
     this.appendDummyInput()
       .appendField(new Blockly.FieldDropdown([
-        ["market order", "market"],
-        ["limit order", "limit"]
+        ["market", "market"],
+        ["limit", "limit"]
       ]), "ORDER_TYPE");
-    this.setInputsInline(false);
+    this.setInputsInline(true);
     this.setPreviousStatement(true, "TradeAction");
     this.setNextStatement(true, "TradeAction");
     this.setStyle('trade_blocks');
@@ -38,14 +37,12 @@ Blockly.Blocks['trade_order'] = {
 
 Blockly.Blocks['trade_stop_loss'] = {
   init: function() {
-    this.appendDummyInput()
-      .appendField("Stop loss at");
-    this.appendValueInput("PRICE")
-      .setCheck("Number");
-    this.appendDummyInput()
-      .appendField("for trade ID");
     this.appendValueInput("TRADE_ID")
-      .setCheck("String");
+      .setCheck("String")
+      .appendField("Trade ID");
+    this.appendValueInput("PRICE")
+      .setCheck("Number")
+      .appendField("stop loss at");
     this.setInputsInline(true);
     this.setPreviousStatement(true, "TradeAction");
     this.setNextStatement(true, "TradeAction");
@@ -57,14 +54,12 @@ Blockly.Blocks['trade_stop_loss'] = {
 
 Blockly.Blocks['trade_take_profit'] = {
   init: function() {
-    this.appendDummyInput()
-      .appendField("Take profit at");
-    this.appendValueInput("PRICE")
-      .setCheck("Number");
-    this.appendDummyInput()
-      .appendField("for trade ID");
     this.appendValueInput("TRADE_ID")
-      .setCheck("String");
+      .setCheck("String")
+      .appendField("Trade ID");
+    this.appendValueInput("PRICE")
+      .setCheck("Number")
+      .appendField("take profit at");
     this.setInputsInline(true);
     this.setPreviousStatement(true, "TradeAction");
     this.setNextStatement(true, "TradeAction");
@@ -76,17 +71,17 @@ Blockly.Blocks['trade_take_profit'] = {
 
 Blockly.Blocks['trade_close'] = {
   init: function() {
+    this.appendValueInput("TRADE_ID")
+      .setCheck("String")
+      .appendField("Trade ID");
     this.appendDummyInput()
-      .appendField("Close")
+      .appendField("close")
       .appendField(new Blockly.FieldDropdown([
         ["25%", "25"],
         ["50%", "50"],
         ["75%", "75"],
         ["100%", "100"]
-      ]), "PERCENT")
-      .appendField("of trade ID");
-    this.appendValueInput("TRADE_ID")
-      .setCheck("String");
+      ]), "PERCENT");
     this.setInputsInline(true);
     this.setPreviousStatement(true, "TradeAction");
     this.setNextStatement(true, "TradeAction");
@@ -98,10 +93,11 @@ Blockly.Blocks['trade_close'] = {
 
 Blockly.Blocks['trade_pnl_of'] = {
   init: function() {
-    this.appendDummyInput()
-      .appendField("P&L of trade ID");
     this.appendValueInput("TRADE_ID")
-      .setCheck("String");
+      .setCheck("String")
+      .appendField("Trade ID");
+    this.appendDummyInput()
+      .appendField("P&L");
     this.setInputsInline(true);
     this.setOutput(true, "Number");
     this.setStyle('trade_blocks');
@@ -112,10 +108,11 @@ Blockly.Blocks['trade_pnl_of'] = {
 
 Blockly.Blocks['trade_entry_price'] = {
   init: function() {
-    this.appendDummyInput()
-      .appendField("Entry price of trade ID");
     this.appendValueInput("TRADE_ID")
-      .setCheck("String");
+      .setCheck("String")
+      .appendField("Trade ID");
+    this.appendDummyInput()
+      .appendField("entry price");
     this.setInputsInline(true);
     this.setOutput(true, "Number");
     this.setStyle('trade_blocks');
@@ -126,10 +123,11 @@ Blockly.Blocks['trade_entry_price'] = {
 
 Blockly.Blocks['trade_position_size'] = {
   init: function() {
-    this.appendDummyInput()
-      .appendField("Position size of trade ID");
     this.appendValueInput("TRADE_ID")
-      .setCheck("String");
+      .setCheck("String")
+      .appendField("Trade ID");
+    this.appendDummyInput()
+      .appendField("position size");
     this.setInputsInline(true);
     this.setOutput(true, "Number");
     this.setStyle('trade_blocks');
