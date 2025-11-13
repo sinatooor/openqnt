@@ -13,10 +13,16 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, Undo2, Redo2, Blocks, Wand2, FileCode, BarChart3 } from 'lucide-react';
+import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, Undo2, Redo2, Blocks, Wand2, FileCode, BarChart3, LineChart } from 'lucide-react';
 import { toast } from 'sonner';
+import { BacktestResult, backtestStrategy } from '@/lib/backtestEngine';
+import { CandleData, getSymbolData } from '@/lib/marketData';
 
-export const BlocklyWorkspace = () => {
+interface BlocklyWorkspaceProps {
+  onBacktestStart?: (result: BacktestResult, marketData: CandleData[]) => void;
+}
+
+export const BlocklyWorkspace = ({ onBacktestStart }: BlocklyWorkspaceProps) => {
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
   const [generatedCode, setGeneratedCode] = useState<string>('');
@@ -27,6 +33,7 @@ export const BlocklyWorkspace = () => {
   const [isEmpty, setIsEmpty] = useState(true);
   const [showLineNumbers, setShowLineNumbers] = useState(true);
   const [beautified, setBeautified] = useState(false);
+  const [isBacktesting, setIsBacktesting] = useState(false);
 
   useEffect(() => {
     if (!blocklyDiv.current) return;
@@ -311,6 +318,44 @@ export const BlocklyWorkspace = () => {
     workspaceRef.current.undo(true);
   };
 
+  const handlePreviewBacktest = async () => {
+    if (!generatedCode) {
+      toast.error('No strategy to backtest. Add blocks to your workspace first.');
+      return;
+    }
+
+    if (blockCount === 0) {
+      toast.error('Add some blocks to create a strategy first.');
+      return;
+    }
+
+    setIsBacktesting(true);
+    toast.info('Running backtest simulation...');
+
+    try {
+      // Simulate async processing
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Get market data (last 365 days)
+      const marketData = getSymbolData('BTC/USD', 365);
+
+      // Run backtest
+      const result = backtestStrategy(generatedCode, marketData);
+
+      toast.success('Backtest completed!');
+      
+      // Notify parent component
+      if (onBacktestStart) {
+        onBacktestStart(result, marketData);
+      }
+    } catch (error) {
+      console.error('Backtest error:', error);
+      toast.error('Failed to run backtest. Please check your strategy.');
+    } finally {
+      setIsBacktesting(false);
+    }
+  };
+
   const beautifyCode = (code: string): string => {
     if (!code) return code;
     
@@ -473,6 +518,24 @@ export const BlocklyWorkspace = () => {
           <Separator orientation="vertical" className="h-6" />
 
           {/* Execution Group */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handlePreviewBacktest}
+                disabled={isBacktesting || isEmpty}
+              >
+                <LineChart className="w-4 h-4 mr-2" />
+                {isBacktesting ? 'Testing...' : 'Backtest'}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Preview backtest results</p>
+              <p className="text-xs text-muted-foreground mt-1">Ctrl+B</p>
+            </TooltipContent>
+          </Tooltip>
+
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
