@@ -11,13 +11,62 @@ Blockly.Blocks['environment_price'] = {
   }
 };
 
-Blockly.Blocks['environment_volume'] = {
+Blockly.Blocks['environment_spread'] = {
   init: function() {
     this.appendDummyInput()
-      .appendField("Volume");
+      .appendField("Spread");
     this.setOutput(true, "EnvironmentValue");
     this.setStyle('environment_blocks');
-    this.setTooltip("Current trading volume");
+    this.setTooltip("Current bid-ask spread");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['environment_prev_candle_open'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Prev. candle open")
+      .appendField(new Blockly.FieldDropdown([
+        ["1m", "1m"],
+        ["5m", "5m"],
+        ["15m", "15m"],
+        ["1h", "1h"],
+        ["4h", "4h"],
+        ["1d", "1d"]
+      ]), "TIMEFRAME");
+    this.setOutput(true, "EnvironmentValue");
+    this.setStyle('environment_blocks');
+    this.setTooltip("Previous candle open price");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['environment_prev_ticker_close'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Prev. ticker close")
+      .appendField(new Blockly.FieldDropdown([
+        ["1m", "1m"],
+        ["5m", "5m"],
+        ["15m", "15m"],
+        ["1h", "1h"],
+        ["4h", "4h"],
+        ["1d", "1d"]
+      ]), "TIMEFRAME");
+    this.setOutput(true, "EnvironmentValue");
+    this.setStyle('environment_blocks');
+    this.setTooltip("Previous ticker close price");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['environment_is_market_open'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Is market open?");
+    this.setOutput(true, "Boolean");
+    this.setStyle('environment_blocks');
+    this.setTooltip("Check if market is currently open");
     this.setHelpUrl("");
   }
 };
@@ -33,13 +82,32 @@ Blockly.Blocks['environment_time'] = {
   }
 };
 
-Blockly.Blocks['environment_spread'] = {
+Blockly.Blocks['environment_day_of_week'] = {
   init: function() {
     this.appendDummyInput()
-      .appendField("Spread");
+      .appendField("Day of week");
     this.setOutput(true, "EnvironmentValue");
     this.setStyle('environment_blocks');
-    this.setTooltip("Current bid-ask spread");
+    this.setTooltip("Current day of the week");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['environment_new_candle_open'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("New candle open")
+      .appendField(new Blockly.FieldDropdown([
+        ["1m", "1m"],
+        ["5m", "5m"],
+        ["15m", "15m"],
+        ["1h", "1h"],
+        ["4h", "4h"],
+        ["1d", "1d"]
+      ]), "TIMEFRAME");
+    this.setOutput(true, "Boolean");
+    this.setStyle('environment_blocks');
+    this.setTooltip("Check if a new candle just opened");
     this.setHelpUrl("");
   }
 };
