@@ -6,6 +6,8 @@ import {
   Time,
   ColorType,
   LineStyle,
+  CandlestickSeries,
+  LineSeries,
 } from 'lightweight-charts';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -98,7 +100,7 @@ export const TradingViewChart = ({
       },
     });
 
-    const candlestickSeries = (chart as any).addCandlestickSeries({
+    const candlestickSeries = chart.addSeries(CandlestickSeries, {
       upColor: 'hsl(142 71% 45%)',
       downColor: 'hsl(0 84% 60%)',
       borderVisible: false,
@@ -155,7 +157,7 @@ export const TradingViewChart = ({
 
     // Add new indicator series
     indicators.forEach((indicator) => {
-      const lineSeries = (chartRef.current as any).addLineSeries({
+      const lineSeries = chartRef.current!.addSeries(LineSeries, {
         color: indicator.color,
         lineWidth: 2,
         lineStyle: indicator.type.includes('bb') ? LineStyle.Dashed : LineStyle.Solid,
