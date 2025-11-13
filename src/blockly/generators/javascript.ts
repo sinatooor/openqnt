@@ -1,5 +1,6 @@
 import * as Blockly from 'blockly';
 import { javascriptGenerator, Order } from 'blockly/javascript';
+import './variableGenerators';
 
 // Environment blocks
 javascriptGenerator.forBlock['environment_price'] = function() {
