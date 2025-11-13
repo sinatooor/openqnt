@@ -9,7 +9,7 @@ import {
 } from '@/blockly/blocks';
 import { generateCode } from '@/blockly/generators/javascript';
 import { Button } from '@/components/ui/button';
-import { Code2, Copy, Check } from 'lucide-react';
+import { Code2, Copy, Check, Download, Play } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const BlocklyWorkspace = () => {
@@ -181,19 +181,116 @@ export const BlocklyWorkspace = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleExportCode = () => {
+    if (!generatedCode) {
+      toast.error('No code to export. Add blocks to your workspace first.');
+      return;
+    }
+
+    const blob = new Blob([generatedCode], { type: 'text/javascript' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'trading-strategy.js';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Strategy exported successfully!');
+  };
+
+  const handleRunStrategy = () => {
+    if (!generatedCode) {
+      toast.error('No strategy to run. Add blocks to your workspace first.');
+      return;
+    }
+
+    toast.info('Strategy execution would run here. Connect to a trading platform to execute live.');
+    console.log('Generated Strategy Code:\n', generatedCode);
+  };
+
+  const handleSaveWorkspace = () => {
+    if (!workspaceRef.current) return;
+    
+    const xml = Blockly.Xml.workspaceToDom(workspaceRef.current);
+    const xmlText = Blockly.Xml.domToText(xml);
+    
+    const blob = new Blob([xmlText], { type: 'application/xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'trading-strategy-blocks.xml';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Workspace saved successfully!');
+  };
+
+  const handleLoadWorkspace = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.xml';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file || !workspaceRef.current) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const xmlText = event.target?.result as string;
+          const xml = Blockly.utils.xml.textToDom(xmlText);
+          workspaceRef.current?.clear();
+          Blockly.Xml.domToWorkspace(xml, workspaceRef.current!);
+          toast.success('Workspace loaded successfully!');
+        } catch (error) {
+          toast.error('Failed to load workspace. Invalid file format.');
+          console.error(error);
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
+
   return (
     <div className="flex-1 relative flex flex-col">
       {/* Action Bar */}
-      <div className="h-12 bg-card border-b border-border flex items-center justify-between px-4">
+      <div className="h-14 bg-card border-b border-border flex items-center justify-between px-4 gap-3">
         <h2 className="font-semibold text-foreground">Trading Strategy Builder</h2>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowCode(!showCode)}
-        >
-          <Code2 className="w-4 h-4 mr-2" />
-          {showCode ? 'Hide Code' : 'View Code'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSaveWorkspace}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Save
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleLoadWorkspace}
+          >
+            Load
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleRunStrategy}
+          >
+            <Play className="w-4 h-4 mr-2" />
+            Run
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowCode(!showCode)}
+          >
+            <Code2 className="w-4 h-4 mr-2" />
+            {showCode ? 'Hide' : 'Code'}
+          </Button>
+        </div>
       </div>
 
       {/* Main Content */}
@@ -212,20 +309,31 @@ export const BlocklyWorkspace = () => {
           <div className="w-[400px] bg-card border-l border-border flex flex-col">
             <div className="h-12 border-b border-border flex items-center justify-between px-4">
               <h3 className="font-semibold text-foreground">Generated Code</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleCopyCode}
-              >
-                {copied ? (
-                  <Check className="w-4 h-4 text-green-500" />
-                ) : (
-                  <Copy className="w-4 h-4" />
-                )}
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleExportCode}
+                  title="Export as .js file"
+                >
+                  <Download className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCopyCode}
+                  title="Copy to clipboard"
+                >
+                  {copied ? (
+                    <Check className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
             </div>
             <div className="flex-1 overflow-auto p-4">
-              <pre className="text-sm text-foreground font-mono bg-secondary/50 p-4 rounded-lg">
+              <pre className="text-sm text-foreground font-mono bg-secondary/50 p-4 rounded-lg whitespace-pre-wrap break-words">
                 {generatedCode || '// No blocks yet\n// Drag blocks from the toolbox to start building your strategy'}
               </pre>
             </div>
