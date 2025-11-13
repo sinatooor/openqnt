@@ -39,7 +39,7 @@ Blockly.Blocks['trade_stop_loss'] = {
   init: function() {
     this.appendValueInput("TRADE_ID")
       .setCheck("String")
-      .appendField("Trade ID");
+      .appendField("ID");
     this.appendValueInput("PRICE")
       .setCheck("Number")
       .appendField("stop loss at");
@@ -56,7 +56,7 @@ Blockly.Blocks['trade_take_profit'] = {
   init: function() {
     this.appendValueInput("TRADE_ID")
       .setCheck("String")
-      .appendField("Trade ID");
+      .appendField("ID");
     this.appendValueInput("PRICE")
       .setCheck("Number")
       .appendField("take profit at");
@@ -73,7 +73,7 @@ Blockly.Blocks['trade_close'] = {
   init: function() {
     this.appendValueInput("TRADE_ID")
       .setCheck("String")
-      .appendField("Trade ID");
+      .appendField("ID");
     this.appendDummyInput()
       .appendField("close")
       .appendField(new Blockly.FieldDropdown([
@@ -95,7 +95,7 @@ Blockly.Blocks['trade_pnl_of'] = {
   init: function() {
     this.appendValueInput("TRADE_ID")
       .setCheck("String")
-      .appendField("Trade ID");
+      .appendField("ID");
     this.appendDummyInput()
       .appendField("P&L");
     this.setInputsInline(true);
@@ -110,7 +110,7 @@ Blockly.Blocks['trade_entry_price'] = {
   init: function() {
     this.appendValueInput("TRADE_ID")
       .setCheck("String")
-      .appendField("Trade ID");
+      .appendField("ID");
     this.appendDummyInput()
       .appendField("entry price");
     this.setInputsInline(true);
@@ -125,7 +125,7 @@ Blockly.Blocks['trade_position_size'] = {
   init: function() {
     this.appendValueInput("TRADE_ID")
       .setCheck("String")
-      .appendField("Trade ID");
+      .appendField("ID");
     this.appendDummyInput()
       .appendField("position size");
     this.setInputsInline(true);
