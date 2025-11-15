@@ -58,8 +58,6 @@ export default {
           "trade-foreground": "hsl(var(--block-trade-foreground))",
           ta: "hsl(var(--block-ta))",
           "ta-foreground": "hsl(var(--block-ta-foreground))",
-          multitimeframe: "hsl(var(--block-multitimeframe))",
-          "multitimeframe-foreground": "hsl(var(--block-multitimeframe-foreground))",
         },
         grid: "hsl(var(--grid-color))",
       },
