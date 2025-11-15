@@ -234,7 +234,7 @@ javascriptGenerator.forBlock['trade_take_profit'] = function(block: Blockly.Bloc
 
 javascriptGenerator.forBlock['trade_close'] = function(block: Blockly.Block) {
   const tradeId = block.getFieldValue('TRADE_ID');
-  const percent = block.getFieldValue('PERCENT');
+  const percent = javascriptGenerator.valueToCode(block, 'PERCENT', Order.NONE) || '100';
   const code = `closeTrade("${tradeId}", ${percent});\n`;
   return code;
 };
