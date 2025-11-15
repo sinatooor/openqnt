@@ -94,3 +94,12 @@ All colors MUST be HSL.
     @apply transition-transform duration-200 hover:scale-105 cursor-pointer;
   }
 }
+
+/* Remove Blockly toolbox border */
+.blocklyToolboxDiv {
+  border-right: none !important;
+}
+
+.blocklyFlyout {
+  border-right: none !important;
+}
