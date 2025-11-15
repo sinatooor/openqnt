@@ -94,3 +94,16 @@ All colors MUST be HSL.
     @apply transition-transform duration-200 hover:scale-105 cursor-pointer;
   }
 }
+
+/* Blockly input field styles */
+.blocklyHtmlInput {
+  color: #000000 !important;
+  background-color: #ffffff !important;
+  border: 1px solid #cccccc !important;
+  padding: 2px 4px !important;
+  font-family: monospace !important;
+}
+
+.blocklyEditableText > text {
+  fill: #000000 !important;
+}
