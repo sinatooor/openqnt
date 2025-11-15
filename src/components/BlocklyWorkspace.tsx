@@ -109,9 +109,9 @@ export const BlocklyWorkspace = () => {
           colourTertiary: "#be185d",
         },
         mtf_blocks: {
-          colourPrimary: "#ec4899",
-          colourSecondary: "#db2777",
-          colourTertiary: "#be185d",
+          colourPrimary: "#06b6d4",
+          colourSecondary: "#0891b2",
+          colourTertiary: "#0e7490",
         },
         variable_blocks: {
           colourPrimary: "#64748b",
