@@ -70,10 +70,8 @@ Blockly.Blocks["trade_order"] = {
 
 Blockly.Blocks["trade_stop_loss"] = {
   init: function () {
-    this.appendValueInput("PRICE")
-      .setCheck("Number")
-      .appendField("Place stop loss at");
     this.appendDummyInput()
+      .appendField("Place")
       .appendField(
         new Blockly.FieldDropdown([
           ["full", "full"],
@@ -81,6 +79,9 @@ Blockly.Blocks["trade_stop_loss"] = {
         ], this.updateCloseType_.bind(this)),
         "CLOSE_TYPE",
       );
+    this.appendValueInput("PRICE")
+      .setCheck("Number")
+      .appendField("stop loss at");
     this.appendDummyInput()
       .appendField("for trade ID")
       .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
@@ -118,10 +119,8 @@ Blockly.Blocks["trade_stop_loss"] = {
 
 Blockly.Blocks["trade_take_profit"] = {
   init: function () {
-    this.appendValueInput("PRICE")
-      .setCheck("Number")
-      .appendField("Place take profit at");
     this.appendDummyInput()
+      .appendField("Place")
       .appendField(
         new Blockly.FieldDropdown([
           ["full", "full"],
@@ -129,6 +128,9 @@ Blockly.Blocks["trade_take_profit"] = {
         ], this.updateCloseType_.bind(this)),
         "CLOSE_TYPE",
       );
+    this.appendValueInput("PRICE")
+      .setCheck("Number")
+      .appendField("take profit at");
     this.appendDummyInput()
       .appendField("for trade ID")
       .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
