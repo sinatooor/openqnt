@@ -53,6 +53,9 @@ All colors MUST be HSL.
     
     --block-ta: 0 84% 60%;
     --block-ta-foreground: 0 0% 100%;
+    
+    --block-multitimeframe: 330 81% 60%;
+    --block-multitimeframe-foreground: 0 0% 100%;
 
     --grid-color: 220 13% 15%;
 
