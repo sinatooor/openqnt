@@ -70,8 +70,34 @@ export const tradeBlocksToolbox = [
   { kind: 'block', type: 'trade_position_size' },
 ];
 
-// TA Tools toolbox will be dynamically generated in BlocklyWorkspace
-export const taBlocksToolbox = [];
+export const taBlocksToolbox = [
+  { kind: 'label', text: 'Moving Averages' },
+  { kind: 'block', type: 'ta_sma' },
+  { kind: 'block', type: 'ta_ema' },
+  { kind: 'block', type: 'ta_vwap' },
+  { kind: 'label', text: 'Momentum' },
+  { kind: 'block', type: 'ta_rsi' },
+  { kind: 'block', type: 'ta_macd' },
+  { kind: 'block', type: 'ta_stochastic' },
+  { kind: 'block', type: 'ta_adx' },
+  { kind: 'block', type: 'ta_cci' },
+  { kind: 'block', type: 'ta_williams_r' },
+  { kind: 'block', type: 'ta_mfi' },
+  { kind: 'label', text: 'Volatility' },
+  { kind: 'block', type: 'ta_bb' },
+  { kind: 'block', type: 'ta_atr' },
+  { kind: 'block', type: 'ta_keltner' },
+  { kind: 'label', text: 'Trend' },
+  { kind: 'block', type: 'ta_sar' },
+  { kind: 'block', type: 'ta_ichimoku' },
+  { kind: 'block', type: 'ta_supertrend' },
+  { kind: 'block', type: 'ta_dmi' },
+  { kind: 'label', text: 'Volume' },
+  { kind: 'block', type: 'ta_obv' },
+  { kind: 'block', type: 'ta_vp' },
+  { kind: 'label', text: 'Support/Resistance' },
+  { kind: 'block', type: 'ta_pivot' },
+];
 
 export const multiTimeframeBlocksToolbox = [
   { kind: 'block', type: 'mtf_condition' },
