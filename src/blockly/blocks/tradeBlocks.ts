@@ -98,15 +98,8 @@ Blockly.Blocks["trade_stop_loss"] = {
     if (value === 'partial' && !percentInput) {
       this.appendDummyInput("PERCENT")
         .appendField(", close")
-        .appendField(
-          new Blockly.FieldDropdown([
-            ["25%", "25"],
-            ["50%", "50"],
-            ["75%", "75"],
-          ]),
-          "PERCENT_VALUE",
-        )
-        .appendField("of trade");
+        .appendField(new Blockly.FieldNumber(50, 1, 100), "PERCENT_VALUE")
+        .appendField("% of trade");
       this.moveInputBefore('PERCENT', this.inputList[this.inputList.length - 1].name);
     } else if (value === 'full' && percentInput) {
       this.removeInput('PERCENT');
@@ -144,15 +137,8 @@ Blockly.Blocks["trade_take_profit"] = {
     if (value === 'partial' && !percentInput) {
       this.appendDummyInput("PERCENT")
         .appendField(", close")
-        .appendField(
-          new Blockly.FieldDropdown([
-            ["25%", "25"],
-            ["50%", "50"],
-            ["75%", "75"],
-          ]),
-          "PERCENT_VALUE",
-        )
-        .appendField("of trade");
+        .appendField(new Blockly.FieldNumber(50, 1, 100), "PERCENT_VALUE")
+        .appendField("% of trade");
       this.moveInputBefore('PERCENT', this.inputList[this.inputList.length - 1].name);
     } else if (value === 'full' && percentInput) {
       this.removeInput('PERCENT');
