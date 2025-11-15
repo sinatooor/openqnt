@@ -97,7 +97,7 @@ Blockly.Blocks["trade_stop_loss"] = {
     const percentInput = this.getInput('PERCENT');
     if (value === 'partial' && !percentInput) {
       this.appendDummyInput("PERCENT")
-        .appendField("close")
+        .appendField(", close")
         .appendField(
           new Blockly.FieldDropdown([
             ["25%", "25"],
@@ -143,7 +143,7 @@ Blockly.Blocks["trade_take_profit"] = {
     const percentInput = this.getInput('PERCENT');
     if (value === 'partial' && !percentInput) {
       this.appendDummyInput("PERCENT")
-        .appendField("close")
+        .appendField(", close")
         .appendField(
           new Blockly.FieldDropdown([
             ["25%", "25"],
