@@ -217,7 +217,8 @@ javascriptGenerator.forBlock['trade_order'] = function(block: Blockly.Block) {
 javascriptGenerator.forBlock['trade_stop_loss'] = function(block: Blockly.Block) {
   const tradeId = block.getFieldValue('TRADE_ID');
   const price = javascriptGenerator.valueToCode(block, 'PRICE', Order.NONE) || '0';
-  const percent = javascriptGenerator.valueToCode(block, 'PERCENT', Order.NONE) || '100';
+  const closeType = block.getFieldValue('CLOSE_TYPE');
+  const percent = closeType === 'partial' ? block.getFieldValue('PERCENT_VALUE') : '100';
   const code = `setStopLoss("${tradeId}", ${price}, ${percent});\n`;
   return code;
 };
@@ -225,7 +226,8 @@ javascriptGenerator.forBlock['trade_stop_loss'] = function(block: Blockly.Block)
 javascriptGenerator.forBlock['trade_take_profit'] = function(block: Blockly.Block) {
   const tradeId = block.getFieldValue('TRADE_ID');
   const price = javascriptGenerator.valueToCode(block, 'PRICE', Order.NONE) || '0';
-  const percent = javascriptGenerator.valueToCode(block, 'PERCENT', Order.NONE) || '100';
+  const closeType = block.getFieldValue('CLOSE_TYPE');
+  const percent = closeType === 'partial' ? block.getFieldValue('PERCENT_VALUE') : '100';
   const code = `setTakeProfit("${tradeId}", ${price}, ${percent});\n`;
   return code;
 };
