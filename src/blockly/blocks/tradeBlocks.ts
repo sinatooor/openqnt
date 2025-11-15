@@ -78,13 +78,14 @@ Blockly.Blocks["trade_stop_loss"] = {
           ["partial", "partial"],
         ], this.updateCloseType_.bind(this)),
         "CLOSE_TYPE",
-      );
-    this.appendValueInput("PRICE")
-      .setCheck("Number")
+      )
       .appendField("stop loss at");
+    this.appendValueInput("PRICE")
+      .setCheck("Number");
     this.appendDummyInput()
       .appendField("for trade ID")
       .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
+    this.setInputsInline(true);
     this.setPreviousStatement(true, "TradeAction");
     this.setNextStatement(true, "TradeAction");
     this.setStyle("trade_blocks");
@@ -123,13 +124,14 @@ Blockly.Blocks["trade_take_profit"] = {
           ["partial", "partial"],
         ], this.updateCloseType_.bind(this)),
         "CLOSE_TYPE",
-      );
-    this.appendValueInput("PRICE")
-      .setCheck("Number")
+      )
       .appendField("take profit at");
+    this.appendValueInput("PRICE")
+      .setCheck("Number");
     this.appendDummyInput()
       .appendField("for trade ID")
       .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
+    this.setInputsInline(true);
     this.setPreviousStatement(true, "TradeAction");
     this.setNextStatement(true, "TradeAction");
     this.setStyle("trade_blocks");
