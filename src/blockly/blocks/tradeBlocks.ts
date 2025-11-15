@@ -95,9 +95,7 @@ Blockly.Blocks["trade_stop_loss"] = {
   updateCloseType_: function(value: string) {
     const percentInput = this.getInput('PERCENT');
     if (value === 'partial' && !percentInput) {
-      const tradeIdIndex = this.inputList.findIndex(input => input.name === 'TRADE_ID');
-      this.appendValueInput("PERCENT")
-        .setCheck("Number")
+      this.appendDummyInput("PERCENT")
         .appendField("close")
         .appendField(
           new Blockly.FieldDropdown([
@@ -108,9 +106,7 @@ Blockly.Blocks["trade_stop_loss"] = {
           "PERCENT_VALUE",
         )
         .appendField("of trade");
-      if (tradeIdIndex >= 0) {
-        this.moveInputBefore('PERCENT', 'TRADE_ID');
-      }
+      this.moveInputBefore('PERCENT', this.inputList[this.inputList.length - 1].name);
     } else if (value === 'full' && percentInput) {
       this.removeInput('PERCENT');
     }
@@ -144,9 +140,7 @@ Blockly.Blocks["trade_take_profit"] = {
   updateCloseType_: function(value: string) {
     const percentInput = this.getInput('PERCENT');
     if (value === 'partial' && !percentInput) {
-      const tradeIdIndex = this.inputList.findIndex(input => input.name === 'TRADE_ID');
-      this.appendValueInput("PERCENT")
-        .setCheck("Number")
+      this.appendDummyInput("PERCENT")
         .appendField("close")
         .appendField(
           new Blockly.FieldDropdown([
@@ -157,9 +151,7 @@ Blockly.Blocks["trade_take_profit"] = {
           "PERCENT_VALUE",
         )
         .appendField("of trade");
-      if (tradeIdIndex >= 0) {
-        this.moveInputBefore('PERCENT', 'TRADE_ID');
-      }
+      this.moveInputBefore('PERCENT', this.inputList[this.inputList.length - 1].name);
     } else if (value === 'full' && percentInput) {
       this.removeInput('PERCENT');
     }
