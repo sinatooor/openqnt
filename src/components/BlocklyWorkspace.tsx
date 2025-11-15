@@ -5,10 +5,10 @@ import {
   operatorBlocksToolbox,
   controlBlocksToolbox,
   tradeBlocksToolbox,
+  taBlocksToolbox,
   multiTimeframeBlocksToolbox,
   myBlocksToolbox,
 } from "@/blockly/blocks";
-import { taIndicators, commonlyUsedIndicators, supportResistanceIndicators } from "@/lib/taIndicators";
 import { generateCode } from "@/blockly/generators/javascript";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -58,43 +58,6 @@ export const BlocklyWorkspace = () => {
   const [showBacktest, setShowBacktest] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [showFloatingChart, setShowFloatingChart] = useState(false);
-  const [taSearchQuery, setTaSearchQuery] = useState("");
-  const [selectedIndicators, setSelectedIndicators] = useState<string[]>([]);
-  // Dynamic TA Tools category callback
-  const getTAToolsContents = (workspace: Blockly.WorkspaceSvg) => {
-    const contents: any[] = [];
-    
-    // Add custom HTML search button that will open a search interface
-    contents.push({
-      kind: 'button',
-      text: '🔍 Search for any TA tool',
-      callbackKey: 'TA_SEARCH'
-    });
-    
-    // Commonly Used section
-    contents.push({ kind: 'label', text: 'Commonly Used' });
-    
-    // Support and resistance
-    contents.push({ kind: 'block', type: 'ta_support' });
-    contents.push({ kind: 'block', type: 'ta_resistance' });
-    
-    // RSI, MACD, SMA, ATR
-    contents.push({ kind: 'block', type: 'ta_rsi' });
-    contents.push({ kind: 'block', type: 'ta_macd' });
-    contents.push({ kind: 'block', type: 'ta_sma' });
-    contents.push({ kind: 'block', type: 'ta_atr' });
-    
-    // Show selected indicators from search
-    if (selectedIndicators.length > 0) {
-      contents.push({ kind: 'label', text: 'Selected Indicators' });
-      selectedIndicators.forEach(indicatorId => {
-        contents.push({ kind: 'block', type: `ta_${indicatorId}` });
-      });
-    }
-    
-    return contents;
-  };
-
   useEffect(() => {
     if (!blocklyDiv.current) return;
 
@@ -197,7 +160,7 @@ export const BlocklyWorkspace = () => {
             kind: "category",
             name: "TA Tools",
             colour: "#8b5cf6",
-            custom: "TA_TOOLS_DYNAMIC"
+            contents: taBlocksToolbox,
           },
           {
             kind: "category",
@@ -253,115 +216,6 @@ export const BlocklyWorkspace = () => {
     });
     workspaceRef.current = workspace;
 
-    // Register custom category for TA Tools
-    workspace.registerToolboxCategoryCallback('TA_TOOLS_DYNAMIC', (workspace) => {
-      return getTAToolsContents(workspace);
-    });
-
-    // Register search button callback
-    workspace.registerButtonCallback('TA_SEARCH', () => {
-      // Create search dialog
-      const searchTerm = prompt('Search for a TA indicator (e.g., RSI, Bollinger Bands, MACD):');
-      if (!searchTerm) return;
-      
-      const searchLower = searchTerm.toLowerCase();
-      const results = taIndicators.filter(ind => 
-        ind.name.toLowerCase().includes(searchLower) || 
-        ind.description.toLowerCase().includes(searchLower) ||
-        ind.id.toLowerCase().includes(searchLower)
-      );
-      
-      if (results.length === 0) {
-        alert('No indicators found matching "' + searchTerm + '"');
-        return;
-      }
-      
-      // Show results and let user select
-      const resultsList = results.map((ind, i) => `${i + 1}. ${ind.name} - ${ind.description}`).join('\n');
-      const selection = prompt(
-        `Found ${results.length} indicator(s):\n\n${resultsList}\n\nEnter number to add (or cancel):`,
-        '1'
-      );
-      
-      if (!selection) return;
-      
-      const index = parseInt(selection) - 1;
-      if (index >= 0 && index < results.length) {
-        const selectedId = results[index].id;
-        setSelectedIndicators(prev => {
-          if (!prev.includes(selectedId)) {
-            return [...prev, selectedId];
-          }
-          return prev;
-        });
-        
-        // Force refresh the toolbox
-        workspace.getToolbox()?.clearSelection();
-        workspace.refreshToolboxSelection();
-      }
-    });
-
-    // Add custom context menu for indicator settings
-    const originalBlockContextMenu = Blockly.ContextMenuRegistry.registry.getItem('blockContextMenu');
-    Blockly.ContextMenuRegistry.registry.register({
-      displayText: (scope) => {
-        const block = scope.block as any;
-        if (block && block.type.startsWith('ta_') && block.params) {
-          return 'Configure Settings';
-        }
-        return '';
-      },
-      preconditionFn: (scope) => {
-        const block = scope.block as any;
-        if (block && block.type.startsWith('ta_') && block.params) {
-          return 'enabled';
-        }
-        return 'hidden';
-      },
-      callback: (scope) => {
-        const block = scope.block as any;
-        if (!block || !block.params) return;
-        
-        // Find the indicator definition
-        const indicatorId = block.type.replace('ta_', '');
-        const indicator = taIndicators.find(ind => ind.id === indicatorId);
-        if (!indicator) return;
-        
-        // Create a simple prompt-based configuration (in production, you'd use a proper dialog)
-        const newParams: Record<string, number> = {};
-        let cancelled = false;
-        
-        indicator.parameters.forEach(param => {
-          if (cancelled) return;
-          const currentValue = block.params[param.name] || param.default;
-          const input = prompt(
-            `${param.description || param.name} (${param.min}-${param.max})`,
-            String(currentValue)
-          );
-          
-          if (input === null) {
-            cancelled = true;
-            return;
-          }
-          
-          const value = parseFloat(input);
-          if (!isNaN(value) && value >= param.min && value <= param.max) {
-            newParams[param.name] = value;
-          } else {
-            newParams[param.name] = currentValue;
-          }
-        });
-        
-        if (!cancelled) {
-          block.params = newParams;
-          workspace.render();
-        }
-      },
-      scopeType: Blockly.ContextMenuRegistry.ScopeType.BLOCK,
-      id: 'ta_configure_settings',
-      weight: 100,
-    });
-
     // Listen to workspace changes to update code and stats
     workspace.addChangeListener(() => {
       const code = generateCode(workspace);
@@ -385,14 +239,6 @@ export const BlocklyWorkspace = () => {
       workspace.dispose();
     };
   }, []);
-
-  // Update toolbox when selected indicators change
-  useEffect(() => {
-    if (workspaceRef.current && selectedIndicators.length > 0) {
-      workspaceRef.current.getToolbox()?.clearSelection();
-      workspaceRef.current.refreshToolboxSelection();
-    }
-  }, [selectedIndicators]);
   const handleCopyCode = () => {
     navigator.clipboard.writeText(generatedCode);
     setCopied(true);
