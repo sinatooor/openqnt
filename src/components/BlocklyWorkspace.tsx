@@ -6,7 +6,6 @@ import {
   controlBlocksToolbox,
   tradeBlocksToolbox,
   taBlocksToolbox,
-  multiTimeframeBlocksToolbox,
   myBlocksToolbox,
 } from "@/blockly/blocks";
 import { generateCode } from "@/blockly/generators/javascript";
@@ -140,39 +139,21 @@ export const BlocklyWorkspace = () => {
           },
           {
             kind: "category",
-            name: "Operators",
-            colour: "#3b82f6",
-            contents: operatorBlocksToolbox,
-          },
-          {
-            kind: "category",
             name: "Control",
             colour: "#f59e0b",
             contents: controlBlocksToolbox,
           },
           {
             kind: "category",
-            name: "Trade",
-            colour: "#06b6d4",
-            contents: tradeBlocksToolbox,
+            name: "Operators",
+            colour: "#3b82f6",
+            contents: operatorBlocksToolbox,
           },
           {
             kind: "category",
             name: "TA Tools",
             colour: "#8b5cf6",
             contents: taBlocksToolbox,
-          },
-          {
-            kind: "category",
-            name: "Multi-Timeframe",
-            colour: "#06b6d4",
-            contents: multiTimeframeBlocksToolbox,
-          },
-          {
-            kind: "category",
-            name: "My Blocks",
-            colour: "#f59e0b",
-            contents: myBlocksToolbox,
           },
           {
             kind: "category",
@@ -187,6 +168,18 @@ export const BlocklyWorkspace = () => {
                 },
               },
             ],
+          },
+          {
+            kind: "category",
+            name: "Trade",
+            colour: "#06b6d4",
+            contents: tradeBlocksToolbox,
+          },
+          {
+            kind: "category",
+            name: "My Blocks",
+            colour: "#a855f7",
+            contents: myBlocksToolbox,
           },
         ],
       },

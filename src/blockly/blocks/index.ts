@@ -5,7 +5,6 @@ import './controlBlocks';
 import './tradeBlocks';
 import './taBlocks';
 import './riskManagementBlocks';
-import './multiTimeframeBlocks';
 import './variableBlocks';
 
 // Export block configurations for toolbox
@@ -97,14 +96,6 @@ export const taBlocksToolbox = [
   { kind: 'block', type: 'ta_vp' },
   { kind: 'label', text: 'Support/Resistance' },
   { kind: 'block', type: 'ta_pivot' },
-];
-
-export const multiTimeframeBlocksToolbox = [
-  { kind: 'block', type: 'mtf_condition' },
-  { kind: 'block', type: 'mtf_price' },
-  { kind: 'block', type: 'mtf_indicator' },
-  { kind: 'block', type: 'mtf_trend_aligned' },
-  { kind: 'block', type: 'mtf_higher_timeframe_bias' },
 ];
 
 export const myBlocksToolbox = [
