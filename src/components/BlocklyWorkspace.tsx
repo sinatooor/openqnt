@@ -113,9 +113,9 @@ export const BlocklyWorkspace = () => {
           colourTertiary: "#0e7490",
         },
         variable_blocks: {
-          colourPrimary: "#ec4899",
-          colourSecondary: "#db2777",
-          colourTertiary: "#be185d",
+          colourPrimary: "#64748b",
+          colourSecondary: "#475569",
+          colourTertiary: "#334155",
         },
         function_blocks: {
           colourPrimary: "#ef4444",
@@ -158,7 +158,7 @@ export const BlocklyWorkspace = () => {
           {
             kind: "category",
             name: "Values",
-            colour: "#ec4899",
+            colour: "#64748b",
             contents: [
               {
                 kind: "block",
