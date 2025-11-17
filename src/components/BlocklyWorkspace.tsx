@@ -455,6 +455,11 @@ export const BlocklyWorkspace = () => {
       
       // Center and zoom to fit
       workspaceRef.current.zoomToFit();
+      
+      // Manually update isEmpty state to hide welcome message
+      const allBlocks = workspaceRef.current.getAllBlocks(false);
+      setIsEmpty(allBlocks.length === 0);
+      setBlockCount(allBlocks.length);
     } catch (error) {
       console.error("Error loading XML:", error);
       toast.error("Failed to load generated blocks. Please try again.");
