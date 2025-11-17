@@ -12,10 +12,11 @@ interface Message {
 }
 
 interface AIChatPanelProps {
-  onBlocksGenerated: (xml: string) => void;
+  onBlocksGenerated: (xml: string, isEdit?: boolean) => void;
+  getCurrentWorkspaceXml: () => string | null;
 }
 
-export const AIChatPanel = ({ onBlocksGenerated }: AIChatPanelProps) => {
+export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml }: AIChatPanelProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -30,6 +31,8 @@ export const AIChatPanel = ({ onBlocksGenerated }: AIChatPanelProps) => {
     setIsLoading(true);
 
     try {
+      const currentXml = getCurrentWorkspaceXml();
+      
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-strategy`,
         {
@@ -38,7 +41,10 @@ export const AIChatPanel = ({ onBlocksGenerated }: AIChatPanelProps) => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({ message: input }),
+          body: JSON.stringify({ 
+            message: input,
+            currentWorkspace: currentXml 
+          }),
         }
       );
 
@@ -49,14 +55,17 @@ export const AIChatPanel = ({ onBlocksGenerated }: AIChatPanelProps) => {
 
       const data = await response.json();
       
+      const isEdit = currentXml !== null;
       const assistantMessage: Message = {
         role: "assistant",
-        content: "Strategy blocks generated successfully! Adding to workspace...",
+        content: isEdit 
+          ? "Strategy updated successfully! Replacing workspace..."
+          : "Strategy blocks generated successfully! Adding to workspace...",
       };
       setMessages((prev) => [...prev, assistantMessage]);
 
-      // Call the callback to load blocks into workspace
-      onBlocksGenerated(data.xml);
+      // Call the callback to load blocks into workspace, marking as edit if workspace existed
+      onBlocksGenerated(data.xml, isEdit);
 
       toast({
         title: "Strategy Generated",
