@@ -71,6 +71,12 @@ export const BlocklyWorkspace = () => {
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [pendingXml, setPendingXml] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  const getWorkspaceXml = () => {
+    if (!workspaceRef.current) return '';
+    const xml = Blockly.Xml.workspaceToDom(workspaceRef.current);
+    return Blockly.Xml.domToText(xml);
+  };
   useEffect(() => {
     if (!blocklyDiv.current) return;
 
@@ -997,7 +1003,10 @@ export const BlocklyWorkspace = () => {
 
             {/* AI Panel Content */}
             <div className="flex-1 overflow-auto">
-              <AIChatPanel onBlocksGenerated={handleBlocksGenerated} />
+              <AIChatPanel 
+                onBlocksGenerated={handleBlocksGenerated}
+                workspaceXml={getWorkspaceXml()}
+              />
             </div>
           </div>
         )}
