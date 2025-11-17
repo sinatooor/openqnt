@@ -730,36 +730,35 @@ export const BlocklyWorkspace = () => {
 
       {/* Main Content */}
       <div className="flex-1 relative flex overflow-hidden">
-        {/* AI Panel */}
-        {showAIPanel && (
-          <div className="w-[450px] bg-card border-r border-border flex flex-col">
-            {/* AI Panel Header */}
-            <div className="border-b border-border p-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-foreground flex items-center gap-2">
-                  <Wand2 className="w-4 h-4" />
-                  AI Assistant
-                </h3>
-                <Button variant="ghost" size="sm" onClick={() => setShowAIPanel(false)}>
-                  <span className="text-xs">Close</span>
-                </Button>
-              </div>
-            </div>
-
-            {/* AI Panel Content */}
-            <div className="flex-1 overflow-auto p-4 bg-secondary/20">
-              <div className="bg-background/50 rounded-lg p-6 border border-border text-center">
-                <Wand2 className="w-12 h-12 mx-auto mb-4 text-primary animate-pulse" />
-                <p className="text-muted-foreground">
-                  AI chatbot will be implemented here
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Blockly Workspace */}
         <div className="flex-1 relative overflow-hidden">
+          {/* AI Panel - positioned after toolbox */}
+          {showAIPanel && (
+            <div className="absolute top-0 bottom-0 left-[200px] w-[450px] bg-card border-r border-l border-border flex flex-col z-10">
+              {/* AI Panel Header */}
+              <div className="border-b border-border p-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <Wand2 className="w-4 h-4" />
+                    AI Assistant
+                  </h3>
+                  <Button variant="ghost" size="sm" onClick={() => setShowAIPanel(false)}>
+                    <span className="text-xs">Close</span>
+                  </Button>
+                </div>
+              </div>
+
+              {/* AI Panel Content */}
+              <div className="flex-1 overflow-auto p-4 bg-secondary/20">
+                <div className="bg-background/50 rounded-lg p-6 border border-border text-center">
+                  <Wand2 className="w-12 h-12 mx-auto mb-4 text-primary animate-pulse" />
+                  <p className="text-muted-foreground">
+                    AI chatbot will be implemented here
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
           <div
             ref={blocklyDiv}
             className="absolute inset-0"
