@@ -68,7 +68,7 @@ export const BlocklyWorkspace = () => {
   const [showBacktest, setShowBacktest] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [showFloatingChart, setShowFloatingChart] = useState(false);
-  const [showAIPanel, setShowAIPanel] = useState(false);
+  const [showAIPanel, setShowAIPanel] = useState(true);
   const [pendingXml, setPendingXml] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   useEffect(() => {
