@@ -422,16 +422,18 @@ export const BlocklyWorkspace = () => {
     }
   };
 
-  const handleBlocksGenerated = (xml: string) => {
+  const handleBlocksGenerated = (xml: string, isEdit: boolean = false) => {
     if (!workspaceRef.current) return;
 
     const hasBlocks = workspaceRef.current.getAllBlocks(false).length > 0;
 
-    if (!hasBlocks) {
-      // Workspace is empty, add blocks directly
-      loadXmlToWorkspace(xml);
-      toast.success("Strategy Added", {
-        description: "AI-generated blocks have been added to your workspace.",
+    if (!hasBlocks || isEdit) {
+      // Workspace is empty or this is an edit - replace/add blocks directly
+      loadXmlToWorkspace(xml, isEdit);
+      toast.success(isEdit ? "Strategy Updated" : "Strategy Added", {
+        description: isEdit 
+          ? "Your blocks have been updated with the changes."
+          : "AI-generated blocks have been added to your workspace.",
       });
     } else {
       // Workspace has blocks, ask user first
@@ -440,7 +442,17 @@ export const BlocklyWorkspace = () => {
     }
   };
 
-  const loadXmlToWorkspace = (xml: string) => {
+  const getCurrentWorkspaceXml = (): string | null => {
+    if (!workspaceRef.current) return null;
+    
+    const allBlocks = workspaceRef.current.getAllBlocks(false);
+    if (allBlocks.length === 0) return null;
+    
+    const xml = Blockly.Xml.workspaceToDom(workspaceRef.current);
+    return Blockly.Xml.domToText(xml);
+  };
+
+  const loadXmlToWorkspace = (xml: string, clearFirst: boolean = false) => {
     if (!workspaceRef.current) return;
 
     try {
@@ -448,6 +460,11 @@ export const BlocklyWorkspace = () => {
       let cleanXml = xml.trim();
       if (cleanXml.includes('```xml')) {
         cleanXml = cleanXml.replace(/```xml\n?/g, '').replace(/```/g, '').trim();
+      }
+      
+      // Clear workspace if editing
+      if (clearFirst) {
+        workspaceRef.current.clear();
       }
       
       const xmlDom = Blockly.utils.xml.textToDom(cleanXml);
@@ -1002,7 +1019,10 @@ export const BlocklyWorkspace = () => {
 
             {/* AI Panel Content */}
             <div className="flex-1 overflow-auto">
-              <AIChatPanel onBlocksGenerated={handleBlocksGenerated} />
+              <AIChatPanel 
+                onBlocksGenerated={handleBlocksGenerated} 
+                getCurrentWorkspaceXml={getCurrentWorkspaceXml}
+              />
             </div>
           </div>
         )}

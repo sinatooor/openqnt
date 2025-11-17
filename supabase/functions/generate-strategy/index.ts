@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message } = await req.json();
+    const { message, currentWorkspace } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
@@ -19,6 +19,7 @@ serve(async (req) => {
     }
 
     console.log("Generating strategy for:", message);
+    console.log("Has existing workspace:", !!currentWorkspace);
 
     const systemPrompt = `You are a trading strategy expert that creates Blockly XML code for visual programming.
 
@@ -309,7 +310,9 @@ IMPORTANT RULES:
           { role: "system", content: systemPrompt },
           {
             role: "user",
-            content: `Generate Blockly XML for this trading strategy: ${message}\n\nReturn ONLY the XML wrapped in <xml></xml> tags. No explanations.`,
+            content: currentWorkspace 
+              ? `Here is my current trading strategy workspace:\n\n${currentWorkspace}\n\nPlease modify it according to this request: ${message}\n\nReturn ONLY the complete updated XML wrapped in <xml></xml> tags. No explanations.`
+              : `Generate Blockly XML for this trading strategy: ${message}\n\nReturn ONLY the XML wrapped in <xml></xml> tags. No explanations.`,
           },
         ],
       }),
