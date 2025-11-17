@@ -221,7 +221,7 @@ export const BlocklyWorkspace = () => {
 
     // Register custom category callback for AI
     workspace.registerToolboxCategoryCallback("AI_CATEGORY", () => {
-      setShowAIPanel(true);
+      setShowAIPanel((prev) => !prev);
       return [];
     });
 
