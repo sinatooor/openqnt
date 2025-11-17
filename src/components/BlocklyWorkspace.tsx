@@ -57,6 +57,7 @@ export const BlocklyWorkspace = () => {
   const [showBacktest, setShowBacktest] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [showFloatingChart, setShowFloatingChart] = useState(false);
+  const [showAIPanel, setShowAIPanel] = useState(false);
   useEffect(() => {
     if (!blocklyDiv.current) return;
 
@@ -131,6 +132,15 @@ export const BlocklyWorkspace = () => {
       toolbox: {
         kind: "categoryToolbox",
         contents: [
+          {
+            kind: "category",
+            name: "AI",
+            colour: "#ec4899",
+            custom: "AI_CATEGORY",
+          },
+          {
+            kind: "sep",
+          },
           {
             kind: "category",
             name: "Environment",
@@ -208,6 +218,12 @@ export const BlocklyWorkspace = () => {
       },
     });
     workspaceRef.current = workspace;
+
+    // Register custom category callback for AI
+    workspace.registerToolboxCategoryCallback("AI_CATEGORY", () => {
+      setShowAIPanel(true);
+      return [];
+    });
 
     // Listen to workspace changes to update code and stats
     workspace.addChangeListener(() => {
@@ -892,6 +908,34 @@ export const BlocklyWorkspace = () => {
             symbol="BTC/USDT"
             onClose={handleCloseBacktest}
           />
+        )}
+
+        {/* AI Panel */}
+        {showAIPanel && (
+          <div className="w-[450px] bg-card border-l border-border flex flex-col">
+            {/* AI Panel Header */}
+            <div className="border-b border-border p-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-foreground flex items-center gap-2">
+                  <Wand2 className="w-4 h-4" />
+                  AI Assistant
+                </h3>
+                <Button variant="ghost" size="sm" onClick={() => setShowAIPanel(false)}>
+                  <span className="text-xs">Close</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* AI Panel Content */}
+            <div className="flex-1 overflow-auto p-4 bg-secondary/20">
+              <div className="bg-background/50 rounded-lg p-6 border border-border text-center">
+                <Wand2 className="w-12 h-12 mx-auto mb-4 text-primary animate-pulse" />
+                <p className="text-muted-foreground">
+                  AI chatbot will be implemented here
+                </p>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 
