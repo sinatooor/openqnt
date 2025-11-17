@@ -1022,6 +1022,7 @@ export const BlocklyWorkspace = () => {
               <AIChatPanel 
                 onBlocksGenerated={handleBlocksGenerated} 
                 getCurrentWorkspaceXml={getCurrentWorkspaceXml}
+                hasBlocks={!isEmpty}
               />
             </div>
           </div>

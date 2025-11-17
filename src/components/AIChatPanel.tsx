@@ -15,9 +15,10 @@ interface Message {
 interface AIChatPanelProps {
   onBlocksGenerated: (xml: string, isEdit?: boolean) => void;
   getCurrentWorkspaceXml: () => string | null;
+  hasBlocks: boolean;
 }
 
-export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml }: AIChatPanelProps) => {
+export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, hasBlocks }: AIChatPanelProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -161,7 +162,7 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml }: AICha
       </div>
 
       <ScrollArea className="flex-1 p-4">
-        {messages.length === 0 ? (
+        {messages.length === 0 && !hasBlocks ? (
           <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-6">
             <Sparkles className="w-12 h-12 mb-4 text-pink-500/50" />
             {isGenerateMode ? (
