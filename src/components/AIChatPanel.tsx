@@ -3,8 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
-import { Loader2, Send, Sparkles } from "lucide-react";
+import { Loader2, Send, Sparkles, MessageSquare, Code } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Toggle } from "@/components/ui/toggle";
 
 interface Message {
   role: "user" | "assistant";
@@ -20,6 +21,7 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml }: AICha
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isGenerateMode, setIsGenerateMode] = useState(true);
   const { toast } = useToast();
 
   const handleSend = async () => {
@@ -31,52 +33,82 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml }: AICha
     setIsLoading(true);
 
     try {
-      const currentXml = getCurrentWorkspaceXml();
-      
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-strategy`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ 
-            message: input,
-            currentWorkspace: currentXml 
-          }),
+      if (isGenerateMode) {
+        // Generate mode - create blocks
+        const currentXml = getCurrentWorkspaceXml();
+        
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-strategy`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+            body: JSON.stringify({ 
+              message: input,
+              currentWorkspace: currentXml 
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to generate strategy");
         }
-      );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to generate strategy");
+        const data = await response.json();
+        
+        const isEdit = currentXml !== null;
+        const assistantMessage: Message = {
+          role: "assistant",
+          content: isEdit 
+            ? "Strategy updated successfully! Replacing workspace..."
+            : "Strategy blocks generated successfully! Adding to workspace...",
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+
+        onBlocksGenerated(data.xml, isEdit);
+
+        toast({
+          title: "Strategy Generated",
+          description: "Your trading blocks have been added to the workspace.",
+        });
+      } else {
+        // Conversational mode - just chat
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/conversational-chat`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+            body: JSON.stringify({ 
+              messages: [...messages, userMessage]
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to get response");
+        }
+
+        const data = await response.json();
+        
+        const assistantMessage: Message = {
+          role: "assistant",
+          content: data.response,
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
       }
-
-      const data = await response.json();
-      
-      const isEdit = currentXml !== null;
-      const assistantMessage: Message = {
-        role: "assistant",
-        content: isEdit 
-          ? "Strategy updated successfully! Replacing workspace..."
-          : "Strategy blocks generated successfully! Adding to workspace...",
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
-
-      // Call the callback to load blocks into workspace, marking as edit if workspace existed
-      onBlocksGenerated(data.xml, isEdit);
-
-      toast({
-        title: "Strategy Generated",
-        description: "Your trading blocks have been added to the workspace.",
-      });
     } catch (error) {
-      console.error("Error generating strategy:", error);
+      console.error("Error:", error);
       
       const errorMessage: Message = {
         role: "assistant",
-        content: `Sorry, I couldn't generate the strategy: ${
+        content: `Sorry, I encountered an error: ${
           error instanceof Error ? error.message : "Unknown error"
         }`,
       };
@@ -84,7 +116,7 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml }: AICha
 
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to generate strategy",
+        description: error instanceof Error ? error.message : "Failed to process request",
         variant: "destructive",
       });
     } finally {
@@ -101,20 +133,52 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml }: AICha
 
   return (
     <Card className="flex flex-col h-full bg-background/95 backdrop-blur border-border">
-      <div className="p-4 border-b border-border flex items-center gap-2">
-        <Sparkles className="w-5 h-5 text-pink-500" />
-        <h3 className="font-semibold text-foreground">AI Strategy Generator</h3>
+      <div className="p-4 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-pink-500" />
+          <h3 className="font-semibold text-foreground">AI Strategy Generator</h3>
+        </div>
+        <Toggle
+          pressed={isGenerateMode}
+          onPressedChange={setIsGenerateMode}
+          aria-label="Toggle mode"
+          className="data-[state=on]:bg-pink-500/20 data-[state=on]:text-pink-500"
+        >
+          {isGenerateMode ? (
+            <>
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Conversational
+            </>
+          ) : (
+            <>
+              <Code className="w-4 h-4 mr-2" />
+              Generate
+            </>
+          )}
+        </Toggle>
       </div>
 
       <ScrollArea className="flex-1 p-4">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-6">
             <Sparkles className="w-12 h-12 mb-4 text-pink-500/50" />
-            <p className="text-sm mb-4">Describe your trading strategy in plain English</p>
-            <div className="text-xs space-y-2">
-              <p className="italic">"Buy when price crosses above 20-day SMA"</p>
-              <p className="italic">"RSI strategy - long below 30, close above 70"</p>
-            </div>
+            {isGenerateMode ? (
+              <>
+                <p className="text-sm mb-4">Describe your trading strategy in plain English</p>
+                <div className="text-xs space-y-2">
+                  <p className="italic">"Buy when price crosses above 20-day SMA"</p>
+                  <p className="italic">"RSI strategy - long below 30, close above 70"</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm mb-4">Ask me anything about trading strategies</p>
+                <div className="text-xs space-y-2">
+                  <p className="italic">"What is RSI and how do I use it?"</p>
+                  <p className="italic">"Explain moving average crossover strategies"</p>
+                </div>
+              </>
+            )}
           </div>
         ) : (
           <div className="space-y-4">

@@ -2,3 +2,6 @@ project_id = "***REMOVED***"
 
 [functions.generate-strategy]
 verify_jwt = false
+
+[functions.conversational-chat]
+verify_jwt = false
