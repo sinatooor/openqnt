@@ -221,17 +221,12 @@ export const BlocklyWorkspace = () => {
 
     // Register custom category callback for AI
     workspace.registerToolboxCategoryCallback("AI_CATEGORY", () => {
-      setShowAIPanel(prev => !prev);
+      setShowAIPanel(true);
       return [];
     });
 
     // Listen to workspace changes to update code and stats
-    workspace.addChangeListener((event: any) => {
-      // Close AI panel when other categories are clicked (flyout shown)
-      if (event.type === Blockly.Events.TOOLBOX_ITEM_SELECT) {
-        setShowAIPanel(false);
-      }
-
+    workspace.addChangeListener(() => {
       const code = generateCode(workspace);
       setGeneratedCode(code);
 
@@ -735,34 +730,6 @@ export const BlocklyWorkspace = () => {
 
       {/* Main Content */}
       <div className="flex-1 relative flex overflow-hidden">
-        {/* AI Panel - Left Side */}
-        {showAIPanel && (
-          <div className="w-[400px] bg-card border-r border-border flex flex-col">
-            {/* AI Panel Header */}
-            <div className="border-b border-border p-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-foreground flex items-center gap-2">
-                  <Wand2 className="w-4 h-4" />
-                  AI Assistant
-                </h3>
-                <Button variant="ghost" size="sm" onClick={() => setShowAIPanel(false)}>
-                  <span className="text-xs">Close</span>
-                </Button>
-              </div>
-            </div>
-
-            {/* AI Panel Content */}
-            <div className="flex-1 overflow-auto p-4 bg-secondary/20">
-              <div className="bg-background/50 rounded-lg p-6 border border-border text-center">
-                <Wand2 className="w-12 h-12 mx-auto mb-4 text-primary animate-pulse" />
-                <p className="text-muted-foreground">
-                  AI chatbot will be implemented here
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Blockly Workspace */}
         <div className="flex-1 relative overflow-hidden">
           <div
@@ -941,6 +908,34 @@ export const BlocklyWorkspace = () => {
             symbol="BTC/USDT"
             onClose={handleCloseBacktest}
           />
+        )}
+
+        {/* AI Panel */}
+        {showAIPanel && (
+          <div className="w-[450px] bg-card border-l border-border flex flex-col">
+            {/* AI Panel Header */}
+            <div className="border-b border-border p-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-foreground flex items-center gap-2">
+                  <Wand2 className="w-4 h-4" />
+                  AI Assistant
+                </h3>
+                <Button variant="ghost" size="sm" onClick={() => setShowAIPanel(false)}>
+                  <span className="text-xs">Close</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* AI Panel Content */}
+            <div className="flex-1 overflow-auto p-4 bg-secondary/20">
+              <div className="bg-background/50 rounded-lg p-6 border border-border text-center">
+                <Wand2 className="w-12 h-12 mx-auto mb-4 text-primary animate-pulse" />
+                <p className="text-muted-foreground">
+                  AI chatbot will be implemented here
+                </p>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 
