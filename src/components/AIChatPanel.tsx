@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
-import { Loader2, Send, Sparkles } from "lucide-react";
+import { Loader2, Send, Bot } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
@@ -13,9 +13,10 @@ interface Message {
 
 interface AIChatPanelProps {
   onBlocksGenerated: (xml: string) => void;
+  workspaceXml: string;
 }
 
-export const AIChatPanel = ({ onBlocksGenerated }: AIChatPanelProps) => {
+export const AIChatPanel = ({ onBlocksGenerated, workspaceXml }: AIChatPanelProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -30,6 +31,11 @@ export const AIChatPanel = ({ onBlocksGenerated }: AIChatPanelProps) => {
     setIsLoading(true);
 
     try {
+      const conversationHistory = messages.map(m => ({
+        role: m.role,
+        content: m.content
+      }));
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-strategy`,
         {
@@ -38,7 +44,11 @@ export const AIChatPanel = ({ onBlocksGenerated }: AIChatPanelProps) => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({ message: input }),
+          body: JSON.stringify({ 
+            message: input,
+            workspaceXml,
+            conversationHistory
+          }),
         }
       );
 
@@ -51,17 +61,14 @@ export const AIChatPanel = ({ onBlocksGenerated }: AIChatPanelProps) => {
       
       const assistantMessage: Message = {
         role: "assistant",
-        content: "Strategy blocks generated successfully! Adding to workspace...",
+        content: data.message,
       };
       setMessages((prev) => [...prev, assistantMessage]);
 
-      // Call the callback to load blocks into workspace
-      onBlocksGenerated(data.xml);
-
-      toast({
-        title: "Strategy Generated",
-        description: "Your trading blocks have been added to the workspace.",
-      });
+      // If response contains blocks, trigger the callback
+      if (data.hasBlocks) {
+        onBlocksGenerated(data.message);
+      }
     } catch (error) {
       console.error("Error generating strategy:", error);
       
@@ -93,18 +100,19 @@ export const AIChatPanel = ({ onBlocksGenerated }: AIChatPanelProps) => {
   return (
     <Card className="flex flex-col h-full bg-background/95 backdrop-blur border-border">
       <div className="p-4 border-b border-border flex items-center gap-2">
-        <Sparkles className="w-5 h-5 text-pink-500" />
-        <h3 className="font-semibold text-foreground">AI Strategy Generator</h3>
+        <Bot className="w-5 h-5 text-primary" />
+        <h3 className="font-semibold text-foreground">AI Strategy Assistant</h3>
       </div>
 
       <ScrollArea className="flex-1 p-4">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-6">
-            <Sparkles className="w-12 h-12 mb-4 text-pink-500/50" />
-            <p className="text-sm mb-4">Describe your trading strategy in plain English</p>
-            <div className="text-xs space-y-2">
-              <p className="italic">"Buy when price crosses above 20-day SMA"</p>
-              <p className="italic">"RSI strategy - long below 30, close above 70"</p>
+            <Bot className="w-12 h-12 mb-4 text-primary/50" />
+            <p className="text-sm mb-4 font-medium">Chat about trading strategies</p>
+            <div className="text-xs space-y-2 text-muted-foreground/70">
+              <p>"What's a good RSI strategy?"</p>
+              <p>"Add blocks for a moving average crossover"</p>
+              <p>"How can I manage risk better?"</p>
             </div>
           </div>
         ) : (
@@ -143,7 +151,7 @@ export const AIChatPanel = ({ onBlocksGenerated }: AIChatPanelProps) => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Describe your trading strategy..."
+            placeholder="Ask about strategies or request blocks..."
             disabled={isLoading}
             className="flex-1 bg-background border-border"
           />
