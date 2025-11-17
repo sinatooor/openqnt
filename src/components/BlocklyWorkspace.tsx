@@ -38,9 +38,20 @@ import { toast } from "sonner";
 import { BacktestingPanel } from "./BacktestingPanel";
 import { StrategyTemplatesDialog } from "./StrategyTemplatesDialog";
 import { FloatingChartModal } from "./FloatingChartModal";
+import { AIChatPanel } from "./AIChatPanel";
 import { runBacktest, BacktestResult } from "@/lib/backtestEngine";
 import { StrategyTemplate } from "@/lib/strategyTemplates";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 export const BlocklyWorkspace = () => {
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
@@ -58,6 +69,8 @@ export const BlocklyWorkspace = () => {
   const [showTemplates, setShowTemplates] = useState(false);
   const [showFloatingChart, setShowFloatingChart] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
+  const [pendingXml, setPendingXml] = useState<string | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   useEffect(() => {
     if (!blocklyDiv.current) return;
 
@@ -408,6 +421,62 @@ export const BlocklyWorkspace = () => {
       setIsBacktesting(false);
     }
   };
+
+  const handleBlocksGenerated = (xml: string) => {
+    if (!workspaceRef.current) return;
+
+    const hasBlocks = workspaceRef.current.getAllBlocks(false).length > 0;
+
+    if (!hasBlocks) {
+      // Workspace is empty, add blocks directly
+      loadXmlToWorkspace(xml);
+      toast.success("Strategy Added", {
+        description: "AI-generated blocks have been added to your workspace.",
+      });
+    } else {
+      // Workspace has blocks, ask user first
+      setPendingXml(xml);
+      setShowConfirmDialog(true);
+    }
+  };
+
+  const loadXmlToWorkspace = (xml: string) => {
+    if (!workspaceRef.current) return;
+
+    try {
+      // Extract XML content if it's wrapped in markdown code blocks
+      let cleanXml = xml.trim();
+      if (cleanXml.includes('```xml')) {
+        cleanXml = cleanXml.replace(/```xml\n?/g, '').replace(/```/g, '').trim();
+      }
+      
+      const xmlDom = Blockly.utils.xml.textToDom(cleanXml);
+      Blockly.Xml.appendDomToWorkspace(xmlDom, workspaceRef.current);
+      
+      // Center and zoom to fit
+      workspaceRef.current.zoomToFit();
+    } catch (error) {
+      console.error("Error loading XML:", error);
+      toast.error("Failed to load generated blocks. Please try again.");
+    }
+  };
+
+  const handleConfirmAdd = () => {
+    if (pendingXml) {
+      loadXmlToWorkspace(pendingXml);
+      setPendingXml(null);
+      toast.success("Strategy Added", {
+        description: "AI-generated blocks have been added to your workspace.",
+      });
+    }
+    setShowConfirmDialog(false);
+  };
+
+  const handleCancelAdd = () => {
+    setPendingXml(null);
+    setShowConfirmDialog(false);
+  };
+
   const handleCloseBacktest = () => {
     setShowBacktest(false);
     setBacktestResult(null);
@@ -927,13 +996,8 @@ export const BlocklyWorkspace = () => {
             </div>
 
             {/* AI Panel Content */}
-            <div className="flex-1 overflow-auto p-4 bg-secondary/20">
-              <div className="bg-background/50 rounded-lg p-6 border border-border text-center">
-                <Wand2 className="w-12 h-12 mx-auto mb-4 text-primary animate-pulse" />
-                <p className="text-muted-foreground">
-                  AI chatbot will be implemented here
-                </p>
-              </div>
+            <div className="flex-1 overflow-auto">
+              <AIChatPanel onBlocksGenerated={handleBlocksGenerated} />
             </div>
           </div>
         )}
@@ -953,6 +1017,22 @@ export const BlocklyWorkspace = () => {
         symbol="BTC/USDT"
         interval="1D"
       />
+
+      {/* Confirmation Dialog for Adding AI Blocks */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Add AI-Generated Blocks?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your workspace already contains blocks. Do you want to add the AI-generated strategy blocks to your existing workspace?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelAdd}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmAdd}>Add Blocks</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
