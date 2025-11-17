@@ -5,7 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { Loader2, Send, Sparkles, MessageSquare, Code } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Toggle } from "@/components/ui/toggle";
+import ReactMarkdown from "react-markdown";
 
 interface Message {
   role: "user" | "assistant";
@@ -133,29 +133,31 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml }: AICha
 
   return (
     <Card className="flex flex-col h-full bg-background/95 backdrop-blur border-border">
-      <div className="p-4 border-b border-border flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="p-4 border-b border-border">
+        <div className="flex items-center gap-2 mb-3">
           <Sparkles className="w-5 h-5 text-pink-500" />
           <h3 className="font-semibold text-foreground">AI Strategy Generator</h3>
         </div>
-        <Toggle
-          pressed={isGenerateMode}
-          onPressedChange={setIsGenerateMode}
-          aria-label="Toggle mode"
-          className="data-[state=on]:bg-pink-500/20 data-[state=on]:text-pink-500"
-        >
-          {isGenerateMode ? (
-            <>
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Conversational
-            </>
-          ) : (
-            <>
-              <Code className="w-4 h-4 mr-2" />
-              Generate
-            </>
-          )}
-        </Toggle>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => setIsGenerateMode(true)}
+            variant={isGenerateMode ? "default" : "outline"}
+            size="sm"
+            className={isGenerateMode ? "bg-pink-500 hover:bg-pink-600 text-white" : ""}
+          >
+            <Code className="w-4 h-4 mr-2" />
+            Generate Blocks
+          </Button>
+          <Button
+            onClick={() => setIsGenerateMode(false)}
+            variant={!isGenerateMode ? "default" : "outline"}
+            size="sm"
+            className={!isGenerateMode ? "bg-pink-500 hover:bg-pink-600 text-white" : ""}
+          >
+            <MessageSquare className="w-4 h-4 mr-2" />
+            Chat Only
+          </Button>
+        </div>
       </div>
 
       <ScrollArea className="flex-1 p-4">
@@ -194,7 +196,25 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml }: AICha
                       : "bg-muted text-foreground"
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  {msg.role === "assistant" ? (
+                    <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
+                      <ReactMarkdown
+                        components={{
+                          p: ({children}) => <p className="mb-2 last:mb-0">{children}</p>,
+                          ul: ({children}) => <ul className="list-disc ml-4 mb-2">{children}</ul>,
+                          ol: ({children}) => <ol className="list-decimal ml-4 mb-2">{children}</ol>,
+                          li: ({children}) => <li className="mb-1">{children}</li>,
+                          strong: ({children}) => <strong className="font-semibold">{children}</strong>,
+                          em: ({children}) => <em className="italic">{children}</em>,
+                          code: ({children}) => <code className="bg-background/50 px-1 py-0.5 rounded text-xs">{children}</code>,
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    </div>
+                  ) : (
+                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  )}
                 </div>
               </div>
             ))}
@@ -202,7 +222,9 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml }: AICha
               <div className="flex justify-start">
                 <div className="bg-muted rounded-lg p-3 flex items-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin text-pink-500" />
-                  <p className="text-sm text-muted-foreground">Generating strategy...</p>
+                  <p className="text-sm text-muted-foreground">
+                    {isGenerateMode ? "Generating your strategy..." : "Thinking..."}
+                  </p>
                 </div>
               </div>
             )}
