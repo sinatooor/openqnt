@@ -26,7 +26,6 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerateMode, setIsGenerateMode] = useState(true);
   const [draggedBlockXml, setDraggedBlockXml] = useState<{ xml: string; name: string } | null>(null);
-  const [isDragOver, setIsDragOver] = useState(false);
   const { toast } = useToast();
 
   // Listen for block drop events from workspace
@@ -41,35 +40,6 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
     window.addEventListener('addBlockToChat', handleAddBlock);
     return () => window.removeEventListener('addBlockToChat', handleAddBlock);
   }, []);
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    
-    const blockData = e.dataTransfer.getData('blockly/xml');
-    if (blockData) {
-      try {
-        const parsed = JSON.parse(blockData);
-        setDraggedBlockXml(parsed);
-        toast({
-          title: "Block Attached",
-          description: `${parsed.name} block attached to message`,
-        });
-      } catch (error) {
-        console.error("Failed to parse block data:", error);
-      }
-    }
-  };
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -216,12 +186,7 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
         </div>
       </div>
 
-      <ScrollArea 
-        className={`flex-1 p-4 transition-colors ${isDragOver ? 'bg-pink-500/10 border-2 border-pink-500 border-dashed' : ''}`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
+      <ScrollArea className="flex-1 p-4">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-6">
             <Sparkles className="w-12 h-12 mb-4 text-pink-500/50" />
