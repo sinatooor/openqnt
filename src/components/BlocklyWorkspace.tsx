@@ -13,10 +13,11 @@ import { BacktestingPanel } from "./BacktestingPanel";
 import { StrategyTemplatesDialog } from "./StrategyTemplatesDialog";
 import { FloatingChartModal } from "./FloatingChartModal";
 import { AIChatPanel } from "./AIChatPanel";
+import { GuidedTour } from "./GuidedTour";
+import { DevLogPanel, LogEntry } from "./DevLogPanel";
 import { runBacktest, BacktestResult } from "@/lib/backtestEngine";
 import { StrategyTemplate } from "@/lib/strategyTemplates";
 import { cn } from "@/lib/utils";
-import { GuidedTour } from "./GuidedTour";
 import { fetchMarketData } from "@/lib/marketDataService";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 interface BlocklyWorkspaceProps {
@@ -55,6 +56,10 @@ export const BlocklyWorkspace = ({
   const [isDraggingBlock, setIsDraggingBlock] = useState(false);
   const [draggedBlockData, setDraggedBlockData] = useState<{ xml: string; name: string } | null>(null);
   const aiPanelRef = useRef<HTMLDivElement>(null);
+  const [showDevLogs, setShowDevLogs] = useState(() => {
+    return localStorage.getItem('showDevLogs') === 'true';
+  });
+  const [devLogs, setDevLogs] = useState<LogEntry[]>([]);
 
   // Sync with prop changes
   useEffect(() => {
@@ -76,6 +81,22 @@ export const BlocklyWorkspace = ({
       onAIPanelChange(showAIPanel);
     }
   }, [showAIPanel, onAIPanelChange]);
+
+  // Dev logs keyboard shortcut
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+        e.preventDefault();
+        const newState = !showDevLogs;
+        setShowDevLogs(newState);
+        localStorage.setItem('showDevLogs', String(newState));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [showDevLogs]);
+
   const handleTourComplete = () => {
     setRunTour(false);
     if (onTourCompleteProp) {
@@ -656,6 +677,23 @@ export const BlocklyWorkspace = ({
         </div>
       </div>;
   };
+
+  const handleLog = (log: LogEntry) => {
+    setDevLogs(prev => {
+      const newLogs = [...prev, log];
+      return newLogs.slice(-100);
+    });
+  };
+
+  const handleClearLogs = () => {
+    setDevLogs([]);
+  };
+
+  const handleCloseLogs = () => {
+    setShowDevLogs(false);
+    localStorage.setItem('showDevLogs', 'false');
+  };
+
   const highlightSyntax = (line: string) => {
     if (!line.trim()) return " ";
 
@@ -1051,7 +1089,12 @@ export const BlocklyWorkspace = ({
 
             {/* AI Panel Content */}
             <div className="flex-1 overflow-auto">
-            <AIChatPanel onBlocksGenerated={handleBlocksGenerated} getCurrentWorkspaceXml={getCurrentWorkspaceXml} getSelectedBlocksXml={getSelectedBlocksXml} />
+            <AIChatPanel 
+              onBlocksGenerated={handleBlocksGenerated} 
+              getCurrentWorkspaceXml={getCurrentWorkspaceXml} 
+              getSelectedBlocksXml={getSelectedBlocksXml}
+              onLog={handleLog}
+            />
             </div>
           </div>}
       </div>
@@ -1061,6 +1104,15 @@ export const BlocklyWorkspace = ({
 
       {/* Floating Chart Modal */}
       <FloatingChartModal isOpen={showFloatingChart} onClose={() => setShowFloatingChart(false)} symbol="BTC/USDT" interval="1D" />
+
+      {/* Dev Logs Panel */}
+      {showDevLogs && (
+        <DevLogPanel 
+          logs={devLogs}
+          onClear={handleClearLogs}
+          onClose={handleCloseLogs}
+        />
+      )}
 
       {/* Confirmation Dialog for Adding AI Blocks */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>

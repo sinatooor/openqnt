@@ -18,9 +18,11 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
+    const blockCount = currentWorkspace ? (currentWorkspace.match(/<block /g) || []).length : 0;
     console.log("Generating strategy for:", message);
-    console.log("Has existing workspace:", !!currentWorkspace);
+    console.log("Has existing workspace:", !!currentWorkspace, `(${blockCount} blocks, ${(currentWorkspace?.length || 0) / 1024}KB)`);
     console.log("Has specific block attached:", !!blockXml);
+    console.log("Is modification request:", !!currentWorkspace);
 
     let systemPrompt = `You are a trading strategy expert that creates Blockly XML code for visual programming.
 
