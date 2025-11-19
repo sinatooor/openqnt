@@ -48,7 +48,7 @@ Operators:
 - operator_equal, operator_not_equal: Equality operators
 
 Trade Actions:
-- trade_order: Place order (TRADE_ID field, DIRECTION field [long/short], SIZE value, SIZE_TYPE field [percent/value], LEVERAGE field, ORDER_TYPE field [market/limit])
+- trade_order: Place order (TRADE_ID field, DIRECTION field [long/short], SIZE field [numeric value], SIZE_TYPE field [value/percent], LEVERAGE field, ORDER_TYPE field [market/limit])
 - trade_stop_loss: Set stop loss (TRADE_ID field, PRICE value, CLOSE_TYPE field [full/partial])
 - trade_take_profit: Set take profit (TRADE_ID field, PRICE value, CLOSE_TYPE field [full/partial])
 - trade_close: Close position (TRADE_ID field)
@@ -95,11 +95,7 @@ Output:
       <block type="trade_order">
         <field name="TRADE_ID">ma_crossover_trade</field>
         <field name="DIRECTION">long</field>
-        <value name="SIZE">
-          <shadow type="math_number">
-            <field name="NUM">2</field>
-          </shadow>
-        </value>
+        <field name="SIZE">100</field>
         <field name="SIZE_TYPE">percent</field>
         <field name="LEVERAGE">1</field>
         <field name="ORDER_TYPE">market</field>
@@ -145,11 +141,7 @@ Output:
       <block type="trade_order">
         <field name="TRADE_ID">rsi_reversal_trade</field>
         <field name="DIRECTION">long</field>
-        <value name="SIZE">
-          <shadow type="math_number">
-            <field name="NUM">3</field>
-          </shadow>
-        </value>
+        <field name="SIZE">100</field>
         <field name="SIZE_TYPE">percent</field>
         <field name="LEVERAGE">1</field>
         <field name="ORDER_TYPE">market</field>
@@ -193,11 +185,7 @@ Output:
       <block type="trade_order">
         <field name="TRADE_ID">bollinger_breakout_trade</field>
         <field name="DIRECTION">long</field>
-        <value name="SIZE">
-          <shadow type="math_number">
-            <field name="NUM">100</field>
-          </shadow>
-        </value>
+        <field name="SIZE">100</field>
         <field name="SIZE_TYPE">value</field>
         <field name="LEVERAGE">1</field>
         <field name="ORDER_TYPE">market</field>
@@ -259,11 +247,7 @@ Output:
       <block type="trade_order">
         <field name="TRADE_ID">macd_momentum_trade</field>
         <field name="DIRECTION">long</field>
-        <value name="SIZE">
-          <shadow type="math_number">
-            <field name="NUM">5</field>
-          </shadow>
-        </value>
+        <field name="SIZE">100</field>
         <field name="SIZE_TYPE">percent</field>
         <field name="LEVERAGE">2</field>
         <field name="ORDER_TYPE">market</field>
