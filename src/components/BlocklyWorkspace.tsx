@@ -42,6 +42,7 @@ import { AIChatPanel } from "./AIChatPanel";
 import { runBacktest, BacktestResult } from "@/lib/backtestEngine";
 import { StrategyTemplate } from "@/lib/strategyTemplates";
 import { cn } from "@/lib/utils";
+import { GuidedTour, TourTriggerButton } from "./GuidedTour";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -71,6 +72,27 @@ export const BlocklyWorkspace = () => {
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [pendingXml, setPendingXml] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [runTour, setRunTour] = useState(false);
+
+  useEffect(() => {
+    // Check if user has seen the tour before
+    const hasSeenTour = localStorage.getItem("hasSeenGuidedTour");
+    if (!hasSeenTour) {
+      // Show tour after a brief delay to let the UI load
+      setTimeout(() => {
+        setRunTour(true);
+      }, 1000);
+    }
+  }, []);
+
+  const handleTourComplete = () => {
+    setRunTour(false);
+    localStorage.setItem("hasSeenGuidedTour", "true");
+  };
+
+  const handleStartTour = () => {
+    setRunTour(true);
+  };
   useEffect(() => {
     if (!blocklyDiv.current) return;
 
@@ -696,7 +718,7 @@ export const BlocklyWorkspace = () => {
           {/* File Operations Group */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" onClick={handleSaveWorkspace}>
+              <Button variant="outline" size="sm" onClick={handleSaveWorkspace} className="save-workspace-trigger">
                 <Download className="w-4 h-4 mr-2" />
               </Button>
             </TooltipTrigger>
@@ -736,7 +758,7 @@ export const BlocklyWorkspace = () => {
           {/* Execution Group */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="default" size="sm" onClick={handleRunStrategy}>
+              <Button variant="default" size="sm" onClick={handleRunStrategy} className="run-strategy-trigger">
                 <Play className="w-4 h-4 mr-2" />
                 Run
               </Button>
@@ -754,7 +776,7 @@ export const BlocklyWorkspace = () => {
                 size="sm"
                 onClick={handlePreviewBacktest}
                 disabled={isBacktesting || isEmpty}
-                className={cn("transition-all duration-200", isBacktesting && "animate-pulse")}
+                className={cn("transition-all duration-200 backtest-trigger", isBacktesting && "animate-pulse")}
               >
                 <TrendingUp className={cn("w-4 h-4 mr-2", isBacktesting && "animate-bounce")} />
                 {isBacktesting ? "Testing..." : "Backtest"}
@@ -870,13 +892,44 @@ export const BlocklyWorkspace = () => {
               <p className="text-xs text-muted-foreground mt-1">Ctrl+K</p>
             </TooltipContent>
           </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAIPanel(!showAIPanel)}
+                className="transition-all duration-200 hover-scale ai-panel-trigger"
+              >
+                <Wand2 className="w-4 h-4 mr-2" />
+                AI
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Open AI Strategy Generator</p>
+              <p className="text-xs text-muted-foreground mt-1">Generate or chat about strategies</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Separator orientation="vertical" className="h-6" />
+
+          {/* Tour Button */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <TourTriggerButton onClick={handleStartTour} />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Start Guided Tour</p>
+              <p className="text-xs text-muted-foreground mt-1">Learn how to use Fire</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 relative flex overflow-hidden">
         {/* Blockly Workspace */}
-        <div className="flex-1 relative overflow-hidden">
+        <div className="flex-1 relative overflow-hidden blockly-workspace">
           <div
             ref={blocklyDiv}
             className="absolute inset-0"
@@ -1113,6 +1166,9 @@ export const BlocklyWorkspace = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Guided Tour */}
+      <GuidedTour run={runTour} onComplete={handleTourComplete} />
     </div>
   );
 };
