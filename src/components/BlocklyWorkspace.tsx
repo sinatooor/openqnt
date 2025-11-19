@@ -55,6 +55,7 @@ export const BlocklyWorkspace = ({
   const [isDraggingBlock, setIsDraggingBlock] = useState(false);
   const [draggedBlockData, setDraggedBlockData] = useState<{ xml: string; name: string } | null>(null);
   const [isOverDeleteZone, setIsOverDeleteZone] = useState(false);
+  const [pendingDeleteZoneDrop, setPendingDeleteZoneDrop] = useState(false);
   const aiPanelRef = useRef<HTMLDivElement>(null);
 
   // Sync with prop changes
@@ -243,7 +244,7 @@ export const BlocklyWorkspace = ({
       return [];
     });
 
-    // Add drag event listener for blocks to enable dragging to chat
+    // Add drag and delete event listeners for blocks
     workspace.addChangeListener((event: any) => {
       if (event.type === Blockly.Events.BLOCK_DRAG) {
         const block = workspace.getBlockById(event.blockId);
@@ -261,16 +262,28 @@ export const BlocklyWorkspace = ({
         } else if (!event.isStart) {
           // Drag ended - check if dropped in delete zone
           if (isOverDeleteZone && draggedBlockData) {
-            // Block dropped in AI panel delete zone
-            const addBlockEvent = new CustomEvent('addBlockToChat', { 
-              detail: draggedBlockData 
-            });
-            window.dispatchEvent(addBlockEvent);
-            
-            toast.success(`Block added to chat: ${draggedBlockData.name}`);
+            // Mark that we're expecting a deletion from the delete zone
+            setPendingDeleteZoneDrop(true);
+          } else {
+            // Drag ended elsewhere, reset states
+            setIsDraggingBlock(false);
+            setDraggedBlockData(null);
+            setIsOverDeleteZone(false);
           }
+        }
+      } else if (event.type === Blockly.Events.BLOCK_DELETE) {
+        // Block was deleted - check if it was from our delete zone
+        if (pendingDeleteZoneDrop && draggedBlockData) {
+          // Block was successfully deleted via delete zone - add to chat
+          const addBlockEvent = new CustomEvent('addBlockToChat', { 
+            detail: draggedBlockData 
+          });
+          window.dispatchEvent(addBlockEvent);
           
-          // Reset states
+          toast.success(`Block added to chat: ${draggedBlockData.name}`);
+          
+          // Reset all states
+          setPendingDeleteZoneDrop(false);
           setIsDraggingBlock(false);
           setDraggedBlockData(null);
           setIsOverDeleteZone(false);
