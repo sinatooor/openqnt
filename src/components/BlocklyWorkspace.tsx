@@ -52,6 +52,9 @@ export const BlocklyWorkspace = ({
   const [pendingXml, setPendingXml] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [runTour, setRunTour] = useState(runTourProp || false);
+  const [isDraggingBlock, setIsDraggingBlock] = useState(false);
+  const [draggedBlockData, setDraggedBlockData] = useState<{ xml: string; name: string } | null>(null);
+  const aiPanelRef = useRef<HTMLDivElement>(null);
 
   // Sync with prop changes
   useEffect(() => {
@@ -243,19 +246,61 @@ export const BlocklyWorkspace = ({
     workspace.addChangeListener((event: any) => {
       if (event.type === Blockly.Events.BLOCK_DRAG) {
         const block = workspace.getBlockById(event.blockId);
-        if (block && event.isStart) {
+        if (event.isStart && block) {
+          // Drag started
           const blockXml = Blockly.Xml.blockToDom(block as Blockly.BlockSvg);
           const xmlText = Blockly.Xml.domToText(blockXml);
           const blockName = (block as any).type?.replace(/_/g, ' ') || 'Unknown block';
-
-          // Store in a way that can be accessed by drag event
-          (window as any).__draggedBlockData = JSON.stringify({
+          
+          setIsDraggingBlock(true);
+          setDraggedBlockData({
             xml: xmlText,
             name: blockName
           });
+        } else if (!event.isStart) {
+          // Drag ended - check if dropped on AI panel
+          const aiPanel = aiPanelRef.current;
+          if (aiPanel && draggedBlockData) {
+            const rect = aiPanel.getBoundingClientRect();
+            const mouseX = (event as any).clientX || (window as any).lastMouseX;
+            const mouseY = (event as any).clientY || (window as any).lastMouseY;
+            
+            // Check if drop position is within AI panel bounds
+            if (mouseX >= rect.left && mouseX <= rect.right && 
+                mouseY >= rect.top && mouseY <= rect.bottom) {
+              // Block was dropped on AI panel - add to chat
+              const chatInput = document.querySelector('[data-ai-chat-input]') as HTMLInputElement;
+              if (chatInput) {
+                // Trigger the add block to chat functionality
+                const addBlockEvent = new CustomEvent('addBlockToChat', { 
+                  detail: draggedBlockData 
+                });
+                window.dispatchEvent(addBlockEvent);
+                
+                toast({
+                  title: "Block Attached",
+                  description: `${draggedBlockData.name} attached to chat`,
+                });
+              }
+            }
+          }
+          
+          setIsDraggingBlock(false);
+          setDraggedBlockData(null);
         }
       }
     });
+
+    // Track mouse position for drop detection
+    const trackMouse = (e: MouseEvent) => {
+      (window as any).lastMouseX = e.clientX;
+      (window as any).lastMouseY = e.clientY;
+    };
+    document.addEventListener('mousemove', trackMouse);
+    
+    return () => {
+      document.removeEventListener('mousemove', trackMouse);
+    };
 
     // Listen to workspace changes to update code and stats
     workspace.addChangeListener(() => {
@@ -274,10 +319,6 @@ export const BlocklyWorkspace = ({
         setZoomLevel(Math.round(currentZoom * 100));
       }
     });
-
-    // Cleanup on unmount
-    return () => {
-      workspace.dispose();
     };
   }, []);
   const handleCopyCode = () => {
@@ -979,7 +1020,24 @@ export const BlocklyWorkspace = ({
         {showBacktest && <BacktestingPanel result={backtestResult} isLoading={isBacktesting} symbol="BTC/USDT" onClose={handleCloseBacktest} />}
 
         {/* AI Panel */}
-        {showAIPanel && <div className="w-[450px] bg-card border-l border-border flex flex-col">
+        {showAIPanel && <div 
+          ref={aiPanelRef}
+          className={cn(
+            "w-[450px] bg-card border-l border-border flex flex-col relative",
+            isDraggingBlock && "ring-2 ring-pink-500 ring-opacity-50"
+          )}
+        >
+            {/* Drop Zone Indicator */}
+            {isDraggingBlock && (
+              <div className="absolute inset-0 bg-pink-500/10 z-10 pointer-events-none flex items-center justify-center border-2 border-dashed border-pink-500">
+                <div className="bg-card/95 rounded-lg p-4 text-center">
+                  <Blocks className="w-8 h-8 mx-auto mb-2 text-pink-500" />
+                  <p className="text-sm font-semibold text-pink-500">Drop block here</p>
+                  <p className="text-xs text-muted-foreground">to attach to chat</p>
+                </div>
+              </div>
+            )}
+            
             {/* AI Panel Header */}
             <div className="border-b border-border p-4">
               <div className="flex items-center justify-between">
