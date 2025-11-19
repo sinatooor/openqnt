@@ -15,8 +15,13 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent } from "@/components/ui/card";
+import { TourTriggerButton } from "./GuidedTour";
 
-export const SettingsPanel = () => {
+interface SettingsPanelProps {
+  onStartTour?: () => void;
+}
+
+export const SettingsPanel = ({ onStartTour }: SettingsPanelProps) => {
   const [mode, setMode] = useState<"backtest" | "live">("live");
   const [tradingSymbol, setTradingSymbol] = useState("BTC/USDT");
   const [broker, setBroker] = useState("td");
@@ -32,9 +37,19 @@ export const SettingsPanel = () => {
   return (
     <div className="w-80 bg-card border-r border-border flex flex-col overflow-hidden animate-fade-in">
       {/* Header */}
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-foreground">Settings</h2>
+      <div className="px-3 py-2 border-b border-border">
+        <div className="flex items-center justify-between mb-3 gap-2">
+          <h2 className="font-semibold text-foreground text-sm">Settings</h2>
+          {onStartTour && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TourTriggerButton onClick={onStartTour} />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Start Guided Tour</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
         </div>
 
         {/* Mode Selector */}
