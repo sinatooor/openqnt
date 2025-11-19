@@ -346,9 +346,39 @@ IMPORTANT RULES:
       throw new Error("No content in AI response");
     }
 
-    console.log("Generated XML:", content);
+    // Validate response isn't just whitespace
+    if (!content.trim()) {
+      throw new Error("AI returned empty response");
+    }
 
-    return new Response(JSON.stringify({ xml: content }), {
+    // Validate response size (max 1MB)
+    if (content.length > 1024 * 1024) {
+      throw new Error("AI response is too large");
+    }
+
+    // Extract XML content from response (in case AI added explanation text)
+    let xmlContent = content.trim();
+    const xmlMatch = xmlContent.match(/<xml[^>]*>[\s\S]*<\/xml>/i);
+    
+    if (xmlMatch) {
+      xmlContent = xmlMatch[0];
+    } else {
+      // Check if response contains XML tags at all
+      if (!xmlContent.includes('<xml') || !xmlContent.includes('</xml>')) {
+        console.error("Invalid AI response - no XML tags found:", xmlContent);
+        throw new Error("AI did not generate valid Blockly XML. Please try rephrasing your request.");
+      }
+    }
+
+    // Validate XML starts with proper root element
+    if (!xmlContent.trim().startsWith('<xml')) {
+      console.error("Invalid XML format - doesn't start with <xml>:", xmlContent.substring(0, 100));
+      throw new Error("Generated XML format is invalid");
+    }
+
+    console.log("Generated XML (validated):", xmlContent.substring(0, 200) + "...");
+
+    return new Response(JSON.stringify({ xml: xmlContent }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {

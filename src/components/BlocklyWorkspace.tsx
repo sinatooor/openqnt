@@ -456,30 +456,55 @@ export const BlocklyWorkspace = () => {
     if (!workspaceRef.current) return;
 
     try {
-      // Extract XML content if it's wrapped in markdown code blocks
+      // Extract XML content if it's wrapped in markdown code blocks or surrounded by text
       let cleanXml = xml.trim();
+      
+      // Remove markdown code blocks
       if (cleanXml.includes('```xml')) {
         cleanXml = cleanXml.replace(/```xml\n?/g, '').replace(/```/g, '').trim();
       }
       
-      // Clear workspace if editing
+      // Extract XML using regex (in case AI added explanation text before/after)
+      const xmlMatch = cleanXml.match(/<xml[^>]*>[\s\S]*<\/xml>/i);
+      if (xmlMatch) {
+        cleanXml = xmlMatch[0];
+      }
+      
+      // Validate XML format
+      if (!cleanXml.startsWith('<xml')) {
+        console.error("Invalid XML format - doesn't start with <xml>:", cleanXml.substring(0, 100));
+        toast.error("Invalid XML format", {
+          description: "The generated blocks are not in the correct format. Please try again.",
+        });
+        return;
+      }
+      
+      if (!cleanXml.includes('</xml>')) {
+        console.error("Invalid XML format - missing closing tag:", cleanXml.substring(0, 100));
+        toast.error("Incomplete XML", {
+          description: "The generated blocks are incomplete. Please try again.",
+        });
+        return;
+      }
+      
       if (clearFirst) {
         workspaceRef.current.clear();
       }
       
       const xmlDom = Blockly.utils.xml.textToDom(cleanXml);
-      Blockly.Xml.appendDomToWorkspace(xmlDom, workspaceRef.current);
+      Blockly.Xml.domToWorkspace(xmlDom, workspaceRef.current);
       
-      // Center and zoom to fit
-      workspaceRef.current.zoomToFit();
-      
-      // Manually update isEmpty state to hide welcome message
       const allBlocks = workspaceRef.current.getAllBlocks(false);
       setIsEmpty(allBlocks.length === 0);
       setBlockCount(allBlocks.length);
     } catch (error) {
       console.error("Error loading XML:", error);
-      toast.error("Failed to load generated blocks. Please try again.");
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      toast.error("Failed to load blocks", {
+        description: errorMessage.includes("XML") 
+          ? "The generated blocks have invalid XML. Please try rephrasing your request."
+          : "Could not load the generated blocks. Please try again.",
+      });
     }
   };
 
