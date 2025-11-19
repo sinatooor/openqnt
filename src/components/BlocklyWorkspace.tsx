@@ -277,10 +277,7 @@ export const BlocklyWorkspace = ({
                 });
                 window.dispatchEvent(addBlockEvent);
                 
-                toast({
-                  title: "Block Attached",
-                  description: `${draggedBlockData.name} attached to chat`,
-                });
+                toast.success(`Block attached: ${draggedBlockData.name}`);
               }
             }
           }
@@ -297,10 +294,6 @@ export const BlocklyWorkspace = ({
       (window as any).lastMouseY = e.clientY;
     };
     document.addEventListener('mousemove', trackMouse);
-    
-    return () => {
-      document.removeEventListener('mousemove', trackMouse);
-    };
 
     // Listen to workspace changes to update code and stats
     workspace.addChangeListener(() => {
@@ -319,6 +312,11 @@ export const BlocklyWorkspace = ({
         setZoomLevel(Math.round(currentZoom * 100));
       }
     });
+
+    // Cleanup on unmount
+    return () => {
+      document.removeEventListener('mousemove', trackMouse);
+      workspace.dispose();
     };
   }, []);
   const handleCopyCode = () => {
