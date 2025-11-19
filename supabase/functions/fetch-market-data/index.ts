@@ -12,6 +12,17 @@ interface MarketDataRequest {
   outputsize?: 'compact' | 'full'; // compact = last 100 data points, full = up to 20 years
 }
 
+// Detect if symbol is a stock or crypto
+function getSymbolType(symbol: string): { type: 'stock' | 'crypto', cleanSymbol: string, market?: string } {
+  // Check if it's a crypto pair (contains /)
+  if (symbol.includes('/')) {
+    const [base, quote] = symbol.split('/');
+    return { type: 'crypto', cleanSymbol: base, market: quote };
+  }
+  // Otherwise treat as stock ticker
+  return { type: 'stock', cleanSymbol: symbol };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -27,31 +38,61 @@ serve(async (req) => {
 
     console.log(`Fetching market data for ${symbol}, interval: ${interval}, outputsize: ${outputsize}`);
 
-    // Determine which Alpha Vantage function to use based on interval
-    let avFunction = 'TIME_SERIES_DAILY';
-    let timeSeriesKey = 'Time Series (Daily)';
-
-    if (interval !== 'daily' && interval !== 'weekly' && interval !== 'monthly') {
-      // Intraday data
-      avFunction = 'TIME_SERIES_INTRADAY';
-      timeSeriesKey = `Time Series (${interval})`;
-    } else if (interval === 'weekly') {
-      avFunction = 'TIME_SERIES_WEEKLY';
-      timeSeriesKey = 'Weekly Time Series';
-    } else if (interval === 'monthly') {
-      avFunction = 'TIME_SERIES_MONTHLY';
-      timeSeriesKey = 'Monthly Time Series';
-    }
-
-    // Build the API URL
+    const symbolInfo = getSymbolType(symbol);
+    let avFunction = '';
+    let timeSeriesKey = '';
     const url = new URL('https://www.alphavantage.co/query');
-    url.searchParams.set('function', avFunction);
-    url.searchParams.set('symbol', symbol);
     url.searchParams.set('apikey', apiKey);
-    url.searchParams.set('outputsize', outputsize);
-    
-    if (avFunction === 'TIME_SERIES_INTRADAY') {
-      url.searchParams.set('interval', interval);
+
+    if (symbolInfo.type === 'stock') {
+      // Stock symbols - use TIME_SERIES functions
+      if (interval !== 'daily' && interval !== 'weekly' && interval !== 'monthly') {
+        // Intraday data for stocks
+        avFunction = 'TIME_SERIES_INTRADAY';
+        timeSeriesKey = `Time Series (${interval})`;
+        url.searchParams.set('function', avFunction);
+        url.searchParams.set('symbol', symbolInfo.cleanSymbol);
+        url.searchParams.set('interval', interval);
+        url.searchParams.set('outputsize', outputsize);
+      } else if (interval === 'weekly') {
+        avFunction = 'TIME_SERIES_WEEKLY';
+        timeSeriesKey = 'Weekly Time Series';
+        url.searchParams.set('function', avFunction);
+        url.searchParams.set('symbol', symbolInfo.cleanSymbol);
+      } else if (interval === 'monthly') {
+        avFunction = 'TIME_SERIES_MONTHLY';
+        timeSeriesKey = 'Monthly Time Series';
+        url.searchParams.set('function', avFunction);
+        url.searchParams.set('symbol', symbolInfo.cleanSymbol);
+      } else {
+        // Daily
+        avFunction = 'TIME_SERIES_DAILY';
+        timeSeriesKey = 'Time Series (Daily)';
+        url.searchParams.set('function', avFunction);
+        url.searchParams.set('symbol', symbolInfo.cleanSymbol);
+        url.searchParams.set('outputsize', outputsize);
+      }
+    } else {
+      // Crypto symbols - use DIGITAL_CURRENCY functions
+      if (interval !== 'daily' && interval !== 'weekly' && interval !== 'monthly') {
+        // Alpha Vantage doesn't support intraday crypto, fallback to daily
+        avFunction = 'DIGITAL_CURRENCY_DAILY';
+        timeSeriesKey = 'Time Series (Digital Currency Daily)';
+        console.log(`Note: Intraday not available for crypto, using daily data`);
+      } else if (interval === 'weekly') {
+        avFunction = 'DIGITAL_CURRENCY_WEEKLY';
+        timeSeriesKey = 'Time Series (Digital Currency Weekly)';
+      } else if (interval === 'monthly') {
+        avFunction = 'DIGITAL_CURRENCY_MONTHLY';
+        timeSeriesKey = 'Time Series (Digital Currency Monthly)';
+      } else {
+        avFunction = 'DIGITAL_CURRENCY_DAILY';
+        timeSeriesKey = 'Time Series (Digital Currency Daily)';
+      }
+      
+      url.searchParams.set('function', avFunction);
+      url.searchParams.set('symbol', symbolInfo.cleanSymbol);
+      url.searchParams.set('market', symbolInfo.market || 'USD');
     }
 
     console.log('Calling Alpha Vantage API:', url.toString().replace(apiKey, 'HIDDEN'));
@@ -61,28 +102,44 @@ serve(async (req) => {
 
     // Check for API errors
     if (data['Error Message']) {
+      console.error('Alpha Vantage API error:', data['Error Message']);
       throw new Error(data['Error Message']);
     }
 
+    if (data['Information']) {
+      console.error('Alpha Vantage rate limit:', data['Information']);
+      throw new Error('API rate limit reached. Please upgrade your Alpha Vantage plan or try again later.');
+    }
+
     if (data['Note']) {
-      throw new Error('API call frequency limit reached. Please try again later.');
+      console.warn('Alpha Vantage note:', data['Note']);
+      throw new Error('API call frequency limit reached. Please try again in a minute.');
     }
 
     // Transform the data to our format
     const timeSeries = data[timeSeriesKey];
     if (!timeSeries) {
       console.error('Unexpected API response:', data);
-      throw new Error('Invalid response from Alpha Vantage API');
+      throw new Error(`No time series data found. Expected key: "${timeSeriesKey}"`);
     }
 
-    const candlestickData = Object.entries(timeSeries).map(([timestamp, values]: [string, any]) => ({
-      time: Math.floor(new Date(timestamp).getTime() / 1000),
-      open: parseFloat(values['1. open']),
-      high: parseFloat(values['2. high']),
-      low: parseFloat(values['3. low']),
-      close: parseFloat(values['4. close']),
-      volume: parseInt(values['5. volume'] || '0'),
-    })).sort((a, b) => a.time - b.time); // Sort chronologically
+    const candlestickData = Object.entries(timeSeries).map(([timestamp, values]: [string, any]) => {
+      // Handle both stock and crypto data formats
+      const open = parseFloat(values['1. open'] || values['1a. open (USD)']);
+      const high = parseFloat(values['2. high'] || values['2a. high (USD)']);
+      const low = parseFloat(values['3. low'] || values['3a. low (USD)']);
+      const close = parseFloat(values['4. close'] || values['4a. close (USD)']);
+      const volume = parseInt(values['5. volume'] || '0');
+
+      return {
+        time: Math.floor(new Date(timestamp).getTime() / 1000),
+        open,
+        high,
+        low,
+        close,
+        volume,
+      };
+    }).sort((a, b) => a.time - b.time); // Sort chronologically
 
     console.log(`Successfully fetched ${candlestickData.length} data points for ${symbol}`);
 

@@ -8,7 +8,7 @@ import { X, GripHorizontal } from "lucide-react";
 import { useMarketData } from "@/hooks/useMarketData";
 import { cn } from "@/lib/utils";
 
-const SYMBOLS = ["BTC/USDT", "ETH/USDT", "BNB/USDT", "SOL/USDT", "XRP/USDT", "ADA/USDT"];
+const SYMBOLS = ["AAPL", "MSFT", "GOOGL", "TSLA", "BTC/USD", "ETH/USD", "SPY"];
 interface FloatingChartModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -18,7 +18,7 @@ interface FloatingChartModalProps {
 export const FloatingChartModal = ({
   isOpen,
   onClose,
-  symbol = "BTC/USDT",
+  symbol = "AAPL",
   interval = "1D",
 }: FloatingChartModalProps) => {
   const [currentSymbol, setCurrentSymbol] = useState(symbol);
