@@ -3,33 +3,74 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
-import { Loader2, Send, Sparkles, MessageSquare, Code } from "lucide-react";
+import { Loader2, Send, Sparkles, MessageSquare, Code, Blocks, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
+  blockXml?: string;
+  blockName?: string;
 }
 
 interface AIChatPanelProps {
   onBlocksGenerated: (xml: string, isEdit?: boolean) => void;
   getCurrentWorkspaceXml: () => string | null;
+  getSelectedBlocksXml: () => { xml: string; name: string } | null;
 }
 
-export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml }: AIChatPanelProps) => {
+export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSelectedBlocksXml }: AIChatPanelProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerateMode, setIsGenerateMode] = useState(true);
+  const [draggedBlockXml, setDraggedBlockXml] = useState<{ xml: string; name: string } | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
   const { toast } = useToast();
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    const blockData = e.dataTransfer.getData('blockly/xml');
+    if (blockData) {
+      try {
+        const parsed = JSON.parse(blockData);
+        setDraggedBlockXml(parsed);
+        toast({
+          title: "Block Attached",
+          description: `${parsed.name} block attached to message`,
+        });
+      } catch (error) {
+        console.error("Failed to parse block data:", error);
+      }
+    }
+  };
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
-    const userMessage: Message = { role: "user", content: input };
+    const userMessage: Message = { 
+      role: "user", 
+      content: input,
+      blockXml: draggedBlockXml?.xml,
+      blockName: draggedBlockXml?.name
+    };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
+    const attachedBlock = draggedBlockXml;
+    setDraggedBlockXml(null);
     setIsLoading(true);
 
     try {
@@ -47,7 +88,8 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml }: AICha
             },
             body: JSON.stringify({ 
               message: input,
-              currentWorkspace: currentXml 
+              currentWorkspace: currentXml,
+              blockXml: attachedBlock?.xml
             }),
           }
         );
@@ -85,7 +127,8 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml }: AICha
               Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             },
             body: JSON.stringify({ 
-              messages: [...messages, userMessage]
+              messages: [...messages, userMessage],
+              blockXml: attachedBlock?.xml
             }),
           }
         );
@@ -160,7 +203,12 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml }: AICha
         </div>
       </div>
 
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea 
+        className={`flex-1 p-4 transition-colors ${isDragOver ? 'bg-pink-500/10 border-2 border-pink-500 border-dashed' : ''}`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-6">
             <Sparkles className="w-12 h-12 mb-4 text-pink-500/50" />
@@ -181,6 +229,9 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml }: AICha
                 </div>
               </>
             )}
+            <p className="text-xs mt-4 text-pink-500/50">
+              💡 Drag blocks from workspace to ask about them
+            </p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -213,7 +264,15 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml }: AICha
                       </ReactMarkdown>
                     </div>
                   ) : (
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                    <>
+                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      {msg.blockXml && msg.blockName && (
+                        <div className="mt-2 flex items-center gap-1 text-xs text-pink-500/80">
+                          <Blocks className="w-3 h-3" />
+                          <span>Block: {msg.blockName}</span>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -233,6 +292,20 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml }: AICha
       </ScrollArea>
 
       <div className="p-4 border-t border-border">
+        {draggedBlockXml && (
+          <div className="mb-2 p-2 bg-pink-500/10 border border-pink-500/20 rounded flex items-center gap-2">
+            <Blocks className="w-4 h-4 text-pink-500" />
+            <span className="text-xs flex-1">Block attached: {draggedBlockXml.name}</span>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-6 w-6"
+              onClick={() => setDraggedBlockXml(null)}
+            >
+              <X className="w-3 h-3" />
+            </Button>
+          </div>
+        )}
         <div className="flex gap-2">
           <Input
             value={input}
