@@ -7,7 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, Undo2, Redo2, Blocks, Wand2, FileCode, BarChart3, TrendingUp, BookOpen, Trash2 } from "lucide-react";
+import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, Undo2, Redo2, Blocks, Wand2, FileCode, BarChart3, TrendingUp, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { BacktestingPanel } from "./BacktestingPanel";
 import { StrategyTemplatesDialog } from "./StrategyTemplatesDialog";
@@ -54,8 +54,6 @@ export const BlocklyWorkspace = ({
   const [runTour, setRunTour] = useState(runTourProp || false);
   const [isDraggingBlock, setIsDraggingBlock] = useState(false);
   const [draggedBlockData, setDraggedBlockData] = useState<{ xml: string; name: string } | null>(null);
-  const [isOverDeleteZone, setIsOverDeleteZone] = useState(false);
-  const [pendingDeleteZoneDrop, setPendingDeleteZoneDrop] = useState(false);
   const aiPanelRef = useRef<HTMLDivElement>(null);
 
   // Sync with prop changes
@@ -244,7 +242,7 @@ export const BlocklyWorkspace = ({
       return [];
     });
 
-    // Add drag and delete event listeners for blocks
+    // Add drag event listener for blocks to enable dragging to chat
     workspace.addChangeListener((event: any) => {
       if (event.type === Blockly.Events.BLOCK_DRAG) {
         const block = workspace.getBlockById(event.blockId);
@@ -260,33 +258,32 @@ export const BlocklyWorkspace = ({
             name: blockName
           });
         } else if (!event.isStart) {
-          // Drag ended - check if dropped in delete zone
-          if (isOverDeleteZone && draggedBlockData) {
-            // Mark that we're expecting a deletion from the delete zone
-            setPendingDeleteZoneDrop(true);
-          } else {
-            // Drag ended elsewhere, reset states
-            setIsDraggingBlock(false);
-            setDraggedBlockData(null);
-            setIsOverDeleteZone(false);
+          // Drag ended - check if dropped on AI panel
+          const aiPanel = aiPanelRef.current;
+          if (aiPanel && draggedBlockData) {
+            const rect = aiPanel.getBoundingClientRect();
+            const mouseX = (event as any).clientX || (window as any).lastMouseX;
+            const mouseY = (event as any).clientY || (window as any).lastMouseY;
+            
+            // Check if drop position is within AI panel bounds
+            if (mouseX >= rect.left && mouseX <= rect.right && 
+                mouseY >= rect.top && mouseY <= rect.bottom) {
+              // Block was dropped on AI panel - add to chat
+              const chatInput = document.querySelector('[data-ai-chat-input]') as HTMLInputElement;
+              if (chatInput) {
+                // Trigger the add block to chat functionality
+                const addBlockEvent = new CustomEvent('addBlockToChat', { 
+                  detail: draggedBlockData 
+                });
+                window.dispatchEvent(addBlockEvent);
+                
+                toast.success(`Block attached: ${draggedBlockData.name}`);
+              }
+            }
           }
-        }
-      } else if (event.type === Blockly.Events.BLOCK_DELETE) {
-        // Block was deleted - check if it was from our delete zone
-        if (pendingDeleteZoneDrop && draggedBlockData) {
-          // Block was successfully deleted via delete zone - add to chat
-          const addBlockEvent = new CustomEvent('addBlockToChat', { 
-            detail: draggedBlockData 
-          });
-          window.dispatchEvent(addBlockEvent);
           
-          toast.success(`Block added to chat: ${draggedBlockData.name}`);
-          
-          // Reset all states
-          setPendingDeleteZoneDrop(false);
           setIsDraggingBlock(false);
           setDraggedBlockData(null);
-          setIsOverDeleteZone(false);
         }
       }
     });
@@ -1020,26 +1017,25 @@ export const BlocklyWorkspace = ({
         {/* Backtesting Panel */}
         {showBacktest && <BacktestingPanel result={backtestResult} isLoading={isBacktesting} symbol="BTC/USDT" onClose={handleCloseBacktest} />}
 
-        {/* Delete Zone Overlay - appears when dragging blocks with AI panel open */}
-        {showAIPanel && isDraggingBlock && (
-          <div 
-            className="fixed inset-y-0 right-0 w-[450px] bg-pink-500/20 backdrop-blur-sm z-[9999] pointer-events-auto flex items-center justify-center border-4 border-dashed border-pink-500"
-            onMouseEnter={() => setIsOverDeleteZone(true)}
-            onMouseLeave={() => setIsOverDeleteZone(false)}
-          >
-            <div className="bg-card/95 rounded-lg p-6 text-center shadow-xl">
-              <Trash2 className="w-12 h-12 mx-auto mb-3 text-pink-500 animate-pulse" />
-              <p className="text-lg font-semibold text-pink-500 mb-1">Drop Block Here</p>
-              <p className="text-sm text-muted-foreground">Add to AI chat and delete from workspace</p>
-            </div>
-          </div>
-        )}
-
         {/* AI Panel */}
         {showAIPanel && <div 
           ref={aiPanelRef}
-          className="w-[450px] bg-card border-l border-border flex flex-col relative"
+          className={cn(
+            "w-[450px] bg-card border-l border-border flex flex-col relative",
+            isDraggingBlock && "ring-2 ring-pink-500 ring-opacity-50"
+          )}
         >
+            {/* Drop Zone Indicator */}
+            {isDraggingBlock && (
+              <div className="absolute inset-0 bg-pink-500/10 z-10 pointer-events-none flex items-center justify-center border-2 border-dashed border-pink-500">
+                <div className="bg-card/95 rounded-lg p-4 text-center">
+                  <Blocks className="w-8 h-8 mx-auto mb-2 text-pink-500" />
+                  <p className="text-sm font-semibold text-pink-500">Drop block here</p>
+                  <p className="text-xs text-muted-foreground">to attach to chat</p>
+                </div>
+              </div>
+            )}
+            
             {/* AI Panel Header */}
             <div className="border-b border-border p-4">
               <div className="flex items-center justify-between">
