@@ -30,12 +30,20 @@ const Index = () => {
     setShowAIPanel(!showAIPanel);
   };
 
+  const handleStepChange = (stepIndex: number) => {
+    // Automatically open AI panel when moving to step 2 (index 1)
+    if (stepIndex === 1) {
+      setShowAIPanel(true);
+    }
+  };
+
   return (
     <div className="flex h-screen w-full bg-background text-foreground overflow-hidden">
       {/* Center Panel - Blockly Workspace (flexible, includes backtesting panel when shown) */}
       <BlocklyWorkspace 
         runTour={runTour} 
         onTourComplete={handleTourComplete}
+        onStepChange={handleStepChange}
         showAIPanelFromParent={showAIPanel}
         onAIPanelChange={setShowAIPanel}
       />

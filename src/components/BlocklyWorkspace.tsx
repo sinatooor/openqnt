@@ -22,12 +22,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 interface BlocklyWorkspaceProps {
   runTour?: boolean;
   onTourComplete?: () => void;
+  onStepChange?: (stepIndex: number) => void;
   showAIPanelFromParent?: boolean;
   onAIPanelChange?: (show: boolean) => void;
 }
 export const BlocklyWorkspace = ({
   runTour: runTourProp,
   onTourComplete: onTourCompleteProp,
+  onStepChange,
   showAIPanelFromParent,
   onAIPanelChange
 }: BlocklyWorkspaceProps = {}) => {
@@ -1021,6 +1023,10 @@ export const BlocklyWorkspace = ({
       </AlertDialog>
 
       {/* Guided Tour */}
-      <GuidedTour run={runTour} onComplete={handleTourComplete} />
+      <GuidedTour 
+        run={runTour} 
+        onComplete={handleTourComplete}
+        onStepChange={onStepChange}
+      />
     </div>;
 };

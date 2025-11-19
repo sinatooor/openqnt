@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import React from "react";
 import Joyride, { CallBackProps, STATUS, Step } from "react-joyride";
 import { Button } from "@/components/ui/button";
@@ -7,27 +7,21 @@ import { Info } from "lucide-react";
 interface GuidedTourProps {
   run: boolean;
   onComplete: () => void;
+  onStepChange?: (stepIndex: number) => void;
 }
 
-export const GuidedTour = ({ run, onComplete }: GuidedTourProps) => {
-  const [stepIndex, setStepIndex] = useState(0);
-
-  useEffect(() => {
-    if (run) {
-      setStepIndex(0);
-    }
-  }, [run]);
+export const GuidedTour = ({ run, onComplete, onStepChange }: GuidedTourProps) => {
 
   const steps: Step[] = [
     {
       target: ".ai-panel-trigger",
-      content: "Welcome! This is your AI Strategy Generator. Click here to open the AI assistant that can create trading strategies for you using natural language.",
+      content: "Welcome! This is your AI Strategy Generator. You can click it now to open it, or press 'Next' and we'll open it for you.",
       disableBeacon: true,
       placement: "bottom",
     },
     {
       target: ".blockly-workspace",
-      content: "This is your visual programming workspace. Drag and drop blocks from the left sidebar to build your trading strategy. You can also drag blocks into the AI chat to ask questions about them!",
+      content: "The AI panel is now open! This is your visual programming workspace. Drag and drop blocks from the left sidebar to build your trading strategy. You can also drag blocks into the AI chat to ask questions about them!",
       placement: "center",
     },
     {
@@ -48,14 +42,15 @@ export const GuidedTour = ({ run, onComplete }: GuidedTourProps) => {
   ];
 
   const handleJoyrideCallback = (data: CallBackProps) => {
-    const { status, index, action } = data;
+    const { status, index, action, type } = data;
 
     if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status as any)) {
       onComplete();
     }
 
-    if (action === "next" || action === "prev") {
-      setStepIndex(index + (action === "next" ? 1 : -1));
+    // Trigger step change callback when moving to next step
+    if (type === 'step:after' && onStepChange) {
+      onStepChange(index);
     }
   };
 
@@ -66,11 +61,10 @@ export const GuidedTour = ({ run, onComplete }: GuidedTourProps) => {
       continuous
       showProgress
       showSkipButton
-      stepIndex={stepIndex}
       callback={handleJoyrideCallback}
       disableOverlayClose={true}
       disableScrolling={true}
-      spotlightClicks={false}
+      spotlightClicks={true}
       disableCloseOnEsc={false}
       styles={{
         options: {
@@ -79,7 +73,7 @@ export const GuidedTour = ({ run, onComplete }: GuidedTourProps) => {
           backgroundColor: "hsl(var(--background))",
           overlayColor: "rgba(0, 0, 0, 0.7)",
           arrowColor: "hsl(var(--background))",
-          zIndex: 10000,
+          zIndex: 10001,
         },
         tooltip: {
           borderRadius: "8px",
