@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import React from "react";
 import Joyride, { CallBackProps, STATUS, Step } from "react-joyride";
 import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
@@ -10,6 +11,12 @@ interface GuidedTourProps {
 
 export const GuidedTour = ({ run, onComplete }: GuidedTourProps) => {
   const [stepIndex, setStepIndex] = useState(0);
+
+  useEffect(() => {
+    if (run) {
+      setStepIndex(0);
+    }
+  }, [run]);
 
   const steps: Step[] = [
     {
@@ -61,6 +68,10 @@ export const GuidedTour = ({ run, onComplete }: GuidedTourProps) => {
       showSkipButton
       stepIndex={stepIndex}
       callback={handleJoyrideCallback}
+      disableOverlayClose={true}
+      disableScrolling={true}
+      spotlightClicks={false}
+      disableCloseOnEsc={false}
       styles={{
         options: {
           primaryColor: "#ec4899",
@@ -106,16 +117,20 @@ interface TourTriggerButtonProps {
   onClick: () => void;
 }
 
-export const TourTriggerButton = ({ onClick }: TourTriggerButtonProps) => {
-  return (
-    <Button
-      onClick={onClick}
-      variant="outline"
-      size="icon"
-      className="tour-trigger-btn"
-      title="Start Guided Tour"
-    >
-      <Info className="w-4 h-4" />
-    </Button>
-  );
-};
+export const TourTriggerButton = React.forwardRef<HTMLButtonElement, TourTriggerButtonProps>(
+  ({ onClick }, ref) => {
+    return (
+      <Button
+        ref={ref}
+        onClick={onClick}
+        variant="outline"
+        size="icon"
+        className="tour-trigger-btn"
+        title="Start Guided Tour"
+      >
+        <Info className="w-4 h-4" />
+      </Button>
+    );
+  }
+);
+TourTriggerButton.displayName = "TourTriggerButton";
