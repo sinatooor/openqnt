@@ -16,12 +16,14 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent } from "@/components/ui/card";
 import { TourTriggerButton } from "./GuidedTour";
+import { Wand2 } from "lucide-react";
 
 interface SettingsPanelProps {
   onStartTour?: () => void;
+  onToggleAI?: () => void;
 }
 
-export const SettingsPanel = ({ onStartTour }: SettingsPanelProps) => {
+export const SettingsPanel = ({ onStartTour, onToggleAI }: SettingsPanelProps) => {
   const [mode, setMode] = useState<"backtest" | "live">("live");
   const [tradingSymbol, setTradingSymbol] = useState("BTC/USDT");
   const [broker, setBroker] = useState("td");
@@ -40,16 +42,36 @@ export const SettingsPanel = ({ onStartTour }: SettingsPanelProps) => {
       <div className="px-3 py-2 border-b border-border">
         <div className="flex items-center justify-between mb-3 gap-2">
           <h2 className="font-semibold text-foreground text-sm">Settings</h2>
-          {onStartTour && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <TourTriggerButton onClick={onStartTour} />
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Start Guided Tour</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
+          <div className="flex items-center gap-1">
+            {onToggleAI && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={onToggleAI}
+                    variant="outline"
+                    size="icon"
+                    className="ai-panel-trigger"
+                    title="Toggle AI Assistant"
+                  >
+                    <Wand2 className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Toggle AI Assistant</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {onStartTour && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TourTriggerButton onClick={onStartTour} />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Start Guided Tour</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
         </div>
 
         {/* Mode Selector */}
