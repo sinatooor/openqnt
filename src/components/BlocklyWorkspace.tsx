@@ -42,7 +42,7 @@ import { AIChatPanel } from "./AIChatPanel";
 import { runBacktest, BacktestResult } from "@/lib/backtestEngine";
 import { StrategyTemplate } from "@/lib/strategyTemplates";
 import { cn } from "@/lib/utils";
-import { GuidedTour, TourTriggerButton } from "./GuidedTour";
+import { GuidedTour } from "./GuidedTour";
 import { fetchMarketData } from "@/lib/marketDataService";
 import {
   AlertDialog,
@@ -54,7 +54,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-export const BlocklyWorkspace = () => {
+
+interface BlocklyWorkspaceProps {
+  runTour?: boolean;
+  onTourComplete?: () => void;
+}
+
+export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourCompleteProp }: BlocklyWorkspaceProps = {}) => {
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
   const [generatedCode, setGeneratedCode] = useState<string>("");
@@ -73,22 +79,22 @@ export const BlocklyWorkspace = () => {
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [pendingXml, setPendingXml] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [runTour, setRunTour] = useState(false);
+  const [runTour, setRunTour] = useState(runTourProp || false);
 
+  // Sync with prop changes
   useEffect(() => {
-    // Check if user has seen the tour before
-    const hasSeenTour = localStorage.getItem("hasSeenGuidedTour");
-    if (!hasSeenTour) {
-      // Show tour after a brief delay to let the UI load
-      setTimeout(() => {
-        setRunTour(true);
-      }, 1000);
+    if (runTourProp !== undefined) {
+      setRunTour(runTourProp);
     }
-  }, []);
+  }, [runTourProp]);
 
   const handleTourComplete = () => {
     setRunTour(false);
-    localStorage.setItem("hasSeenGuidedTour", "true");
+    if (onTourCompleteProp) {
+      onTourCompleteProp();
+    } else {
+      localStorage.setItem("hasSeenGuidedTour", "true");
+    }
   };
 
   const handleStartTour = () => {
@@ -920,17 +926,6 @@ export const BlocklyWorkspace = () => {
           </Tooltip>
 
           <Separator orientation="vertical" className="h-6" />
-
-          {/* Tour Button */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <TourTriggerButton onClick={handleStartTour} />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Start Guided Tour</p>
-              <p className="text-xs text-muted-foreground mt-1">Learn how to use Fire</p>
-            </TooltipContent>
-          </Tooltip>
         </div>
       </div>
 
