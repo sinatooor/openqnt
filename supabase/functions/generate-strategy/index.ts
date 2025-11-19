@@ -20,7 +20,11 @@ serve(async (req) => {
 
     const blockCount = currentWorkspace ? (currentWorkspace.match(/<block /g) || []).length : 0;
     console.log("Generating strategy for:", message);
-    console.log("Has existing workspace:", !!currentWorkspace, `(${blockCount} blocks, ${(currentWorkspace?.length || 0) / 1024}KB)`);
+    console.log(
+      "Has existing workspace:",
+      !!currentWorkspace,
+      `(${blockCount} blocks, ${(currentWorkspace?.length || 0) / 1024}KB)`,
+    );
     console.log("Has specific block attached:", !!blockXml);
     console.log("Is modification request:", !!currentWorkspace);
 
@@ -35,590 +39,1031 @@ CRITICAL RULES:
 
 === COMPLETE BLOCK REFERENCE ===
 
-CONTROL FLOW BLOCKS:
-1. control_if - Conditional logic
-<block type="control_if" id="unique_id">
-  <value name="CONDITION">
-    [Boolean block goes here]
-  </value>
-  <statement name="DO">
-    [Action blocks go here]
-  </statement>
-</block>
-
-2. control_if_else - If-else logic
-<block type="control_if_else" id="unique_id">
-  <value name="CONDITION">
-    [Boolean block goes here]
-  </value>
-  <statement name="DO">
-    [Action blocks go here]
-  </statement>
-  <statement name="ELSE">
-    [Action blocks go here]
-  </statement>
-</block>
-
-3. control_repeat - Repeat N times
-<block type="control_repeat" id="unique_id">
-  <value name="TIMES">
-    <shadow type="math_number"><field name="NUM">10</field></shadow>
-  </value>
-  <statement name="DO">
-    [Action blocks go here]
-  </statement>
-</block>
-
-4. control_forever - Loop forever
-<block type="control_forever" id="unique_id">
-  <statement name="DO">
-    [Action blocks go here]
-  </statement>
-</block>
-
-5. control_repeat_until - Repeat until condition
-<block type="control_repeat_until" id="unique_id">
-  <value name="CONDITION">
-    [Boolean block goes here]
-  </value>
-  <statement name="DO">
-    [Action blocks go here]
-  </statement>
-</block>
-
-6. control_wait - Wait N seconds
-<block type="control_wait" id="unique_id">
-  <value name="SECONDS">
-    <shadow type="math_number"><field name="NUM">60</field></shadow>
-  </value>
-</block>
-
-7. control_wait_until - Wait until condition
-<block type="control_wait_until" id="unique_id">
-  <value name="CONDITION">
-    [Boolean block goes here]
-  </value>
-</block>
-
-8. control_stop - Stop execution
-<block type="control_stop" id="unique_id"></block>
-
-TECHNICAL INDICATOR BLOCKS (all output TAValue):
-9. ta_sma - Simple Moving Average
-<block type="ta_sma" id="unique_id">
-  <value name="PERIOD">
-    <shadow type="math_number"><field name="NUM">20</field></shadow>
-  </value>
-</block>
-
-10. ta_ema - Exponential Moving Average
-<block type="ta_ema" id="unique_id">
-  <value name="PERIOD">
-    <shadow type="math_number"><field name="NUM">20</field></shadow>
-  </value>
-</block>
-
-11. ta_rsi - Relative Strength Index
-<block type="ta_rsi" id="unique_id">
-  <value name="PERIOD">
-    <shadow type="math_number"><field name="NUM">14</field></shadow>
-  </value>
-</block>
-
-12. ta_macd - MACD (no inputs)
-<block type="ta_macd" id="unique_id"></block>
-
-13. ta_bb - Bollinger Bands
-<block type="ta_bb" id="unique_id">
-  <value name="PERIOD">
-    <shadow type="math_number"><field name="NUM">20</field></shadow>
-  </value>
-</block>
-
-14. ta_vwap - Volume Weighted Average Price (no inputs)
-<block type="ta_vwap" id="unique_id"></block>
-
-15. ta_atr - Average True Range
-<block type="ta_atr" id="unique_id">
-  <value name="PERIOD">
-    <shadow type="math_number"><field name="NUM">14</field></shadow>
-  </value>
-</block>
-
-16. ta_stochastic - Stochastic Oscillator
-<block type="ta_stochastic" id="unique_id">
-  <value name="K_PERIOD">
-    <shadow type="math_number"><field name="NUM">14</field></shadow>
-  </value>
-  <value name="D_PERIOD">
-    <shadow type="math_number"><field name="NUM">3</field></shadow>
-  </value>
-</block>
-
-17. ta_adx - Average Directional Index
-<block type="ta_adx" id="unique_id">
-  <value name="PERIOD">
-    <shadow type="math_number"><field name="NUM">14</field></shadow>
-  </value>
-</block>
-
-18. ta_cci - Commodity Channel Index
-<block type="ta_cci" id="unique_id">
-  <value name="PERIOD">
-    <shadow type="math_number"><field name="NUM">20</field></shadow>
-  </value>
-</block>
-
-19. ta_williams_r - Williams %R
-<block type="ta_williams_r" id="unique_id">
-  <value name="PERIOD">
-    <shadow type="math_number"><field name="NUM">14</field></shadow>
-  </value>
-</block>
-
-20. ta_mfi - Money Flow Index
-<block type="ta_mfi" id="unique_id">
-  <value name="PERIOD">
-    <shadow type="math_number"><field name="NUM">14</field></shadow>
-  </value>
-</block>
-
-21. ta_obv - On Balance Volume (no inputs)
-<block type="ta_obv" id="unique_id"></block>
-
-22. ta_sar - Parabolic SAR
-<block type="ta_sar" id="unique_id">
-  <value name="ACCELERATION">
-    <shadow type="math_number"><field name="NUM">0.02</field></shadow>
-  </value>
-  <value name="MAX">
-    <shadow type="math_number"><field name="NUM">0.2</field></shadow>
-  </value>
-</block>
-
-23. ta_ichimoku - Ichimoku Cloud (no inputs)
-<block type="ta_ichimoku" id="unique_id"></block>
-
-24. ta_supertrend - SuperTrend
-<block type="ta_supertrend" id="unique_id">
-  <value name="PERIOD">
-    <shadow type="math_number"><field name="NUM">10</field></shadow>
-  </value>
-  <value name="MULTIPLIER">
-    <shadow type="math_number"><field name="NUM">3</field></shadow>
-  </value>
-</block>
-
-25. ta_dmi - Directional Movement Index
-<block type="ta_dmi" id="unique_id">
-  <value name="PERIOD">
-    <shadow type="math_number"><field name="NUM">14</field></shadow>
-  </value>
-</block>
-
-26. ta_vp - Volume Profile
-<block type="ta_vp" id="unique_id">
-  <value name="PERIOD">
-    <shadow type="math_number"><field name="NUM">20</field></shadow>
-  </value>
-</block>
-
-27. ta_keltner - Keltner Channels
-<block type="ta_keltner" id="unique_id">
-  <value name="PERIOD">
-    <shadow type="math_number"><field name="NUM">20</field></shadow>
-  </value>
-</block>
-
-28. ta_pivot - Pivot Points (no inputs)
-<block type="ta_pivot" id="unique_id"></block>
-
-COMPARISON OPERATOR BLOCKS (output Boolean):
-29. operator_greater - Greater than (>)
-<block type="operator_greater" id="unique_id">
-  <value name="LEFT">
-    [Number/TAValue/EnvironmentValue block]
-  </value>
-  <value name="RIGHT">
-    [Number/TAValue/EnvironmentValue block]
-  </value>
-</block>
-
-30. operator_less - Less than (<)
-<block type="operator_less" id="unique_id">
-  <value name="LEFT">
-    [Number/TAValue/EnvironmentValue block]
-  </value>
-  <value name="RIGHT">
-    [Number/TAValue/EnvironmentValue block]
-  </value>
-</block>
-
-31. operator_equals - Equal (=)
-<block type="operator_equals" id="unique_id">
-  <value name="LEFT">
-    [Number/TAValue/EnvironmentValue block]
-  </value>
-  <value name="RIGHT">
-    [Number/TAValue/EnvironmentValue block]
-  </value>
-</block>
-
-32. operator_not_equals - Not equal (≠)
-<block type="operator_not_equals" id="unique_id">
-  <value name="LEFT">
-    [Number/TAValue/EnvironmentValue block]
-  </value>
-  <value name="RIGHT">
-    [Number/TAValue/EnvironmentValue block]
-  </value>
-</block>
-
-33. operator_greater_equals - Greater or equal (≥)
-<block type="operator_greater_equals" id="unique_id">
-  <value name="LEFT">
-    [Number/TAValue/EnvironmentValue block]
-  </value>
-  <value name="RIGHT">
-    [Number/TAValue/EnvironmentValue block]
-  </value>
-</block>
-
-34. operator_less_equals - Less or equal (≤)
-<block type="operator_less_equals" id="unique_id">
-  <value name="LEFT">
-    [Number/TAValue/EnvironmentValue block]
-  </value>
-  <value name="RIGHT">
-    [Number/TAValue/EnvironmentValue block]
-  </value>
-</block>
-
-MATH OPERATOR BLOCKS (output Number):
-35. operator_add - Addition (+)
-<block type="operator_add" id="unique_id">
-  <value name="LEFT">
-    [Number/TAValue/EnvironmentValue block]
-  </value>
-  <value name="RIGHT">
-    [Number/TAValue/EnvironmentValue block]
-  </value>
-</block>
-
-36. operator_subtract - Subtraction (-)
-<block type="operator_subtract" id="unique_id">
-  <value name="LEFT">
-    [Number/TAValue/EnvironmentValue block]
-  </value>
-  <value name="RIGHT">
-    [Number/TAValue/EnvironmentValue block]
-  </value>
-</block>
-
-37. operator_multiply - Multiplication (×)
-<block type="operator_multiply" id="unique_id">
-  <value name="LEFT">
-    [Number/TAValue/EnvironmentValue block]
-  </value>
-  <value name="RIGHT">
-    [Number/TAValue/EnvironmentValue block]
-  </value>
-</block>
-
-38. operator_divide - Division (÷)
-<block type="operator_divide" id="unique_id">
-  <value name="LEFT">
-    [Number/TAValue/EnvironmentValue block]
-  </value>
-  <value name="RIGHT">
-    [Number/TAValue/EnvironmentValue block]
-  </value>
-</block>
-
-39. operator_advanced_math - Advanced math functions
-<block type="operator_advanced_math" id="unique_id">
-  <field name="FUNCTION">abs</field>
-  <value name="VALUE">
-    <shadow type="math_number"><field name="NUM">10</field></shadow>
-  </value>
-</block>
-Functions: abs, sqrt, sin, cos, tan, log, ln, exp, round, floor, ceil
-
-LOGIC OPERATOR BLOCKS (output Boolean):
-40. operator_and - Logical AND
-<block type="operator_and" id="unique_id">
-  <value name="LEFT">
-    [Boolean block]
-  </value>
-  <value name="RIGHT">
-    [Boolean block]
-  </value>
-</block>
-
-41. operator_or - Logical OR
-<block type="operator_or" id="unique_id">
-  <value name="LEFT">
-    [Boolean block]
-  </value>
-  <value name="RIGHT">
-    [Boolean block]
-  </value>
-</block>
-
-42. operator_not - Logical NOT
-<block type="operator_not" id="unique_id">
-  <value name="VALUE">
-    [Boolean block]
-  </value>
-</block>
-
-TRADE ACTION BLOCKS:
-43. trade_order - Place a trade
-<block type="trade_order" id="unique_id">
-  <field name="TRADE_ID">trade1</field>
-  <field name="DIRECTION">long</field>
-  <field name="SIZE">100</field>
-  <field name="SIZE_TYPE">percent</field>
-  <field name="LEVERAGE">1</field>
-  <field name="ORDER_TYPE">market</field>
-</block>
-DIRECTION: long, short
-SIZE_TYPE: percent, value
-LEVERAGE: 1, 2, 3, 5, 10, 20, 50, 100
-ORDER_TYPE: market, limit
-
-44. trade_stop_loss - Set stop loss
-<block type="trade_stop_loss" id="unique_id">
-  <field name="CLOSE_TYPE">full</field>
-  <field name="TRADE_ID">trade1</field>
-  <value name="PRICE">
-    <shadow type="math_number"><field name="NUM">100</field></shadow>
-  </value>
-</block>
-CLOSE_TYPE: full, partial
-
-45. trade_take_profit - Set take profit
-<block type="trade_take_profit" id="unique_id">
-  <field name="CLOSE_TYPE">full</field>
-  <field name="TRADE_ID">trade1</field>
-  <value name="PRICE">
-    <shadow type="math_number"><field name="NUM">100</field></shadow>
-  </value>
-</block>
-CLOSE_TYPE: full, partial
-
-46. trade_close - Close position
-<block type="trade_close" id="unique_id">
-  <field name="TRADE_ID">trade1</field>
-  <value name="PERCENT">
-    <shadow type="math_number"><field name="NUM">100</field></shadow>
-  </value>
-</block>
-
-47. trade_pnl_of - Get P&L of trade (outputs Number)
-<block type="trade_pnl_of" id="unique_id">
-  <field name="TRADE_ID">trade1</field>
-</block>
-
-48. trade_entry_price - Get entry price (outputs Number)
-<block type="trade_entry_price" id="unique_id">
-  <field name="TRADE_ID">trade1</field>
-</block>
-
-49. trade_position_size - Get position size (outputs Number)
-<block type="trade_position_size" id="unique_id">
-  <field name="TRADE_ID">trade1</field>
-</block>
-
-ENVIRONMENT BLOCKS:
-50. environment_price - Current price (outputs EnvironmentValue)
-<block type="environment_price" id="unique_id"></block>
-
-51. environment_spread - Bid-ask spread (outputs EnvironmentValue)
-<block type="environment_spread" id="unique_id"></block>
-
-52. environment_prev_candle_open - Previous candle open
-<block type="environment_prev_candle_open" id="unique_id">
-  <field name="TIMEFRAME">1m</field>
-</block>
-TIMEFRAME: 1m, 5m, 15m, 1h, 4h, 1d
-
-53. environment_prev_ticker_close - Previous ticker close
-<block type="environment_prev_ticker_close" id="unique_id">
-  <field name="TIMEFRAME">1m</field>
-</block>
-TIMEFRAME: 1m, 5m, 15m, 1h, 4h, 1d
-
-54. environment_is_market_open - Check if market open (outputs Boolean)
-<block type="environment_is_market_open" id="unique_id"></block>
-
-55. environment_time - Current timestamp (outputs EnvironmentValue)
-<block type="environment_time" id="unique_id"></block>
-
-56. environment_day_of_week - Day of week (outputs EnvironmentValue)
-<block type="environment_day_of_week" id="unique_id"></block>
-
-57. environment_new_candle_open - New candle opened (outputs Boolean)
-<block type="environment_new_candle_open" id="unique_id">
-  <field name="TIMEFRAME">1m</field>
-</block>
-TIMEFRAME: 1m, 5m, 15m, 1h, 4h, 1d
-
-VARIABLE BLOCKS:
-58. variables_set - Set variable value
-<block type="variables_set" id="unique_id">
-  <field name="VAR">myVar</field>
-  <value name="VALUE">
-    [Any block that outputs a value]
-  </value>
-</block>
-
-59. variables_get - Get variable value (outputs value)
-<block type="variables_get" id="unique_id">
-  <field name="VAR">myVar</field>
-</block>
-
-60. variables_change - Change variable by amount
-<block type="variables_change" id="unique_id">
-  <field name="VAR">myVar</field>
-  <value name="DELTA">
-    <shadow type="math_number"><field name="NUM">1</field></shadow>
-  </value>
-</block>
-
-FUNCTION BLOCKS:
-61. function_define - Define a function
-<block type="function_define" id="unique_id">
-  <field name="NAME">myFunction</field>
-  <statement name="STACK">
-    [Action blocks go here]
-  </statement>
-</block>
-
-62. function_call - Call a function
-<block type="function_call" id="unique_id">
-  <field name="NAME">myFunction</field>
-</block>
-
-63. function_return - Return from function
-<block type="function_return" id="unique_id">
-  <value name="VALUE">
-    [Any block that outputs a value]
-  </value>
-</block>
-
-RISK MANAGEMENT BLOCKS:
-64. risk_position_percent - Position size as % (outputs Number)
-<block type="risk_position_percent" id="unique_id">
-  <value name="PERCENT">
-    <shadow type="math_number"><field name="NUM">2</field></shadow>
-  </value>
-</block>
-
-65. risk_kelly_criterion - Kelly position sizing (outputs Number)
-<block type="risk_kelly_criterion" id="unique_id">
-  <value name="WIN_RATE">
-    <shadow type="math_number"><field name="NUM">55</field></shadow>
-  </value>
-  <value name="WIN_LOSS_RATIO">
-    <shadow type="math_number"><field name="NUM">1.5</field></shadow>
-  </value>
-</block>
-
-66. risk_fixed_amount - Fixed position size (outputs Number)
-<block type="risk_fixed_amount" id="unique_id">
-  <value name="AMOUNT">
-    <shadow type="math_number"><field name="NUM">100</field></shadow>
-  </value>
-</block>
-
-67. risk_trailing_stop - Trailing stop loss
-<block type="risk_trailing_stop" id="unique_id">
-  <value name="PERCENT">
-    <shadow type="math_number"><field name="NUM">2</field></shadow>
-  </value>
-</block>
-
-68. risk_scale_in - Scale into position
-<block type="risk_scale_in" id="unique_id">
-  <value name="AMOUNT">
-    <shadow type="math_number"><field name="NUM">100</field></shadow>
-  </value>
-  <value name="INTERVALS">
-    <shadow type="math_number"><field name="NUM">3</field></shadow>
-  </value>
-</block>
-
-69. risk_scale_out - Scale out of position
-<block type="risk_scale_out" id="unique_id">
-  <value name="AMOUNT">
-    <shadow type="math_number"><field name="NUM">100</field></shadow>
-  </value>
-  <value name="INTERVALS">
-    <shadow type="math_number"><field name="NUM">3</field></shadow>
-  </value>
-</block>
-
-70. risk_max_drawdown - Max drawdown protection
-<block type="risk_max_drawdown" id="unique_id">
-  <value name="PERCENT">
-    <shadow type="math_number"><field name="NUM">10</field></shadow>
-  </value>
-</block>
-
-71. risk_daily_loss_limit - Daily loss limit
-<block type="risk_daily_loss_limit" id="unique_id">
-  <value name="AMOUNT">
-    <shadow type="math_number"><field name="NUM">500</field></shadow>
-  </value>
-</block>
-
-MULTI-TIMEFRAME BLOCKS:
-72. mtf_condition - Check condition on different timeframe (outputs Boolean)
-<block type="mtf_condition" id="unique_id">
-  <field name="TIMEFRAME">1h</field>
-  <value name="CONDITION">
-    [Boolean block]
-  </value>
-</block>
-TIMEFRAME: 1m, 5m, 15m, 1h, 4h, 1d
-
-73. mtf_price - Price on specific timeframe (outputs Number)
-<block type="mtf_price" id="unique_id">
-  <field name="TIMEFRAME">1h</field>
-</block>
-TIMEFRAME: 1m, 5m, 15m, 1h, 4h, 1d
-
-74. mtf_indicator - Indicator on specific timeframe (outputs Number)
-<block type="mtf_indicator" id="unique_id">
-  <field name="INDICATOR">sma</field>
-  <field name="TIMEFRAME">1h</field>
-  <value name="PERIOD">
-    <shadow type="math_number"><field name="NUM">20</field></shadow>
-  </value>
-</block>
-INDICATOR: sma, ema, rsi, macd
-TIMEFRAME: 1m, 5m, 15m, 1h, 4h, 1d
-
-75. mtf_trend_aligned - Check trend alignment (outputs Boolean)
-<block type="mtf_trend_aligned" id="unique_id">
-  <field name="DIRECTION">bullish</field>
-  <field name="TIMEFRAMES">medium</field>
-</block>
-DIRECTION: bullish, bearish
-TIMEFRAMES: short, medium, long, custom
-
-76. mtf_higher_timeframe_bias - Higher TF bias (outputs String)
-<block type="mtf_higher_timeframe_bias" id="unique_id">
-  <field name="TIMEFRAME">1d</field>
-</block>
-TIMEFRAME: 4h, 1d, 1w
-
-NUMERIC VALUE BLOCK:
-77. math_number - Numeric constant (outputs Number)
-<shadow type="math_number">
-  <field name="NUM">100</field>
-</shadow>
+Blockly.Blocks['control_if'] = {
+  init: function() {
+    this.appendValueInput("CONDITION")
+      .setCheck("Boolean")
+      .appendField("If");
+    this.appendStatementInput("DO")
+      .setCheck(["TradeAction", "Control"])
+      .appendField("then");
+    this.setPreviousStatement(true, ["Control", "TradeAction"]);
+    this.setNextStatement(true, ["Control", "TradeAction"]);
+    this.setStyle('control_blocks');
+    this.setTooltip("Execute actions if condition is true");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['control_repeat'] = {
+  init: function() {
+    this.appendValueInput("TIMES")
+      .setCheck("Number")
+      .appendField("Repeat");
+    this.appendDummyInput()
+      .appendField("times");
+    this.appendStatementInput("DO")
+      .setCheck(["TradeAction", "Control"])
+      .appendField("do");
+    this.setPreviousStatement(true, ["Control", "TradeAction"]);
+    this.setNextStatement(true, ["Control", "TradeAction"]);
+    this.setStyle('control_blocks');
+    this.setTooltip("Repeat actions a specified number of times");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['control_wait'] = {
+  init: function() {
+    this.appendValueInput("SECONDS")
+      .setCheck("Number")
+      .appendField("Wait");
+    this.appendDummyInput()
+      .appendField("seconds");
+    this.setInputsInline(true);
+    this.setPreviousStatement(true, ["Control", "TradeAction"]);
+    this.setNextStatement(true, ["Control", "TradeAction"]);
+    this.setStyle('control_blocks');
+    this.setTooltip("Pause execution for specified seconds");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['control_forever'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Forever");
+    this.appendStatementInput("DO")
+      .setCheck(["TradeAction", "Control"])
+      .appendField("do");
+    this.setPreviousStatement(true, ["Control", "TradeAction"]);
+    this.setNextStatement(true, ["Control", "TradeAction"]);
+    this.setStyle('control_blocks');
+    this.setTooltip("Repeat actions indefinitely");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['control_repeat_until'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Repeat until");
+    this.appendValueInput("CONDITION")
+      .setCheck("Boolean");
+    this.appendStatementInput("DO")
+      .setCheck(["TradeAction", "Control"])
+      .appendField("do");
+    this.setPreviousStatement(true, ["Control", "TradeAction"]);
+    this.setNextStatement(true, ["Control", "TradeAction"]);
+    this.setStyle('control_blocks');
+    this.setTooltip("Repeat actions until condition is true");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['control_if_else'] = {
+  init: function() {
+    this.appendValueInput("CONDITION")
+      .setCheck("Boolean")
+      .appendField("If");
+    this.appendStatementInput("DO")
+      .setCheck(["TradeAction", "Control"])
+      .appendField("then");
+    this.appendStatementInput("ELSE")
+      .setCheck(["TradeAction", "Control"])
+      .appendField("else");
+    this.setPreviousStatement(true, ["Control", "TradeAction"]);
+    this.setNextStatement(true, ["Control", "TradeAction"]);
+    this.setStyle('control_blocks');
+    this.setTooltip("Execute actions if condition is true, otherwise execute else actions");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['control_wait_until'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Wait until");
+    this.appendValueInput("CONDITION")
+      .setCheck("Boolean");
+    this.setInputsInline(true);
+    this.setPreviousStatement(true, ["Control", "TradeAction"]);
+    this.setNextStatement(true, ["Control", "TradeAction"]);
+    this.setStyle('control_blocks');
+    this.setTooltip("Pause execution until condition is true");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['control_stop'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Stop");
+    this.setPreviousStatement(true, ["Control", "TradeAction"]);
+    this.setStyle('control_blocks');
+    this.setTooltip("Stop execution");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['environment_price'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Price");
+    this.setOutput(true, "EnvironmentValue");
+    this.setStyle('environment_blocks');
+    this.setTooltip("Current market price");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['environment_spread'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Spread");
+    this.setOutput(true, "EnvironmentValue");
+    this.setStyle('environment_blocks');
+    this.setTooltip("Current bid-ask spread");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['environment_prev_candle_open'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Prev. candle open")
+      .appendField(new Blockly.FieldDropdown([
+        ["1m", "1m"],
+        ["5m", "5m"],
+        ["15m", "15m"],
+        ["1h", "1h"],
+        ["4h", "4h"],
+        ["1d", "1d"]
+      ]), "TIMEFRAME");
+    this.setOutput(true, "EnvironmentValue");
+    this.setStyle('environment_blocks');
+    this.setTooltip("Previous candle open price");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['environment_prev_ticker_close'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Prev. ticker close")
+      .appendField(new Blockly.FieldDropdown([
+        ["1m", "1m"],
+        ["5m", "5m"],
+        ["15m", "15m"],
+        ["1h", "1h"],
+        ["4h", "4h"],
+        ["1d", "1d"]
+      ]), "TIMEFRAME");
+    this.setOutput(true, "EnvironmentValue");
+    this.setStyle('environment_blocks');
+    this.setTooltip("Previous ticker close price");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['environment_is_market_open'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Is market open?");
+    this.setOutput(true, "Boolean");
+    this.setStyle('environment_blocks');
+    this.setTooltip("Check if market is currently open");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['environment_time'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Time");
+    this.setOutput(true, "EnvironmentValue");
+    this.setStyle('environment_blocks');
+    this.setTooltip("Current timestamp");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['environment_day_of_week'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Day of week");
+    this.setOutput(true, "EnvironmentValue");
+    this.setStyle('environment_blocks');
+    this.setTooltip("Current day of the week");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['environment_new_candle_open'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("New candle open")
+      .appendField(new Blockly.FieldDropdown([
+        ["1m", "1m"],
+        ["5m", "5m"],
+        ["15m", "15m"],
+        ["1h", "1h"],
+        ["4h", "4h"],
+        ["1d", "1d"]
+      ]), "TIMEFRAME");
+    this.setOutput(true, "Boolean");
+    this.setStyle('environment_blocks');
+    this.setTooltip("Check if a new candle just opened");
+    this.setHelpUrl("");
+  }
+};
+
+// Comparison operators
+Blockly.Blocks['operator_equals'] = {
+  init: function() {
+    this.appendValueInput("LEFT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.appendDummyInput()
+      .appendField("=");
+    this.appendValueInput("RIGHT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.setInputsInline(true);
+    this.setOutput(true, "Boolean");
+    this.setStyle('operator_blocks');
+    this.setTooltip("Check if two values are equal");
+  }
+};
+
+Blockly.Blocks['operator_greater'] = {
+  init: function() {
+    this.appendValueInput("LEFT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.appendDummyInput()
+      .appendField(">");
+    this.appendValueInput("RIGHT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.setInputsInline(true);
+    this.setOutput(true, "Boolean");
+    this.setStyle('operator_blocks');
+    this.setTooltip("Check if left value is greater than right value");
+  }
+};
+
+Blockly.Blocks['operator_less'] = {
+  init: function() {
+    this.appendValueInput("LEFT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.appendDummyInput()
+      .appendField("<");
+    this.appendValueInput("RIGHT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.setInputsInline(true);
+    this.setOutput(true, "Boolean");
+    this.setStyle('operator_blocks');
+    this.setTooltip("Check if left value is less than right value");
+  }
+};
+
+Blockly.Blocks['operator_greater_equals'] = {
+  init: function() {
+    this.appendValueInput("LEFT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.appendDummyInput()
+      .appendField("≥");
+    this.appendValueInput("RIGHT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.setInputsInline(true);
+    this.setOutput(true, "Boolean");
+    this.setStyle('operator_blocks');
+    this.setTooltip("Check if left value is greater than or equal to right value");
+  }
+};
+
+Blockly.Blocks['operator_less_equals'] = {
+  init: function() {
+    this.appendValueInput("LEFT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.appendDummyInput()
+      .appendField("≤");
+    this.appendValueInput("RIGHT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.setInputsInline(true);
+    this.setOutput(true, "Boolean");
+    this.setStyle('operator_blocks');
+    this.setTooltip("Check if left value is less than or equal to right value");
+  }
+};
+
+// Math operators
+Blockly.Blocks['operator_add'] = {
+  init: function() {
+    this.appendValueInput("LEFT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.appendDummyInput()
+      .appendField("+");
+    this.appendValueInput("RIGHT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.setInputsInline(true);
+    this.setOutput(true, "Number");
+    this.setStyle('operator_blocks');
+    this.setTooltip("Add two values");
+  }
+};
+
+Blockly.Blocks['operator_subtract'] = {
+  init: function() {
+    this.appendValueInput("LEFT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.appendDummyInput()
+      .appendField("-");
+    this.appendValueInput("RIGHT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.setInputsInline(true);
+    this.setOutput(true, "Number");
+    this.setStyle('operator_blocks');
+    this.setTooltip("Subtract right value from left value");
+  }
+};
+
+Blockly.Blocks['operator_multiply'] = {
+  init: function() {
+    this.appendValueInput("LEFT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.appendDummyInput()
+      .appendField("×");
+    this.appendValueInput("RIGHT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.setInputsInline(true);
+    this.setOutput(true, "Number");
+    this.setStyle('operator_blocks');
+    this.setTooltip("Multiply two values");
+  }
+};
+
+Blockly.Blocks['operator_divide'] = {
+  init: function() {
+    this.appendValueInput("LEFT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.appendDummyInput()
+      .appendField("÷");
+    this.appendValueInput("RIGHT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.setInputsInline(true);
+    this.setOutput(true, "Number");
+    this.setStyle('operator_blocks');
+    this.setTooltip("Divide left value by right value");
+  }
+};
+
+// Logic operators
+Blockly.Blocks['operator_and'] = {
+  init: function() {
+    this.appendValueInput("LEFT")
+      .setCheck("Boolean");
+    this.appendDummyInput()
+      .appendField("AND");
+    this.appendValueInput("RIGHT")
+      .setCheck("Boolean");
+    this.setInputsInline(true);
+    this.setOutput(true, "Boolean");
+    this.setStyle('operator_blocks');
+    this.setTooltip("Returns true if both conditions are true");
+  }
+};
+
+Blockly.Blocks['operator_or'] = {
+  init: function() {
+    this.appendValueInput("LEFT")
+      .setCheck("Boolean");
+    this.appendDummyInput()
+      .appendField("OR");
+    this.appendValueInput("RIGHT")
+      .setCheck("Boolean");
+    this.setInputsInline(true);
+    this.setOutput(true, "Boolean");
+    this.setStyle('operator_blocks');
+    this.setTooltip("Returns true if at least one condition is true");
+  }
+};
+
+Blockly.Blocks['operator_not'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("NOT");
+    this.appendValueInput("VALUE")
+      .setCheck("Boolean");
+    this.setInputsInline(true);
+    this.setOutput(true, "Boolean");
+    this.setStyle('operator_blocks');
+    this.setTooltip("Inverts the boolean value");
+  }
+};
+
+Blockly.Blocks['operator_not_equals'] = {
+  init: function() {
+    this.appendValueInput("LEFT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.appendDummyInput()
+      .appendField("≠");
+    this.appendValueInput("RIGHT")
+      .setCheck(["EnvironmentValue", "TAValue", "Number"]);
+    this.setInputsInline(true);
+    this.setOutput(true, "Boolean");
+    this.setStyle('operator_blocks');
+    this.setTooltip("Check if two values are not equal");
+  }
+};
+
+Blockly.Blocks['operator_advanced_math'] = {
+  init: function() {
+    this.appendValueInput("VALUE")
+      .setCheck("Number");
+    this.appendDummyInput()
+      .appendField(new Blockly.FieldDropdown([
+        ["abs", "abs"],
+        ["sqrt", "sqrt"],
+        ["sin", "sin"],
+        ["cos", "cos"],
+        ["tan", "tan"],
+        ["log", "log"],
+        ["ln", "ln"],
+        ["exp", "exp"],
+        ["round", "round"],
+        ["floor", "floor"],
+        ["ceil", "ceil"]
+      ]), "FUNCTION");
+    this.setInputsInline(true);
+    this.setOutput(true, "Number");
+    this.setStyle('operator_blocks');
+    this.setTooltip("Apply advanced math function");
+  }
+};
+
+Blockly.Blocks['ta_sma'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("SMA");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Simple Moving Average");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['ta_ema'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("EMA");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Exponential Moving Average");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['ta_rsi'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("RSI");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Relative Strength Index");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['ta_macd'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("MACD");
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Moving Average Convergence Divergence");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['ta_bb'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("BB");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Bollinger Bands");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['ta_vwap'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("VWAP");
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Volume Weighted Average Price");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['ta_atr'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("ATR");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Average True Range - volatility indicator");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['ta_stochastic'] = {
+  init: function() {
+    this.appendValueInput("K_PERIOD")
+      .setCheck("Number")
+      .appendField("Stochastic K");
+    this.appendValueInput("D_PERIOD")
+      .setCheck("Number")
+      .appendField("D");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Stochastic Oscillator");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['ta_adx'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("ADX");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Average Directional Index - trend strength");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['ta_cci'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("CCI");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Commodity Channel Index");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['ta_williams_r'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("Williams %R");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Williams %R - momentum indicator");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['ta_obv'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("OBV");
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("On Balance Volume");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['ta_mfi'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("MFI");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Money Flow Index");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['ta_sar'] = {
+  init: function() {
+    this.appendValueInput("ACCELERATION")
+      .setCheck("Number")
+      .appendField("Parabolic SAR - Accel");
+    this.appendValueInput("MAX")
+      .setCheck("Number")
+      .appendField("Max");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Parabolic Stop and Reverse");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['ta_ichimoku'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Ichimoku Cloud");
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Ichimoku Cloud indicator");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['ta_vp'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("Volume Profile");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Volume Profile");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['ta_keltner'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("Keltner Channel");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Keltner Channels");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['ta_dmi'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("DMI");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Directional Movement Index");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['ta_supertrend'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("SuperTrend");
+    this.appendValueInput("MULTIPLIER")
+      .setCheck("Number")
+      .appendField("Multiplier");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("SuperTrend indicator");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['ta_pivot'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Pivot Points");
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Pivot Points (support/resistance)");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks["trade_order"] = {
+  init: function () {
+    this.appendDummyInput()
+      .appendField("Trade ID:")
+      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
+    this.appendDummyInput()
+      .appendField("Trade")
+      .appendField(
+        new Blockly.FieldDropdown([
+          ["long", "long"],
+          ["short", "short"],
+        ]),
+        "DIRECTION",
+      );
+    this.appendDummyInput()
+      .appendField("Size")
+      .appendField(new Blockly.FieldNumber(100, 0), "SIZE");
+    this.appendDummyInput()
+      .appendField(
+        new Blockly.FieldDropdown([
+          ["trade value", "value"],
+          ["percent of capital", "percent"],
+        ]),
+        "SIZE_TYPE",
+      );
+    this.appendDummyInput()
+      .appendField("Leverage")
+      .appendField(
+        new Blockly.FieldDropdown([
+          ["1x", "1"],
+          ["2x", "2"],
+          ["3x", "3"],
+          ["5x", "5"],
+          ["10x", "10"],
+          ["20x", "20"],
+          ["50x", "50"],
+          ["100x", "100"],
+        ]),
+        "LEVERAGE",
+      );
+    this.appendDummyInput()
+      .appendField("Order type:")
+      .appendField(
+        new Blockly.FieldDropdown([
+          ["market", "market"],
+          ["limit", "limit"],
+        ], this.updateOrderType_.bind(this)),
+        "ORDER_TYPE",
+      );
+    this.setPreviousStatement(true, "TradeAction");
+    this.setNextStatement(true, "TradeAction");
+    this.setStyle("trade_blocks");
+    this.setTooltip("Place a trading order with unique ID");
+    this.setHelpUrl("");
+  },
+  
+  updateOrderType_: function(value: string) {
+    const limitPriceInput = this.getInput('LIMIT_PRICE');
+    if (value === 'limit' && !limitPriceInput) {
+      this.appendValueInput("LIMIT_PRICE")
+        .setCheck("Number")
+        .appendField("At price");
+    } else if (value === 'market' && limitPriceInput) {
+      this.removeInput('LIMIT_PRICE');
+    }
+  }
+};
+
+Blockly.Blocks["trade_stop_loss"] = {
+  init: function () {
+    this.appendDummyInput()
+      .appendField("Place")
+      .appendField(
+        new Blockly.FieldDropdown([
+          ["full", "full"],
+          ["partial", "partial"],
+        ], this.updateCloseType_.bind(this)),
+        "CLOSE_TYPE",
+      )
+      .appendField("stop loss at");
+    this.appendValueInput("PRICE")
+      .setCheck("Number");
+    this.appendDummyInput()
+      .appendField("for trade ID")
+      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
+    this.setInputsInline(true);
+    this.setPreviousStatement(true, "TradeAction");
+    this.setNextStatement(true, "TradeAction");
+    this.setStyle("trade_blocks");
+    this.setTooltip("Set stop loss at price");
+    this.setHelpUrl("");
+  },
+  
+  updateCloseType_: function(value: string) {
+    const percentInput = this.getInput('PERCENT');
+    if (value === 'partial' && !percentInput) {
+      this.appendDummyInput("PERCENT")
+        .appendField(", close")
+        .appendField(new Blockly.FieldNumber(50, 1, 100), "PERCENT_VALUE")
+        .appendField("% of trade");
+      this.moveInputBefore('PERCENT', this.inputList[this.inputList.length - 1].name);
+    } else if (value === 'full' && percentInput) {
+      this.removeInput('PERCENT');
+    }
+  }
+};
+
+Blockly.Blocks["trade_take_profit"] = {
+  init: function () {
+    this.appendDummyInput()
+      .appendField("Place")
+      .appendField(
+        new Blockly.FieldDropdown([
+          ["full", "full"],
+          ["partial", "partial"],
+        ], this.updateCloseType_.bind(this)),
+        "CLOSE_TYPE",
+      )
+      .appendField("take profit at");
+    this.appendValueInput("PRICE")
+      .setCheck("Number");
+    this.appendDummyInput()
+      .appendField("for trade ID")
+      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
+    this.setInputsInline(true);
+    this.setPreviousStatement(true, "TradeAction");
+    this.setNextStatement(true, "TradeAction");
+    this.setStyle("trade_blocks");
+    this.setTooltip("Set take profit at price");
+    this.setHelpUrl("");
+  },
+  
+  updateCloseType_: function(value: string) {
+    const percentInput = this.getInput('PERCENT');
+    if (value === 'partial' && !percentInput) {
+      this.appendDummyInput("PERCENT")
+        .appendField(", close")
+        .appendField(new Blockly.FieldNumber(50, 1, 100), "PERCENT_VALUE")
+        .appendField("% of trade");
+      this.moveInputBefore('PERCENT', this.inputList[this.inputList.length - 1].name);
+    } else if (value === 'full' && percentInput) {
+      this.removeInput('PERCENT');
+    }
+  }
+};
+
+Blockly.Blocks["trade_close"] = {
+  init: function () {
+    this.appendDummyInput()
+      .appendField("Close");
+    this.appendValueInput("PERCENT")
+      .setCheck("Number")
+      .appendField("% of trade ID")
+      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
+    this.setPreviousStatement(true, "TradeAction");
+    this.setNextStatement(true, "TradeAction");
+    this.setStyle("trade_blocks");
+    this.setTooltip("Close percentage of trade by ID");
+    this.setHelpUrl("");
+  },
+};
+
+Blockly.Blocks["trade_pnl_of"] = {
+  init: function () {
+    this.appendDummyInput()
+      .appendField("P&L for trade ID")
+      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
+    this.setOutput(true, "Number");
+    this.setStyle("trade_blocks");
+    this.setTooltip("Get profit/loss of trade by ID");
+    this.setHelpUrl("");
+  },
+};
+
+Blockly.Blocks["trade_entry_price"] = {
+  init: function () {
+    this.appendDummyInput()
+      .appendField("Entry price for trade ID")
+      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
+    this.setOutput(true, "Number");
+    this.setStyle("trade_blocks");
+    this.setTooltip("Get entry price of trade by ID");
+    this.setHelpUrl("");
+  },
+};
+
+Blockly.Blocks["trade_position_size"] = {
+  init: function () {
+    this.appendDummyInput()
+      .appendField("Position size for trade ID")
+      .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
+    this.setOutput(true, "Number");
+    this.setStyle("trade_blocks");
+    this.setTooltip("Get size of trade by ID");
+    this.setHelpUrl("");
+  },
+};
+
+// Variable blocks
+Blockly.Blocks["variables_set"] = {
+  init: function () {
+    this.appendValueInput("VALUE")
+      .appendField("set")
+      .appendField(new Blockly.FieldTextInput("myVar"), "VAR")
+      .appendField("to");
+    this.setInputsInline(true);
+    this.setPreviousStatement(true, null);
+    this.setNextStatement(true, null);
+    this.setStyle("variable_blocks");
+    this.setTooltip("Set a variable to a value");
+    this.setHelpUrl("");
+  },
+};
+
+Blockly.Blocks["variables_get"] = {
+  init: function () {
+    this.appendDummyInput()
+      .appendField("get")
+      .appendField(new Blockly.FieldTextInput("myVar"), "VAR");
+    this.setInputsInline(true);
+    this.setOutput(true, null);
+    this.setStyle("variable_blocks");
+    this.setTooltip("Get the value of a variable");
+    this.setHelpUrl("");
+  },
+};
+
+Blockly.Blocks["variables_change"] = {
+  init: function () {
+    this.appendValueInput("DELTA")
+      .appendField("change")
+      .appendField(new Blockly.FieldTextInput("myVar"), "VAR")
+      .appendField("by");
+    this.setInputsInline(true);
+    this.setPreviousStatement(true, null);
+    this.setNextStatement(true, null);
+    this.setStyle("variable_blocks");
+    this.setTooltip("Change a variable by adding a value to it");
+    this.setHelpUrl("");
+  },
+};
+
+// Function blocks
+Blockly.Blocks["function_define"] = {
+  init: function () {
+    this.appendDummyInput()
+      .appendField("function")
+      .appendField(new Blockly.FieldTextInput("myFunction"), "NAME");
+    this.appendStatementInput("STACK").appendField("do");
+    this.setInputsInline(false);
+    this.setPreviousStatement(true, null);
+    this.setNextStatement(true, null);
+    this.setStyle("function_blocks");
+    this.setTooltip("Define a reusable function");
+    this.setHelpUrl("");
+  },
+};
+
+Blockly.Blocks["function_call"] = {
+  init: function () {
+    this.appendDummyInput()
+      .appendField("call")
+      .appendField(new Blockly.FieldTextInput("myFunction"), "NAME");
+    this.setInputsInline(true);
+    this.setPreviousStatement(true, null);
+    this.setNextStatement(true, null);
+    this.setStyle("function_blocks");
+    this.setTooltip("Call a function");
+    this.setHelpUrl("");
+  },
+};
+
+Blockly.Blocks["function_return"] = {
+  init: function () {
+    this.appendValueInput("VALUE").appendField("return");
+    this.setInputsInline(true);
+    this.setPreviousStatement(true, null);
+    this.setStyle("function_blocks");
+    this.setTooltip("Return a value from a function");
+    this.setHelpUrl("");
+  },
+};
 
 EXAMPLES:
 
@@ -841,29 +1286,16 @@ Output:
 
 === CRITICAL ENFORCEMENT RULES ===
 
-1. ONLY USE THE 77 BLOCKS LISTED ABOVE - NO EXCEPTIONS
+1. ONLY USE THE BLOCKS LISTED ABOVE - NO EXCEPTIONS
    - If a block type is not in the list above, it DOES NOT EXIST
    - DO NOT invent new block types like "trade_exit", "price_action", etc.
    - DO NOT modify field names or value names from what's specified
    
 2. XML STRUCTURE MUST MATCH EXACTLY
    - Copy the exact XML structure shown for each block
-   - Use the exact field names specified (TRADE_ID, DIRECTION, SIZE, etc.)
-   - Use the exact value input names (CONDITION, DO, LEFT, RIGHT, PERIOD, etc.)
-   
-3. BLOCK ID RULES (MANDATORY)
-   - Block IDs must ONLY contain: letters, numbers, underscores (_), hyphens (-)
-   - NEVER use: (){}[]/#!@$%^&*+=<>,.;:'"|\`~?
-   - Good IDs: "rsi_check", "trade_entry_1", "condition-main", "sma_cross"
-   - Bad IDs: "4k)r_ds#rs", "block/1", "condition[0]", "test(1)"
-   
-4. NUMERIC VALUES
-   - ALL numeric inputs MUST use: <shadow type="math_number"><field name="NUM">value</field></shadow>
-   - NEVER use <value> tags without shadow blocks for numbers
-   
-5. ALWAYS START WITH
-   <xml xmlns="https://developers.google.com/blockly/xml">
-   
+   - Use the exact field names specified
+   - Use the exact value input names
+
 6. POSITION FIRST BLOCK
    - Set x="50" y="50" on the first/top-level block only
    
@@ -893,7 +1325,7 @@ REMEMBER: If you're not sure if a block exists, CHECK THE LIST ABOVE. If it's no
           { role: "system", content: systemPrompt },
           {
             role: "user",
-            content: currentWorkspace 
+            content: currentWorkspace
               ? `Here is my current trading strategy workspace:\n\n${currentWorkspace}\n\nPlease modify it according to this request: ${message}\n\nIMPORTANT: You MUST only use blocks from the list provided in the system prompt. Do not invent new blocks. Return ONLY the complete updated XML wrapped in <xml></xml> tags. No explanations.`
               : `Generate Blockly XML for this trading strategy: ${message}\n\nIMPORTANT: You MUST only use the 77 blocks listed in the system prompt. Do not invent new blocks. Return ONLY the XML wrapped in <xml></xml> tags. No explanations.`,
           },
@@ -942,19 +1374,19 @@ REMEMBER: If you're not sure if a block exists, CHECK THE LIST ABOVE. If it's no
     // Extract XML content from response (in case AI added explanation text)
     let xmlContent = content.trim();
     const xmlMatch = xmlContent.match(/<xml[^>]*>[\s\S]*<\/xml>/i);
-    
+
     if (xmlMatch) {
       xmlContent = xmlMatch[0];
     } else {
       // Check if response contains XML tags at all
-      if (!xmlContent.includes('<xml') || !xmlContent.includes('</xml>')) {
+      if (!xmlContent.includes("<xml") || !xmlContent.includes("</xml>")) {
         console.error("Invalid AI response - no XML tags found:", xmlContent);
         throw new Error("AI did not generate valid Blockly XML. Please try rephrasing your request.");
       }
     }
 
     // Validate XML starts with proper root element
-    if (!xmlContent.trim().startsWith('<xml')) {
+    if (!xmlContent.trim().startsWith("<xml")) {
       console.error("Invalid XML format - doesn't start with <xml>:", xmlContent.substring(0, 100));
       throw new Error("Generated XML format is invalid");
     }
