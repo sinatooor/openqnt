@@ -29,7 +29,7 @@ interface BacktestingPanelProps {
 export const BacktestingPanel = ({
   result,
   isLoading,
-  symbol = 'BTC/USDT',
+  symbol = 'AAPL',
   onClose,
 }: BacktestingPanelProps) => {
   const [isExpanded, setIsExpanded] = useState(true);

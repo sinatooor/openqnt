@@ -61,6 +61,13 @@ export function generateMockData(
 
 function getBasePrice(symbol: string): number {
   const prices: Record<string, number> = {
+    'AAPL': 180,
+    'MSFT': 380,
+    'GOOGL': 140,
+    'TSLA': 250,
+    'SPY': 450,
+    'BTC/USD': 45000,
+    'ETH/USD': 2500,
     'BTC/USDT': 45000,
     'ETH/USDT': 2500,
     'BNB/USDT': 350,
@@ -68,9 +75,6 @@ function getBasePrice(symbol: string): number {
     'XRP/USDT': 0.6,
     'ADA/USDT': 0.5,
     'DOGE/USDT': 0.08,
-    'SPY': 450,
-    'AAPL': 180,
-    'TSLA': 250,
   };
   
   return prices[symbol] || 100;
