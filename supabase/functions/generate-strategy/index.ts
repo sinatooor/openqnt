@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, currentWorkspace } = await req.json();
+    const { message, currentWorkspace, blockXml } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
@@ -20,8 +20,9 @@ serve(async (req) => {
 
     console.log("Generating strategy for:", message);
     console.log("Has existing workspace:", !!currentWorkspace);
+    console.log("Has specific block attached:", !!blockXml);
 
-    const systemPrompt = `You are a trading strategy expert that creates Blockly XML code for visual programming.
+    let systemPrompt = `You are a trading strategy expert that creates Blockly XML code for visual programming.
 
 Available blocks and their usage:
 
@@ -297,6 +298,11 @@ IMPORTANT RULES:
 5. Use <shadow type="math_number"> for numeric inputs
 6. Keep strategies comprehensive and ready to use
 7. Set x="50" y="50" for the first block positioning`;
+
+    // Add block context if provided
+    if (blockXml) {
+      systemPrompt += `\n\nThe user has shared a specific Blockly block with you. Here is the XML structure:\n\n${blockXml}\n\nPlease focus on this block when generating or modifying the strategy. Analyze what this block does and incorporate it or provide context about it in your response.`;
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
