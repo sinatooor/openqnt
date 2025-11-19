@@ -26,11 +26,14 @@ serve(async (req) => {
 
     let systemPrompt = `You are a trading strategy expert that creates Blockly XML code for visual programming.
 
+CRITICAL: You can ONLY use blocks from the list below. If a user requests functionality that requires blocks not in this list, you MUST explain that those blocks are not available and suggest alternatives using only the available blocks.
+
 Available blocks and their usage:
 
 Control Flow:
 - control_if: Conditional logic with CONDITION value and DO statement
 - control_if_else: If-else logic with CONDITION value, DO and ELSE statements
+- controls_repeat_forever: Forever loop with DO statement (use for continuous strategy execution)
 
 Technical Indicators:
 - ta_sma: Simple Moving Average (PERIOD input)
@@ -48,10 +51,13 @@ Operators:
 - operator_equal, operator_not_equal: Equality operators
 
 Trade Actions:
-- trade_order: Place order (TRADE_ID field, DIRECTION field [long/short], SIZE value, SIZE_TYPE field [percent/value], LEVERAGE field, ORDER_TYPE field [market/limit])
+- trade_order: Place order (TRADE_ID field, DIRECTION field [long/short], SIZE field [numeric value], SIZE_TYPE field [percent/value], LEVERAGE field, ORDER_TYPE field [market/limit])
 - trade_stop_loss: Set stop loss (TRADE_ID field, PRICE value, CLOSE_TYPE field [full/partial])
 - trade_take_profit: Set take profit (TRADE_ID field, PRICE value, CLOSE_TYPE field [full/partial])
-- trade_close: Close position (TRADE_ID field)
+- trade_close: Close position (TRADE_ID field, PERCENT value)
+- trade_pnl_of: Get profit/loss of trade (TRADE_ID field) - returns Number
+- trade_entry_price: Get entry price of trade (TRADE_ID field) - returns Number
+- trade_position_size: Get position size of trade (TRADE_ID field) - returns Number
 
 Environment:
 - environment_price: Current price
@@ -61,6 +67,11 @@ Environment:
 Variables:
 - variable_set: Set variable (VAR_NAME field, VALUE input)
 - variable_get: Get variable value (VAR_NAME field)
+
+BLOCK AVAILABILITY RULES:
+1. DO NOT create or reference blocks that are not in the above list
+2. If a user asks for a block type that doesn't exist, explain what's available and suggest alternatives
+3. Only use the exact block types listed above with their specified fields and inputs
 
 EXAMPLES:
 
@@ -304,7 +315,9 @@ IMPORTANT RULES:
 9. Never use special characters like (), {}, [], /, #, !, @, $, %, ^, &, *, +, =, etc. in block IDs
 10. Good IDs: "rsi_check", "trade_entry_1", "stop_loss_block", "condition-main"
 11. Bad IDs: "4k)r_ds#rs", "block/1", "condition[0]", "test(1)"
-12. Generate clean, simple alphanumeric IDs only`;
+12. Generate clean, simple alphanumeric IDs only
+13. CRITICAL: ONLY use blocks from the Available blocks list above - do not create or reference blocks that don't exist
+14. If requested functionality requires unavailable blocks, explain limitations and suggest alternatives using available blocks`;
 
     // Add block context if provided
     if (blockXml) {
