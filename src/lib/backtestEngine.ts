@@ -43,10 +43,11 @@ interface StrategyContext {
 export async function runBacktest(
   generatedCode: string,
   symbol: string = 'BTC/USDT',
-  daysBack: number = 90
+  daysBack: number = 90,
+  historicalData?: CandlestickData[]
 ): Promise<BacktestResult> {
-  // Generate historical data
-  const chartData = generateMockData(symbol, daysBack);
+  // Use provided historical data or generate mock data
+  const chartData = historicalData || generateMockData(symbol, daysBack);
   const trades: TradeMarker[] = [];
   let position: Position = { type: null, entryPrice: 0, entryTime: 0 as Time, size: 0 };
   

@@ -43,6 +43,7 @@ import { runBacktest, BacktestResult } from "@/lib/backtestEngine";
 import { StrategyTemplate } from "@/lib/strategyTemplates";
 import { cn } from "@/lib/utils";
 import { GuidedTour, TourTriggerButton } from "./GuidedTour";
+import { fetchMarketData } from "@/lib/marketDataService";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -431,11 +432,18 @@ export const BlocklyWorkspace = () => {
     setIsBacktesting(true);
     setShowBacktest(true);
     const loadingToast = toast.loading("Running backtest simulation...", {
-      description: "Analyzing historical data with your strategy",
+      description: "Fetching real market data and analyzing your strategy",
     });
     try {
-      // Run backtest with generated code
-      const result = await runBacktest(generatedCode, "BTC/USDT", 90);
+      // Fetch real market data
+      const historicalData = await fetchMarketData({
+        symbol: "BTC/USDT",
+        interval: "daily",
+        outputsize: "full",
+      });
+
+      // Run backtest with real data
+      const result = await runBacktest(generatedCode, "BTC/USDT", 90, historicalData);
       setBacktestResult(result);
 
       // Dismiss loading toast
