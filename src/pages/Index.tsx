@@ -30,10 +30,9 @@ const Index = () => {
     setShowAIPanel(!showAIPanel);
   };
 
-  const handleStepChange = (stepIndex: number, action: string) => {
-    // When user clicks Next from step 1, open AI panel
-    // The tour will auto-advance to step 2 when panel opens
-    if (stepIndex === 0 && action === 'next') {
+  const handleStepChange = (stepIndex: number) => {
+    // Automatically open AI panel when moving to step 2 (index 1)
+    if (stepIndex === 1) {
       setShowAIPanel(true);
     }
   };
@@ -47,7 +46,6 @@ const Index = () => {
         onStepChange={handleStepChange}
         showAIPanelFromParent={showAIPanel}
         onAIPanelChange={setShowAIPanel}
-        aiPanelOpen={showAIPanel}
       />
       
       {/* Right Panel - Settings (hidden on mobile, shown on tablet+) */}
