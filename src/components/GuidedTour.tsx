@@ -1,16 +1,31 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import React from "react";
-import Joyride, { CallBackProps, STATUS, Step } from "react-joyride";
+import Joyride, { CallBackProps, STATUS, Step, ACTIONS } from "react-joyride";
 import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
 
 interface GuidedTourProps {
   run: boolean;
   onComplete: () => void;
-  onStepChange?: (stepIndex: number) => void;
+  onStepChange?: (stepIndex: number, action: string) => void;
+  aiPanelOpen?: boolean;
 }
 
-export const GuidedTour = ({ run, onComplete, onStepChange }: GuidedTourProps) => {
+export const GuidedTour = ({ run, onComplete, onStepChange, aiPanelOpen }: GuidedTourProps) => {
+  const [stepIndex, setStepIndex] = useState(0);
+
+  useEffect(() => {
+    if (run) {
+      setStepIndex(0);
+    }
+  }, [run]);
+
+  // Auto-advance from step 1 to step 2 when AI panel opens
+  useEffect(() => {
+    if (stepIndex === 0 && aiPanelOpen) {
+      setStepIndex(1);
+    }
+  }, [aiPanelOpen, stepIndex]);
 
   const steps: Step[] = [
     {
@@ -42,15 +57,25 @@ export const GuidedTour = ({ run, onComplete, onStepChange }: GuidedTourProps) =
   ];
 
   const handleJoyrideCallback = (data: CallBackProps) => {
-    const { status, index, action, type } = data;
+    const { status, index, action } = data;
 
     if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status as any)) {
       onComplete();
+      return;
     }
 
-    // Trigger step change callback when moving to next step
-    if (type === 'step:after' && onStepChange) {
-      onStepChange(index);
+    // When user clicks Next from step 1 (index 0), signal parent to open AI panel
+    if (action === ACTIONS.NEXT && index === 0 && onStepChange) {
+      onStepChange(0, 'next');
+      // Don't update stepIndex here, it will be updated by the aiPanelOpen useEffect
+      return;
+    }
+
+    // Update step index for other actions
+    if (action === ACTIONS.NEXT) {
+      setStepIndex(index + 1);
+    } else if (action === ACTIONS.PREV) {
+      setStepIndex(index - 1);
     }
   };
 
@@ -58,6 +83,7 @@ export const GuidedTour = ({ run, onComplete, onStepChange }: GuidedTourProps) =
     <Joyride
       steps={steps}
       run={run}
+      stepIndex={stepIndex}
       continuous
       showProgress
       showSkipButton
