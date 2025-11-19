@@ -22,10 +22,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 interface BlocklyWorkspaceProps {
   runTour?: boolean;
   onTourComplete?: () => void;
+  showAIPanelFromParent?: boolean;
+  onAIPanelChange?: (show: boolean) => void;
 }
 export const BlocklyWorkspace = ({
   runTour: runTourProp,
-  onTourComplete: onTourCompleteProp
+  onTourComplete: onTourCompleteProp,
+  showAIPanelFromParent,
+  onAIPanelChange
 }: BlocklyWorkspaceProps = {}) => {
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
@@ -53,6 +57,20 @@ export const BlocklyWorkspace = ({
       setRunTour(runTourProp);
     }
   }, [runTourProp]);
+
+  // Sync AI panel with parent
+  useEffect(() => {
+    if (showAIPanelFromParent !== undefined) {
+      setShowAIPanel(showAIPanelFromParent);
+    }
+  }, [showAIPanelFromParent]);
+
+  // Notify parent when AI panel changes locally
+  useEffect(() => {
+    if (onAIPanelChange) {
+      onAIPanelChange(showAIPanel);
+    }
+  }, [showAIPanel, onAIPanelChange]);
   const handleTourComplete = () => {
     setRunTour(false);
     if (onTourCompleteProp) {

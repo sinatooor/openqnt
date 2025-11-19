@@ -4,6 +4,7 @@ import { SettingsPanel } from "@/components/SettingsPanel";
 
 const Index = () => {
   const [runTour, setRunTour] = useState(false);
+  const [showAIPanel, setShowAIPanel] = useState(false);
 
   useEffect(() => {
     // Check if user has seen the tour before
@@ -25,14 +26,26 @@ const Index = () => {
     localStorage.setItem("hasSeenGuidedTour", "true");
   };
 
+  const handleToggleAI = () => {
+    setShowAIPanel(!showAIPanel);
+  };
+
   return (
     <div className="flex h-screen w-full bg-background text-foreground overflow-hidden">
       {/* Center Panel - Blockly Workspace (flexible, includes backtesting panel when shown) */}
-      <BlocklyWorkspace runTour={runTour} onTourComplete={handleTourComplete} />
+      <BlocklyWorkspace 
+        runTour={runTour} 
+        onTourComplete={handleTourComplete}
+        showAIPanelFromParent={showAIPanel}
+        onAIPanelChange={setShowAIPanel}
+      />
       
       {/* Right Panel - Settings (hidden on mobile, shown on tablet+) */}
       <div className="hidden md:block">
-        <SettingsPanel onStartTour={handleStartTour} />
+        <SettingsPanel 
+          onStartTour={handleStartTour}
+          onToggleAI={handleToggleAI}
+        />
       </div>
     </div>
   );
