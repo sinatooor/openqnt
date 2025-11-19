@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -28,6 +28,19 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
   const [draggedBlockXml, setDraggedBlockXml] = useState<{ xml: string; name: string } | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const { toast } = useToast();
+
+  // Listen for block drop events from workspace
+  useEffect(() => {
+    const handleAddBlock = (e: any) => {
+      const blockData = e.detail;
+      if (blockData) {
+        setDraggedBlockXml(blockData);
+      }
+    };
+    
+    window.addEventListener('addBlockToChat', handleAddBlock);
+    return () => window.removeEventListener('addBlockToChat', handleAddBlock);
+  }, []);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
