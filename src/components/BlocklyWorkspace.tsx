@@ -22,18 +22,16 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 interface BlocklyWorkspaceProps {
   runTour?: boolean;
   onTourComplete?: () => void;
-  onStepChange?: (stepIndex: number, action: string) => void;
+  onStepChange?: (stepIndex: number) => void;
   showAIPanelFromParent?: boolean;
   onAIPanelChange?: (show: boolean) => void;
-  aiPanelOpen?: boolean;
 }
 export const BlocklyWorkspace = ({
   runTour: runTourProp,
   onTourComplete: onTourCompleteProp,
   onStepChange,
   showAIPanelFromParent,
-  onAIPanelChange,
-  aiPanelOpen
+  onAIPanelChange
 }: BlocklyWorkspaceProps = {}) => {
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
@@ -1029,7 +1027,6 @@ export const BlocklyWorkspace = ({
         run={runTour} 
         onComplete={handleTourComplete}
         onStepChange={onStepChange}
-        aiPanelOpen={aiPanelOpen}
       />
     </div>;
 };
