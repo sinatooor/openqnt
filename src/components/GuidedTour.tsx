@@ -1,0 +1,121 @@
+import { useState, useEffect } from "react";
+import Joyride, { CallBackProps, STATUS, Step } from "react-joyride";
+import { Button } from "@/components/ui/button";
+import { Info } from "lucide-react";
+
+interface GuidedTourProps {
+  run: boolean;
+  onComplete: () => void;
+}
+
+export const GuidedTour = ({ run, onComplete }: GuidedTourProps) => {
+  const [stepIndex, setStepIndex] = useState(0);
+
+  const steps: Step[] = [
+    {
+      target: ".ai-panel-trigger",
+      content: "Welcome! This is your AI Strategy Generator. Click here to open the AI assistant that can create trading strategies for you using natural language.",
+      disableBeacon: true,
+      placement: "bottom",
+    },
+    {
+      target: ".blockly-workspace",
+      content: "This is your visual programming workspace. Drag and drop blocks from the left sidebar to build your trading strategy. You can also drag blocks into the AI chat to ask questions about them!",
+      placement: "center",
+    },
+    {
+      target: ".backtest-trigger",
+      content: "Once you've built a strategy, click here to backtest it. See how your strategy would have performed with historical data before going live.",
+      placement: "bottom",
+    },
+    {
+      target: ".run-strategy-trigger",
+      content: "Ready to execute? Click here to run your strategy. This will generate the JavaScript code and start your trading bot.",
+      placement: "bottom",
+    },
+    {
+      target: ".save-workspace-trigger",
+      content: "Don't forget to save your work! You can save, load, and export your strategies anytime. Happy trading! 🚀",
+      placement: "bottom",
+    },
+  ];
+
+  const handleJoyrideCallback = (data: CallBackProps) => {
+    const { status, index, action } = data;
+
+    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status as any)) {
+      onComplete();
+    }
+
+    if (action === "next" || action === "prev") {
+      setStepIndex(index + (action === "next" ? 1 : -1));
+    }
+  };
+
+  return (
+    <Joyride
+      steps={steps}
+      run={run}
+      continuous
+      showProgress
+      showSkipButton
+      stepIndex={stepIndex}
+      callback={handleJoyrideCallback}
+      styles={{
+        options: {
+          primaryColor: "#ec4899",
+          textColor: "hsl(var(--foreground))",
+          backgroundColor: "hsl(var(--background))",
+          overlayColor: "rgba(0, 0, 0, 0.7)",
+          arrowColor: "hsl(var(--background))",
+          zIndex: 10000,
+        },
+        tooltip: {
+          borderRadius: "8px",
+          padding: "20px",
+        },
+        tooltipContainer: {
+          textAlign: "left",
+        },
+        buttonNext: {
+          backgroundColor: "#ec4899",
+          borderRadius: "6px",
+          padding: "8px 16px",
+          fontSize: "14px",
+        },
+        buttonBack: {
+          color: "hsl(var(--muted-foreground))",
+          marginRight: "8px",
+        },
+        buttonSkip: {
+          color: "hsl(var(--muted-foreground))",
+        },
+      }}
+      locale={{
+        back: "Back",
+        close: "Close",
+        last: "Finish",
+        next: "Next",
+        skip: "Skip Tour",
+      }}
+    />
+  );
+};
+
+interface TourTriggerButtonProps {
+  onClick: () => void;
+}
+
+export const TourTriggerButton = ({ onClick }: TourTriggerButtonProps) => {
+  return (
+    <Button
+      onClick={onClick}
+      variant="outline"
+      size="icon"
+      className="tour-trigger-btn"
+      title="Start Guided Tour"
+    >
+      <Info className="w-4 h-4" />
+    </Button>
+  );
+};
