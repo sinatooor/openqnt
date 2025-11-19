@@ -14,9 +14,9 @@ Blockly.Blocks["trade_order"] = {
         ]),
         "DIRECTION",
       );
-    this.appendDummyInput()
-      .appendField("Size")
-      .appendField(new Blockly.FieldNumber(100, 0), "SIZE");
+    this.appendValueInput("SIZE")
+      .setCheck("Number")
+      .appendField("Size");
     this.appendDummyInput()
       .appendField(
         new Blockly.FieldDropdown([
