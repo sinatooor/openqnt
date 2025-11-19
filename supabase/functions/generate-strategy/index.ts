@@ -18,6 +18,20 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
+    // Validate message isn't too vague when there's no workspace context
+    const vaguePatterns = /^(try again|do it|fix it|implement|add it|change it|update it)$/i;
+    if (vaguePatterns.test(message.trim()) && !currentWorkspace && !blockXml) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Please provide more details about the strategy you want to create. For example: 'Create an RSI strategy that buys when RSI < 30' or 'Build a moving average crossover strategy'." 
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     const blockCount = currentWorkspace ? (currentWorkspace.match(/<block /g) || []).length : 0;
     console.log("Generating strategy for:", message);
     console.log("Has existing workspace:", !!currentWorkspace, `(${blockCount} blocks, ${(currentWorkspace?.length || 0) / 1024}KB)`);
@@ -337,8 +351,8 @@ IMPORTANT RULES:
           {
             role: "user",
             content: currentWorkspace 
-              ? `Here is my current trading strategy workspace:\n\n${currentWorkspace}\n\nPlease modify it according to this request: ${message}\n\nReturn ONLY the complete updated XML wrapped in <xml></xml> tags. No explanations.`
-              : `Generate Blockly XML for this trading strategy: ${message}\n\nReturn ONLY the XML wrapped in <xml></xml> tags. No explanations.`,
+              ? `Here is my current trading strategy workspace:\n\n${currentWorkspace}\n\nPlease modify it according to this request: ${message}\n\nCRITICAL: Return ONLY the complete updated XML wrapped in <xml></xml> tags. Do not include any explanations, markdown, or additional text. Only return valid Blockly XML.`
+              : `Generate Blockly XML for this trading strategy: ${message}\n\nCRITICAL: You MUST return valid Blockly XML wrapped in <xml></xml> tags. Do not return explanations or ask for clarification. If the request is unclear, make reasonable assumptions and generate a simple strategy using available blocks. Only return valid Blockly XML, nothing else.`,
           },
         ],
       }),
