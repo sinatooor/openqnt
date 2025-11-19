@@ -437,13 +437,13 @@ export const BlocklyWorkspace = () => {
     try {
       // Fetch real market data
       const historicalData = await fetchMarketData({
-        symbol: "BTC/USDT",
+        symbol: "AAPL",
         interval: "daily",
         outputsize: "full",
       });
 
       // Run backtest with real data
-      const result = await runBacktest(generatedCode, "BTC/USDT", 90, historicalData);
+      const result = await runBacktest(generatedCode, "AAPL", 90, historicalData);
       setBacktestResult(result);
 
       // Dismiss loading toast
