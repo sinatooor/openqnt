@@ -98,6 +98,24 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
 
     const startTime = Date.now();
 
+    // Validate vague requests in generate mode
+    if (isGenerateMode) {
+      const currentXml = getCurrentWorkspaceXml();
+      const vaguePatterns = /^(try again|do it|fix it|implement|add it|change it|update it)$/i;
+      
+      if (vaguePatterns.test(input.trim()) && !currentXml && !attachedBlock) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: "I need more details to generate a strategy. Please describe what you want, for example:\n\n- 'Create an RSI strategy that buys when RSI < 30'\n- 'Build a moving average crossover strategy'\n- 'Make a Bollinger Bands breakout strategy'\n\nTell me what indicators or conditions you want to use!"
+          }
+        ]);
+        setIsLoading(false);
+        return;
+      }
+    }
+
     try {
       if (isGenerateMode) {
         // Generate mode - create blocks
@@ -135,6 +153,21 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
 
         if (!response.ok) {
           const errorData = await response.json();
+          
+          // Handle validation errors (400) - show as assistant message
+          if (response.status === 400) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                role: "assistant",
+                content: errorData.error || "Please provide more details about the strategy you want to create."
+              }
+            ]);
+            setIsLoading(false);
+            return;
+          }
+          
+          // Handle other errors normally
           if (onLog) {
             onLog({
               type: 'error',
