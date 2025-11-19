@@ -1,39 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import * as Blockly from "blockly";
-import {
-  environmentBlocksToolbox,
-  operatorBlocksToolbox,
-  controlBlocksToolbox,
-  tradeBlocksToolbox,
-  taBlocksToolbox,
-  myBlocksToolbox,
-} from "@/blockly/blocks";
+import { environmentBlocksToolbox, operatorBlocksToolbox, controlBlocksToolbox, tradeBlocksToolbox, taBlocksToolbox, myBlocksToolbox } from "@/blockly/blocks";
 import { generateCode } from "@/blockly/generators/javascript";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Code2,
-  Copy,
-  Check,
-  Download,
-  Play,
-  Upload,
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-  RotateCcw,
-  Undo2,
-  Redo2,
-  Blocks,
-  Wand2,
-  FileCode,
-  BarChart3,
-  TrendingUp,
-  BookOpen,
-} from "lucide-react";
+import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, Undo2, Redo2, Blocks, Wand2, FileCode, BarChart3, TrendingUp, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { BacktestingPanel } from "./BacktestingPanel";
 import { StrategyTemplatesDialog } from "./StrategyTemplatesDialog";
@@ -44,23 +18,15 @@ import { StrategyTemplate } from "@/lib/strategyTemplates";
 import { cn } from "@/lib/utils";
 import { GuidedTour } from "./GuidedTour";
 import { fetchMarketData } from "@/lib/marketDataService";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 interface BlocklyWorkspaceProps {
   runTour?: boolean;
   onTourComplete?: () => void;
 }
-
-export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourCompleteProp }: BlocklyWorkspaceProps = {}) => {
+export const BlocklyWorkspace = ({
+  runTour: runTourProp,
+  onTourComplete: onTourCompleteProp
+}: BlocklyWorkspaceProps = {}) => {
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
   const [generatedCode, setGeneratedCode] = useState<string>("");
@@ -87,7 +53,6 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
       setRunTour(runTourProp);
     }
   }, [runTourProp]);
-
   const handleTourComplete = () => {
     setRunTour(false);
     if (onTourCompleteProp) {
@@ -96,7 +61,6 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
       localStorage.setItem("hasSeenGuidedTour", "true");
     }
   };
-
   const handleStartTour = () => {
     setRunTour(true);
   };
@@ -117,55 +81,55 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
         scrollbarColour: "#25292f",
         scrollbarOpacity: 0.5,
         insertionMarkerColour: "#3b82f6",
-        insertionMarkerOpacity: 0.3,
+        insertionMarkerOpacity: 0.3
       },
       blockStyles: {
         environment_blocks: {
           colourPrimary: "#10b981",
           colourSecondary: "#059669",
-          colourTertiary: "#047857",
+          colourTertiary: "#047857"
         },
         operator_blocks: {
           colourPrimary: "#3b82f6",
           colourSecondary: "#2563eb",
-          colourTertiary: "#1d4ed8",
+          colourTertiary: "#1d4ed8"
         },
         control_blocks: {
           colourPrimary: "#f59e0b",
           colourSecondary: "#d97706",
-          colourTertiary: "#b45309",
+          colourTertiary: "#b45309"
         },
         trade_blocks: {
           colourPrimary: "#06b6d4",
           colourSecondary: "#0891b2",
-          colourTertiary: "#0e7490",
+          colourTertiary: "#0e7490"
         },
         ta_blocks: {
           colourPrimary: "#8b5cf6",
           colourSecondary: "#7c3aed",
-          colourTertiary: "#6d28d9",
+          colourTertiary: "#6d28d9"
         },
         risk_blocks: {
           colourPrimary: "#ec4899",
           colourSecondary: "#db2777",
-          colourTertiary: "#be185d",
+          colourTertiary: "#be185d"
         },
         mtf_blocks: {
           colourPrimary: "#06b6d4",
           colourSecondary: "#0891b2",
-          colourTertiary: "#0e7490",
+          colourTertiary: "#0e7490"
         },
         variable_blocks: {
           colourPrimary: "#64748b",
           colourSecondary: "#475569",
-          colourTertiary: "#334155",
+          colourTertiary: "#334155"
         },
         function_blocks: {
           colourPrimary: "#ef4444",
           colourSecondary: "#dc2626",
-          colourTertiary: "#b91c1c",
-        },
-      },
+          colourTertiary: "#b91c1c"
+        }
+      }
     });
 
     // Initialize workspace with configuration
@@ -173,73 +137,61 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
       theme: darkTheme,
       toolbox: {
         kind: "categoryToolbox",
-        contents: [
-          {
-            kind: "category",
-            name: "AI",
-            colour: "#ec4899",
-            custom: "AI_CATEGORY",
-          },
-          {
-            kind: "sep",
-          },
-          {
-            kind: "category",
-            name: "Environment",
-            colour: "#10b981",
-            contents: environmentBlocksToolbox,
-          },
-          {
-            kind: "category",
-            name: "Control",
-            colour: "#f59e0b",
-            contents: controlBlocksToolbox,
-          },
-          {
-            kind: "category",
-            name: "Operators",
-            colour: "#3b82f6",
-            contents: operatorBlocksToolbox,
-          },
-          {
-            kind: "category",
-            name: "TA Tools",
-            colour: "#8b5cf6",
-            contents: taBlocksToolbox,
-          },
-          {
-            kind: "category",
-            name: "Values",
-            colour: "#64748b",
-            contents: [
-              {
-                kind: "block",
-                type: "math_number",
-                fields: {
-                  NUM: 0,
-                },
-              },
-            ],
-          },
-          {
-            kind: "category",
-            name: "Trade",
-            colour: "#06b6d4",
-            contents: tradeBlocksToolbox,
-          },
-          {
-            kind: "category",
-            name: "My Blocks",
-            colour: "#ef4444",
-            contents: myBlocksToolbox,
-          },
-        ],
+        contents: [{
+          kind: "category",
+          name: "AI",
+          colour: "#ec4899",
+          custom: "AI_CATEGORY"
+        }, {
+          kind: "sep"
+        }, {
+          kind: "category",
+          name: "Environment",
+          colour: "#10b981",
+          contents: environmentBlocksToolbox
+        }, {
+          kind: "category",
+          name: "Control",
+          colour: "#f59e0b",
+          contents: controlBlocksToolbox
+        }, {
+          kind: "category",
+          name: "Operators",
+          colour: "#3b82f6",
+          contents: operatorBlocksToolbox
+        }, {
+          kind: "category",
+          name: "TA Tools",
+          colour: "#8b5cf6",
+          contents: taBlocksToolbox
+        }, {
+          kind: "category",
+          name: "Values",
+          colour: "#64748b",
+          contents: [{
+            kind: "block",
+            type: "math_number",
+            fields: {
+              NUM: 0
+            }
+          }]
+        }, {
+          kind: "category",
+          name: "Trade",
+          colour: "#06b6d4",
+          contents: tradeBlocksToolbox
+        }, {
+          kind: "category",
+          name: "My Blocks",
+          colour: "#ef4444",
+          contents: myBlocksToolbox
+        }]
       },
       grid: {
         spacing: 20,
         length: 3,
         colour: "#2a2e35",
-        snap: true,
+        snap: true
       },
       zoom: {
         controls: true,
@@ -247,23 +199,23 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
         startScale: 1.0,
         maxScale: 3,
         minScale: 0.3,
-        scaleSpeed: 1.2,
+        scaleSpeed: 1.2
       },
       trashcan: true,
       move: {
         scrollbars: {
           horizontal: true,
-          vertical: true,
+          vertical: true
         },
         drag: true,
-        wheel: true,
-      },
+        wheel: true
+      }
     });
     workspaceRef.current = workspace;
 
     // Register custom category callback for AI
     workspace.registerToolboxCategoryCallback("AI_CATEGORY", () => {
-      setShowAIPanel((prev) => !prev);
+      setShowAIPanel(prev => !prev);
       return [];
     });
 
@@ -275,9 +227,12 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
           const blockXml = Blockly.Xml.blockToDom(block as Blockly.BlockSvg);
           const xmlText = Blockly.Xml.domToText(blockXml);
           const blockName = (block as any).type?.replace(/_/g, ' ') || 'Unknown block';
-          
+
           // Store in a way that can be accessed by drag event
-          (window as any).__draggedBlockData = JSON.stringify({ xml: xmlText, name: blockName });
+          (window as any).__draggedBlockData = JSON.stringify({
+            xml: xmlText,
+            name: blockName
+          });
         }
       }
     });
@@ -317,7 +272,7 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
       return;
     }
     const blob = new Blob([generatedCode], {
-      type: "text/javascript",
+      type: "text/javascript"
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -342,7 +297,7 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
     const xml = Blockly.Xml.workspaceToDom(workspaceRef.current);
     const xmlText = Blockly.Xml.domToText(xml);
     const blob = new Blob([xmlText], {
-      type: "application/xml",
+      type: "application/xml"
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -358,11 +313,11 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ".xml";
-    input.onchange = (e) => {
+    input.onchange = e => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file || !workspaceRef.current) return;
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = event => {
         try {
           const xmlText = event.target?.result as string;
           const xml = Blockly.utils.xml.textToDom(xmlText);
@@ -386,7 +341,7 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
       Blockly.Xml.domToWorkspace(xml, workspaceRef.current);
       toast.success(`${template.name} template loaded successfully!`, {
         description: template.description,
-        duration: 4000,
+        duration: 4000
       });
     } catch (error) {
       toast.error("Failed to load template.");
@@ -438,14 +393,14 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
     setIsBacktesting(true);
     setShowBacktest(true);
     const loadingToast = toast.loading("Running backtest simulation...", {
-      description: "Fetching real market data and analyzing your strategy",
+      description: "Fetching real market data and analyzing your strategy"
     });
     try {
       // Fetch real market data
       const historicalData = await fetchMarketData({
         symbol: "AAPL",
         interval: "daily",
-        outputsize: "full",
+        outputsize: "full"
       });
 
       // Run backtest with real data
@@ -459,32 +414,27 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
       const isProfit = result.metrics.totalReturn >= 0;
       toast.success(isProfit ? "🎉 Backtest completed successfully!" : "Backtest completed", {
         description: `${isProfit ? "📈" : "📉"} Return: ${result.metrics.totalReturn.toFixed(2)}% | Win Rate: ${result.metrics.winRate.toFixed(1)}% | ${result.metrics.totalTrades} trades`,
-        duration: 5000,
+        duration: 5000
       });
     } catch (error) {
       console.error("Backtest error:", error);
       toast.dismiss(loadingToast);
       toast.error("Backtest failed", {
-        description: "Failed to run backtest simulation. Check your strategy blocks.",
+        description: "Failed to run backtest simulation. Check your strategy blocks."
       });
       setShowBacktest(false);
     } finally {
       setIsBacktesting(false);
     }
   };
-
   const handleBlocksGenerated = (xml: string, isEdit: boolean = false) => {
     if (!workspaceRef.current) return;
-
     const hasBlocks = workspaceRef.current.getAllBlocks(false).length > 0;
-
     if (!hasBlocks || isEdit) {
       // Workspace is empty or this is an edit - replace/add blocks directly
       loadXmlToWorkspace(xml, isEdit);
       toast.success(isEdit ? "Strategy Updated" : "Strategy Added", {
-        description: isEdit 
-          ? "Your blocks have been updated with the changes."
-          : "AI-generated blocks have been added to your workspace.",
+        description: isEdit ? "Your blocks have been updated with the changes." : "AI-generated blocks have been added to your workspace."
       });
     } else {
       // Workspace has blocks, ask user first
@@ -492,73 +442,66 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
       setShowConfirmDialog(true);
     }
   };
-
   const getCurrentWorkspaceXml = (): string | null => {
     if (!workspaceRef.current) return null;
-    
     const allBlocks = workspaceRef.current.getAllBlocks(false);
     if (allBlocks.length === 0) return null;
-    
     const xml = Blockly.Xml.workspaceToDom(workspaceRef.current);
     return Blockly.Xml.domToText(xml);
   };
-
-  const getSelectedBlocksXml = (): { xml: string; name: string } | null => {
+  const getSelectedBlocksXml = (): {
+    xml: string;
+    name: string;
+  } | null => {
     if (!workspaceRef.current) return null;
-    
     const selected = Blockly.common.getSelected();
     if (!selected) return null;
-    
     const block = selected as Blockly.BlockSvg;
     const blockXml = Blockly.Xml.blockToDom(block);
     const xmlText = Blockly.Xml.domToText(blockXml);
     const blockName = (block as any).type?.replace(/_/g, ' ') || 'Unknown block';
-    
-    return { xml: xmlText, name: blockName };
+    return {
+      xml: xmlText,
+      name: blockName
+    };
   };
-
   const loadXmlToWorkspace = (xml: string, clearFirst: boolean = false) => {
     if (!workspaceRef.current) return;
-
     try {
       // Extract XML content if it's wrapped in markdown code blocks or surrounded by text
       let cleanXml = xml.trim();
-      
+
       // Remove markdown code blocks
       if (cleanXml.includes('```xml')) {
         cleanXml = cleanXml.replace(/```xml\n?/g, '').replace(/```/g, '').trim();
       }
-      
+
       // Extract XML using regex (in case AI added explanation text before/after)
       const xmlMatch = cleanXml.match(/<xml[^>]*>[\s\S]*<\/xml>/i);
       if (xmlMatch) {
         cleanXml = xmlMatch[0];
       }
-      
+
       // Validate XML format
       if (!cleanXml.startsWith('<xml')) {
         console.error("Invalid XML format - doesn't start with <xml>:", cleanXml.substring(0, 100));
         toast.error("Invalid XML format", {
-          description: "The generated blocks are not in the correct format. Please try again.",
+          description: "The generated blocks are not in the correct format. Please try again."
         });
         return;
       }
-      
       if (!cleanXml.includes('</xml>')) {
         console.error("Invalid XML format - missing closing tag:", cleanXml.substring(0, 100));
         toast.error("Incomplete XML", {
-          description: "The generated blocks are incomplete. Please try again.",
+          description: "The generated blocks are incomplete. Please try again."
         });
         return;
       }
-      
       if (clearFirst) {
         workspaceRef.current.clear();
       }
-      
       const xmlDom = Blockly.utils.xml.textToDom(cleanXml);
       Blockly.Xml.domToWorkspace(xmlDom, workspaceRef.current);
-      
       const allBlocks = workspaceRef.current.getAllBlocks(false);
       setIsEmpty(allBlocks.length === 0);
       setBlockCount(allBlocks.length);
@@ -566,29 +509,24 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
       console.error("Error loading XML:", error);
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       toast.error("Failed to load blocks", {
-        description: errorMessage.includes("XML") 
-          ? "The generated blocks have invalid XML. Please try rephrasing your request."
-          : "Could not load the generated blocks. Please try again.",
+        description: errorMessage.includes("XML") ? "The generated blocks have invalid XML. Please try rephrasing your request." : "Could not load the generated blocks. Please try again."
       });
     }
   };
-
   const handleConfirmAdd = () => {
     if (pendingXml) {
       loadXmlToWorkspace(pendingXml);
       setPendingXml(null);
       toast.success("Strategy Added", {
-        description: "AI-generated blocks have been added to your workspace.",
+        description: "AI-generated blocks have been added to your workspace."
       });
     }
     setShowConfirmDialog(false);
   };
-
   const handleCancelAdd = () => {
     setPendingXml(null);
     setShowConfirmDialog(false);
   };
-
   const handleCloseBacktest = () => {
     setShowBacktest(false);
     setBacktestResult(null);
@@ -618,13 +556,12 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
     return result;
   };
   const getCodeStatistics = () => {
-    if (!generatedCode)
-      return {
-        lines: 0,
-        chars: 0,
-        complexity: 0,
-      };
-    const lines = generatedCode.split("\n").filter((line) => line.trim()).length;
+    if (!generatedCode) return {
+      lines: 0,
+      chars: 0,
+      complexity: 0
+    };
+    const lines = generatedCode.split("\n").filter(line => line.trim()).length;
     const chars = generatedCode.length;
 
     // Simple complexity estimation based on control structures
@@ -634,41 +571,31 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
     return {
       lines,
       chars,
-      complexity,
+      complexity
     };
   };
   const renderCodeWithLineNumbers = (code: string) => {
     if (!code) {
-      return (
-        <div className="text-muted-foreground italic">
+      return <div className="text-muted-foreground italic">
           // No blocks yet
           <br />
           // Drag blocks from the toolbox to start building your strategy
-        </div>
-      );
+        </div>;
     }
     const displayCode = beautified ? beautifyCode(code) : code;
     const lines = displayCode.split("\n");
-    return (
-      <div className="flex font-mono text-sm">
-        {showLineNumbers && (
-          <div className="select-none pr-4 text-muted-foreground/50 text-right border-r border-border">
-            {lines.map((_, i) => (
-              <div key={i} className="leading-6">
+    return <div className="flex font-mono text-sm">
+        {showLineNumbers && <div className="select-none pr-4 text-muted-foreground/50 text-right border-r border-border">
+            {lines.map((_, i) => <div key={i} className="leading-6">
                 {i + 1}
-              </div>
-            ))}
-          </div>
-        )}
+              </div>)}
+          </div>}
         <div className="flex-1 pl-4">
-          {lines.map((line, i) => (
-            <div key={i} className="leading-6">
+          {lines.map((line, i) => <div key={i} className="leading-6">
               <code className="syntax-highlight">{highlightSyntax(line)}</code>
-            </div>
-          ))}
+            </div>)}
         </div>
-      </div>
-    );
+      </div>;
   };
   const highlightSyntax = (line: string) => {
     if (!line.trim()) return " ";
@@ -686,39 +613,30 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
 
     // Simple tokenization
     const tokens = remaining.split(/(\s+|[{}();,])/);
-    tokens.forEach((token) => {
+    tokens.forEach(token => {
       if (keywords.includes(token)) {
-        parts.push(
-          <span key={key++} className="text-purple-400 font-semibold">
+        parts.push(<span key={key++} className="text-purple-400 font-semibold">
             {token}
-          </span>,
-        );
+          </span>);
       } else if (token.match(/^['"].*['"]$/)) {
-        parts.push(
-          <span key={key++} className="text-green-400">
+        parts.push(<span key={key++} className="text-green-400">
             {token}
-          </span>,
-        );
+          </span>);
       } else if (token.match(/^\d+$/)) {
-        parts.push(
-          <span key={key++} className="text-orange-400">
+        parts.push(<span key={key++} className="text-orange-400">
             {token}
-          </span>,
-        );
+          </span>);
       } else if (token.match(/^[{}();,]$/)) {
-        parts.push(
-          <span key={key++} className="text-muted-foreground">
+        parts.push(<span key={key++} className="text-muted-foreground">
             {token}
-          </span>,
-        );
+          </span>);
       } else {
         parts.push(<span key={key++}>{token}</span>);
       }
     });
     return <>{parts}</>;
   };
-  return (
-    <div className="flex-1 h-full relative flex flex-col">
+  return <div className="flex-1 h-full relative flex flex-col">
       {/* Action Bar */}
       <div className="h-14 bg-card border-b border-border flex items-center justify-between px-4 gap-3">
         <div className="flex items-center gap-3">
@@ -785,13 +703,7 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handlePreviewBacktest}
-                disabled={isBacktesting || isEmpty}
-                className={cn("transition-all duration-200 backtest-trigger", isBacktesting && "animate-pulse")}
-              >
+              <Button variant="secondary" size="sm" onClick={handlePreviewBacktest} disabled={isBacktesting || isEmpty} className={cn("transition-all duration-200 backtest-trigger", isBacktesting && "animate-pulse")}>
                 <TrendingUp className={cn("w-4 h-4 mr-2", isBacktesting && "animate-bounce")} />
                 {isBacktesting ? "Testing..." : "Backtest"}
               </Button>
@@ -804,12 +716,7 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowFloatingChart(!showFloatingChart)}
-                className="transition-all duration-200 shadow-indigo "
-              >
+              <Button variant="outline" size="sm" onClick={() => setShowFloatingChart(!showFloatingChart)} className="transition-all duration-200 shadow-indigo ">
                 ​<BarChart3 className="w-4 h-4 mr-2" />
               </Button>
             </TooltipTrigger>
@@ -891,12 +798,7 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
           {/* View Group */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowCode(!showCode)}
-                className="transition-all duration-200 hover-scale"
-              >
+              <Button variant="outline" size="sm" onClick={() => setShowCode(!showCode)} className="transition-all duration-200 hover-scale">
                 <Code2 className="w-4 h-4 mr-2" />
                 {showCode ? "Hide" : "Code"}
               </Button>
@@ -909,15 +811,7 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowAIPanel(!showAIPanel)}
-                className="transition-all duration-200 hover-scale ai-panel-trigger"
-              >
-                <Wand2 className="w-4 h-4 mr-2" />
-                AI
-              </Button>
+              
             </TooltipTrigger>
             <TooltipContent>
               <p>Open AI Strategy Generator</p>
@@ -933,18 +827,13 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
       <div className="flex-1 relative flex overflow-hidden">
         {/* Blockly Workspace */}
         <div className="flex-1 relative overflow-hidden blockly-workspace">
-          <div
-            ref={blocklyDiv}
-            className="absolute inset-0"
-            style={{
-              height: "100%",
-              width: "100%",
-            }}
-          />
+          <div ref={blocklyDiv} className="absolute inset-0" style={{
+          height: "100%",
+          width: "100%"
+        }} />
 
           {/* Welcome Screen */}
-          {isEmpty && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none animate-fade-in">
+          {isEmpty && <div className="absolute inset-0 flex items-center justify-center pointer-events-none animate-fade-in">
               <div className="bg-card/95 border border-border rounded-lg p-8 max-w-md text-center shadow-lg backdrop-blur-sm animate-scale-in">
                 <Blocks className="w-16 h-16 mx-auto mb-4 text-primary animate-pulse" />
                 <h3 className="text-xl font-semibold text-foreground mb-2">Welcome to Strategy Builder</h3>
@@ -952,42 +841,31 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
                   Start building your trading strategy by dragging blocks from the toolbox on the left.
                 </p>
                 <div className="space-y-2 text-sm text-left text-muted-foreground">
-                  <div
-                    className="flex items-start gap-2 animate-fade-in"
-                    style={{
-                      animationDelay: "200ms",
-                    }}
-                  >
+                  <div className="flex items-start gap-2 animate-fade-in" style={{
+                animationDelay: "200ms"
+              }}>
                     <span className="text-primary font-bold">1.</span>
                     <span>Choose blocks from the categories: Environment, Operators, Control, Trade, and TA Tools</span>
                   </div>
-                  <div
-                    className="flex items-start gap-2 animate-fade-in"
-                    style={{
-                      animationDelay: "400ms",
-                    }}
-                  >
+                  <div className="flex items-start gap-2 animate-fade-in" style={{
+                animationDelay: "400ms"
+              }}>
                     <span className="text-primary font-bold">2.</span>
                     <span>Connect blocks together to create your trading logic</span>
                   </div>
-                  <div
-                    className="flex items-start gap-2 animate-fade-in"
-                    style={{
-                      animationDelay: "600ms",
-                    }}
-                  >
+                  <div className="flex items-start gap-2 animate-fade-in" style={{
+                animationDelay: "600ms"
+              }}>
                     <span className="text-primary font-bold">3.</span>
                     <span>Preview the generated code and test your strategy</span>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            </div>}
         </div>
 
         {/* Code Preview Panel */}
-        {showCode && (
-          <div className="w-[450px] bg-card border-l border-border flex flex-col">
+        {showCode && <div className="w-[450px] bg-card border-l border-border flex flex-col">
             {/* Code Panel Header */}
             <div className="border-b border-border p-4 space-y-3">
               <div className="flex items-center justify-between">
@@ -998,11 +876,7 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
                 <div className="flex gap-1">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button
-                        variant={beautified ? "secondary" : "ghost"}
-                        size="sm"
-                        onClick={() => setBeautified(!beautified)}
-                      >
+                      <Button variant={beautified ? "secondary" : "ghost"} size="sm" onClick={() => setBeautified(!beautified)}>
                         <Wand2 className="w-4 h-4" />
                       </Button>
                     </TooltipTrigger>
@@ -1013,11 +887,7 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
 
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button
-                        variant={showLineNumbers ? "secondary" : "ghost"}
-                        size="sm"
-                        onClick={() => setShowLineNumbers(!showLineNumbers)}
-                      >
+                      <Button variant={showLineNumbers ? "secondary" : "ghost"} size="sm" onClick={() => setShowLineNumbers(!showLineNumbers)}>
                         <BarChart3 className="w-4 h-4" />
                       </Button>
                     </TooltipTrigger>
@@ -1053,8 +923,7 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
               </div>
 
               {/* Code Statistics */}
-              {generatedCode && (
-                <Card className="bg-secondary/30">
+              {generatedCode && <Card className="bg-secondary/30">
                   <CardContent className="p-3">
                     <div className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-4">
@@ -1068,28 +937,14 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
                         </div>
                         <div>
                           <span className="text-muted-foreground">Complexity:</span>
-                          <Badge
-                            variant={
-                              getCodeStatistics().complexity < 5
-                                ? "default"
-                                : getCodeStatistics().complexity < 10
-                                  ? "secondary"
-                                  : "destructive"
-                            }
-                            className="ml-1 text-xs"
-                          >
-                            {getCodeStatistics().complexity < 5
-                              ? "Low"
-                              : getCodeStatistics().complexity < 10
-                                ? "Medium"
-                                : "High"}
+                          <Badge variant={getCodeStatistics().complexity < 5 ? "default" : getCodeStatistics().complexity < 10 ? "secondary" : "destructive"} className="ml-1 text-xs">
+                            {getCodeStatistics().complexity < 5 ? "Low" : getCodeStatistics().complexity < 10 ? "Medium" : "High"}
                           </Badge>
                         </div>
                       </div>
                     </div>
                   </CardContent>
-                </Card>
-              )}
+                </Card>}
             </div>
 
             {/* Code Display Area */}
@@ -1098,22 +953,13 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
                 {renderCodeWithLineNumbers(generatedCode)}
               </div>
             </div>
-          </div>
-        )}
+          </div>}
 
         {/* Backtesting Panel */}
-        {showBacktest && (
-          <BacktestingPanel
-            result={backtestResult}
-            isLoading={isBacktesting}
-            symbol="BTC/USDT"
-            onClose={handleCloseBacktest}
-          />
-        )}
+        {showBacktest && <BacktestingPanel result={backtestResult} isLoading={isBacktesting} symbol="BTC/USDT" onClose={handleCloseBacktest} />}
 
         {/* AI Panel */}
-        {showAIPanel && (
-          <div className="w-[450px] bg-card border-l border-border flex flex-col">
+        {showAIPanel && <div className="w-[450px] bg-card border-l border-border flex flex-col">
             {/* AI Panel Header */}
             <div className="border-b border-border p-4">
               <div className="flex items-center justify-between">
@@ -1129,30 +975,16 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
 
             {/* AI Panel Content */}
             <div className="flex-1 overflow-auto">
-            <AIChatPanel 
-              onBlocksGenerated={handleBlocksGenerated}
-              getCurrentWorkspaceXml={getCurrentWorkspaceXml}
-              getSelectedBlocksXml={getSelectedBlocksXml}
-            />
+            <AIChatPanel onBlocksGenerated={handleBlocksGenerated} getCurrentWorkspaceXml={getCurrentWorkspaceXml} getSelectedBlocksXml={getSelectedBlocksXml} />
             </div>
-          </div>
-        )}
+          </div>}
       </div>
 
       {/* Strategy Templates Dialog */}
-      <StrategyTemplatesDialog
-        open={showTemplates}
-        onOpenChange={setShowTemplates}
-        onLoadTemplate={handleLoadTemplate}
-      />
+      <StrategyTemplatesDialog open={showTemplates} onOpenChange={setShowTemplates} onLoadTemplate={handleLoadTemplate} />
 
       {/* Floating Chart Modal */}
-      <FloatingChartModal
-        isOpen={showFloatingChart}
-        onClose={() => setShowFloatingChart(false)}
-        symbol="BTC/USDT"
-        interval="1D"
-      />
+      <FloatingChartModal isOpen={showFloatingChart} onClose={() => setShowFloatingChart(false)} symbol="BTC/USDT" interval="1D" />
 
       {/* Confirmation Dialog for Adding AI Blocks */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
@@ -1172,6 +1004,5 @@ export const BlocklyWorkspace = ({ runTour: runTourProp, onTourComplete: onTourC
 
       {/* Guided Tour */}
       <GuidedTour run={runTour} onComplete={handleTourComplete} />
-    </div>
-  );
+    </div>;
 };
