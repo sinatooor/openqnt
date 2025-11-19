@@ -238,6 +238,21 @@ export const BlocklyWorkspace = () => {
       return [];
     });
 
+    // Add drag event listener for blocks to enable dragging to chat
+    workspace.addChangeListener((event: any) => {
+      if (event.type === Blockly.Events.BLOCK_DRAG) {
+        const block = workspace.getBlockById(event.blockId);
+        if (block && event.isStart) {
+          const blockXml = Blockly.Xml.blockToDom(block as Blockly.BlockSvg);
+          const xmlText = Blockly.Xml.domToText(blockXml);
+          const blockName = (block as any).type?.replace(/_/g, ' ') || 'Unknown block';
+          
+          // Store in a way that can be accessed by drag event
+          (window as any).__draggedBlockData = JSON.stringify({ xml: xmlText, name: blockName });
+        }
+      }
+    });
+
     // Listen to workspace changes to update code and stats
     workspace.addChangeListener(() => {
       const code = generateCode(workspace);
@@ -450,6 +465,20 @@ export const BlocklyWorkspace = () => {
     
     const xml = Blockly.Xml.workspaceToDom(workspaceRef.current);
     return Blockly.Xml.domToText(xml);
+  };
+
+  const getSelectedBlocksXml = (): { xml: string; name: string } | null => {
+    if (!workspaceRef.current) return null;
+    
+    const selected = Blockly.common.getSelected();
+    if (!selected) return null;
+    
+    const block = selected as Blockly.BlockSvg;
+    const blockXml = Blockly.Xml.blockToDom(block);
+    const xmlText = Blockly.Xml.domToText(blockXml);
+    const blockName = (block as any).type?.replace(/_/g, ' ') || 'Unknown block';
+    
+    return { xml: xmlText, name: blockName };
   };
 
   const loadXmlToWorkspace = (xml: string, clearFirst: boolean = false) => {
@@ -1044,10 +1073,11 @@ export const BlocklyWorkspace = () => {
 
             {/* AI Panel Content */}
             <div className="flex-1 overflow-auto">
-              <AIChatPanel 
-                onBlocksGenerated={handleBlocksGenerated} 
-                getCurrentWorkspaceXml={getCurrentWorkspaceXml}
-              />
+            <AIChatPanel 
+              onBlocksGenerated={handleBlocksGenerated}
+              getCurrentWorkspaceXml={getCurrentWorkspaceXml}
+              getSelectedBlocksXml={getSelectedBlocksXml}
+            />
             </div>
           </div>
         )}

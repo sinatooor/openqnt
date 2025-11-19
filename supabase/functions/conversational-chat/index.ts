@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
+    const { messages, blockXml } = await req.json();
     
     if (!messages || !Array.isArray(messages)) {
       throw new Error("Messages array is required");
@@ -22,7 +22,7 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are a helpful trading strategy assistant with expertise in technical analysis, trading strategies, and financial markets. You provide clear, educational responses about trading concepts, indicators, and strategies.
+    let systemPrompt = `You are a helpful trading strategy assistant with expertise in technical analysis, trading strategies, and financial markets. You provide clear, educational responses about trading concepts, indicators, and strategies.
 
 You help users understand:
 - Technical indicators (RSI, MACD, Moving Averages, Bollinger Bands, etc.)
@@ -32,6 +32,12 @@ You help users understand:
 - Best practices for algorithmic trading
 
 Be conversational, friendly, and educational. If users ask about implementing strategies, remind them they can switch to "Generate" mode to create actual trading blocks.`;
+
+    // Add block context if provided
+    if (blockXml) {
+      systemPrompt += `\n\nThe user has shared a specific Blockly block with you. Here is the XML structure:\n\n${blockXml}\n\nPlease analyze this block and answer the user's questions about it. Explain what the block does, how it works in a trading strategy, and provide insights about its usage. Be specific and educational.`;
+      console.log("Block XML provided for context");
+    }
 
     console.log("Calling Lovable AI for conversational chat...");
 
