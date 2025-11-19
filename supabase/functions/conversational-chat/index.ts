@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, blockXml } = await req.json();
+    const { messages, blockXml, currentWorkspace } = await req.json();
     
     if (!messages || !Array.isArray(messages)) {
       throw new Error("Messages array is required");
@@ -37,6 +37,20 @@ Be conversational, friendly, and educational. If users ask about implementing st
     if (blockXml) {
       systemPrompt += `\n\nThe user has shared a specific Blockly block with you. Here is the XML structure:\n\n${blockXml}\n\nPlease analyze this block and answer the user's questions about it. Explain what the block does, how it works in a trading strategy, and provide insights about its usage. Be specific and educational.`;
       console.log("Block XML provided for context");
+    }
+
+    // Add workspace context if provided
+    if (currentWorkspace) {
+      const blockCount = (currentWorkspace.match(/<block /g) || []).length;
+      systemPrompt += `\n\nIMPORTANT: The user's current workspace contains ${blockCount} blocks. Here is the complete workspace structure:\n\n${currentWorkspace}\n\nYou can now:
+- Answer questions about their existing strategy
+- Explain what specific blocks do
+- Suggest improvements to their current implementation
+- Debug issues by analyzing the actual block connections
+- Reference specific TRADE_IDs, indicators, or logic they've built
+
+Always be specific and reference the actual blocks you see when answering.`;
+      console.log(`Workspace context provided: ${blockCount} blocks, ${(currentWorkspace.length / 1024).toFixed(2)}KB`);
     }
 
     console.log("Calling Lovable AI for conversational chat...");
