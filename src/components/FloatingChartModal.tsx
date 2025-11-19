@@ -5,8 +5,7 @@ import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader } from "./ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { X, GripHorizontal } from "lucide-react";
-import { generateMockData } from "@/lib/marketData";
-import { CandlestickData } from "lightweight-charts";
+import { useMarketData } from "@/hooks/useMarketData";
 import { cn } from "@/lib/utils";
 
 const SYMBOLS = ["BTC/USDT", "ETH/USDT", "BNB/USDT", "SOL/USDT", "XRP/USDT", "ADA/USDT"];
@@ -22,7 +21,6 @@ export const FloatingChartModal = ({
   symbol = "BTC/USDT",
   interval = "1D",
 }: FloatingChartModalProps) => {
-  const [chartData, setChartData] = useState<CandlestickData[]>([]);
   const [currentSymbol, setCurrentSymbol] = useState(symbol);
   const [currentInterval, setCurrentInterval] = useState(interval);
   const [isMaximized, setIsMaximized] = useState(false);
@@ -31,32 +29,20 @@ export const FloatingChartModal = ({
     y: 100,
   });
 
-  // Generate initial data
-  useEffect(() => {
-    if (isOpen) {
-      const data = generateMockData(currentSymbol, 90, {
-        trend: "up",
-      });
-      setChartData(data);
-    }
-  }, [isOpen, currentSymbol]);
+  const { data: chartData, isLoading } = useMarketData({
+    symbol: currentSymbol,
+    interval: currentInterval,
+    autoFetch: isOpen,
+  });
 
   // Update data when interval changes
   const handleIntervalChange = (newInterval: string) => {
     setCurrentInterval(newInterval);
-    const data = generateMockData(currentSymbol, 90, {
-      trend: "up",
-    });
-    setChartData(data);
   };
 
   // Update data when symbol changes
   const handleSymbolChange = (newSymbol: string) => {
     setCurrentSymbol(newSymbol);
-    const data = generateMockData(newSymbol, 90, {
-      trend: "up",
-    });
-    setChartData(data);
   };
   const handleMaximize = () => {
     setIsMaximized(!isMaximized);
