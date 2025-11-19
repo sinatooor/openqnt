@@ -167,25 +167,12 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
         };
         setMessages((prev) => [...prev, assistantMessage]);
 
-        try {
-          onBlocksGenerated(data.xml, isEdit);
+        onBlocksGenerated(data.xml, isEdit);
 
-          toast({
-            title: "Strategy Generated",
-            description: "Your trading blocks have been added to the workspace.",
-          });
-        } catch (error) {
-          // Log the failure
-          if (onLog) {
-            onLog({
-              type: 'error',
-              mode: 'generate',
-              error: error instanceof Error ? error.message : 'Failed to load blocks',
-              timestamp: Date.now()
-            });
-          }
-          throw error;
-        }
+        toast({
+          title: "Strategy Generated",
+          description: "Your trading blocks have been added to the workspace.",
+        });
       } else {
         // Conversational mode - Get workspace for context
         const currentXml = getCurrentWorkspaceXml();

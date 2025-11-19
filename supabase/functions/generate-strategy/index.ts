@@ -299,12 +299,7 @@ IMPORTANT RULES:
 4. Add risk management (stop loss or take profit) after opening trades
 5. Use <shadow type="math_number"> for numeric inputs
 6. Keep strategies comprehensive and ready to use
-7. Set x="50" y="50" for the first block positioning
-8. CRITICAL: Block IDs must ONLY contain alphanumeric characters, underscores, and hyphens
-9. Never use special characters like (), {}, [], /, #, !, @, $, %, ^, &, *, +, =, etc. in block IDs
-10. Good IDs: "rsi_check", "trade_entry_1", "stop_loss_block", "condition-main"
-11. Bad IDs: "4k)r_ds#rs", "block/1", "condition[0]", "test(1)"
-12. Generate clean, simple alphanumeric IDs only`;
+7. Set x="50" y="50" for the first block positioning`;
 
     // Add block context if provided
     if (blockXml) {
@@ -389,17 +384,7 @@ IMPORTANT RULES:
       throw new Error("Generated XML format is invalid");
     }
 
-    // Validate block IDs don't contain invalid characters
-    const invalidIdMatch = xmlContent.match(/id="([^"]*[^a-zA-Z0-9_-][^"]*)"/);
-    if (invalidIdMatch) {
-      console.error("Invalid block ID detected:", invalidIdMatch[1]);
-      throw new Error(`Generated XML contains invalid block ID with special characters: ${invalidIdMatch[1]}`);
-    }
-
-    // Count blocks for logging
-    const generatedBlockCount = (xmlContent.match(/<block /g) || []).length;
-    console.log(`Generated XML validated: ${generatedBlockCount} blocks, ${xmlContent.length} chars`);
-    console.log("XML preview:", xmlContent.substring(0, 200) + "...");
+    console.log("Generated XML (validated):", xmlContent.substring(0, 200) + "...");
 
     return new Response(JSON.stringify({ xml: xmlContent }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

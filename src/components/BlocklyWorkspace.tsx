@@ -577,36 +577,20 @@ export const BlocklyWorkspace = ({
         });
         return;
       }
-
-      // CRITICAL: Validate XML can be parsed BEFORE clearing workspace
-      const xmlDom = Blockly.utils.xml.textToDom(cleanXml);
-      
-      // Only clear workspace AFTER validation succeeds
       if (clearFirst) {
         workspaceRef.current.clear();
       }
-      
-      // Now load the already-validated XML
+      const xmlDom = Blockly.utils.xml.textToDom(cleanXml);
       Blockly.Xml.domToWorkspace(xmlDom, workspaceRef.current);
       const allBlocks = workspaceRef.current.getAllBlocks(false);
       setIsEmpty(allBlocks.length === 0);
       setBlockCount(allBlocks.length);
     } catch (error) {
-      // DON'T clear workspace if we got here - preserves existing blocks
       console.error("Error loading XML:", error);
-      console.error("Failed XML content:", xml.substring(0, 500));
-      
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      
-      // More specific error messages
-      let description = "Could not load the generated blocks. Your existing workspace was preserved.";
-      if (errorMessage.includes("doesn't exist")) {
-        description = `Block structure error: ${errorMessage}. This may be due to incompatible block connections. Your workspace was preserved.`;
-      } else if (errorMessage.includes("XML")) {
-        description = "The generated blocks have invalid XML format. Your workspace was preserved.";
-      }
-      
-      toast.error("Failed to load blocks", { description });
+      toast.error("Failed to load blocks", {
+        description: errorMessage.includes("XML") ? "The generated blocks have invalid XML. Please try rephrasing your request." : "Could not load the generated blocks. Please try again."
+      });
     }
   };
   const handleConfirmAdd = () => {
