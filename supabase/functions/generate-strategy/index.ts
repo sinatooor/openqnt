@@ -1377,25 +1377,6 @@ REMEMBER: If you're not sure if a block exists, CHECK THE LIST ABOVE. If it's no
 
     if (xmlMatch) {
       xmlContent = xmlMatch[0];
-    } else {
-      // Check if response contains XML tags at all
-      if (!xmlContent.includes("<xml") || !xmlContent.includes("</xml>")) {
-        console.error("Invalid AI response - no XML tags found:", xmlContent);
-        throw new Error("AI did not generate valid Blockly XML. Please try rephrasing your request.");
-      }
-    }
-
-    // Validate XML starts with proper root element
-    if (!xmlContent.trim().startsWith("<xml")) {
-      console.error("Invalid XML format - doesn't start with <xml>:", xmlContent.substring(0, 100));
-      throw new Error("Generated XML format is invalid");
-    }
-
-    // Validate block IDs don't contain invalid characters
-    const invalidIdMatch = xmlContent.match(/id="([^"]*[^a-zA-Z0-9_-][^"]*)"/);
-    if (invalidIdMatch) {
-      console.error("Invalid block ID detected:", invalidIdMatch[1]);
-      throw new Error(`Generated XML contains invalid block ID with special characters: ${invalidIdMatch[1]}`);
     }
 
     // Count blocks for logging
