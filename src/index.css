@@ -108,6 +108,18 @@ All colors MUST be HSL.
   fill: #000000 !important;
 }
 
+/* Ensure Blockly drag layers appear above everything */
+.blocklyWidgetDiv,
+.blocklyDropDownDiv,
+.blocklyDraggingBackground {
+  z-index: 10000 !important;
+}
+
+/* Ensure dragged blocks appear above the AI panel */
+.blocklyDragging {
+  z-index: 10001 !important;
+}
+
 /* Smooth transitions for workspace */
 .blockly-workspace {
   transition: all 0.3s ease;
