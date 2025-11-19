@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
-import { Loader2, Send, Sparkles, MessageSquare, Code, Blocks, X } from "lucide-react";
+import { Loader2, Send, Sparkles, MessageSquare, Code, Blocks, X, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
+import { LogEntry } from "./DevLogPanel";
 
 interface Message {
   role: "user" | "assistant";
@@ -18,15 +19,17 @@ interface AIChatPanelProps {
   onBlocksGenerated: (xml: string, isEdit?: boolean) => void;
   getCurrentWorkspaceXml: () => string | null;
   getSelectedBlocksXml: () => { xml: string; name: string } | null;
+  onLog?: (log: LogEntry) => void;
 }
 
-export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSelectedBlocksXml }: AIChatPanelProps) => {
+export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSelectedBlocksXml, onLog }: AIChatPanelProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerateMode, setIsGenerateMode] = useState(true);
   const [draggedBlockXml, setDraggedBlockXml] = useState<{ xml: string; name: string } | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [workspaceBlockCount, setWorkspaceBlockCount] = useState(0);
   const { toast } = useToast();
 
   // Listen for block drop events from workspace
@@ -41,6 +44,13 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
     window.addEventListener('addBlockToChat', handleAddBlock);
     return () => window.removeEventListener('addBlockToChat', handleAddBlock);
   }, []);
+
+  // Update workspace block count
+  useEffect(() => {
+    const xml = getCurrentWorkspaceXml();
+    const count = xml ? (xml.match(/<block /g) || []).length : 0;
+    setWorkspaceBlockCount(count);
+  }, [getCurrentWorkspaceXml]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -86,10 +96,26 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
     setDraggedBlockXml(null);
     setIsLoading(true);
 
+    const startTime = Date.now();
+
     try {
       if (isGenerateMode) {
         // Generate mode - create blocks
         const currentXml = getCurrentWorkspaceXml();
+        const blockCount = currentXml ? (currentXml.match(/<block /g) || []).length : 0;
+        
+        // Log request
+        if (onLog) {
+          onLog({
+            type: 'request',
+            mode: 'generate',
+            message: input,
+            workspaceBlocks: blockCount,
+            workspaceSize: currentXml ? (currentXml.length / 1024).toFixed(2) : '0',
+            hasAttachedBlock: !!attachedBlock,
+            timestamp: Date.now()
+          });
+        }
         
         const response = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-strategy`,
@@ -109,10 +135,28 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
 
         if (!response.ok) {
           const errorData = await response.json();
+          if (onLog) {
+            onLog({
+              type: 'error',
+              mode: 'generate',
+              error: errorData.error || 'Failed to generate strategy',
+              timestamp: Date.now()
+            });
+          }
           throw new Error(errorData.error || "Failed to generate strategy");
         }
 
         const data = await response.json();
+        
+        if (onLog) {
+          onLog({
+            type: 'response',
+            mode: 'generate',
+            success: true,
+            duration: Date.now() - startTime,
+            timestamp: Date.now()
+          });
+        }
         
         const isEdit = currentXml !== null;
         const assistantMessage: Message = {
@@ -130,7 +174,23 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
           description: "Your trading blocks have been added to the workspace.",
         });
       } else {
-        // Conversational mode - just chat
+        // Conversational mode - Get workspace for context
+        const currentXml = getCurrentWorkspaceXml();
+        const blockCount = currentXml ? (currentXml.match(/<block /g) || []).length : 0;
+        
+        // Log request
+        if (onLog) {
+          onLog({
+            type: 'request',
+            mode: 'chat',
+            message: input,
+            workspaceBlocks: blockCount,
+            workspaceSize: currentXml ? (currentXml.length / 1024).toFixed(2) : '0',
+            hasAttachedBlock: !!attachedBlock,
+            timestamp: Date.now()
+          });
+        }
+        
         const response = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/conversational-chat`,
           {
@@ -141,17 +201,36 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
             },
             body: JSON.stringify({ 
               messages: [...messages, userMessage],
-              blockXml: attachedBlock?.xml
+              blockXml: attachedBlock?.xml,
+              currentWorkspace: currentXml
             }),
           }
         );
 
         if (!response.ok) {
           const errorData = await response.json();
+          if (onLog) {
+            onLog({
+              type: 'error',
+              mode: 'chat',
+              error: errorData.error || 'Failed to get response',
+              timestamp: Date.now()
+            });
+          }
           throw new Error(errorData.error || "Failed to get response");
         }
 
         const data = await response.json();
+        
+        if (onLog) {
+          onLog({
+            type: 'response',
+            mode: 'chat',
+            success: true,
+            duration: Date.now() - startTime,
+            timestamp: Date.now()
+          });
+        }
         
         const assistantMessage: Message = {
           role: "assistant",
@@ -161,6 +240,14 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
       }
     } catch (error) {
       console.error("Error:", error);
+      if (onLog) {
+        onLog({
+          type: 'error',
+          mode: isGenerateMode ? 'generate' : 'chat',
+          error: error instanceof Error ? error.message : 'Unknown error',
+          timestamp: Date.now()
+        });
+      }
       
       const errorMessage: Message = {
         role: "assistant",
@@ -305,6 +392,13 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
       </ScrollArea>
 
       <div className="p-4 border-t border-border">
+        {!isGenerateMode && (
+          <div className="flex items-center gap-2 px-3 py-1.5 mb-2 bg-muted/30 rounded-md text-xs text-muted-foreground">
+            <Eye className="w-3 h-3" />
+            <span>AI can see your workspace ({workspaceBlockCount} blocks)</span>
+          </div>
+        )}
+        
         {draggedBlockXml && (
           <div className="mb-2 p-2 bg-pink-500/10 border border-pink-500/20 rounded flex items-center gap-2">
             <Blocks className="w-4 h-4 text-pink-500" />
