@@ -1371,13 +1371,8 @@ REMEMBER: If you're not sure if a block exists, CHECK THE LIST ABOVE. If it's no
       throw new Error("AI response is too large");
     }
 
-    // Extract XML content from response (in case AI added explanation text)
-    let xmlContent = content.trim();
-    const xmlMatch = xmlContent.match(/<xml[^>]*>[\s\S]*<\/xml>/i);
-
-    if (xmlMatch) {
-      xmlContent = xmlMatch[0];
-    }
+    // Use XML content as-is from AI
+    const xmlContent = content.trim();
 
     // Count blocks for logging
     const generatedBlockCount = (xmlContent.match(/<block /g) || []).length;
