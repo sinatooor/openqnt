@@ -1,0 +1,307 @@
+/* Blockly Custom Styles - Ultra Compact Design */
+
+/* ------------------------------------------------------------------
+   Text and Font Adjustments
+   ------------------------------------------------------------------ */
+
+/* Make all text smaller and thinner */
+.blocklyText {
+  font-weight: 500 !important;
+  font-size: 12px !important;
+  line-height: 1.2 !important;
+}
+
+/* Editable field text - even smaller */
+.blocklyEditableText>text,
+.blocklyNonEditableText>text {
+  font-weight: 500 !important;
+  font-size: 10px !important;
+}
+
+/* Dropdown text */
+.blocklyDropdownText {
+  font-size: 9px !important;
+  font-weight: 500 !important;
+}
+
+/* ------------------------------------------------------------------
+   Block Shape and Padding
+   ------------------------------------------------------------------ */
+
+/* Reduce block stroke width/ Border thickness */
+.blocklyPath {
+  stroke-width: 2px !important;
+}
+
+/* Remove extra padding from blocks */
+.blocklyBlockCanvas>g {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* ------------------------------------------------------------------
+   Input Fields and Editable Areas
+   ------------------------------------------------------------------ */
+
+/* Make input fields much more compact */
+.blocklyHtmlInput {
+  font-size: 9px !important;
+  padding: 0px 3px !important;
+  height: 14px !important;
+  min-height: 14px !important;
+  line-height: 14px !important;
+}
+
+/* Reduce field heights drastically */
+.blocklyEditableText,
+.blocklyNonEditableText {
+  height: 12px !important;
+  min-height: 12px !important;
+}
+
+/* ------------------------------------------------------------------
+   Toolbox Styling
+   ------------------------------------------------------------------ */
+
+/* Very compact flyout */
+.blocklyFlyout {
+  padding: 2px 4px !important;
+}
+
+/* Smaller toolbox categories */
+.blocklyTreeRow {
+  min-height: 20px !important;
+  padding: 1px 4px !important;
+  line-height: 20px !important;
+}
+
+/* Smaller category labels */
+.blocklyTreeLabel {
+  font-weight: 500 !important;
+  font-size: 12px !important;
+}
+
+/* ------------------------------------------------------------------
+   Icons and Additional Elements
+   ------------------------------------------------------------------ */
+
+/* Much smaller icons */
+.blocklyIconGroup {
+  transform: scale(0.6) !important;
+}
+
+/* Smaller comment icons */
+.blocklyIconShape {
+  width: 12px !important;
+  height: 12px !important;
+}
+
+/* ------------------------------------------------------------------
+   Block Connections and Notches
+   ------------------------------------------------------------------ */
+
+/* Smaller notches */
+.blocklyPath[data-shapes*="notch"] {
+  height: 8px !important;
+}
+
+/* Tighter statement connections */
+g[data-statement-gap] {
+  transform: translateY(-2px);
+}
+
+/* Remove gaps between blocks */
+.blocklyDraggable {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Tighter spacing for boolean (hexagon) blocks */
+.blocklyBlockCanvas .blocklyPath[data-argument-type="Boolean"] {
+  stroke-width: 1px !important;
+}
+
+/* ------------------------------------------------------------------
+   Fine-tune spacing
+   ------------------------------------------------------------------ */
+
+/* Reduce gap between field and text */
+.blocklyFieldRect {
+  rx: 2 !important;
+  ry: 2 !important;
+}
+
+/* Blockly Custom Styles - Ultra Compact Design */
+
+/* ------------------------------------------------------------------
+   Text and Font Adjustments
+   ------------------------------------------------------------------ */
+
+/* Make all text smaller and thinner */
+.blocklyText {
+  font-weight: 500 !important;
+  font-size: 12px !important;
+  line-height: 1.2 !important;
+}
+
+/* Editable field text - even smaller */
+.blocklyEditableText>text,
+.blocklyNonEditableText>text {
+  font-weight: 500 !important;
+  font-size: 10px !important;
+}
+
+/* Dropdown text */
+.blocklyDropdownText {
+  font-size: 9px !important;
+  font-weight: 500 !important;
+}
+
+/* ------------------------------------------------------------------
+   Block Shape and Padding
+   ------------------------------------------------------------------ */
+
+/* Reduce block stroke width/ Border thickness */
+.blocklyPath {
+  stroke-width: 2px !important;
+}
+
+/* Remove extra padding from blocks */
+.blocklyBlockCanvas>g {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* ------------------------------------------------------------------
+   Input Fields and Editable Areas
+   ------------------------------------------------------------------ */
+
+/* Make input fields much more compact */
+.blocklyHtmlInput {
+  font-size: 9px !important;
+  padding: 0px 3px !important;
+  height: 14px !important;
+  min-height: 14px !important;
+  line-height: 14px !important;
+}
+
+/* Reduce field heights drastically */
+.blocklyEditableText,
+.blocklyNonEditableText {
+  height: 12px !important;
+  min-height: 12px !important;
+}
+
+/* ------------------------------------------------------------------
+   Toolbox Styling
+   ------------------------------------------------------------------ */
+
+/* Very compact flyout */
+.blocklyFlyout {
+  padding: 2px 4px !important;
+}
+
+/* Smaller toolbox categories */
+.blocklyTreeRow {
+  min-height: 20px !important;
+  padding: 1px 4px !important;
+  line-height: 20px !important;
+}
+
+/* Smaller category labels */
+.blocklyTreeLabel {
+  font-weight: 500 !important;
+  font-size: 12px !important;
+}
+
+/* ------------------------------------------------------------------
+   Icons and Additional Elements
+   ------------------------------------------------------------------ */
+
+/* Much smaller icons */
+.blocklyIconGroup {
+  transform: scale(0.6) !important;
+}
+
+/* Smaller comment icons */
+.blocklyIconShape {
+  width: 12px !important;
+  height: 12px !important;
+}
+
+/* ------------------------------------------------------------------
+   Block Connections and Notches
+   ------------------------------------------------------------------ */
+
+/* Smaller notches */
+.blocklyPath[data-shapes*="notch"] {
+  height: 8px !important;
+}
+
+/* Tighter statement connections */
+g[data-statement-gap] {
+  transform: translateY(-2px);
+}
+
+/* Remove gaps between blocks */
+.blocklyDraggable {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Tighter spacing for boolean (hexagon) blocks */
+.blocklyBlockCanvas .blocklyPath[data-argument-type="Boolean"] {
+  stroke-width: 1px !important;
+}
+
+/* ------------------------------------------------------------------
+   Fine-tune spacing
+   ------------------------------------------------------------------ */
+
+/* Reduce gap between field and text */
+.blocklyFieldRect {
+  rx: 2 !important;
+  ry: 2 !important;
+}
+
+/* Tighter row spacing inside blocks */
+.blocklyDraggable g.blocklyEditableText {
+  margin: 0 !important;
+}
+
+/* Remove extra space from dropdown arrows */
+.blocklyDropDownDiv {
+  font-size: 9px !important;
+}
+
+/* ------------------------------------------------------------------
+   Seamless Input Editing (No Pop-up Look)
+   ------------------------------------------------------------------ */
+
+/* Remove the default white box and shadow from the editor widget */
+.blocklyWidgetDiv .blocklyHtmlInput {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  font-family: "Inter", sans-serif !important;
+  /* Match app font */
+  font-weight: 500 !important;
+  color: #0f172a !important;
+  /* Dark text for visibility on white fields */
+  padding: 0 !important;
+  margin: 0 !important;
+  height: 100% !important;
+  border-radius: 4px !important;
+}
+
+/* Ensure the cursor is visible and text is aligned */
+.blocklyWidgetDiv {
+  box-shadow: none !important;
+  /* Remove global widget shadow if present for inputs */
+}
+
+/* Specific fix for the resize handle if present */
+.blocklyResizeSE {
+  display: none !important;
+}
