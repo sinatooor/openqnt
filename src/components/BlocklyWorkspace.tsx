@@ -1,13 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as Blockly from "blockly";
-import {
-  environmentBlocksToolbox,
-  operatorBlocksToolbox,
-  controlBlocksToolbox,
-  tradeBlocksToolbox,
-  taBlocksToolbox,
-  myBlocksToolbox,
-} from "@/blockly/blocks";
+import { environmentBlocksToolbox, operatorBlocksToolbox, controlBlocksToolbox, tradeBlocksToolbox, taBlocksToolbox, myBlocksToolbox } from "@/blockly/blocks";
 import { generateCode } from "@/blockly/generators/javascript";
 import { Button } from "@/components/ui/button";
 import "@/styles/blockly-custom.css";
@@ -15,26 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Code2,
-  Copy,
-  Check,
-  Download,
-  Play,
-  Upload,
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-  RotateCcw,
-  Undo2,
-  Redo2,
-  Blocks,
-  Wand2,
-  FileCode,
-  BarChart3,
-  TrendingUp,
-  BookOpen,
-} from "lucide-react";
+import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, Undo2, Redo2, Blocks, Wand2, FileCode, BarChart3, TrendingUp, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { BacktestingPanel } from "./BacktestingPanel";
 import { StrategyTemplatesDialog } from "./StrategyTemplatesDialog";
@@ -46,16 +20,7 @@ import { runBacktest, BacktestResult } from "@/lib/backtestEngine";
 import { StrategyTemplate } from "@/lib/strategyTemplates";
 import { cn } from "@/lib/utils";
 import { fetchMarketData } from "@/lib/marketDataService";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 interface BlocklyWorkspaceProps {
   runTour?: boolean;
   onTourComplete?: () => void;
@@ -68,7 +33,7 @@ export const BlocklyWorkspace = ({
   onTourComplete: onTourCompleteProp,
   onStepChange,
   showAIPanelFromParent,
-  onAIPanelChange,
+  onAIPanelChange
 }: BlocklyWorkspaceProps = {}) => {
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
@@ -93,7 +58,7 @@ export const BlocklyWorkspace = ({
   const [draggedBlockData, setDraggedBlockData] = useState<{ xml: string; name: string } | null>(null);
   const aiPanelRef = useRef<HTMLDivElement>(null);
   const [showDevLogs, setShowDevLogs] = useState(() => {
-    return localStorage.getItem("showDevLogs") === "true";
+    return localStorage.getItem('showDevLogs') === 'true';
   });
   const [devLogs, setDevLogs] = useState<LogEntry[]>([]);
 
@@ -121,16 +86,16 @@ export const BlocklyWorkspace = ({
   // Dev logs keyboard shortcut
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key === "D") {
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
         e.preventDefault();
         const newState = !showDevLogs;
         setShowDevLogs(newState);
-        localStorage.setItem("showDevLogs", String(newState));
+        localStorage.setItem('showDevLogs', String(newState));
       }
     };
 
-    window.addEventListener("keydown", handleKeyPress);
-    return () => window.removeEventListener("keydown", handleKeyPress);
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
   }, [showDevLogs]);
 
   const handleTourComplete = () => {
@@ -159,132 +124,120 @@ export const BlocklyWorkspace = ({
         flyoutForegroundColour: "#94a3b8",
         flyoutOpacity: 0.95,
         scrollbarColour: "#25292f",
-        scrollbarOpacity: 0,
+        scrollbarOpacity: 0.5,
         insertionMarkerColour: "#3b82f6",
-        insertionMarkerOpacity: 0.3,
+        insertionMarkerOpacity: 0.3
       },
       blockStyles: {
         environment_blocks: {
           colourPrimary: "#10b981",
           colourSecondary: "#059669",
-          colourTertiary: "#047857",
+          colourTertiary: "#047857"
         },
         operator_blocks: {
           colourPrimary: "#3b82f6",
           colourSecondary: "#2563eb",
-          colourTertiary: "#1d4ed8",
+          colourTertiary: "#1d4ed8"
         },
         control_blocks: {
           colourPrimary: "#f59e0b",
           colourSecondary: "#d97706",
-          colourTertiary: "#b45309",
+          colourTertiary: "#b45309"
         },
         trade_blocks: {
           colourPrimary: "#06b6d4",
           colourSecondary: "#0891b2",
-          colourTertiary: "#0e7490",
+          colourTertiary: "#0e7490"
         },
         ta_blocks: {
           colourPrimary: "#8b5cf6",
           colourSecondary: "#7c3aed",
-          colourTertiary: "#6d28d9",
+          colourTertiary: "#6d28d9"
         },
         risk_blocks: {
           colourPrimary: "#ec4899",
           colourSecondary: "#db2777",
-          colourTertiary: "#be185d",
+          colourTertiary: "#be185d"
         },
         mtf_blocks: {
           colourPrimary: "#06b6d4",
           colourSecondary: "#0891b2",
-          colourTertiary: "#0e7490",
+          colourTertiary: "#0e7490"
         },
         variable_blocks: {
           colourPrimary: "#64748b",
           colourSecondary: "#475569",
-          colourTertiary: "#334155",
+          colourTertiary: "#334155"
         },
         function_blocks: {
           colourPrimary: "#ef4444",
           colourSecondary: "#dc2626",
-          colourTertiary: "#b91c1c",
-        },
-      },
+          colourTertiary: "#b91c1c"
+        }
+      }
     });
 
     // Initialize workspace with configuration
     const workspace = Blockly.inject(blocklyDiv.current, {
-      renderer: "zelos",
+      renderer: 'zelos',
       theme: darkTheme,
       toolbox: {
         kind: "categoryToolbox",
-        contents: [
-          {
-            kind: "category",
-            name: "AI",
-            colour: "#ec4899",
-            custom: "AI_CATEGORY",
-          },
-          {
-            kind: "sep",
-          },
-          {
-            kind: "category",
-            name: "Environment",
-            colour: "#10b981",
-            contents: environmentBlocksToolbox,
-          },
-          {
-            kind: "category",
-            name: "Control",
-            colour: "#f59e0b",
-            contents: controlBlocksToolbox,
-          },
-          {
-            kind: "category",
-            name: "Operators",
-            colour: "#3b82f6",
-            contents: operatorBlocksToolbox,
-          },
-          {
-            kind: "category",
-            name: "TA Tools",
-            colour: "#8b5cf6",
-            contents: taBlocksToolbox,
-          },
-          {
-            kind: "category",
-            name: "Values",
-            colour: "#64748b",
-            contents: [
-              {
-                kind: "block",
-                type: "math_number",
-                fields: {
-                  NUM: 0,
-                },
-              },
-            ],
-          },
-          {
-            kind: "category",
-            name: "Trade",
-            colour: "#06b6d4",
-            contents: tradeBlocksToolbox,
-          },
-          {
-            kind: "category",
-            name: "My Blocks",
-            colour: "#ef4444",
-            contents: myBlocksToolbox,
-          },
-        ],
+        contents: [{
+          kind: "category",
+          name: "AI",
+          colour: "#ec4899",
+          custom: "AI_CATEGORY"
+        }, {
+          kind: "sep"
+        }, {
+          kind: "category",
+          name: "Environment",
+          colour: "#10b981",
+          contents: environmentBlocksToolbox
+        }, {
+          kind: "category",
+          name: "Control",
+          colour: "#f59e0b",
+          contents: controlBlocksToolbox
+        }, {
+          kind: "category",
+          name: "Operators",
+          colour: "#3b82f6",
+          contents: operatorBlocksToolbox
+        }, {
+          kind: "category",
+          name: "TA Tools",
+          colour: "#8b5cf6",
+          contents: taBlocksToolbox
+        }, {
+          kind: "category",
+          name: "Values",
+          colour: "#64748b",
+          contents: [{
+            kind: "block",
+            type: "math_number",
+            fields: {
+              NUM: 0
+            }
+          }]
+        }, {
+          kind: "category",
+          name: "Trade",
+          colour: "#06b6d4",
+          contents: tradeBlocksToolbox
+        }, {
+          kind: "category",
+          name: "My Blocks",
+          colour: "#ef4444",
+          contents: myBlocksToolbox
+        }]
       },
       grid: {
         spacing: 20,
         length: 3,
         colour: "#2a2e35",
-        snap: true,
+        snap: true
       },
       zoom: {
         controls: true,
@@ -292,23 +245,23 @@ export const BlocklyWorkspace = ({
         startScale: 0.9,
         maxScale: 3,
         minScale: 0.3,
-        scaleSpeed: 1.2,
+        scaleSpeed: 1.2
       },
       trashcan: true,
       move: {
         scrollbars: {
           horizontal: true,
-          vertical: true,
+          vertical: true
         },
         drag: true,
-        wheel: true,
-      },
+        wheel: true
+      }
     });
     workspaceRef.current = workspace;
 
     // Register custom category callback for AI
     workspace.registerToolboxCategoryCallback("AI_CATEGORY", () => {
-      setShowAIPanel((prev) => !prev);
+      setShowAIPanel(prev => !prev);
       return [];
     });
 
@@ -320,12 +273,12 @@ export const BlocklyWorkspace = ({
           // Drag started
           const blockXml = Blockly.Xml.blockToDom(block as Blockly.BlockSvg);
           const xmlText = Blockly.Xml.domToText(blockXml);
-          const blockName = (block as any).type?.replace(/_/g, " ") || "Unknown block";
+          const blockName = (block as any).type?.replace(/_/g, ' ') || 'Unknown block';
 
           setIsDraggingBlock(true);
           setDraggedBlockData({
             xml: xmlText,
-            name: blockName,
+            name: blockName
           });
         } else if (!event.isStart) {
           // Drag ended - check if dropped on AI panel
@@ -336,13 +289,14 @@ export const BlocklyWorkspace = ({
             const mouseY = (event as any).clientY || (window as any).lastMouseY;
 
             // Check if drop position is within AI panel bounds
-            if (mouseX >= rect.left && mouseX <= rect.right && mouseY >= rect.top && mouseY <= rect.bottom) {
+            if (mouseX >= rect.left && mouseX <= rect.right &&
+              mouseY >= rect.top && mouseY <= rect.bottom) {
               // Block was dropped on AI panel - add to chat
-              const chatInput = document.querySelector("[data-ai-chat-input]") as HTMLInputElement;
+              const chatInput = document.querySelector('[data-ai-chat-input]') as HTMLInputElement;
               if (chatInput) {
                 // Trigger the add block to chat functionality
-                const addBlockEvent = new CustomEvent("addBlockToChat", {
-                  detail: draggedBlockData,
+                const addBlockEvent = new CustomEvent('addBlockToChat', {
+                  detail: draggedBlockData
                 });
                 window.dispatchEvent(addBlockEvent);
 
@@ -362,7 +316,7 @@ export const BlocklyWorkspace = ({
       (window as any).lastMouseX = e.clientX;
       (window as any).lastMouseY = e.clientY;
     };
-    document.addEventListener("mousemove", trackMouse);
+    document.addEventListener('mousemove', trackMouse);
 
     // Listen to workspace changes to update code and stats
     workspace.addChangeListener(() => {
@@ -384,7 +338,7 @@ export const BlocklyWorkspace = ({
 
     // Cleanup on unmount
     return () => {
-      document.removeEventListener("mousemove", trackMouse);
+      document.removeEventListener('mousemove', trackMouse);
       workspace.dispose();
     };
   }, []);
@@ -400,7 +354,7 @@ export const BlocklyWorkspace = ({
       return;
     }
     const blob = new Blob([generatedCode], {
-      type: "text/javascript",
+      type: "text/javascript"
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -425,7 +379,7 @@ export const BlocklyWorkspace = ({
     const xml = Blockly.Xml.workspaceToDom(workspaceRef.current);
     const xmlText = Blockly.Xml.domToText(xml);
     const blob = new Blob([xmlText], {
-      type: "application/xml",
+      type: "application/xml"
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -441,11 +395,11 @@ export const BlocklyWorkspace = ({
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ".xml";
-    input.onchange = (e) => {
+    input.onchange = e => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file || !workspaceRef.current) return;
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = event => {
         try {
           const xmlText = event.target?.result as string;
           const xml = Blockly.utils.xml.textToDom(xmlText);
@@ -469,7 +423,7 @@ export const BlocklyWorkspace = ({
       Blockly.Xml.domToWorkspace(xml, workspaceRef.current);
       toast.success(`${template.name} template loaded successfully!`, {
         description: template.description,
-        duration: 4000,
+        duration: 4000
       });
     } catch (error) {
       toast.error("Failed to load template.");
@@ -521,14 +475,14 @@ export const BlocklyWorkspace = ({
     setIsBacktesting(true);
     setShowBacktest(true);
     const loadingToast = toast.loading("Running backtest simulation...", {
-      description: "Fetching real market data and analyzing your strategy",
+      description: "Fetching real market data and analyzing your strategy"
     });
     try {
       // Fetch real market data
       const historicalData = await fetchMarketData({
         symbol: "AAPL",
         interval: "daily",
-        outputsize: "full",
+        outputsize: "full"
       });
 
       // Run backtest with real data
@@ -542,13 +496,13 @@ export const BlocklyWorkspace = ({
       const isProfit = result.metrics.totalReturn >= 0;
       toast.success(isProfit ? "🎉 Backtest completed successfully!" : "Backtest completed", {
         description: `${isProfit ? "📈" : "📉"} Return: ${result.metrics.totalReturn.toFixed(2)}% | Win Rate: ${result.metrics.winRate.toFixed(1)}% | ${result.metrics.totalTrades} trades`,
-        duration: 5000,
+        duration: 5000
       });
     } catch (error) {
       console.error("Backtest error:", error);
       toast.dismiss(loadingToast);
       toast.error("Backtest failed", {
-        description: "Failed to run backtest simulation. Check your strategy blocks.",
+        description: "Failed to run backtest simulation. Check your strategy blocks."
       });
       setShowBacktest(false);
     } finally {
@@ -562,9 +516,7 @@ export const BlocklyWorkspace = ({
       // Workspace is empty or this is an edit - replace/add blocks directly
       loadXmlToWorkspace(xml, isEdit);
       toast.success(isEdit ? "Strategy Updated" : "Strategy Added", {
-        description: isEdit
-          ? "Your blocks have been updated with the changes."
-          : "AI-generated blocks have been added to your workspace.",
+        description: isEdit ? "Your blocks have been updated with the changes." : "AI-generated blocks have been added to your workspace."
       });
     } else {
       // Workspace has blocks, ask user first
@@ -589,10 +541,10 @@ export const BlocklyWorkspace = ({
     const block = selected as Blockly.BlockSvg;
     const blockXml = Blockly.Xml.blockToDom(block);
     const xmlText = Blockly.Xml.domToText(blockXml);
-    const blockName = (block as any).type?.replace(/_/g, " ") || "Unknown block";
+    const blockName = (block as any).type?.replace(/_/g, ' ') || 'Unknown block';
     return {
       xml: xmlText,
-      name: blockName,
+      name: blockName
     };
   };
   const loadXmlToWorkspace = (xml: string, clearFirst: boolean = false) => {
@@ -602,11 +554,8 @@ export const BlocklyWorkspace = ({
       let cleanXml = xml.trim();
 
       // Remove markdown code blocks
-      if (cleanXml.includes("```xml")) {
-        cleanXml = cleanXml
-          .replace(/```xml\n?/g, "")
-          .replace(/```/g, "")
-          .trim();
+      if (cleanXml.includes('```xml')) {
+        cleanXml = cleanXml.replace(/```xml\n?/g, '').replace(/```/g, '').trim();
       }
 
       // Extract XML using regex (in case AI added explanation text before/after)
@@ -616,17 +565,17 @@ export const BlocklyWorkspace = ({
       }
 
       // Validate XML format
-      if (!cleanXml.startsWith("<xml")) {
+      if (!cleanXml.startsWith('<xml')) {
         console.error("Invalid XML format - doesn't start with <xml>:", cleanXml.substring(0, 100));
         toast.error("Invalid XML format", {
-          description: "The generated blocks are not in the correct format. Please try again.",
+          description: "The generated blocks are not in the correct format. Please try again."
         });
         return;
       }
-      if (!cleanXml.includes("</xml>")) {
+      if (!cleanXml.includes('</xml>')) {
         console.error("Invalid XML format - missing closing tag:", cleanXml.substring(0, 100));
         toast.error("Incomplete XML", {
-          description: "The generated blocks are incomplete. Please try again.",
+          description: "The generated blocks are incomplete. Please try again."
         });
         return;
       }
@@ -667,7 +616,7 @@ export const BlocklyWorkspace = ({
       loadXmlToWorkspace(pendingXml);
       setPendingXml(null);
       toast.success("Strategy Added", {
-        description: "AI-generated blocks have been added to your workspace.",
+        description: "AI-generated blocks have been added to your workspace."
       });
     }
     setShowConfirmDialog(false);
@@ -705,13 +654,12 @@ export const BlocklyWorkspace = ({
     return result;
   };
   const getCodeStatistics = () => {
-    if (!generatedCode)
-      return {
-        lines: 0,
-        chars: 0,
-        complexity: 0,
-      };
-    const lines = generatedCode.split("\n").filter((line) => line.trim()).length;
+    if (!generatedCode) return {
+      lines: 0,
+      chars: 0,
+      complexity: 0
+    };
+    const lines = generatedCode.split("\n").filter(line => line.trim()).length;
     const chars = generatedCode.length;
 
     // Simple complexity estimation based on control structures
@@ -721,45 +669,35 @@ export const BlocklyWorkspace = ({
     return {
       lines,
       chars,
-      complexity,
+      complexity
     };
   };
   const renderCodeWithLineNumbers = (code: string) => {
     if (!code) {
-      return (
-        <div className="text-muted-foreground italic">
+      return <div className="text-muted-foreground italic">
           // No blocks yet
-          <br />
+        <br />
           // Drag blocks from the toolbox to start building your strategy
-        </div>
-      );
+      </div>;
     }
     const displayCode = beautified ? beautifyCode(code) : code;
     const lines = displayCode.split("\n");
-    return (
-      <div className="flex font-mono text-sm">
-        {showLineNumbers && (
-          <div className="select-none pr-4 text-muted-foreground/50 text-right border-r border-border">
-            {lines.map((_, i) => (
-              <div key={i} className="leading-6">
-                {i + 1}
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="flex-1 pl-4">
-          {lines.map((line, i) => (
-            <div key={i} className="leading-6">
-              <code className="syntax-highlight">{highlightSyntax(line)}</code>
-            </div>
-          ))}
-        </div>
+    return <div className="flex font-mono text-sm">
+      {showLineNumbers && <div className="select-none pr-4 text-muted-foreground/50 text-right border-r border-border">
+        {lines.map((_, i) => <div key={i} className="leading-6">
+          {i + 1}
+        </div>)}
+      </div>}
+      <div className="flex-1 pl-4">
+        {lines.map((line, i) => <div key={i} className="leading-6">
+          <code className="syntax-highlight">{highlightSyntax(line)}</code>
+        </div>)}
       </div>
-    );
+    </div>;
   };
 
   const handleLog = (log: LogEntry) => {
-    setDevLogs((prev) => {
+    setDevLogs(prev => {
       const newLogs = [...prev, log];
       return newLogs.slice(-100);
     });
@@ -771,7 +709,7 @@ export const BlocklyWorkspace = ({
 
   const handleCloseLogs = () => {
     setShowDevLogs(false);
-    localStorage.setItem("showDevLogs", "false");
+    localStorage.setItem('showDevLogs', 'false');
   };
 
   const highlightSyntax = (line: string) => {
@@ -790,504 +728,431 @@ export const BlocklyWorkspace = ({
 
     // Simple tokenization
     const tokens = remaining.split(/(\s+|[{}();,])/);
-    tokens.forEach((token) => {
+    tokens.forEach(token => {
       if (keywords.includes(token)) {
-        parts.push(
-          <span key={key++} className="text-purple-400 font-semibold">
-            {token}
-          </span>,
-        );
+        parts.push(<span key={key++} className="text-purple-400 font-semibold">
+          {token}
+        </span>);
       } else if (token.match(/^['"].*['"]$/)) {
-        parts.push(
-          <span key={key++} className="text-green-400">
-            {token}
-          </span>,
-        );
+        parts.push(<span key={key++} className="text-green-400">
+          {token}
+        </span>);
       } else if (token.match(/^\d+$/)) {
-        parts.push(
-          <span key={key++} className="text-orange-400">
-            {token}
-          </span>,
-        );
+        parts.push(<span key={key++} className="text-orange-400">
+          {token}
+        </span>);
       } else if (token.match(/^[{}();,]$/)) {
-        parts.push(
-          <span key={key++} className="text-muted-foreground">
-            {token}
-          </span>,
-        );
+        parts.push(<span key={key++} className="text-muted-foreground">
+          {token}
+        </span>);
       } else {
         parts.push(<span key={key++}>{token}</span>);
       }
     });
     return <>{parts}</>;
   };
-  return (
-    <div className="flex-1 h-full relative flex flex-col">
-      {/* Action Bar */}
-      <div className="h-14 bg-card border-b border-border flex items-center justify-between px-4 gap-3">
-        <div className="flex items-center gap-3">
-          <h2 className="font-semibold text-foreground">Fire</h2>
-          <Badge variant="secondary" className="flex items-center gap-1">
-            <Blocks className="w-3 h-3" />
-            {blockCount} blocks
-          </Badge>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* File Operations Group */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" onClick={handleSaveWorkspace} className="save-workspace-trigger">
-                <Download className="w-4 h-4 mr-2" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Save workspace as XML file</p>
-              <p className="text-xs text-muted-foreground mt-1">Ctrl+S</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" onClick={handleLoadWorkspace}>
-                <Upload className="w-4 h-4 mr-2" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Load workspace from XML file</p>
-              <p className="text-xs text-muted-foreground mt-1">Ctrl+O</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" onClick={() => setShowTemplates(true)}>
-                <BookOpen className="w-4 h-4 mr-2" />
-                Templates
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Load pre-built strategy templates</p>
-              <p className="text-xs text-muted-foreground mt-1">Learn from examples</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Separator orientation="vertical" className="h-6" />
-
-          {/* Execution Group */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="default" size="sm" onClick={handleRunStrategy} className="run-strategy-trigger">
-                <Play className="w-4 h-4 mr-2" />
-                Run
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Execute trading strategy</p>
-              <p className="text-xs text-muted-foreground mt-1">Ctrl+Enter</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handlePreviewBacktest}
-                disabled={isBacktesting || isEmpty}
-                className={cn("transition-all duration-200 backtest-trigger", isBacktesting && "animate-pulse")}
-              >
-                <TrendingUp className={cn("w-4 h-4 mr-2", isBacktesting && "animate-bounce")} />
-                {isBacktesting ? "Testing..." : "Backtest"}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Run backtest simulation</p>
-              <p className="text-xs text-muted-foreground mt-1">Test your strategy on historical data</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowFloatingChart(!showFloatingChart)}
-                className="transition-all duration-200 shadow-indigo "
-              >
-                <BarChart3 className="w-4 h-4 mr-2" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Open floating live chart</p>
-              <p className="text-xs text-muted-foreground mt-1">Drag to reposition</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Separator orientation="vertical" className="h-6" />
-
-          {/* Workspace Controls */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" onClick={handleUndo}>
-                <Undo2 className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Undo</p>
-              <p className="text-xs text-muted-foreground mt-1">Ctrl+Z</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" onClick={handleRedo}>
-                <Redo2 className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Redo</p>
-              <p className="text-xs text-muted-foreground mt-1">Ctrl+Y</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Separator orientation="vertical" className="h-6" />
-
-          {/* Zoom Controls */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" onClick={() => handleZoom("out")}>
-                <ZoomOut className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Zoom out</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Badge variant="secondary" className="px-2 min-w-[60px] justify-center">
-            {zoomLevel}%
-          </Badge>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" onClick={() => handleZoom("in")}>
-                <ZoomIn className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Zoom in</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" onClick={handleCenterWorkspace}>
-                <Maximize2 className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Center workspace</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Separator orientation="vertical" className="h-6" />
-
-          {/* View Group */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowCode(!showCode)}
-                className="transition-all duration-200 hover-scale"
-              >
-                <Code2 className="w-4 h-4 mr-2" />
-                {showCode ? "Hide" : "Code"}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Toggle code preview panel</p>
-              <p className="text-xs text-muted-foreground mt-1">Ctrl+K</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild></TooltipTrigger>
-            <TooltipContent>
-              <p>Open AI Strategy Generator</p>
-              <p className="text-xs text-muted-foreground mt-1">Generate or chat about strategies</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Separator orientation="vertical" className="h-6" />
-        </div>
+  return <div className="flex-1 h-full relative flex flex-col">
+    {/* Action Bar */}
+    <div className="h-14 bg-card border-b border-border flex items-center justify-between px-4 gap-3">
+      <div className="flex items-center gap-3">
+        <h2 className="font-semibold text-foreground">Fire</h2>
+        <Badge variant="secondary" className="flex items-center gap-1">
+          <Blocks className="w-3 h-3" />
+          {blockCount} blocks
+        </Badge>
       </div>
+      <div className="flex items-center gap-2">
+        {/* File Operations Group */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={handleSaveWorkspace} className="save-workspace-trigger">
+              <Download className="w-4 h-4 mr-2" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Save workspace as XML file</p>
+            <p className="text-xs text-muted-foreground mt-1">Ctrl+S</p>
+          </TooltipContent>
+        </Tooltip>
 
-      {/* Main Content */}
-      <div className="flex-1 relative flex overflow-hidden">
-        {/* Blockly Workspace */}
-        <div className="flex-1 relative overflow-hidden blockly-workspace">
-          <div
-            ref={blocklyDiv}
-            className="absolute inset-0"
-            style={{
-              height: "100%",
-              width: "100%",
-            }}
-          />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={handleLoadWorkspace}>
+              <Upload className="w-4 h-4 mr-2" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Load workspace from XML file</p>
+            <p className="text-xs text-muted-foreground mt-1">Ctrl+O</p>
+          </TooltipContent>
+        </Tooltip>
 
-          {/* Welcome Screen */}
-          {isEmpty && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none animate-fade-in">
-              <div className="bg-card/95 border border-border rounded-lg p-8 max-w-md text-center shadow-lg backdrop-blur-sm animate-scale-in">
-                <Blocks className="w-16 h-16 mx-auto mb-4 text-primary animate-pulse" />
-                <h3 className="text-xl font-semibold text-foreground mb-2">Welcome to Strategy Builder</h3>
-                <p className="text-muted-foreground mb-6">
-                  Start building your trading strategy by dragging blocks from the toolbox on the left.
-                </p>
-                <div className="space-y-2 text-sm text-left text-muted-foreground">
-                  <div
-                    className="flex items-start gap-2 animate-fade-in"
-                    style={{
-                      animationDelay: "200ms",
-                    }}
-                  >
-                    <span className="text-primary font-bold">1.</span>
-                    <span>Choose blocks from the categories: Environment, Operators, Control, Trade, and TA Tools</span>
-                  </div>
-                  <div
-                    className="flex items-start gap-2 animate-fade-in"
-                    style={{
-                      animationDelay: "400ms",
-                    }}
-                  >
-                    <span className="text-primary font-bold">2.</span>
-                    <span>Connect blocks together to create your trading logic</span>
-                  </div>
-                  <div
-                    className="flex items-start gap-2 animate-fade-in"
-                    style={{
-                      animationDelay: "600ms",
-                    }}
-                  >
-                    <span className="text-primary font-bold">3.</span>
-                    <span>Preview the generated code and test your strategy</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={() => setShowTemplates(true)}>
+              <BookOpen className="w-4 h-4 mr-2" />
+              Templates
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Load pre-built strategy templates</p>
+            <p className="text-xs text-muted-foreground mt-1">Learn from examples</p>
+          </TooltipContent>
+        </Tooltip>
 
-        {/* Code Preview Panel */}
-        {showCode && (
-          <div className="w-[450px] bg-card border-l border-border flex flex-col">
-            {/* Code Panel Header */}
-            <div className="border-b border-border p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-foreground flex items-center gap-2">
-                  <FileCode className="w-4 h-4" />
-                  Generated Code
-                </h3>
-                <div className="flex gap-1">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant={beautified ? "secondary" : "ghost"}
-                        size="sm"
-                        onClick={() => setBeautified(!beautified)}
-                      >
-                        <Wand2 className="w-4 h-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Beautify code</p>
-                    </TooltipContent>
-                  </Tooltip>
+        <Separator orientation="vertical" className="h-6" />
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant={showLineNumbers ? "secondary" : "ghost"}
-                        size="sm"
-                        onClick={() => setShowLineNumbers(!showLineNumbers)}
-                      >
-                        <BarChart3 className="w-4 h-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Toggle line numbers</p>
-                    </TooltipContent>
-                  </Tooltip>
+        {/* Execution Group */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="default" size="sm" onClick={handleRunStrategy} className="run-strategy-trigger">
+              <Play className="w-4 h-4 mr-2" />
+              Run
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Execute trading strategy</p>
+            <p className="text-xs text-muted-foreground mt-1">Ctrl+Enter</p>
+          </TooltipContent>
+        </Tooltip>
 
-                  <Separator orientation="vertical" className="h-6 mx-1" />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="secondary" size="sm" onClick={handlePreviewBacktest} disabled={isBacktesting || isEmpty} className={cn("transition-all duration-200 backtest-trigger", isBacktesting && "animate-pulse")}>
+              <TrendingUp className={cn("w-4 h-4 mr-2", isBacktesting && "animate-bounce")} />
+              {isBacktesting ? "Testing..." : "Backtest"}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Run backtest simulation</p>
+            <p className="text-xs text-muted-foreground mt-1">Test your strategy on historical data</p>
+          </TooltipContent>
+        </Tooltip>
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="sm" onClick={handleExportCode}>
-                        <Download className="w-4 h-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Export as .js file</p>
-                    </TooltipContent>
-                  </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={() => setShowFloatingChart(!showFloatingChart)} className="transition-all duration-200 shadow-indigo ">
+              <BarChart3 className="w-4 h-4 mr-2" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Open floating live chart</p>
+            <p className="text-xs text-muted-foreground mt-1">Drag to reposition</p>
+          </TooltipContent>
+        </Tooltip>
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="sm" onClick={handleCopyCode}>
-                        {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Copy to clipboard</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              </div>
+        <Separator orientation="vertical" className="h-6" />
 
-              {/* Code Statistics */}
-              {generatedCode && (
-                <Card className="bg-secondary/30">
-                  <CardContent className="p-3">
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-4">
-                        <div>
-                          <span className="text-muted-foreground">Lines:</span>
-                          <span className="ml-1 font-semibold text-foreground">{getCodeStatistics().lines}</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Blocks:</span>
-                          <span className="ml-1 font-semibold text-foreground">{blockCount}</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Complexity:</span>
-                          <Badge
-                            variant={
-                              getCodeStatistics().complexity < 5
-                                ? "default"
-                                : getCodeStatistics().complexity < 10
-                                  ? "secondary"
-                                  : "destructive"
-                            }
-                            className="ml-1 text-xs"
-                          >
-                            {getCodeStatistics().complexity < 5
-                              ? "Low"
-                              : getCodeStatistics().complexity < 10
-                                ? "Medium"
-                                : "High"}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+        {/* Workspace Controls */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={handleUndo}>
+              <Undo2 className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Undo</p>
+            <p className="text-xs text-muted-foreground mt-1">Ctrl+Z</p>
+          </TooltipContent>
+        </Tooltip>
 
-            {/* Code Display Area */}
-            <div className="flex-1 overflow-auto p-4 bg-secondary/20">
-              <div className="bg-background/50 rounded-lg p-4 border border-border">
-                {renderCodeWithLineNumbers(generatedCode)}
-              </div>
-            </div>
-          </div>
-        )}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={handleRedo}>
+              <Redo2 className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Redo</p>
+            <p className="text-xs text-muted-foreground mt-1">Ctrl+Y</p>
+          </TooltipContent>
+        </Tooltip>
 
-        {/* Backtesting Panel */}
-        {showBacktest && (
-          <BacktestingPanel
-            result={backtestResult}
-            isLoading={isBacktesting}
-            symbol="BTC/USDT"
-            onClose={handleCloseBacktest}
-          />
-        )}
+        <Separator orientation="vertical" className="h-6" />
 
-        {/* AI Panel */}
-        {showAIPanel && (
-          <div
-            ref={aiPanelRef}
-            className={cn(
-              "w-[450px] bg-card border-l border-border flex flex-col relative",
-              isDraggingBlock && "ring-2 ring-pink-500 ring-opacity-50",
-            )}
-          >
-            {/* Drop Zone Indicator */}
-            {isDraggingBlock && (
-              <div className="absolute inset-0 bg-pink-500/10 z-10 pointer-events-none flex items-center justify-center border-2 border-dashed border-pink-500">
-                <div className="bg-card/95 rounded-lg p-4 text-center">
-                  <Blocks className="w-8 h-8 mx-auto mb-2 text-pink-500" />
-                  <p className="text-sm font-semibold text-pink-500">Drop block here</p>
-                  <p className="text-xs text-muted-foreground">to attach to chat</p>
-                </div>
-              </div>
-            )}
+        {/* Zoom Controls */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={() => handleZoom("out")}>
+              <ZoomOut className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Zoom out</p>
+          </TooltipContent>
+        </Tooltip>
 
-            {/* AI Panel Header */}
-            <div className="border-b border-border p-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-foreground flex items-center gap-2">
-                  <Wand2 className="w-4 h-4" />
-                  AI Assistant
-                </h3>
-                <Button variant="ghost" size="sm" onClick={() => setShowAIPanel(false)}>
-                  <span className="text-xs">Close</span>
-                </Button>
-              </div>
-            </div>
+        <Badge variant="secondary" className="px-2 min-w-[60px] justify-center">
+          {zoomLevel}%
+        </Badge>
 
-            {/* AI Panel Content */}
-            <div className="flex-1 overflow-auto">
-              <AIChatPanel
-                onBlocksGenerated={handleBlocksGenerated}
-                getCurrentWorkspaceXml={getCurrentWorkspaceXml}
-                getSelectedBlocksXml={getSelectedBlocksXml}
-                onLog={handleLog}
-              />
-            </div>
-          </div>
-        )}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={() => handleZoom("in")}>
+              <ZoomIn className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Zoom in</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={handleCenterWorkspace}>
+              <Maximize2 className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Center workspace</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Separator orientation="vertical" className="h-6" />
+
+        {/* View Group */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={() => setShowCode(!showCode)} className="transition-all duration-200 hover-scale">
+              <Code2 className="w-4 h-4 mr-2" />
+              {showCode ? "Hide" : "Code"}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Toggle code preview panel</p>
+            <p className="text-xs text-muted-foreground mt-1">Ctrl+K</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Open AI Strategy Generator</p>
+            <p className="text-xs text-muted-foreground mt-1">Generate or chat about strategies</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Separator orientation="vertical" className="h-6" />
       </div>
-
-      {/* Strategy Templates Dialog */}
-      <StrategyTemplatesDialog
-        open={showTemplates}
-        onOpenChange={setShowTemplates}
-        onLoadTemplate={handleLoadTemplate}
-      />
-
-      {/* Floating Chart Modal */}
-      <FloatingChartModal
-        isOpen={showFloatingChart}
-        onClose={() => setShowFloatingChart(false)}
-        symbol="BTC/USDT"
-        interval="1D"
-      />
-
-      {/* Dev Logs Panel */}
-      {showDevLogs && <DevLogPanel logs={devLogs} onClear={handleClearLogs} onClose={handleCloseLogs} />}
-
-      {/* Confirmation Dialog for Adding AI Blocks */}
-      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Add AI-Generated Blocks?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Your workspace already contains blocks. Do you want to add the AI-generated strategy blocks to your
-              existing workspace?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleCancelAdd}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmAdd}>Add Blocks</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Guided Tour */}
-      <GuidedTour run={runTour} onComplete={handleTourComplete} onStepChange={onStepChange} />
     </div>
-  );
+
+    {/* Main Content */}
+    <div className="flex-1 relative flex overflow-hidden">
+      {/* Blockly Workspace */}
+      <div className="flex-1 relative overflow-hidden blockly-workspace">
+        <div ref={blocklyDiv} className="absolute inset-0" style={{
+          height: "100%",
+          width: "100%"
+        }} />
+
+        {/* Welcome Screen */}
+        {isEmpty && <div className="absolute inset-0 flex items-center justify-center pointer-events-none animate-fade-in">
+          <div className="bg-card/95 border border-border rounded-lg p-8 max-w-md text-center shadow-lg backdrop-blur-sm animate-scale-in">
+            <Blocks className="w-16 h-16 mx-auto mb-4 text-primary animate-pulse" />
+            <h3 className="text-xl font-semibold text-foreground mb-2">Welcome to Strategy Builder</h3>
+            <p className="text-muted-foreground mb-6">
+              Start building your trading strategy by dragging blocks from the toolbox on the left.
+            </p>
+            <div className="space-y-2 text-sm text-left text-muted-foreground">
+              <div className="flex items-start gap-2 animate-fade-in" style={{
+                animationDelay: "200ms"
+              }}>
+                <span className="text-primary font-bold">1.</span>
+                <span>Choose blocks from the categories: Environment, Operators, Control, Trade, and TA Tools</span>
+              </div>
+              <div className="flex items-start gap-2 animate-fade-in" style={{
+                animationDelay: "400ms"
+              }}>
+                <span className="text-primary font-bold">2.</span>
+                <span>Connect blocks together to create your trading logic</span>
+              </div>
+              <div className="flex items-start gap-2 animate-fade-in" style={{
+                animationDelay: "600ms"
+              }}>
+                <span className="text-primary font-bold">3.</span>
+                <span>Preview the generated code and test your strategy</span>
+              </div>
+            </div>
+          </div>
+        </div>}
+      </div>
+
+      {/* Code Preview Panel */}
+      {showCode && <div className="w-[450px] bg-card border-l border-border flex flex-col">
+        {/* Code Panel Header */}
+        <div className="border-b border-border p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-foreground flex items-center gap-2">
+              <FileCode className="w-4 h-4" />
+              Generated Code
+            </h3>
+            <div className="flex gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant={beautified ? "secondary" : "ghost"} size="sm" onClick={() => setBeautified(!beautified)}>
+                    <Wand2 className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Beautify code</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant={showLineNumbers ? "secondary" : "ghost"} size="sm" onClick={() => setShowLineNumbers(!showLineNumbers)}>
+                    <BarChart3 className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Toggle line numbers</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Separator orientation="vertical" className="h-6 mx-1" />
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" onClick={handleExportCode}>
+                    <Download className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Export as .js file</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" onClick={handleCopyCode}>
+                    {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Copy to clipboard</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+
+          {/* Code Statistics */}
+          {generatedCode && <Card className="bg-secondary/30">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-4">
+                  <div>
+                    <span className="text-muted-foreground">Lines:</span>
+                    <span className="ml-1 font-semibold text-foreground">{getCodeStatistics().lines}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Blocks:</span>
+                    <span className="ml-1 font-semibold text-foreground">{blockCount}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Complexity:</span>
+                    <Badge variant={getCodeStatistics().complexity < 5 ? "default" : getCodeStatistics().complexity < 10 ? "secondary" : "destructive"} className="ml-1 text-xs">
+                      {getCodeStatistics().complexity < 5 ? "Low" : getCodeStatistics().complexity < 10 ? "Medium" : "High"}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>}
+        </div>
+
+        {/* Code Display Area */}
+        <div className="flex-1 overflow-auto p-4 bg-secondary/20">
+          <div className="bg-background/50 rounded-lg p-4 border border-border">
+            {renderCodeWithLineNumbers(generatedCode)}
+          </div>
+        </div>
+      </div>}
+
+      {/* Backtesting Panel */}
+      {showBacktest && <BacktestingPanel result={backtestResult} isLoading={isBacktesting} symbol="BTC/USDT" onClose={handleCloseBacktest} />}
+
+      {/* AI Panel */}
+      {showAIPanel && <div
+        ref={aiPanelRef}
+        className={cn(
+          "w-[450px] bg-card border-l border-border flex flex-col relative",
+          isDraggingBlock && "ring-2 ring-pink-500 ring-opacity-50"
+        )}
+      >
+        {/* Drop Zone Indicator */}
+        {isDraggingBlock && (
+          <div className="absolute inset-0 bg-pink-500/10 z-10 pointer-events-none flex items-center justify-center border-2 border-dashed border-pink-500">
+            <div className="bg-card/95 rounded-lg p-4 text-center">
+              <Blocks className="w-8 h-8 mx-auto mb-2 text-pink-500" />
+              <p className="text-sm font-semibold text-pink-500">Drop block here</p>
+              <p className="text-xs text-muted-foreground">to attach to chat</p>
+            </div>
+          </div>
+        )}
+
+        {/* AI Panel Header */}
+        <div className="border-b border-border p-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-foreground flex items-center gap-2">
+              <Wand2 className="w-4 h-4" />
+              AI Assistant
+            </h3>
+            <Button variant="ghost" size="sm" onClick={() => setShowAIPanel(false)}>
+              <span className="text-xs">Close</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* AI Panel Content */}
+        <div className="flex-1 overflow-auto">
+          <AIChatPanel
+            onBlocksGenerated={handleBlocksGenerated}
+            getCurrentWorkspaceXml={getCurrentWorkspaceXml}
+            getSelectedBlocksXml={getSelectedBlocksXml}
+            onLog={handleLog}
+          />
+        </div>
+      </div>}
+    </div>
+
+    {/* Strategy Templates Dialog */}
+    <StrategyTemplatesDialog open={showTemplates} onOpenChange={setShowTemplates} onLoadTemplate={handleLoadTemplate} />
+
+    {/* Floating Chart Modal */}
+    <FloatingChartModal isOpen={showFloatingChart} onClose={() => setShowFloatingChart(false)} symbol="BTC/USDT" interval="1D" />
+
+    {/* Dev Logs Panel */}
+    {showDevLogs && (
+      <DevLogPanel
+        logs={devLogs}
+        onClear={handleClearLogs}
+        onClose={handleCloseLogs}
+      />
+    )}
+
+    {/* Confirmation Dialog for Adding AI Blocks */}
+    <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Add AI-Generated Blocks?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Your workspace already contains blocks. Do you want to add the AI-generated strategy blocks to your existing workspace?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={handleCancelAdd}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleConfirmAdd}>Add Blocks</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    {/* Guided Tour */}
+    <GuidedTour
+      run={runTour}
+      onComplete={handleTourComplete}
+      onStepChange={onStepChange}
+    />
+  </div>;
 };
