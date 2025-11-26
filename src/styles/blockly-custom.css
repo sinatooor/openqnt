@@ -12,8 +12,8 @@
 }
 
 /* Editable field text - even smaller */
-.blocklyEditableText>text,
-.blocklyNonEditableText>text {
+.blocklyEditableText > text,
+.blocklyNonEditableText > text {
   font-weight: 500 !important;
   font-size: 10px !important;
 }
@@ -34,7 +34,7 @@
 }
 
 /* Remove extra padding from blocks */
-.blocklyBlockCanvas>g {
+.blocklyBlockCanvas > g {
   padding: 0 !important;
   margin: 0 !important;
 }
@@ -145,8 +145,8 @@ g[data-statement-gap] {
 }
 
 /* Editable field text - even smaller */
-.blocklyEditableText>text,
-.blocklyNonEditableText>text {
+.blocklyEditableText > text,
+.blocklyNonEditableText > text {
   font-weight: 500 !important;
   font-size: 10px !important;
 }
@@ -167,7 +167,7 @@ g[data-statement-gap] {
 }
 
 /* Remove extra padding from blocks */
-.blocklyBlockCanvas>g {
+.blocklyBlockCanvas > g {
   padding: 0 !important;
   margin: 0 !important;
 }
@@ -303,5 +303,18 @@ g[data-statement-gap] {
 
 /* Specific fix for the resize handle if present */
 .blocklyResizeSE {
+  display: none !important;
+}
+
+/* ------------------------------------------------------------------
+   Hide Scrollbars
+   ------------------------------------------------------------------ */
+
+/* Hide horizontal and vertical scrollbars */
+.blocklyScrollbarHandle {
+  display: none !important;
+}
+
+.blocklyScrollbarBackground {
   display: none !important;
 }
