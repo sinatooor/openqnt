@@ -11,32 +11,36 @@ interface GuidedTourProps {
 }
 
 export const GuidedTour = ({ run, onComplete, onStepChange }: GuidedTourProps) => {
-
   const steps: Step[] = [
     {
       target: ".ai-panel-trigger",
-      content: "Welcome! This is your AI Strategy Generator. You can click it now to open it, or press 'Next' and we'll open it for you.",
+      content:
+        "Welcome! This is your AI Strategy Generator. You can click it now to open it, or press 'Next' and we'll open it for you.",
       disableBeacon: true,
       placement: "bottom",
     },
     {
       target: ".blockly-workspace",
-      content: "The AI panel is now open! This is your visual programming workspace. Drag and drop blocks from the left sidebar to build your trading strategy. You can also drag blocks into the AI chat to ask questions about them!",
+      content:
+        "The AI panel is now open! This is your visual programming workspace. Drag and drop blocks from the left sidebar to build your trading strategy. You can also drag blocks into the AI chat to ask questions about them!",
       placement: "center",
     },
     {
       target: ".backtest-trigger",
-      content: "Once you've built a strategy, click here to backtest it. See how your strategy would have performed with historical data before going live.",
+      content:
+        "Once you've built a strategy, click here to backtest it. See how your strategy would have performed with historical data before going live.",
       placement: "bottom",
     },
     {
       target: ".run-strategy-trigger",
-      content: "Ready to execute? Click here to run your strategy. This will generate the JavaScript code and start your trading bot.",
+      content:
+        "Ready to execute? Click here to run your strategy. This will turn your blocks into code and start your trading bot.",
       placement: "bottom",
     },
     {
       target: ".save-workspace-trigger",
-      content: "Don't forget to save your work! You can save, load, and export your strategies anytime. Happy trading! 🚀",
+      content:
+        "Don't forget to save your work! You can save, load, and export your strategies anytime. Happy trading! 🚀",
       placement: "bottom",
     },
   ];
@@ -49,7 +53,7 @@ export const GuidedTour = ({ run, onComplete, onStepChange }: GuidedTourProps) =
     }
 
     // Trigger step change callback when moving to next step
-    if (type === 'step:after' && onStepChange) {
+    if (type === "step:after" && onStepChange) {
       onStepChange(index);
     }
   };
@@ -111,20 +115,18 @@ interface TourTriggerButtonProps {
   onClick: () => void;
 }
 
-export const TourTriggerButton = React.forwardRef<HTMLButtonElement, TourTriggerButtonProps>(
-  ({ onClick }, ref) => {
-    return (
-      <Button
-        ref={ref}
-        onClick={onClick}
-        variant="outline"
-        size="icon"
-        className="tour-trigger-btn"
-        title="Start Guided Tour"
-      >
-        <Info className="w-4 h-4" />
-      </Button>
-    );
-  }
-);
+export const TourTriggerButton = React.forwardRef<HTMLButtonElement, TourTriggerButtonProps>(({ onClick }, ref) => {
+  return (
+    <Button
+      ref={ref}
+      onClick={onClick}
+      variant="outline"
+      size="icon"
+      className="tour-trigger-btn"
+      title="Start Guided Tour"
+    >
+      <Info className="w-4 h-4" />
+    </Button>
+  );
+});
 TourTriggerButton.displayName = "TourTriggerButton";
