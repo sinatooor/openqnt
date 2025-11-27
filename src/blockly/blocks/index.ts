@@ -6,6 +6,7 @@ import './tradeBlocks';
 import './taBlocks';
 import './riskManagementBlocks';
 import './variableBlocks';
+import './indicatorComponentBlocks';
 
 // Export block configurations for toolbox
 export const environmentBlocksToolbox = [
