@@ -16,7 +16,7 @@ import { FloatingChartModal } from "./FloatingChartModal";
 import { AIChatPanel } from "./AIChatPanel";
 import { GuidedTour } from "./GuidedTour";
 import { DevLogPanel, LogEntry } from "./DevLogPanel";
-import { AdvancedLogicModal } from "./AdvancedLogicModal";
+//import { AdvancedLogicModal } from "./AdvancedLogicModal";
 import { runBacktest, BacktestResult } from "@/lib/backtestEngine";
 import { StrategyTemplate } from "@/lib/strategyTemplates";
 import { cn } from "@/lib/utils";
@@ -272,6 +272,13 @@ export const BlocklyWorkspace = ({
     workspace.registerToolboxCategoryCallback("AI_CATEGORY", () => {
       setShowAIPanel(prev => !prev);
       return [];
+    });
+
+    // Register button callback for MACD settings
+    workspace.registerButtonCallback('CONFIG_MACD', () => {
+      toast.info('MACD Settings', {
+        description: 'Settings modal coming soon! For now, using default periods: 12/26/9'
+      });
     });
 
     // Add drag event listener for blocks to enable dragging to chat
@@ -1073,14 +1080,6 @@ export const BlocklyWorkspace = ({
     {/* Floating Chart Modal */}
     <FloatingChartModal isOpen={showFloatingChart} onClose={() => setShowFloatingChart(false)} symbol="BTC/USDT" interval="1D" />
 
-    {/* Advanced Logic Modal */}
-    <AdvancedLogicModal
-      open={showAdvancedLogic}
-      onOpenChange={setShowAdvancedLogic}
-      initialXml={currentLogicXml}
-      indicatorType={currentIndicatorType}
-      onSave={handleSaveAdvancedLogic}
-    />
 
     {/* Dev Logs Panel */}
     {showDevLogs && (

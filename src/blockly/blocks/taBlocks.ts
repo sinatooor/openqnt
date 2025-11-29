@@ -45,30 +45,9 @@ Blockly.Blocks['ta_rsi'] = {
     }
 };
 
-Blockly.Blocks['ta_macd'] = {
-    init: function () {
-        this.appendDummyInput()
-            .appendField("MACD")
-            .appendField(new Blockly.FieldImage(
-                "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiIHdpZHRoPSIyNHB4IiBoZWlnaHQ9IjI0cHgiPjxwYXRoIGQ9Ik0wIDBoMjR2MjRIMHoiIGZpbGw9Im5vbmUiLz48cGF0aCBkPSJNMTkuMTQgMTIuOTRjLjA0LS4zLjA2LS42MS4wNi0uOTQgMC0uMzItLjAyLS42NC0uMDctLjk0bDIuMDMtMS41OGMuMTgtLjE0LjIzLS40MS4xMi0uNjFsLTEuOTItMy4zMmMtLjEyLS4yMi0uMzctLjI5LS41OS0uMjJsLTIuMzkuOTZjLS41LS4zOC0xLjAzLS43LTEuNjItLjk0bC0uMzYtMi41NGMtLjA0LS4yNC0uMjQtLjQxLS40OC0uNDFoLTMuODRjLS4yNCAwLS40My4xNy0uNDcuNDFsLS4zNiAyLjU0Yy0uNTkuMjQtMS4xMy41Ny0xLjYyLjk0bC0yLjM5LS45NmMtLjIyLS4wOC0uNDcgMC0uNTkuMjJMMi43NCA4Ljg3Yy0uMTIuMjEtLjA4LjQ3LjEyLjYxbDIuMDMgMS41OGMtLjA1LjMwLS4wOS42My0uMDkuOTRzLjAyLjY0LjA3Ljk0bC0yLjAzIDEuNThjLS4xOC4xNC0uMjMuNDEtLjEyLjYxbDEuOTIgMy4zMmMuMTIuMjIuMzcuMjkuNTkuMjJsMi4zOS0uOTZjLjUuMzggMS4wMy43IDEuNjIuOTRsLjM2IDIuNTRjLjA1LjI0LjI0LjQxLjQ4LjQxaDMuODRjLjI0IDAgLjQ0LS4xNy40Ny0uNDFsLjM2LTIuNTRjLjU5LS4yNCAxLjEzLS41OCAxLjYyLS45NGwyLjM5Ljk2Yy4yMi4wOC40NyAwIC41OS0uMjJsMS45Mi0zLjMyYy4xMi0uMjIuMDctLjQ3LS4xMi0uNjFsLTIuMDEtMS41OHpNMTIgMTUuNmMtMS45OCAwLTMuNi0xLjYyLTMuNi0zLjZzMS42Mi0zLjYgMy42LTMuNiAzLjYgMS42MiAzLjYgMy42LTEuNjIgMy42LTMuNiAzLjZ6Ii8+PC9zdmc+",
-                16, 16, "Settings",
-                function (image: any) {
-                    const block = (image as any).getSourceBlock();
-                    const xml = block.getFieldValue('ADVANCED_LOGIC_XML');
-                    if ((window as any).openAdvancedLogicModal) {
-                        (window as any).openAdvancedLogicModal(block.id, 'ta_macd', xml);
-                    }
-                }
-            ));
-        this.appendDummyInput()
-            .appendField(new Blockly.FieldTextInput(''), 'ADVANCED_LOGIC_XML')
-            .setVisible(false);
-        this.setOutput(true, "TAValue");
-        this.setStyle('ta_blocks');
-        this.setTooltip("Moving Average Convergence Divergence");
-        this.setHelpUrl("");
-    }
-};
+
+// ta_macd removed - migrated to features/macd module
+
 
 Blockly.Blocks['ta_bb'] = {
     init: function () {

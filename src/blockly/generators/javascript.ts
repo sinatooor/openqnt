@@ -271,44 +271,18 @@ javascriptGenerator.forBlock['ta_ema'] = function (block: Blockly.Block) {
 };
 
 javascriptGenerator.forBlock['ta_rsi'] = function (block: Blockly.Block) {
-  const period = javascriptGenerator.valueToCode(block, 'PERIOD', Order.NONE) || '20';
+  const period = javascriptGenerator.valueToCode(block, 'PERIOD', Order.NONE) || '14';
   const code = `rsi(${period})`;
   return [code, Order.ATOMIC];
 };
 
-javascriptGenerator.forBlock['ta_macd'] = function (block: Blockly.Block) {
-  const advancedLogicXml = block.getFieldValue('ADVANCED_LOGIC_XML');
 
-  if (advancedLogicXml && advancedLogicXml.trim() !== "") {
-    try {
-      const tempWorkspace = new Blockly.Workspace();
-      const xml = Blockly.utils.xml.textToDom(advancedLogicXml);
-      Blockly.Xml.domToWorkspace(xml, tempWorkspace);
+// ta_macd generator removed - migrated to features/macd module
 
-      const topBlocks = tempWorkspace.getTopBlocks(false);
-
-      if (topBlocks.length === 1) {
-        const [code, order] = javascriptGenerator.blockToCode(topBlocks[0]);
-        tempWorkspace.dispose();
-
-        const iife = `(function() { const indicator = macd(); return (${code}) ? 1 : 0; })()`;
-        return [iife, Order.ATOMIC];
-      }
-      tempWorkspace.dispose();
-    } catch (e) {
-      console.error("Error generating advanced logic for MACD", e);
-    }
-  }
-
-  // Default behavior
-  const code = 'macd()';
-  return [code, Order.ATOMIC];
-};
 
 javascriptGenerator.forBlock['ta_bb'] = function (block: Blockly.Block) {
   const period = javascriptGenerator.valueToCode(block, 'PERIOD', Order.NONE) || '20';
-  const stdDev = javascriptGenerator.valueToCode(block, 'STDDEV', Order.NONE) || '2';
-  const code = `bollingerBands(${period}, ${stdDev})`;
+  const code = `bollingerBands(${period})`;
   return [code, Order.ATOMIC];
 };
 
@@ -487,23 +461,6 @@ javascriptGenerator.forBlock['mtf_higher_timeframe_bias'] = function (block: Blo
   const timeframe = block.getFieldValue('TIMEFRAME');
   const code = `getHigherTimeframeBias('${timeframe}')`;
   return [code, Order.ATOMIC];
-};
-
-// Indicator Component blocks (for Advanced Logic)
-javascriptGenerator.forBlock['ta_component_macd_line'] = function () {
-  return ['indicator.line', Order.ATOMIC];
-};
-
-javascriptGenerator.forBlock['ta_component_signal_line'] = function () {
-  return ['indicator.signal', Order.ATOMIC];
-};
-
-javascriptGenerator.forBlock['ta_component_histogram'] = function () {
-  return ['indicator.histogram', Order.ATOMIC];
-};
-
-javascriptGenerator.forBlock['ta_component_rsi_value'] = function () {
-  return ['indicator', Order.ATOMIC]; // RSI returns a single number, so 'indicator' is the value
 };
 
 // Export function to generate code from workspace

@@ -6,7 +6,9 @@ import './tradeBlocks';
 import './taBlocks';
 import './riskManagementBlocks';
 import './variableBlocks';
-import './indicatorComponentBlocks';
+
+// Import feature modules
+import '../features';
 
 // Export block configurations for toolbox
 export const environmentBlocksToolbox = [
@@ -346,7 +348,14 @@ export const taBlocksToolbox = [
       }
     }
   },
-  { kind: 'block', type: 'ta_macd' },
+  { kind: 'label', text: 'MACD' },
+  {
+    kind: 'button',
+    text: '⚙️ Settings',
+    callbackKey: 'CONFIG_MACD'
+  },
+  { kind: 'block', type: 'macd_value' },
+  { kind: 'label', text: 'Oscillators' },
   {
     kind: 'block',
     type: 'ta_stochastic',
