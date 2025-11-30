@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { TradingViewChart } from './TradingViewChart';
-import { BacktestResult } from '@/lib/backtestEngine';
-import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { ScrollArea } from './ui/scroll-area';
-import { Separator } from './ui/separator';
+import { TradingViewChart } from 'src/components/TradingViewChart';
+import { BacktestResult } from '@/features/backtest/logic/engine';
+import { Button } from 'src/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from 'src/components/ui/card';
+import { Badge } from 'src/components/ui/badge';
+import { ScrollArea } from 'src/components/ui/scroll-area';
+import { Separator } from 'src/components/ui/separator';
 import {
   ChevronLeft,
   ChevronRight,

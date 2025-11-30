@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { CandlestickData } from 'lightweight-charts';
-import { fetchMarketData } from '@/lib/marketDataService';
+import { fetchMarketData } from '@/services/marketData';
 import { generateMockData } from '@/lib/marketData';
 import { toast } from 'sonner';
 
@@ -56,7 +56,7 @@ export function useMarketData({
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch market data';
       setError(errorMessage);
       console.error('Error fetching market data:', err);
-      
+
       toast.error('Failed to fetch real market data', {
         description: 'Using mock data instead. Check your API key and symbol.',
       });
