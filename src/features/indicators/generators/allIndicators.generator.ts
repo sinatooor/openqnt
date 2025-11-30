@@ -39,7 +39,8 @@ javascriptGenerator.forBlock['ao'] = function (block: any) {
 
 javascriptGenerator.forBlock['ad'] = function (block: any) {
     const period = getParam(block, 'period', 0);
-    return [`accumulationDistribution(${period})`, Order.ATOMIC];
+    const applied_volume = getParam(block, 'applied_volume', 0);
+    return [`accumulationDistribution(${period}, ${applied_volume})`, Order.ATOMIC];
 };
 
 javascriptGenerator.forBlock['ta_cci'] = function (block: any) {
@@ -53,7 +54,9 @@ javascriptGenerator.forBlock['chaikin'] = function (block: any) {
     const period = getParam(block, 'period', 0);
     const fastMA = getParam(block, 'fastMA', 3);
     const slowMA = getParam(block, 'slowMA', 10);
-    return [`chaikinOscillator(${period}, ${fastMA}, ${slowMA})`, Order.ATOMIC];
+    const method = getParam(block, 'method', 1);
+    const applied_volume = getParam(block, 'applied_volume', 0);
+    return [`chaikinOscillator(${period}, ${fastMA}, ${slowMA}, ${method}, ${applied_volume})`, Order.ATOMIC];
 };
 
 javascriptGenerator.forBlock['demarker'] = function (block: any) {
@@ -66,8 +69,8 @@ javascriptGenerator.forBlock['force'] = function (block: any) {
     const period = getParam(block, 'period', 0);
     const ma_period = getParam(block, 'ma_period', 13);
     const method = getParam(block, 'method', 0);
-    const applied_price = getParam(block, 'applied_price', 0);
-    return [`forceIndex(${period}, ${ma_period}, ${method}, ${applied_price})`, Order.ATOMIC];
+    const applied_volume = getParam(block, 'applied_volume', 0);
+    return [`forceIndex(${period}, ${ma_period}, ${method}, ${applied_volume})`, Order.ATOMIC];
 };
 
 javascriptGenerator.forBlock['momentum'] = function (block: any) {
@@ -80,7 +83,8 @@ javascriptGenerator.forBlock['momentum'] = function (block: any) {
 javascriptGenerator.forBlock['ta_mfi'] = function (block: any) {
     const period = getParam(block, 'period', 0);
     const ma_period = getParam(block, 'ma_period', 14);
-    return [`mfi(${period}, ${ma_period})`, Order.ATOMIC];
+    const applied_volume = getParam(block, 'applied_volume', 0);
+    return [`mfi(${period}, ${ma_period}, ${applied_volume})`, Order.ATOMIC];
 };
 
 javascriptGenerator.forBlock['osma'] = function (block: any) {
@@ -103,9 +107,8 @@ javascriptGenerator.forBlock['ta_rsi'] = function (block: any) {
 javascriptGenerator.forBlock['rvi'] = function (block: any) {
     const period = getParam(block, 'period', 0);
     const ma_period = getParam(block, 'ma_period', 10);
-    const method = getParam(block, 'method', 0);
     const component = getComponent(block);
-    return [`rvi(${period}, ${ma_period}, ${method}${component})`, Order.ATOMIC];
+    return [`rvi(${period}, ${ma_period}${component})`, Order.ATOMIC];
 };
 
 javascriptGenerator.forBlock['ta_stochastic'] = function (block: any) {
@@ -299,23 +302,20 @@ javascriptGenerator.forBlock['gator'] = function (block: any) {
 javascriptGenerator.forBlock['ta_dmi'] = function (block: any) {
     const period = getParam(block, 'period', 0);
     const ma_period = getParam(block, 'ma_period', 14);
-    const applied_price = getParam(block, 'applied_price', 0);
     const component = getComponent(block);
-    return [`dmi(${period}, ${ma_period}, ${applied_price}${component})`, Order.ATOMIC];
+    return [`dmi(${period}, ${ma_period}${component})`, Order.ATOMIC];
 };
 
 javascriptGenerator.forBlock['ta_adx'] = function (block: any) {
     const period = getParam(block, 'period', 0);
     const ma_period = getParam(block, 'ma_period', 14);
-    const applied_price = getParam(block, 'applied_price', 0);
-    return [`adx(${period}, ${ma_period}, ${applied_price})`, Order.ATOMIC];
+    return [`adx(${period}, ${ma_period})`, Order.ATOMIC];
 };
 
 javascriptGenerator.forBlock['adxWilder'] = function (block: any) {
     const period = getParam(block, 'period', 0);
     const ma_period = getParam(block, 'ma_period', 14);
-    const applied_price = getParam(block, 'applied_price', 0);
-    return [`adxWilder(${period}, ${ma_period}, ${applied_price})`, Order.ATOMIC];
+    return [`adxWilder(${period}, ${ma_period})`, Order.ATOMIC];
 };
 
 // Volatility
@@ -346,21 +346,22 @@ javascriptGenerator.forBlock['ta_sar'] = function (block: any) {
 // Volume
 javascriptGenerator.forBlock['ta_obv'] = function (block: any) {
     const period = getParam(block, 'period', 0);
-    return [`obv(${period})`, Order.ATOMIC];
+    const applied_volume = getParam(block, 'applied_volume', 0);
+    return [`obv(${period}, ${applied_volume})`, Order.ATOMIC];
 };
 
 javascriptGenerator.forBlock['volumes'] = function (block: any) {
     const period = getParam(block, 'period', 0);
-    const method = getParam(block, 'method', 0);
-    const volumeType = getParam(block, 'volumeType', 0);
+    const applied_volume = getParam(block, 'applied_volume', 0);
     const component = getComponent(block);
-    return [`volumes(${period}, ${method}, ${volumeType}${component})`, Order.ATOMIC];
+    return [`volumes(${period}, ${applied_volume}${component})`, Order.ATOMIC];
 };
 
 javascriptGenerator.forBlock['bwmfi'] = function (block: any) {
     const period = getParam(block, 'period', 0);
+    const applied_volume = getParam(block, 'applied_volume', 0);
     const component = getComponent(block);
-    return [`marketFacilitationIndex(${period}${component})`, Order.ATOMIC];
+    return [`marketFacilitationIndex(${period}, ${applied_volume}${component})`, Order.ATOMIC];
 };
 
 javascriptGenerator.forBlock['ta_vwap'] = function (block: any) {
@@ -373,15 +374,13 @@ javascriptGenerator.forBlock['ta_vwap'] = function (block: any) {
 javascriptGenerator.forBlock['bearsPower'] = function (block: any) {
     const period = getParam(block, 'period', 0);
     const ma_period = getParam(block, 'ma_period', 13);
-    const applied_price = getParam(block, 'applied_price', 0);
-    return [`bearsPower(${period}, ${ma_period}, ${applied_price})`, Order.ATOMIC];
+    return [`bearsPower(${period}, ${ma_period})`, Order.ATOMIC];
 };
 
 javascriptGenerator.forBlock['bullsPower'] = function (block: any) {
     const period = getParam(block, 'period', 0);
     const ma_period = getParam(block, 'ma_period', 13);
-    const applied_price = getParam(block, 'applied_price', 0);
-    return [`bullsPower(${period}, ${ma_period}, ${applied_price})`, Order.ATOMIC];
+    return [`bullsPower(${period}, ${ma_period})`, Order.ATOMIC];
 };
 
 // Other
