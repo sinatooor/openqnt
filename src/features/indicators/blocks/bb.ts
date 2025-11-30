@@ -1,16 +1,38 @@
 import * as Blockly from 'blockly';
+import { createGearSettingsButton } from '@/lib/indicatorUtils';
+import { getIndicatorConfig, getDefaultParams } from '@/lib/indicatorConfigs';
 
 Blockly.Blocks['ta_bb'] = {
     init: function () {
-        this.appendValueInput("PERIOD")
-            .setCheck("Number")
-            .appendField("BB");
+        const config = getIndicatorConfig('bb');
         this.appendDummyInput()
-            .appendField("period");
-        this.setInputsInline(true);
+            .appendField("Bollinger Bands")
+            .appendField(new Blockly.FieldTextInput("BB"), "NAME")
+            .appendField(new Blockly.FieldDropdown(
+                config?.components?.map(c => [c.label, c.value]) || []
+            ), "COMPONENT")
+            .appendField(createGearSettingsButton('bb'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("Bollinger Bands");
-        this.setHelpUrl("");
+        this.indicatorName = 'bb';
+        this.indicatorParams = getDefaultParams('bb');
+    },
+    mutationToDom: function() {
+        const container = Blockly.utils.xml.createElement('mutation');
+        if (this.indicatorParams) {
+            Object.keys(this.indicatorParams).forEach(key => {
+                container.setAttribute(key, String(this.indicatorParams[key]));
+            });
+        }
+        return container;
+    },
+    domToMutation: function(xmlElement: Element) {
+        this.indicatorParams = {};
+        Array.from(xmlElement.attributes).forEach(attr => {
+            if (attr.name !== 'type') {
+                this.indicatorParams[attr.name] = parseFloat(attr.value) || 0;
+            }
+        });
     }
 };
