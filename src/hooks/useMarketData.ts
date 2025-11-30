@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { CandlestickData } from 'lightweight-charts';
-import { fetchMarketData } from '@/lib/marketDataService';
+import { fetchMarketData } from '@/services/marketData'
 import { generateMockData } from '@/lib/marketData';
 import { toast } from 'sonner';
 
