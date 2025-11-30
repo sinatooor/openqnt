@@ -1,5 +1,5 @@
 import { CandlestickData, Time } from 'lightweight-charts';
-import { generateMockData } from './marketData';
+import { generateMockData } from '@/lib/marketData';
 import { TradeMarker } from '@/components/TradingViewChart';
 
 export interface BacktestResult {

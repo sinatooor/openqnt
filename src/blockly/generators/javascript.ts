@@ -5,7 +5,7 @@ import { javascriptGenerator } from 'blockly/javascript';
 import '../../features/core/generators';
 import '../../features/indicators/generators';
 import '../../features/trading/generators';
-import './variableGenerators';
+
 
 // Export function to generate code from workspace
 export function generateCode(workspace: Blockly.WorkspaceSvg): string {

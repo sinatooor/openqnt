@@ -1,6 +1,6 @@
 // Import all block definitions to register them with Blockly
 // Import all block definitions to register them with Blockly
-import './variableBlocks';
+
 
 // Import feature modules
 import '../../features/core'; // Now imports modular core blocks & generators
@@ -347,11 +347,6 @@ export const taBlocksToolbox = [
     }
   },
   { kind: 'label', text: 'MACD' },
-  {
-    kind: 'button',
-    text: '⚙️ Settings',
-    callbackKey: 'CONFIG_MACD'
-  },
   { kind: 'block', type: 'macd_value' },
   { kind: 'label', text: 'Oscillators' },
   {
