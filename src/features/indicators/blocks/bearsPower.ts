@@ -2,17 +2,17 @@ import * as Blockly from 'blockly';
 import { createGearSettingsButton } from '@/lib/indicatorUtils';
 import { getDefaultParams } from '@/lib/indicatorConfigs';
 
-Blockly.Blocks['ta_adx'] = {
+Blockly.Blocks['bearsPower'] = {
     init: function () {
         this.appendDummyInput()
-            .appendField("ADX")
-            .appendField(new Blockly.FieldTextInput("ADX"), "NAME")
-            .appendField(createGearSettingsButton('adx'));
+            .appendField("Bears Power")
+            .appendField(new Blockly.FieldTextInput("Bears Power"), "NAME")
+            .appendField(createGearSettingsButton('bearsPower'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
-        this.setTooltip("Average Directional Index - trend strength");
-        this.indicatorName = 'adx';
-        this.indicatorParams = getDefaultParams('adx');
+        this.setTooltip("Bears Power");
+        this.indicatorName = 'bearsPower';
+        this.indicatorParams = getDefaultParams('bearsPower');
     },
     mutationToDom: function() {
         const container = Blockly.utils.xml.createElement('mutation');
@@ -32,3 +32,4 @@ Blockly.Blocks['ta_adx'] = {
         });
     }
 };
+

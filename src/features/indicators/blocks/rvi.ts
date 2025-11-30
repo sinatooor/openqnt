@@ -1,18 +1,22 @@
 import * as Blockly from 'blockly';
 import { createGearSettingsButton } from '@/lib/indicatorUtils';
-import { getDefaultParams } from '@/lib/indicatorConfigs';
+import { getIndicatorConfig, getDefaultParams } from '@/lib/indicatorConfigs';
 
-Blockly.Blocks['ta_adx'] = {
+Blockly.Blocks['rvi'] = {
     init: function () {
+        const config = getIndicatorConfig('rvi');
         this.appendDummyInput()
-            .appendField("ADX")
-            .appendField(new Blockly.FieldTextInput("ADX"), "NAME")
-            .appendField(createGearSettingsButton('adx'));
+            .appendField("RVI")
+            .appendField(new Blockly.FieldTextInput("RVI"), "NAME")
+            .appendField(new Blockly.FieldDropdown(
+                config?.components?.map(c => [c.label, c.value]) || []
+            ), "COMPONENT")
+            .appendField(createGearSettingsButton('rvi'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
-        this.setTooltip("Average Directional Index - trend strength");
-        this.indicatorName = 'adx';
-        this.indicatorParams = getDefaultParams('adx');
+        this.setTooltip("Relative Vigor Index");
+        this.indicatorName = 'rvi';
+        this.indicatorParams = getDefaultParams('rvi');
     },
     mutationToDom: function() {
         const container = Blockly.utils.xml.createElement('mutation');
@@ -32,3 +36,4 @@ Blockly.Blocks['ta_adx'] = {
         });
     }
 };
+
