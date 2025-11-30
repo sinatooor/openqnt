@@ -1,14 +1,12 @@
 // Import all block definitions to register them with Blockly
-import './environmentBlocks';
-import './operatorBlocks';
-import './controlBlocks';
-import './tradeBlocks';
-import './taBlocks';
-import './riskManagementBlocks';
+// Import all block definitions to register them with Blockly
 import './variableBlocks';
 
 // Import feature modules
-import '../features';
+import '../../features/core'; // Now imports modular core blocks & generators
+import '../../features/trading'; // Now imports modular trading blocks & generators
+import '../../features/indicators'; // Now imports from modular structure
+
 
 // Export block configurations for toolbox
 export const environmentBlocksToolbox = [

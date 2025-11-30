@@ -10,18 +10,18 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, Undo2, Redo2, Blocks, Wand2, FileCode, BarChart3, TrendingUp, BookOpen } from "lucide-react";
 import { toast } from "sonner";
-import { BacktestingPanel } from "./BacktestingPanel";
+import { BacktestingPanel } from "src/features/backtest/components/BacktestingPanel";
 import { StrategyTemplatesDialog } from "./StrategyTemplatesDialog";
 import { FloatingChartModal } from "./FloatingChartModal";
 import { AIChatPanel } from "./AIChatPanel";
 import { GuidedTour } from "./GuidedTour";
 import { DevLogPanel, LogEntry } from "./DevLogPanel";
-//import { AdvancedLogicModal } from "./AdvancedLogicModal";
-import { runBacktest, BacktestResult } from "@/lib/backtestEngine";
+
 import { StrategyTemplate } from "@/lib/strategyTemplates";
 import { cn } from "@/lib/utils";
-import { fetchMarketData } from "@/lib/marketDataService";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { fetchMarketData } from "@/services/marketData";
+import { BacktestResult, runBacktest } from "@/features/backtest/logic/engine";
 
 interface BlocklyWorkspaceProps {
   runTour?: boolean;

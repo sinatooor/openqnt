@@ -1,8 +1,7 @@
 import * as Blockly from 'blockly';
 
 /**
- * MACD Block with Component Selector
- * Returns the selected MACD component (Line, Signal, or Histogram)
+ * MACD Block with component selector (Line, Signal, Histogram)
  */
 Blockly.Blocks['macd_value'] = {
     init: function () {
@@ -13,9 +12,8 @@ Blockly.Blocks['macd_value'] = {
                 ["Signal", "signal"],
                 ["Histogram", "histogram"]
             ]), "COMPONENT");
-        this.setOutput(true, "Number");
+        this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
-        this.setTooltip("MACD Component (Line/Signal/Histogram)");
-        this.setHelpUrl("");
+        this.setTooltip("Moving Average Convergence Divergence - Select component");
     }
 };
