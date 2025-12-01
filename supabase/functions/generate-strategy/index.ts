@@ -41,17 +41,11 @@ CRITICAL RULES:
 
 Blockly.Blocks['control_if'] = {
   init: function() {
-    this.appendValueInput("CONDITION")
-      .setCheck("Boolean")
-      .appendField("If");
-    this.appendStatementInput("DO")
-      .setCheck(["TradeAction", "Control"])
-      .appendField("then");
+    this.appendValueInput("CONDITION").setCheck("Boolean").appendField("If");
+    this.appendStatementInput("DO").setCheck(["TradeAction", "Control"]).appendField("then");
     this.setPreviousStatement(true, ["Control", "TradeAction"]);
     this.setNextStatement(true, ["Control", "TradeAction"]);
     this.setStyle('control_blocks');
-    this.setTooltip("Execute actions if condition is true");
-    this.setHelpUrl("");
   }
 };
 
@@ -123,20 +117,12 @@ Blockly.Blocks['control_repeat_until'] = {
 
 Blockly.Blocks['control_if_else'] = {
   init: function() {
-    this.appendValueInput("CONDITION")
-      .setCheck("Boolean")
-      .appendField("If");
-    this.appendStatementInput("DO")
-      .setCheck(["TradeAction", "Control"])
-      .appendField("then");
-    this.appendStatementInput("ELSE")
-      .setCheck(["TradeAction", "Control"])
-      .appendField("else");
+    this.appendValueInput("CONDITION").setCheck("Boolean").appendField("If");
+    this.appendStatementInput("DO").setCheck(["TradeAction", "Control"]).appendField("then");
+    this.appendStatementInput("ELSE").setCheck(["TradeAction", "Control"]).appendField("else");
     this.setPreviousStatement(true, ["Control", "TradeAction"]);
     this.setNextStatement(true, ["Control", "TradeAction"]);
     this.setStyle('control_blocks');
-    this.setTooltip("Execute actions if condition is true, otherwise execute else actions");
-    this.setHelpUrl("");
   }
 };
 
@@ -168,12 +154,9 @@ Blockly.Blocks['control_stop'] = {
 
 Blockly.Blocks['environment_price'] = {
   init: function() {
-    this.appendDummyInput()
-      .appendField("Price");
+    this.appendDummyInput().appendField("Price");
     this.setOutput(true, "EnvironmentValue");
     this.setStyle('environment_blocks');
-    this.setTooltip("Current market price");
-    this.setHelpUrl("");
   }
 };
 
@@ -499,119 +482,50 @@ Blockly.Blocks['operator_advanced_math'] = {
   }
 };
 
-Blockly.Blocks['ta_sma'] = {
+// === TECHNICAL ANALYSIS BLOCKS (46 TOOLS) ===
+
+// 1. AC (Accelerator Oscillator)
+// XML: <block type="ac"><mutation period="5"></mutation><field name="NAME">AC</field></block>
+Blockly.Blocks['ac'] = {
   init: function() {
+    this.appendDummyInput()
+      .appendField("AC");
     this.appendValueInput("PERIOD")
       .setCheck("Number")
-      .appendField("SMA");
-    this.appendDummyInput()
       .appendField("period");
     this.setInputsInline(true);
     this.setOutput(true, "TAValue");
     this.setStyle('ta_blocks');
-    this.setTooltip("Simple Moving Average");
+    this.setTooltip("Accelerator Oscillator");
     this.setHelpUrl("");
   }
 };
 
-Blockly.Blocks['ta_ema'] = {
+// 2. AD (Accumulation/Distribution)
+// XML: <block type="ad"><mutation period="5" applied_volume="0"></mutation><field name="NAME">AD</field></block>
+Blockly.Blocks['ad'] = {
   init: function() {
+    this.appendDummyInput()
+      .appendField("AD");
     this.appendValueInput("PERIOD")
       .setCheck("Number")
-      .appendField("EMA");
-    this.appendDummyInput()
       .appendField("period");
+    this.appendDummyInput()
+      .appendField("applied volume")
+      .appendField(new Blockly.FieldDropdown([
+        ["tick", "0"],
+        ["real", "1"]
+      ]), "APPLIED_VOLUME");
     this.setInputsInline(true);
     this.setOutput(true, "TAValue");
     this.setStyle('ta_blocks');
-    this.setTooltip("Exponential Moving Average");
+    this.setTooltip("Accumulation/Distribution");
     this.setHelpUrl("");
   }
 };
 
-Blockly.Blocks['ta_rsi'] = {
-  init: function() {
-    this.appendValueInput("PERIOD")
-      .setCheck("Number")
-      .appendField("RSI");
-    this.appendDummyInput()
-      .appendField("period");
-    this.setInputsInline(true);
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("Relative Strength Index");
-    this.setHelpUrl("");
-  }
-};
-
-Blockly.Blocks['ta_macd'] = {
-  init: function() {
-    this.appendDummyInput()
-      .appendField("MACD");
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("Moving Average Convergence Divergence");
-    this.setHelpUrl("");
-  }
-};
-
-Blockly.Blocks['ta_bb'] = {
-  init: function() {
-    this.appendValueInput("PERIOD")
-      .setCheck("Number")
-      .appendField("BB");
-    this.appendDummyInput()
-      .appendField("period");
-    this.setInputsInline(true);
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("Bollinger Bands");
-    this.setHelpUrl("");
-  }
-};
-
-Blockly.Blocks['ta_vwap'] = {
-  init: function() {
-    this.appendDummyInput()
-      .appendField("VWAP");
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("Volume Weighted Average Price");
-    this.setHelpUrl("");
-  }
-};
-
-Blockly.Blocks['ta_atr'] = {
-  init: function() {
-    this.appendValueInput("PERIOD")
-      .setCheck("Number")
-      .appendField("ATR");
-    this.appendDummyInput()
-      .appendField("period");
-    this.setInputsInline(true);
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("Average True Range - volatility indicator");
-    this.setHelpUrl("");
-  }
-};
-
-Blockly.Blocks['ta_stochastic'] = {
-  init: function() {
-    this.appendValueInput("K_PERIOD")
-      .setCheck("Number")
-      .appendField("Stochastic K");
-    this.appendValueInput("D_PERIOD")
-      .setCheck("Number")
-      .appendField("D");
-    this.setInputsInline(true);
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("Stochastic Oscillator");
-    this.setHelpUrl("");
-  }
-};
-
+// 3. ADX (Average Directional Index)
+// XML: <block type="ta_adx"><mutation period="14" ma_period="14"></mutation><field name="NAME">ADX</field></block>
 Blockly.Blocks['ta_adx'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -627,6 +541,174 @@ Blockly.Blocks['ta_adx'] = {
   }
 };
 
+// 4. ADX Wilder
+// XML: <block type="adxWilder"><mutation period="14" ma_period="14"></mutation><field name="NAME">ADX Wilder</field></block>
+Blockly.Blocks['adxWilder'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("ADX Wilder");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Average Directional Index (Wilder's smoothing)");
+    this.setHelpUrl("");
+  }
+};
+
+// 5. Alligator
+// XML: <block type="alligator"><mutation period="5" jawperiod="13" jawshift="8" teethperiod="8" teethshift="5" lipsperiod="5" lipsshift="3" method="2" applied_price="0"></mutation><field name="NAME">Alligator</field></block>
+Blockly.Blocks['alligator'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Alligator");
+    this.appendValueInput("JAW_PERIOD")
+      .setCheck("Number")
+      .appendField("Jaw Period");
+    this.appendValueInput("TEETH_PERIOD")
+      .setCheck("Number")
+      .appendField("Teeth Period");
+    this.appendValueInput("LIPS_PERIOD")
+      .setCheck("Number")
+      .appendField("Lips Period");
+    this.setInputsInline(false);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Alligator Indicator");
+    this.setHelpUrl("");
+  }
+};
+
+// 6. AMA (Adaptive Moving Average)
+// XML: <block type="ama"><mutation period="5" ma_period="9" fastperiod="2" slowperiod="30" shift="0" applied_price="0"></mutation><field name="NAME">AMA</field></block>
+Blockly.Blocks['ama'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("AMA");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Adaptive Moving Average");
+    this.setHelpUrl("");
+  }
+};
+
+// 7. AO (Awesome Oscillator)
+// XML: <block type="ao"><mutation period="5"></mutation><field name="NAME">AO</field></block>
+Blockly.Blocks['ao'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("AO");
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Awesome Oscillator");
+    this.setHelpUrl("");
+  }
+};
+
+// 8. ATR (Average True Range)
+// XML: <block type="ta_atr"><mutation period="14" ma_period="14"></mutation><field name="NAME">ATR</field></block>
+Blockly.Blocks['ta_atr'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("ATR");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Average True Range - volatility indicator");
+    this.setHelpUrl("");
+  }
+};
+
+// 9. Bears Power
+// XML: <block type="bearsPower"><mutation period="5" ma_period="13"></mutation><field name="NAME">Bears Power</field></block>
+Blockly.Blocks['bearsPower'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("Bears Power");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Bears Power Indicator");
+    this.setHelpUrl("");
+  }
+};
+
+// 10. Bollinger Bands
+// XML: <block type="ta_bb"><mutation period="20" ma_period="20" deviation="2" shift="0" applied_price="0"></mutation><field name="NAME">BB</field><field name="COMPONENT">upper|middle|lower</field></block>
+Blockly.Blocks['ta_bb'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("BB");
+    this.appendDummyInput()
+      .appendField("period");
+    this.appendDummyInput()
+      .appendField("component")
+      .appendField(new Blockly.FieldDropdown([
+        ["upper", "upper"],
+        ["middle", "middle"],
+        ["lower", "lower"]
+      ]), "COMPONENT");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Bollinger Bands");
+    this.setHelpUrl("");
+  }
+};
+
+// 11. Bulls Power
+// XML: <block type="bullsPower"><mutation period="5" ma_period="13"></mutation><field name="NAME">Bulls Power</field></block>
+Blockly.Blocks['bullsPower'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("Bulls Power");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Bulls Power Indicator");
+    this.setHelpUrl("");
+  }
+};
+
+// 12. BWMFI (Market Facilitation Index)
+// XML: <block type="bwmfi"><mutation period="5" applied_volume="0"></mutation><field name="NAME">BWMFI</field><field name="COMPONENT">main|plus|minus</field></block>
+Blockly.Blocks['bwmfi'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("BWMFI");
+    this.appendDummyInput()
+      .appendField("component")
+      .appendField(new Blockly.FieldDropdown([
+        ["main", "main"],
+        ["plus", "plus"],
+        ["minus", "minus"]
+      ]), "COMPONENT");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Market Facilitation Index");
+    this.setHelpUrl("");
+  }
+};
+
+// 13. CCI (Commodity Channel Index)
+// XML: <block type="ta_cci"><mutation period="14" ma_period="14" applied_price="0"></mutation><field name="NAME">CCI</field></block>
 Blockly.Blocks['ta_cci'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -642,32 +724,310 @@ Blockly.Blocks['ta_cci'] = {
   }
 };
 
-Blockly.Blocks['ta_williams_r'] = {
+// 14. Chaikin Oscillator
+// XML: <block type="chaikin"><mutation period="5" fastma="3" slowma="10" method="1" applied_volume="0"></mutation><field name="NAME">Chaikin</field></block>
+Blockly.Blocks['chaikin'] = {
+  init: function() {
+    this.appendValueInput("FAST_MA")
+      .setCheck("Number")
+      .appendField("Chaikin Fast MA");
+    this.appendValueInput("SLOW_MA")
+      .setCheck("Number")
+      .appendField("Slow MA");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Chaikin Oscillator");
+    this.setHelpUrl("");
+  }
+};
+
+// 15. DEMA (Double Exponential Moving Average)
+// XML: <block type="dema"><mutation period="14" ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">DEMA</field></block>
+Blockly.Blocks['dema'] = {
   init: function() {
     this.appendValueInput("PERIOD")
       .setCheck("Number")
-      .appendField("Williams %R");
+      .appendField("DEMA");
     this.appendDummyInput()
       .appendField("period");
     this.setInputsInline(true);
     this.setOutput(true, "TAValue");
     this.setStyle('ta_blocks');
-    this.setTooltip("Williams %R - momentum indicator");
+    this.setTooltip("Double Exponential Moving Average");
     this.setHelpUrl("");
   }
 };
 
-Blockly.Blocks['ta_obv'] = {
+// 16. DeMarker
+// XML: <block type="demarker"><mutation period="14" ma_period="14"></mutation><field name="NAME">DeMarker</field></block>
+Blockly.Blocks['demarker'] = {
   init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("DeMarker");
     this.appendDummyInput()
-      .appendField("OBV");
+      .appendField("period");
+    this.setInputsInline(true);
     this.setOutput(true, "TAValue");
     this.setStyle('ta_blocks');
-    this.setTooltip("On Balance Volume");
+    this.setTooltip("DeMarker Indicator");
     this.setHelpUrl("");
   }
 };
 
+// 17. DMI (Directional Movement Index)
+// XML: <block type="ta_dmi"><mutation period="14" ma_period="14"></mutation><field name="NAME">DMI</field><field name="COMPONENT">plusDI|minusDI|adx</field></block>
+Blockly.Blocks['ta_dmi'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("DMI");
+    this.appendDummyInput()
+      .appendField("period");
+    this.appendDummyInput()
+      .appendField("component")
+      .appendField(new Blockly.FieldDropdown([
+        ["+DI", "plusDI"],
+        ["-DI", "minusDI"],
+        ["ADX", "adx"]
+      ]), "COMPONENT");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Directional Movement Index");
+    this.setHelpUrl("");
+  }
+};
+
+// 18. Donchian Channels
+// XML: <block type="donchian"><mutation period="20" ma_period="20" shift="0"></mutation><field name="NAME">Donchian</field><field name="COMPONENT">upper|middle|lower</field></block>
+Blockly.Blocks['donchian'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("Donchian Channels");
+    this.appendDummyInput()
+      .appendField("period");
+    this.appendDummyInput()
+      .appendField("component")
+      .appendField(new Blockly.FieldDropdown([
+        ["upper", "upper"],
+        ["middle", "middle"],
+        ["lower", "lower"]
+      ]), "COMPONENT");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Donchian Channels");
+    this.setHelpUrl("");
+  }
+};
+
+// 19. EMA (Exponential Moving Average)
+// XML: <block type="ta_ema"><mutation period="14" ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">EMA</field></block>
+Blockly.Blocks['ta_ema'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("EMA");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Exponential Moving Average");
+    this.setHelpUrl("");
+  }
+};
+
+// 20. Envelopes
+// XML: <block type="envelopes"><mutation period="14" ma_period="14" deviation="0.1" shift="0" method="0" applied_price="0"></mutation><field name="NAME">Envelopes</field><field name="COMPONENT">upper|lower</field></block>
+Blockly.Blocks['envelopes'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("Envelopes");
+    this.appendDummyInput()
+      .appendField("period");
+    this.appendValueInput("DEVIATION")
+      .setCheck("Number")
+      .appendField("deviation");
+    this.appendDummyInput()
+      .appendField("component")
+      .appendField(new Blockly.FieldDropdown([
+        ["upper", "upper"],
+        ["lower", "lower"]
+      ]), "COMPONENT");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Envelopes Indicator");
+    this.setHelpUrl("");
+  }
+};
+
+// 21. Force Index
+// XML: <block type="force"><mutation period="13" ma_period="13" method="0" applied_volume="0"></mutation><field name="NAME">Force</field></block>
+Blockly.Blocks['force'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("Force Index");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Force Index");
+    this.setHelpUrl("");
+  }
+};
+
+// 22. Fractals
+// XML: <block type="fractals"><mutation period="5"></mutation><field name="NAME">Fractals</field><field name="COMPONENT">upper|lower</field></block>
+Blockly.Blocks['fractals'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Fractals");
+    this.appendDummyInput()
+      .appendField("component")
+      .appendField(new Blockly.FieldDropdown([
+        ["upper", "upper"],
+        ["lower", "lower"]
+      ]), "COMPONENT");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Fractals Indicator");
+    this.setHelpUrl("");
+  }
+};
+
+// 23. FrAMA (Fractal Adaptive Moving Average)
+// XML: <block type="frama"><mutation period="14" ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">FrAMA</field></block>
+Blockly.Blocks['frama'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("FrAMA");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Fractal Adaptive Moving Average");
+    this.setHelpUrl("");
+  }
+};
+
+// 24. Gator Oscillator
+// XML: <block type="gator"><mutation period="5" jawperiod="13" jawshift="8" teethperiod="8" teethshift="5" lipsperiod="5" lipsshift="3" method="2" applied_price="0"></mutation><field name="NAME">Gator</field><field name="COMPONENT">upper|lower</field></block>
+Blockly.Blocks['gator'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Gator Oscillator");
+    this.appendDummyInput()
+      .appendField("component")
+      .appendField(new Blockly.FieldDropdown([
+        ["upper", "upper"],
+        ["lower", "lower"]
+      ]), "COMPONENT");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Gator Oscillator");
+    this.setHelpUrl("");
+  }
+};
+
+// 25. Ichimoku Kinko Hyo
+// XML: <block type="ta_ichimoku"><mutation period="5" tenkansen="9" kijunsen="26" senkouspanb="52"></mutation><field name="NAME">Ichimoku</field><field name="COMPONENT">tenkan|kijun|chikou|senkouA|senkouB</field></block>
+Blockly.Blocks['ta_ichimoku'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Ichimoku Cloud");
+    this.appendDummyInput()
+      .appendField("component")
+      .appendField(new Blockly.FieldDropdown([
+        ["Tenkan-sen", "tenkan"],
+        ["Kijun-sen", "kijun"],
+        ["Chikou Span", "chikou"],
+        ["Senkou Span A", "senkouA"],
+        ["Senkou Span B", "senkouB"]
+      ]), "COMPONENT");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Ichimoku Cloud indicator");
+    this.setHelpUrl("");
+  }
+};
+
+// 26. Keltner Channels
+// XML: <block type="ta_keltner"><mutation period="20" ma_period="20" deviation="2" shift="0" method="0" applied_price="0"></mutation><field name="NAME">Keltner</field><field name="COMPONENT">upper|middle|lower</field></block>
+Blockly.Blocks['ta_keltner'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("Keltner Channel");
+    this.appendDummyInput()
+      .appendField("period");
+    this.appendDummyInput()
+      .appendField("component")
+      .appendField(new Blockly.FieldDropdown([
+        ["upper", "upper"],
+        ["middle", "middle"],
+        ["lower", "lower"]
+      ]), "COMPONENT");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Keltner Channels");
+    this.setHelpUrl("");
+  }
+};
+
+// 27. LWMA (Linear Weighted Moving Average)
+// XML: <block type="ta_lwma"><mutation period="14" ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">LWMA</field></block>
+Blockly.Blocks['ta_lwma'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("LWMA");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Linear Weighted Moving Average");
+    this.setHelpUrl("");
+  }
+};
+
+// 28. MACD (Moving Average Convergence Divergence)
+// XML: <block type="macd_value"><mutation period="5" fastema="12" slowema="26" signalsma="9" applied_price="0"></mutation><field name="NAME">MACD</field><field name="COMPONENT">line|signal|histogram</field></block>
+Blockly.Blocks['macd_value'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("MACD");
+    this.appendDummyInput()
+      .appendField("component")
+      .appendField(new Blockly.FieldDropdown([
+        ["line", "line"],
+        ["signal", "signal"],
+        ["histogram", "histogram"]
+      ]), "COMPONENT");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Moving Average Convergence Divergence");
+    this.setHelpUrl("");
+  }
+};
+
+// 29. MFI (Money Flow Index)
+// XML: <block type="ta_mfi"><mutation period="14" ma_period="14" applied_volume="0"></mutation><field name="NAME">MFI</field></block>
 Blockly.Blocks['ta_mfi'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -683,6 +1043,98 @@ Blockly.Blocks['ta_mfi'] = {
   }
 };
 
+// 30. Momentum
+// XML: <block type="momentum"><mutation period="14" ma_period="14" applied_price="0"></mutation><field name="NAME">Momentum</field></block>
+Blockly.Blocks['momentum'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("Momentum");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Momentum Indicator");
+    this.setHelpUrl("");
+  }
+};
+
+// 31. OBV (On Balance Volume)
+// XML: <block type="ta_obv"><mutation period="5" applied_volume="0"></mutation><field name="NAME">OBV</field></block>
+Blockly.Blocks['ta_obv'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("OBV");
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("On Balance Volume");
+    this.setHelpUrl("");
+  }
+};
+
+// 32. OsMA (Moving Average of Oscillator)
+// XML: <block type="osma"><mutation period="5" fastema="12" slowema="26" signalsma="9" applied_price="0"></mutation><field name="NAME">OsMA</field><field name="COMPONENT">main|signal</field></block>
+Blockly.Blocks['osma'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("OsMA");
+    this.appendDummyInput()
+      .appendField("component")
+      .appendField(new Blockly.FieldDropdown([
+        ["main", "main"],
+        ["signal", "signal"]
+      ]), "COMPONENT");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Moving Average of Oscillator");
+    this.setHelpUrl("");
+  }
+};
+
+// 33. RSI (Relative Strength Index)
+// XML: <block type="ta_rsi"><mutation period="14" ma_period="14" applied_price="0"></mutation><field name="NAME">RSI</field></block>
+Blockly.Blocks['ta_rsi'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("RSI");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Relative Strength Index");
+    this.setHelpUrl("");
+  }
+};
+
+// 34. RVI (Relative Vigor Index)
+// XML: <block type="rvi"><mutation period="10" ma_period="10"></mutation><field name="NAME">RVI</field><field name="COMPONENT">main|signal</field></block>
+Blockly.Blocks['rvi'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("RVI");
+    this.appendDummyInput()
+      .appendField("period");
+    this.appendDummyInput()
+      .appendField("component")
+      .appendField(new Blockly.FieldDropdown([
+        ["main", "main"],
+        ["signal", "signal"]
+      ]), "COMPONENT");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Relative Vigor Index");
+    this.setHelpUrl("");
+  }
+};
+
+// 35. SAR (Parabolic SAR)
+// XML: <block type="ta_sar"><mutation period="5" step="0.02" maximum="0.2"></mutation><field name="NAME">SAR</field></block>
 Blockly.Blocks['ta_sar'] = {
   init: function() {
     this.appendValueInput("ACCELERATION")
@@ -699,62 +1151,184 @@ Blockly.Blocks['ta_sar'] = {
   }
 };
 
-Blockly.Blocks['ta_ichimoku'] = {
-  init: function() {
-    this.appendDummyInput()
-      .appendField("Ichimoku Cloud");
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("Ichimoku Cloud indicator");
-    this.setHelpUrl("");
-  }
-};
-
-Blockly.Blocks['ta_vp'] = {
+// 36. SMA (Simple Moving Average)
+// XML: <block type="ta_sma"><mutation period="14" ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">SMA</field></block>
+Blockly.Blocks['ta_sma'] = {
   init: function() {
     this.appendValueInput("PERIOD")
       .setCheck("Number")
-      .appendField("Volume Profile");
+      .appendField("SMA");
     this.appendDummyInput()
       .appendField("period");
     this.setInputsInline(true);
     this.setOutput(true, "TAValue");
     this.setStyle('ta_blocks');
-    this.setTooltip("Volume Profile");
+    this.setTooltip("Simple Moving Average");
     this.setHelpUrl("");
   }
 };
 
-Blockly.Blocks['ta_keltner'] = {
+// 37. SMMA (Smoothed Moving Average)
+// XML: <block type="ta_smma"><mutation period="14" ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">SMMA</field></block>
+Blockly.Blocks['ta_smma'] = {
   init: function() {
     this.appendValueInput("PERIOD")
       .setCheck("Number")
-      .appendField("Keltner Channel");
+      .appendField("SMMA");
     this.appendDummyInput()
       .appendField("period");
     this.setInputsInline(true);
     this.setOutput(true, "TAValue");
     this.setStyle('ta_blocks');
-    this.setTooltip("Keltner Channels");
+    this.setTooltip("Smoothed Moving Average");
     this.setHelpUrl("");
   }
 };
 
-Blockly.Blocks['ta_dmi'] = {
+// 38. StdDev (Standard Deviation)
+// XML: <block type="stddev"><mutation period="20" ma_period="20" shift="0" method="0" applied_price="0"></mutation><field name="NAME">StdDev</field></block>
+Blockly.Blocks['stddev'] = {
   init: function() {
     this.appendValueInput("PERIOD")
       .setCheck("Number")
-      .appendField("DMI");
+      .appendField("StdDev");
     this.appendDummyInput()
       .appendField("period");
     this.setInputsInline(true);
     this.setOutput(true, "TAValue");
     this.setStyle('ta_blocks');
-    this.setTooltip("Directional Movement Index");
+    this.setTooltip("Standard Deviation");
     this.setHelpUrl("");
   }
 };
 
+// 39. Stochastic Oscillator
+// XML: <block type="ta_stochastic"><mutation period="5" kperiod="5" dperiod="3" slowing="3" method="0" price="0"></mutation><field name="NAME">Stochastic</field><field name="COMPONENT">main|signal</field></block>
+Blockly.Blocks['ta_stochastic'] = {
+  init: function() {
+    this.appendValueInput("K_PERIOD")
+      .setCheck("Number")
+      .appendField("Stochastic K");
+    this.appendValueInput("D_PERIOD")
+      .setCheck("Number")
+      .appendField("D");
+    this.appendDummyInput()
+      .appendField("component")
+      .appendField(new Blockly.FieldDropdown([
+        ["main", "main"],
+        ["signal", "signal"]
+      ]), "COMPONENT");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Stochastic Oscillator");
+    this.setHelpUrl("");
+  }
+};
+
+// 40. TEMA (Triple Exponential Moving Average)
+// XML: <block type="tema"><mutation period="14" ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">TEMA</field></block>
+Blockly.Blocks['tema'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("TEMA");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Triple Exponential Moving Average");
+    this.setHelpUrl("");
+  }
+};
+
+// 41. TRIX (Triple Exponential Moving Averages Oscillator)
+// XML: <block type="trix"><mutation period="14" ma_period="14" applied_price="0"></mutation><field name="NAME">TRIX</field></block>
+Blockly.Blocks['trix'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("TRIX");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Triple Exponential Moving Averages Oscillator");
+    this.setHelpUrl("");
+  }
+};
+
+// 42. VIDYA (Variable Index Dynamic Average)
+// XML: <block type="vidya"><mutation period="9" ma_period="9" shift="0" applied_price="0"></mutation><field name="NAME">VIDYA</field></block>
+Blockly.Blocks['vidya'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("VIDYA");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Variable Index Dynamic Average");
+    this.setHelpUrl("");
+  }
+};
+
+// 43. Volumes
+// XML: <block type="volumes"><mutation period="5" applied_volume="0"></mutation><field name="NAME">Volumes</field><field name="COMPONENT">real|tick</field></block>
+Blockly.Blocks['volumes'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Volumes");
+    this.appendDummyInput()
+      .appendField("component")
+      .appendField(new Blockly.FieldDropdown([
+        ["real", "real"],
+        ["tick", "tick"]
+      ]), "COMPONENT");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Volumes Indicator");
+    this.setHelpUrl("");
+  }
+};
+
+// 44. VWAP (Volume Weighted Average Price)
+// XML: <block type="ta_vwap"><mutation period="5"></mutation><field name="NAME">VWAP</field></block>
+Blockly.Blocks['ta_vwap'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("VWAP");
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Volume Weighted Average Price");
+    this.setHelpUrl("");
+  }
+};
+
+// 45. Williams %R
+// XML: <block type="ta_williams_r"><mutation period="14" ma_period="14"></mutation><field name="NAME">Williams %R</field></block>
+Blockly.Blocks['ta_williams_r'] = {
+  init: function() {
+    this.appendValueInput("PERIOD")
+      .setCheck("Number")
+      .appendField("Williams %R");
+    this.appendDummyInput()
+      .appendField("period");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Williams %R - momentum indicator");
+    this.setHelpUrl("");
+  }
+};
+
+// 46. SuperTrend
+// XML: <block type="ta_supertrend"><mutation period="10" multiplier="3"></mutation><field name="NAME">SuperTrend</field></block>
 Blockly.Blocks['ta_supertrend'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -767,17 +1341,6 @@ Blockly.Blocks['ta_supertrend'] = {
     this.setOutput(true, "TAValue");
     this.setStyle('ta_blocks');
     this.setTooltip("SuperTrend indicator");
-    this.setHelpUrl("");
-  }
-};
-
-Blockly.Blocks['ta_pivot'] = {
-  init: function() {
-    this.appendDummyInput()
-      .appendField("Pivot Points");
-    this.setOutput(true, "TAValue");
-    this.setStyle('ta_blocks');
-    this.setTooltip("Pivot Points (support/resistance)");
     this.setHelpUrl("");
   }
 };
@@ -1071,48 +1634,52 @@ Example 1 - Simple MA Crossover Strategy:
 Prompt: "Buy when fast MA crosses above slow MA, sell when it crosses below"
 Output:
 <xml xmlns="https://developers.google.com/blockly/xml">
-  <block type="control_if" x="50" y="50">
-    <value name="CONDITION">
-      <block type="operator_greater">
-        <value name="LEFT">
-          <block type="ta_sma">
-            <value name="PERIOD">
-              <shadow type="math_number">
-                <field name="NUM">20</field>
-              </shadow>
-            </value>
-          </block>
-        </value>
-        <value name="RIGHT">
-          <block type="ta_sma">
-            <value name="PERIOD">
-              <shadow type="math_number">
-                <field name="NUM">50</field>
-              </shadow>
-            </value>
-          </block>
-        </value>
-      </block>
-    </value>
+  <block type="control_forever" x="50" y="50">
     <statement name="DO">
-      <block type="trade_order">
-        <field name="TRADE_ID">ma_crossover_trade</field>
-        <field name="DIRECTION">long</field>
-        <field name="SIZE">100</field>
-        <field name="SIZE_TYPE">percent</field>
-        <field name="LEVERAGE">1</field>
-        <field name="ORDER_TYPE">market</field>
-        <next>
-          <block type="trade_stop_loss">
-            <field name="CLOSE_TYPE">full</field>
-            <field name="TRADE_ID">ma_crossover_trade</field>
-            <value name="PRICE">
-              <shadow type="math_number">
-                <field name="NUM">2</field>
-              </shadow>
+      <block type="control_if">
+        <value name="CONDITION">
+          <block type="operator_greater">
+            <value name="LEFT">
+              <block type="ta_sma">
+                <value name="PERIOD">
+                  <shadow type="math_number">
+                    <field name="NUM">20</field>
+                  </shadow>
+                </value>
+              </block>
+            </value>
+            <value name="RIGHT">
+              <block type="ta_sma">
+                <value name="PERIOD">
+                  <shadow type="math_number">
+                    <field name="NUM">50</field>
+                  </shadow>
+                </value>
+              </block>
             </value>
           </block>
-        </next>
+        </value>
+        <statement name="DO">
+          <block type="trade_order">
+            <field name="TRADE_ID">ma_crossover_trade</field>
+            <field name="DIRECTION">long</field>
+            <field name="SIZE">100</field>
+            <field name="SIZE_TYPE">percent</field>
+            <field name="LEVERAGE">1</field>
+            <field name="ORDER_TYPE">market</field>
+            <next>
+              <block type="trade_stop_loss">
+                <field name="CLOSE_TYPE">full</field>
+                <field name="TRADE_ID">ma_crossover_trade</field>
+                <value name="PRICE">
+                  <shadow type="math_number">
+                    <field name="NUM">2</field>
+                  </shadow>
+                </value>
+              </block>
+            </next>
+          </block>
+        </statement>
       </block>
     </statement>
   </block>
@@ -1122,117 +1689,13 @@ Example 2 - RSI Oversold Reversal:
 Prompt: "Buy when RSI drops below 30, sell when it rises above 70"
 Output:
 <xml xmlns="https://developers.google.com/blockly/xml">
-  <block type="control_if" x="50" y="50">
-    <value name="CONDITION">
-      <block type="operator_less">
-        <value name="LEFT">
-          <block type="ta_rsi">
-            <value name="PERIOD">
-              <shadow type="math_number">
-                <field name="NUM">14</field>
-              </shadow>
-            </value>
-          </block>
-        </value>
-        <value name="RIGHT">
-          <shadow type="math_number">
-            <field name="NUM">30</field>
-          </shadow>
-        </value>
-      </block>
-    </value>
+  <block type="control_forever" x="50" y="50">
     <statement name="DO">
-      <block type="trade_order">
-        <field name="TRADE_ID">rsi_reversal_trade</field>
-        <field name="DIRECTION">long</field>
-        <field name="SIZE">100</field>
-        <field name="SIZE_TYPE">percent</field>
-        <field name="LEVERAGE">1</field>
-        <field name="ORDER_TYPE">market</field>
-        <next>
-          <block type="trade_take_profit">
-            <field name="CLOSE_TYPE">full</field>
-            <field name="TRADE_ID">rsi_reversal_trade</field>
-            <value name="PRICE">
-              <shadow type="math_number">
-                <field name="NUM">5</field>
-              </shadow>
-            </value>
-          </block>
-        </next>
-      </block>
-    </statement>
-  </block>
-</xml>
-
-Example 3 - Bollinger Band Breakout:
-Prompt: "Enter long when price breaks above upper Bollinger Band"
-Output:
-<xml xmlns="https://developers.google.com/blockly/xml">
-  <block type="control_if" x="50" y="50">
-    <value name="CONDITION">
-      <block type="operator_greater">
-        <value name="LEFT">
-          <block type="environment_price"></block>
-        </value>
-        <value name="RIGHT">
-          <block type="ta_bb">
-            <value name="PERIOD">
-              <shadow type="math_number">
-                <field name="NUM">20</field>
-              </shadow>
-            </value>
-          </block>
-        </value>
-      </block>
-    </value>
-    <statement name="DO">
-      <block type="trade_order">
-        <field name="TRADE_ID">bollinger_breakout_trade</field>
-        <field name="DIRECTION">long</field>
-        <field name="SIZE">100</field>
-        <field name="SIZE_TYPE">value</field>
-        <field name="LEVERAGE">1</field>
-        <field name="ORDER_TYPE">market</field>
-        <next>
-          <block type="trade_stop_loss">
-            <field name="CLOSE_TYPE">full</field>
-            <field name="TRADE_ID">bollinger_breakout_trade</field>
-            <value name="PRICE">
-              <shadow type="math_number">
-                <field name="NUM">1.5</field>
-              </shadow>
-            </value>
-          </block>
-        </next>
-      </block>
-    </statement>
-  </block>
-</xml>
-
-Example 4 - MACD Momentum with ADX Filter:
-Prompt: "Buy when MACD is positive and ADX is above 25"
-Output:
-<xml xmlns="https://developers.google.com/blockly/xml">
-  <block type="control_if" x="50" y="50">
-    <value name="CONDITION">
-      <block type="operator_and">
-        <value name="LEFT">
-          <block type="operator_greater">
+      <block type="control_if">
+        <value name="CONDITION">
+          <block type="operator_less">
             <value name="LEFT">
-              <block type="ta_macd"></block>
-            </value>
-            <value name="RIGHT">
-              <shadow type="math_number">
-                <field name="NUM">0</field>
-              </shadow>
-            </value>
-          </block>
-        </value>
-        <value name="RIGHT">
-          <block type="operator_greater">
-            <value name="LEFT">
-              <block type="ta_adx">
+              <block type="ta_rsi">
                 <value name="PERIOD">
                   <shadow type="math_number">
                     <field name="NUM">14</field>
@@ -1242,43 +1705,159 @@ Output:
             </value>
             <value name="RIGHT">
               <shadow type="math_number">
-                <field name="NUM">25</field>
+                <field name="NUM">30</field>
               </shadow>
             </value>
           </block>
         </value>
-      </block>
-    </value>
-    <statement name="DO">
-      <block type="trade_order">
-        <field name="TRADE_ID">macd_momentum_trade</field>
-        <field name="DIRECTION">long</field>
-        <field name="SIZE">100</field>
-        <field name="SIZE_TYPE">percent</field>
-        <field name="LEVERAGE">2</field>
-        <field name="ORDER_TYPE">market</field>
-        <next>
-          <block type="trade_stop_loss">
-            <field name="CLOSE_TYPE">full</field>
-            <field name="TRADE_ID">macd_momentum_trade</field>
-            <value name="PRICE">
-              <shadow type="math_number">
-                <field name="NUM">3</field>
-              </shadow>
-            </value>
+        <statement name="DO">
+          <block type="trade_order">
+            <field name="TRADE_ID">rsi_reversal_trade</field>
+            <field name="DIRECTION">long</field>
+            <field name="SIZE">100</field>
+            <field name="SIZE_TYPE">percent</field>
+            <field name="LEVERAGE">1</field>
+            <field name="ORDER_TYPE">market</field>
             <next>
               <block type="trade_take_profit">
                 <field name="CLOSE_TYPE">full</field>
-                <field name="TRADE_ID">macd_momentum_trade</field>
+                <field name="TRADE_ID">rsi_reversal_trade</field>
                 <value name="PRICE">
                   <shadow type="math_number">
-                    <field name="NUM">6</field>
+                    <field name="NUM">5</field>
                   </shadow>
                 </value>
               </block>
             </next>
           </block>
-        </next>
+        </statement>
+      </block>
+    </statement>
+  </block>
+</xml>
+
+Example 3 - Bollinger Band Breakout:
+Prompt: "Enter long when price breaks above upper Bollinger Band"
+Output:
+<xml xmlns="https://developers.google.com/blockly/xml">
+  <block type="control_forever" x="50" y="50">
+    <statement name="DO">
+      <block type="control_if">
+        <value name="CONDITION">
+          <block type="operator_greater">
+            <value name="LEFT">
+              <block type="environment_price"></block>
+            </value>
+            <value name="RIGHT">
+              <block type="ta_bb">
+                <value name="PERIOD">
+                  <shadow type="math_number">
+                    <field name="NUM">20</field>
+                  </shadow>
+                </value>
+              </block>
+            </value>
+          </block>
+        </value>
+        <statement name="DO">
+          <block type="trade_order">
+            <field name="TRADE_ID">bollinger_breakout_trade</field>
+            <field name="DIRECTION">long</field>
+            <field name="SIZE">100</field>
+            <field name="SIZE_TYPE">value</field>
+            <field name="LEVERAGE">1</field>
+            <field name="ORDER_TYPE">market</field>
+            <next>
+              <block type="trade_stop_loss">
+                <field name="CLOSE_TYPE">full</field>
+                <field name="TRADE_ID">bollinger_breakout_trade</field>
+                <value name="PRICE">
+                  <shadow type="math_number">
+                    <field name="NUM">1.5</field>
+                  </shadow>
+                </value>
+              </block>
+            </next>
+          </block>
+        </statement>
+      </block>
+    </statement>
+  </block>
+</xml>
+
+Example 4 - MACD Momentum with ADX Filter:
+Prompt: "Buy when MACD is positive and ADX is above 25"
+Output:
+<xml xmlns="https://developers.google.com/blockly/xml">
+  <block type="control_forever" x="50" y="50">
+    <statement name="DO">
+      <block type="control_if">
+        <value name="CONDITION">
+          <block type="operator_and">
+            <value name="LEFT">
+              <block type="operator_greater">
+                <value name="LEFT">
+                  <block type="ta_macd"></block>
+                </value>
+                <value name="RIGHT">
+                  <shadow type="math_number">
+                    <field name="NUM">0</field>
+                  </shadow>
+                </value>
+              </block>
+            </value>
+            <value name="RIGHT">
+              <block type="operator_greater">
+                <value name="LEFT">
+                  <block type="ta_adx">
+                    <value name="PERIOD">
+                      <shadow type="math_number">
+                        <field name="NUM">14</field>
+                      </shadow>
+                    </value>
+                  </block>
+                </value>
+                <value name="RIGHT">
+                  <shadow type="math_number">
+                    <field name="NUM">25</field>
+                  </shadow>
+                </value>
+              </block>
+            </value>
+          </block>
+        </value>
+        <statement name="DO">
+          <block type="trade_order">
+            <field name="TRADE_ID">macd_momentum_trade</field>
+            <field name="DIRECTION">long</field>
+            <field name="SIZE">100</field>
+            <field name="SIZE_TYPE">percent</field>
+            <field name="LEVERAGE">2</field>
+            <field name="ORDER_TYPE">market</field>
+            <next>
+              <block type="trade_stop_loss">
+                <field name="CLOSE_TYPE">full</field>
+                <field name="TRADE_ID">macd_momentum_trade</field>
+                <value name="PRICE">
+                  <shadow type="math_number">
+                    <field name="NUM">3</field>
+                  </shadow>
+                </value>
+                <next>
+                  <block type="trade_take_profit">
+                    <field name="CLOSE_TYPE">full</field>
+                    <field name="TRADE_ID">macd_momentum_trade</field>
+                    <value name="PRICE">
+                      <shadow type="math_number">
+                        <field name="NUM">6</field>
+                      </shadow>
+                    </value>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </statement>
       </block>
     </statement>
   </block>
