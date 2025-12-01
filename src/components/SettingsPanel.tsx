@@ -50,7 +50,7 @@ export const SettingsPanel = ({ onStartTour, onToggleAI }: SettingsPanelProps) =
                     onClick={onToggleAI}
                     variant="outline"
                     size="icon"
-                    className="ai-panel-trigger"
+                    className="ai-panel-trigger hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200"
                     title="Toggle AI Assistant"
                   >
                     <Wand2 className="w-4 h-4" />
@@ -64,7 +64,7 @@ export const SettingsPanel = ({ onStartTour, onToggleAI }: SettingsPanelProps) =
             {onStartTour && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TourTriggerButton onClick={onStartTour} />
+                  <TourTriggerButton onClick={onStartTour} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200" />
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Start Guided Tour</p>
