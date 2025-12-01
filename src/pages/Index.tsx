@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BlocklyWorkspace } from "@/components/BlocklyWorkspace";
+import { BlocklyWorkspace } from "@/features/blockly/components/BlocklyWorkspace";
 import { SettingsPanel } from "@/components/SettingsPanel";
 
 const Index = () => {

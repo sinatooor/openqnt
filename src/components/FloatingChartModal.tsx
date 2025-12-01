@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import Draggable from "react-draggable";
-import { TradingViewChart } from "./TradingViewChart";
+import { TradingViewChart } from "@/features/chart/components/TradingViewChart";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader } from "./ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
