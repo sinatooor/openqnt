@@ -25,6 +25,19 @@ import { fetchMarketData } from "@/services/marketData";
 import { BacktestResult, runBacktest } from "@/features/backtest/logic/engine";
 import { IndicatorSettingsModal } from "@/components/IndicatorSettingsModal";
 
+// Utility imports
+import { beautifyCode, getCodeStatistics } from "@/features/blockly/utils/codeFormatting";
+import { renderCodeWithLineNumbers } from "@/features/blockly/utils/codeDisplay";
+
+// Hook imports
+import { useBlocklyState } from "@/features/blockly/hooks/useBlocklyState";
+import { usePanelVisibility } from "@/features/blockly/hooks/usePanelVisibility";
+import { useTourState } from "@/features/blockly/hooks/useTourState";
+import { useModalState } from "@/features/blockly/hooks/useModalState";
+
+// Component imports
+import { WorkspaceToolbar } from "@/features/blockly/components/workspace/WorkspaceToolbar";
+
 interface BlocklyWorkspaceProps {
   runTour?: boolean;
   onTourComplete?: () => void;
@@ -40,68 +53,88 @@ export const BlocklyWorkspace = ({
   showAIPanelFromParent,
   onAIPanelChange
 }: BlocklyWorkspaceProps = {}) => {
-  const blocklyDiv = useRef<HTMLDivElement>(null);
-  const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
-  const [generatedCode, setGeneratedCode] = useState<string>("");
-  const [showCode, setShowCode] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [blockCount, setBlockCount] = useState(0);
-  const [zoomLevel, setZoomLevel] = useState(100);
-  const [isEmpty, setIsEmpty] = useState(true);
-  const [showLineNumbers, setShowLineNumbers] = useState(true);
-  const [beautified, setBeautified] = useState(false);
-  const [backtestResult, setBacktestResult] = useState<BacktestResult | null>(null);
-  const [isBacktesting, setIsBacktesting] = useState(false);
-  const [showBacktest, setShowBacktest] = useState(false);
-  const [showTemplates, setShowTemplates] = useState(false);
-  const [showFloatingChart, setShowFloatingChart] = useState(false);
-  const [showAIPanel, setShowAIPanel] = useState(false);
-  const [pendingXml, setPendingXml] = useState<string | null>(null);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [runTour, setRunTour] = useState(runTourProp || false);
-  const [isDraggingBlock, setIsDraggingBlock] = useState(false);
-  const [draggedBlockData, setDraggedBlockData] = useState<{ xml: string; name: string } | null>(null);
-  const aiPanelRef = useRef<HTMLDivElement>(null);
-  const [showDevLogs, setShowDevLogs] = useState(() => {
-    return localStorage.getItem('showDevLogs') === 'true';
-  });
-  const [devLogs, setDevLogs] = useState<LogEntry[]>([]);
-  const [showSearch, setShowSearch] = useState(false);
-  const [strategyName, setStrategyName] = useState("Untitled Strategy");
-  const [isEditingName, setIsEditingName] = useState(false);
+  // Custom hooks for state management
+  const blocklyState = useBlocklyState();
+  const panels = usePanelVisibility({ showAIPanelFromParent, onAIPanelChange });
+  const tour = useTourState({ runTour: runTourProp, onTourComplete: onTourCompleteProp });
+  const modals = useModalState();
 
-  // Advanced Logic Modal State
-  const [showAdvancedLogic, setShowAdvancedLogic] = useState(false);
-  const [currentLogicBlockId, setCurrentLogicBlockId] = useState<string | null>(null);
-  const [currentLogicXml, setCurrentLogicXml] = useState<string>("");
-  const [currentIndicatorType, setCurrentIndicatorType] = useState<string>("");
+  // Destructure for convenience
+  const {
+    blocklyDiv,
+    workspaceRef,
+    aiPanelRef,
+    generatedCode,
+    setGeneratedCode,
+    blockCount,
+    setBlockCount,
+    isEmpty,
+    setIsEmpty,
+    zoomLevel,
+    setZoomLevel,
+    showLineNumbers,
+    setShowLineNumbers,
+    beautified,
+    setBeautified,
+    copied,
+    setCopied,
+    isBacktesting,
+    setIsBacktesting,
+    strategyName,
+    setStrategyName,
+    isEditingName,
+    setIsEditingName,
+    isDraggingBlock,
+    setIsDraggingBlock,
+    draggedBlockData,
+    setDraggedBlockData,
+    devLogs,
+    setDevLogs,
+    pendingXml,
+    setPendingXml,
+  } = blocklyState;
 
-  // Indicator Settings Modal State
-  const [showIndicatorSettings, setShowIndicatorSettings] = useState(false);
-  const [currentIndicatorBlockId, setCurrentIndicatorBlockId] = useState<string | null>(null);
-  const [currentIndicatorName, setCurrentIndicatorName] = useState<string>("");
-  const [currentIndicatorParams, setCurrentIndicatorParams] = useState<Record<string, number>>({});
+  const {
+    showCode,
+    setShowCode,
+    showBacktest,
+    setShowBacktest,
+    showTemplates,
+    setShowTemplates,
+    showFloatingChart,
+    setShowFloatingChart,
+    showAIPanel,
+    setShowAIPanel,
+    showConfirmDialog,
+    setShowConfirmDialog,
+    showDevLogs,
+    setShowDevLogs,
+    showSearch,
+    setShowSearch,
+    showAdvancedLogic,
+    setShowAdvancedLogic,
+    showIndicatorSettings,
+    setShowIndicatorSettings,
+  } = panels;
 
-  // Sync with prop changes
-  useEffect(() => {
-    if (runTourProp !== undefined) {
-      setRunTour(runTourProp);
-    }
-  }, [runTourProp]);
+  const { runTour, handleTourComplete, handleStartTour } = tour;
 
-  // Sync AI panel with parent
-  useEffect(() => {
-    if (showAIPanelFromParent !== undefined) {
-      setShowAIPanel(showAIPanelFromParent);
-    }
-  }, [showAIPanelFromParent]);
-
-  // Notify parent when AI panel changes locally
-  useEffect(() => {
-    if (onAIPanelChange) {
-      onAIPanelChange(showAIPanel);
-    }
-  }, [showAIPanel, onAIPanelChange]);
+  const {
+    currentLogicBlockId,
+    setCurrentLogicBlockId,
+    currentLogicXml,
+    setCurrentLogicXml,
+    currentIndicatorType,
+    setCurrentIndicatorType,
+    currentIndicatorBlockId,
+    setCurrentIndicatorBlockId,
+    currentIndicatorName,
+    setCurrentIndicatorName,
+    currentIndicatorParams,
+    setCurrentIndicatorParams,
+    backtestResult,
+    setBacktestResult,
+  } = modals;
 
   // Dev logs keyboard shortcut
   useEffect(() => {
@@ -122,19 +155,7 @@ export const BlocklyWorkspace = ({
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [showDevLogs]);
-
-  const handleTourComplete = () => {
-    setRunTour(false);
-    if (onTourCompleteProp) {
-      onTourCompleteProp();
-    } else {
-      localStorage.setItem("hasSeenGuidedTour", "true");
-    }
-  };
-  const handleStartTour = () => {
-    setRunTour(true);
-  };
+  }, [showDevLogs, setShowDevLogs, setShowSearch]);
   useEffect(() => {
     if (!blocklyDiv.current) return;
 
@@ -696,72 +717,7 @@ export const BlocklyWorkspace = ({
     setShowBacktest(false);
     setBacktestResult(null);
   };
-  const beautifyCode = (code: string): string => {
-    if (!code) return code;
-    let result = "";
-    let indent = 0;
-    const lines = code.split("\n");
-    for (let line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed) continue;
 
-      // Decrease indent for closing braces
-      if (trimmed.startsWith("}")) {
-        indent = Math.max(0, indent - 1);
-      }
-
-      // Add indentation
-      result += "  ".repeat(indent) + trimmed + "\n";
-
-      // Increase indent for opening braces
-      if (trimmed.endsWith("{")) {
-        indent++;
-      }
-    }
-    return result;
-  };
-  const getCodeStatistics = () => {
-    if (!generatedCode) return {
-      lines: 0,
-      chars: 0,
-      complexity: 0
-    };
-    const lines = generatedCode.split("\n").filter(line => line.trim()).length;
-    const chars = generatedCode.length;
-
-    // Simple complexity estimation based on control structures
-    const ifCount = (generatedCode.match(/if\s*\(/g) || []).length;
-    const loopCount = (generatedCode.match(/while\s*\(|for\s*\(/g) || []).length;
-    const complexity = ifCount + loopCount * 2 + Math.floor(blockCount / 5);
-    return {
-      lines,
-      chars,
-      complexity
-    };
-  };
-  const renderCodeWithLineNumbers = (code: string) => {
-    if (!code) {
-      return <div className="text-muted-foreground italic">
-          // No blocks yet
-        <br />
-          // Drag blocks from the toolbox to start building your strategy
-      </div>;
-    }
-    const displayCode = beautified ? beautifyCode(code) : code;
-    const lines = displayCode.split("\n");
-    return <div className="flex font-mono text-sm">
-      {showLineNumbers && <div className="select-none pr-4 text-muted-foreground/50 text-right border-r border-border">
-        {lines.map((_, i) => <div key={i} className="leading-6">
-          {i + 1}
-        </div>)}
-      </div>}
-      <div className="flex-1 pl-4">
-        {lines.map((line, i) => <div key={i} className="leading-6">
-          <code className="syntax-highlight">{highlightSyntax(line)}</code>
-        </div>)}
-      </div>
-    </div>;
-  };
 
   const handleLog = (log: LogEntry) => {
     setDevLogs(prev => {
@@ -834,231 +790,28 @@ export const BlocklyWorkspace = ({
     toast.success(`Added ${type.replace(/_/g, ' ')} block`);
   };
 
-  const highlightSyntax = (line: string) => {
-    if (!line.trim()) return " ";
 
-    // Simple syntax highlighting for JavaScript
-    const keywords = ["if", "else", "while", "for", "function", "return", "var", "let", "const"];
-    const parts: JSX.Element[] = [];
-    let remaining = line;
-    let key = 0;
-
-    // Handle comments
-    if (line.trim().startsWith("//")) {
-      return <span className="text-green-500/70">{line}</span>;
-    }
-
-    // Simple tokenization
-    const tokens = remaining.split(/(\s+|[{}();,])/);
-    tokens.forEach(token => {
-      if (keywords.includes(token)) {
-        parts.push(<span key={key++} className="text-purple-400 font-semibold">
-          {token}
-        </span>);
-      } else if (token.match(/^['"].*['"]$/)) {
-        parts.push(<span key={key++} className="text-green-400">
-          {token}
-        </span>);
-      } else if (token.match(/^\d+$/)) {
-        parts.push(<span key={key++} className="text-orange-400">
-          {token}
-        </span>);
-      } else if (token.match(/^[{}();,]$/)) {
-        parts.push(<span key={key++} className="text-muted-foreground">
-          {token}
-        </span>);
-      } else {
-        parts.push(<span key={key++}>{token}</span>);
-      }
-    });
-    return <>{parts}</>;
-  };
   return <div className="flex-1 h-full relative flex flex-col">
     {/* Action Bar */}
-    <div className="h-14 bg-card border-b border-border flex items-center justify-between px-4 gap-3">
-      <div className="flex items-center gap-3">
-        {isEditingName ? (
-          <input
-            type="text"
-            value={strategyName}
-            onChange={(e) => setStrategyName(e.target.value)}
-            onBlur={() => setIsEditingName(false)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') setIsEditingName(false);
-            }}
-            autoFocus
-            className="h-8 px-2 py-1 text-lg font-semibold bg-transparent border-b-2 border-primary focus:outline-none w-[200px]"
-          />
-        ) : (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div
-                className="flex items-center gap-2 px-2 py-1 rounded-md cursor-pointer hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200 group"
-                onClick={() => setIsEditingName(true)}
-              >
-                <h2 className="font-semibold text-foreground text-lg max-w-[200px] truncate">
-                  {strategyName}
-                </h2>
-                <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>Rename</TooltipContent>
-          </Tooltip>
-        )}
-      </div>
-
-      <div className="flex items-center gap-2">
-        {/* File Operations Group */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={handleSaveWorkspace} className="save-workspace-trigger hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
-              <Download className="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Save workspace as XML file</p>
-            <p className="text-xs text-muted-foreground mt-1">Ctrl+S</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={handleLoadWorkspace} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
-              <Upload className="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Load workspace from XML file</p>
-            <p className="text-xs text-muted-foreground mt-1">Ctrl+O</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={() => setShowTemplates(true)} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
-              <BookOpen className="w-4 h-4 mr-2" />
-              Templates
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Load pre-built strategy templates</p>
-            <p className="text-xs text-muted-foreground mt-1">Learn from examples</p>
-          </TooltipContent>
-        </Tooltip>
-      </div>
-
-      {/* Search Bar */}
-      <div className="flex-1 max-w-xl mx-4">
-        <Button
-          variant="outline"
-          className="w-full justify-start text-muted-foreground bg-muted/50 hover:bg-muted relative h-9 hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200"
-          onClick={() => setShowSearch(true)}
-        >
-          <Search className="w-4 h-4 mr-2" />
-          Search for blocks...
-          <kbd className="pointer-events-none absolute right-2 top-[50%] translate-y-[-50%] inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-            <span className="text-xs">⌘</span>F
-          </kbd>
-        </Button>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={() => setShowFloatingChart(!showFloatingChart)} className="transition-all duration-200 shadow-indigo hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)]">
-              <BarChart3 className="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Open floating live chart</p>
-            <p className="text-xs text-muted-foreground mt-1">Drag to reposition</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Separator orientation="vertical" className="h-6" />
-
-        {/* Workspace Controls */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={handleUndo} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
-              <Undo2 className="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Undo</p>
-            <p className="text-xs text-muted-foreground mt-1">Ctrl+Z</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={handleRedo} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
-              <Redo2 className="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Redo</p>
-            <p className="text-xs text-muted-foreground mt-1">Ctrl+Y</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Separator orientation="vertical" className="h-6" />
-
-        {/* Zoom Controls */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={() => handleZoom("out")} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
-              <ZoomOut className="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Zoom out</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Badge variant="secondary" className="px-2 min-w-[60px] justify-center mx-1">
-          {zoomLevel}%
-        </Badge>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={() => handleZoom("in")} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
-              <ZoomIn className="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Zoom in</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={handleCenterWorkspace} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
-              <Maximize2 className="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Center workspace</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Separator orientation="vertical" className="h-6" />
-
-        {/* View Group */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={() => setShowCode(!showCode)} className="transition-all duration-200 hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)]">
-              <Code2 className="w-4 h-4 mr-2" />
-              {showCode ? "Hide" : "Code"}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Toggle code view</p>
-            <p className="text-xs text-muted-foreground mt-1">View generated strategy code</p>
-          </TooltipContent>
-        </Tooltip>
-      </div>
-    </div>
+    <WorkspaceToolbar
+      strategyName={strategyName}
+      isEditingName={isEditingName}
+      onStrategyNameChange={setStrategyName}
+      onEditingNameChange={setIsEditingName}
+      onSaveWorkspace={handleSaveWorkspace}
+      onLoadWorkspace={handleLoadWorkspace}
+      onShowTemplates={() => setShowTemplates(true)}
+      onShowSearch={() => setShowSearch(true)}
+      showFloatingChart={showFloatingChart}
+      onToggleFloatingChart={() => setShowFloatingChart(!showFloatingChart)}
+      onUndo={handleUndo}
+      onRedo={handleRedo}
+      zoomLevel={zoomLevel}
+      onZoom={handleZoom}
+      onCenterWorkspace={handleCenterWorkspace}
+      showCode={showCode}
+      onToggleCode={() => setShowCode(!showCode)}
+    />
 
     {/* Main Content Area */}
     <div className="flex-1 flex min-h-0 relative">
@@ -1117,15 +870,15 @@ export const BlocklyWorkspace = ({
           </div>
         </div>
         <div className="flex-1 overflow-auto p-4 custom-scrollbar">
-          {renderCodeWithLineNumbers(generatedCode)}
+          {renderCodeWithLineNumbers(generatedCode, { showLineNumbers, beautified })}
         </div>
         <div className="h-10 border-t border-border flex items-center justify-between px-4 bg-muted/30 text-xs text-muted-foreground">
           <div className="flex gap-3">
-            <span>{getCodeStatistics().lines} lines</span>
-            <span>{getCodeStatistics().chars} chars</span>
+            <span>{getCodeStatistics(generatedCode, blockCount).lines} lines</span>
+            <span>{getCodeStatistics(generatedCode, blockCount).chars} chars</span>
           </div>
           <div>
-            Complexity: {getCodeStatistics().complexity}
+            Complexity: {getCodeStatistics(generatedCode, blockCount).complexity}
           </div>
         </div>
       </div>}
