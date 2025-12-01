@@ -351,6 +351,19 @@ mqlGenerator.forBlock['trade_stop_loss'] = function (block: Blockly.Block) {
 `;
 };
 
+mqlGenerator.forBlock['trade_entry_price'] = function (block: Blockly.Block) {
+    // Returns the entry price of the current position
+    return [`OrderOpenPrice()`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['trade_pnl_of'] = function (block: Blockly.Block) {
+    return [`OrderProfit()`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['trade_position_size'] = function (block: Blockly.Block) {
+    return [`OrderLots()`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
 // --- Indicator Blocks ---
 // Helper to get param value with fallback
 const getIndicatorParam = (block: Blockly.Block, paramName: string, defaultValue: any) => {
