@@ -1,38 +1,33 @@
 /**
- * Custom hook for handling workspace file operations (save, load, undo, redo)
+ * Custom hook for workspace operation handlers
+ * Handles save, load, undo, redo, and template operations
  */
 
-import { MutableRefObject } from "react";
 import * as Blockly from "blockly";
 import { toast } from "sonner";
+import { StrategyTemplate } from "@/features/templates/strategyTemplates";
 
 interface UseWorkspaceHandlersProps {
-  workspaceRef: MutableRefObject<Blockly.WorkspaceSvg | null>;
-  strategyName: string;
-  setBlockCount: (count: number) => void;
-  setIsEmpty: (isEmpty: boolean) => void;
+  workspaceRef: React.RefObject<Blockly.WorkspaceSvg | null>;
 }
 
-export const useWorkspaceHandlers = ({
-  workspaceRef,
-  strategyName,
-  setBlockCount,
-  setIsEmpty,
-}: UseWorkspaceHandlersProps) => {
+export const useWorkspaceHandlers = ({ workspaceRef }: UseWorkspaceHandlersProps) => {
   const handleSaveWorkspace = () => {
     if (!workspaceRef.current) return;
     const xml = Blockly.Xml.workspaceToDom(workspaceRef.current);
     const xmlText = Blockly.Xml.domToText(xml);
-    const blob = new Blob([xmlText], { type: "text/xml" });
+    const blob = new Blob([xmlText], {
+      type: "application/xml",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${strategyName.replace(/\s+/g, "_")}.xml`;
+    a.download = "trading-strategy-blocks.xml";
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success("Workspace Saved", {
-      description: `Strategy saved as ${a.download}`,
-    });
+    toast.success("Workspace saved successfully!");
   };
 
   const handleLoadWorkspace = () => {
@@ -41,55 +36,63 @@ export const useWorkspaceHandlers = ({
     input.accept = ".xml";
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const xmlText = e.target?.result as string;
-          if (workspaceRef.current) {
-            workspaceRef.current.clear();
-            const xml = Blockly.utils.xml.textToDom(xmlText);
-            Blockly.Xml.domToWorkspace(xml, workspaceRef.current);
-            
-            // Update stats
-            const allBlocks = workspaceRef.current.getAllBlocks(false);
-            setBlockCount(allBlocks.length);
-            setIsEmpty(allBlocks.length === 0);
-            
-            toast.success("Workspace Loaded", {
-              description: "Strategy loaded successfully",
-            });
-          }
-        };
-        reader.readAsText(file);
-      }
+      if (!file || !workspaceRef.current) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const xmlText = event.target?.result as string;
+          const xml = Blockly.utils.xml.textToDom(xmlText);
+          workspaceRef.current?.clear();
+          Blockly.Xml.domToWorkspace(xml, workspaceRef.current!);
+          toast.success("Workspace loaded successfully!");
+        } catch (error) {
+          toast.error("Failed to load workspace. Invalid file format.");
+          console.error(error);
+        }
+      };
+      reader.readAsText(file);
     };
     input.click();
+  };
+
+  const handleLoadTemplate = (template: StrategyTemplate) => {
+    if (!workspaceRef.current) return;
+    try {
+      const xml = Blockly.utils.xml.textToDom(template.workspace);
+      workspaceRef.current.clear();
+      Blockly.Xml.domToWorkspace(xml, workspaceRef.current);
+      toast.success(`${template.name} template loaded successfully!`, {
+        description: template.description,
+        duration: 4000,
+      });
+    } catch (error) {
+      toast.error("Failed to load template.");
+      console.error(error);
+    }
   };
 
   const handleUndo = () => {
     if (!workspaceRef.current) return;
     workspaceRef.current.undo(false);
-    
-    // Update stats after undo
-    const allBlocks = workspaceRef.current.getAllBlocks(false);
-    setBlockCount(allBlocks.length);
-    setIsEmpty(allBlocks.length === 0);
   };
 
   const handleRedo = () => {
     if (!workspaceRef.current) return;
     workspaceRef.current.undo(true);
-    
-    // Update stats after redo
-    const allBlocks = workspaceRef.current.getAllBlocks(false);
-    setBlockCount(allBlocks.length);
-    setIsEmpty(allBlocks.length === 0);
+  };
+
+  const handleCenterWorkspace = () => {
+    if (!workspaceRef.current) return;
+    workspaceRef.current.scrollCenter();
+    toast.success("Workspace centered");
   };
 
   return {
     handleSaveWorkspace,
     handleLoadWorkspace,
+    handleLoadTemplate,
     handleUndo,
     handleRedo,
+    handleCenterWorkspace,
   };
 };

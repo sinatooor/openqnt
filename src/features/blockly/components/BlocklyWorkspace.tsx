@@ -37,6 +37,10 @@ import { useModalState } from "@/features/blockly/hooks/useModalState";
 
 // Component imports
 import { WorkspaceToolbar } from "@/features/blockly/components/workspace/WorkspaceToolbar";
+import { useWorkspaceHandlers } from "@/features/blockly/hooks/useWorkspaceHandlers";
+import { useCodeHandlers } from "@/features/blockly/hooks/useCodeHandlers";
+import { useZoomHandlers } from "@/features/blockly/hooks/useZoomHandlers";
+import { useBacktestHandlers } from "@/features/blockly/hooks/useBacktestHandlers";
 
 interface BlocklyWorkspaceProps {
   runTour?: boolean;
@@ -156,6 +160,26 @@ export const BlocklyWorkspace = ({
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [showDevLogs, setShowDevLogs, setShowSearch]);
+
+  // Handler hooks
+  const workspaceHandlers = useWorkspaceHandlers({ workspaceRef });
+  const codeHandlers = useCodeHandlers({ generatedCode, setCopied });
+  const zoomHandlers = useZoomHandlers({ workspaceRef, setZoomLevel });
+  const backtestHandlers = useBacktestHandlers({
+    workspaceRef,
+    isEmpty,
+    generatedCode,
+    setIsBacktesting,
+    setShowBacktest,
+    setBacktestResult,
+  });
+
+  // Destructure handlers
+  const { handleSaveWorkspace, handleLoadWorkspace, handleLoadTemplate, handleUndo, handleRedo, handleCenterWorkspace } = workspaceHandlers;
+  const { handleCopyCode, handleExportCode, handleRunStrategy } = codeHandlers;
+  const { handleZoom } = zoomHandlers;
+  const { handlePreviewBacktest, handleCloseBacktest } = backtestHandlers;
+
   useEffect(() => {
     if (!blocklyDiv.current) return;
 
@@ -430,173 +454,7 @@ export const BlocklyWorkspace = ({
     }
   }, [showCode, showAIPanel, showDevLogs]);
 
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(generatedCode);
-    setCopied(true);
-    toast.success("Code copied to clipboard!");
-    setTimeout(() => setCopied(false), 2000);
-  };
-  const handleExportCode = () => {
-    if (!generatedCode) {
-      toast.error("No code to export. Add blocks to your workspace first.");
-      return;
-    }
-    const blob = new Blob([generatedCode], {
-      type: "text/javascript"
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "trading-strategy.js";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success("Strategy exported successfully!");
-  };
-  const handleRunStrategy = () => {
-    if (!generatedCode) {
-      toast.error("No strategy to run. Add blocks to your workspace first.");
-      return;
-    }
-    toast.info("Strategy execution would run here. Connect to a trading platform to execute live.");
-    console.log("Generated Strategy Code:\n", generatedCode);
-  };
-  const handleSaveWorkspace = () => {
-    if (!workspaceRef.current) return;
-    const xml = Blockly.Xml.workspaceToDom(workspaceRef.current);
-    const xmlText = Blockly.Xml.domToText(xml);
-    const blob = new Blob([xmlText], {
-      type: "application/xml"
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "trading-strategy-blocks.xml";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success("Workspace saved successfully!");
-  };
-  const handleLoadWorkspace = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".xml";
-    input.onchange = e => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file || !workspaceRef.current) return;
-      const reader = new FileReader();
-      reader.onload = event => {
-        try {
-          const xmlText = event.target?.result as string;
-          const xml = Blockly.utils.xml.textToDom(xmlText);
-          workspaceRef.current?.clear();
-          Blockly.Xml.domToWorkspace(xml, workspaceRef.current!);
-          toast.success("Workspace loaded successfully!");
-        } catch (error) {
-          toast.error("Failed to load workspace. Invalid file format.");
-          console.error(error);
-        }
-      };
-      reader.readAsText(file);
-    };
-    input.click();
-  };
-  const handleLoadTemplate = (template: StrategyTemplate) => {
-    if (!workspaceRef.current) return;
-    try {
-      const xml = Blockly.utils.xml.textToDom(template.workspace);
-      workspaceRef.current.clear();
-      Blockly.Xml.domToWorkspace(xml, workspaceRef.current);
-      toast.success(`${template.name} template loaded successfully!`, {
-        description: template.description,
-        duration: 4000
-      });
-    } catch (error) {
-      toast.error("Failed to load template.");
-      console.error(error);
-    }
-  };
-  const handleZoom = (direction: "in" | "out" | "reset" | number) => {
-    if (!workspaceRef.current) return;
-    const workspace = workspaceRef.current;
-    const currentZoom = workspace.scale;
-    if (typeof direction === "number") {
-      workspace.setScale(direction / 100);
-    } else if (direction === "in") {
-      workspace.setScale(currentZoom * 1.2);
-    } else if (direction === "out") {
-      workspace.setScale(currentZoom / 1.2);
-    } else if (direction === "reset") {
-      workspace.setScale(1.0);
-      workspace.scrollCenter();
-    }
-    const newZoom = workspace.scale;
-    setZoomLevel(Math.round(newZoom * 100));
-  };
-  const handleCenterWorkspace = () => {
-    if (!workspaceRef.current) return;
-    workspaceRef.current.scrollCenter();
-    toast.success("Workspace centered");
-  };
-  const handleUndo = () => {
-    if (!workspaceRef.current) return;
-    workspaceRef.current.undo(false);
-  };
-  const handleRedo = () => {
-    if (!workspaceRef.current) return;
-    workspaceRef.current.undo(true);
-  };
-  const handlePreviewBacktest = async () => {
-    // Validate workspace has blocks
-    if (!workspaceRef.current || isEmpty) {
-      toast.error("Add blocks to your workspace first to run a backtest.");
-      return;
-    }
-    if (!generatedCode) {
-      toast.error("No strategy code generated. Add blocks to create a strategy.");
-      return;
-    }
 
-    // Start backtesting
-    setIsBacktesting(true);
-    setShowBacktest(true);
-    const loadingToast = toast.loading("Running backtest simulation...", {
-      description: "Fetching real market data and analyzing your strategy"
-    });
-    try {
-      // Fetch real market data
-      const historicalData = await fetchMarketData({
-        symbol: "AAPL",
-        interval: "daily",
-        outputsize: "full"
-      });
-
-      // Run backtest with real data
-      const result = await runBacktest(generatedCode, "AAPL", 90, historicalData);
-      setBacktestResult(result);
-
-      // Dismiss loading toast
-      toast.dismiss(loadingToast);
-
-      // Show success toast with key metrics and visual feedback
-      const isProfit = result.metrics.totalReturn >= 0;
-      toast.success(isProfit ? "🎉 Backtest completed successfully!" : "Backtest completed", {
-        description: `${isProfit ? "📈" : "📉"} Return: ${result.metrics.totalReturn.toFixed(2)}% | Win Rate: ${result.metrics.winRate.toFixed(1)}% | ${result.metrics.totalTrades} trades`,
-        duration: 5000
-      });
-    } catch (error) {
-      console.error("Backtest error:", error);
-      toast.dismiss(loadingToast);
-      toast.error("Backtest failed", {
-        description: "Failed to run backtest simulation. Check your strategy blocks."
-      });
-      setShowBacktest(false);
-    } finally {
-      setIsBacktesting(false);
-    }
-  };
   const handleBlocksGenerated = (xml: string, isEdit: boolean = false) => {
     if (!workspaceRef.current) return;
     const hasBlocks = workspaceRef.current.getAllBlocks(false).length > 0;
@@ -713,11 +571,6 @@ export const BlocklyWorkspace = ({
     setPendingXml(null);
     setShowConfirmDialog(false);
   };
-  const handleCloseBacktest = () => {
-    setShowBacktest(false);
-    setBacktestResult(null);
-  };
-
 
   const handleLog = (log: LogEntry) => {
     setDevLogs(prev => {

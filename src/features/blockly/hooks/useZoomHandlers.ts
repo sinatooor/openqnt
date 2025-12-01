@@ -1,12 +1,11 @@
 /**
- * Custom hook for handling workspace zoom operations
+ * Custom hook for zoom operation handlers
  */
 
-import { MutableRefObject } from "react";
 import * as Blockly from "blockly";
 
 interface UseZoomHandlersProps {
-  workspaceRef: MutableRefObject<Blockly.WorkspaceSvg | null>;
+  workspaceRef: React.RefObject<Blockly.WorkspaceSvg | null>;
   setZoomLevel: (level: number) => void;
 }
 
@@ -14,26 +13,27 @@ export const useZoomHandlers = ({
   workspaceRef,
   setZoomLevel,
 }: UseZoomHandlersProps) => {
-  const handleZoom = (direction: "in" | "out") => {
+  const handleZoom = (direction: "in" | "out" | "reset" | number) => {
     if (!workspaceRef.current) return;
     const workspace = workspaceRef.current;
-    const currentScale = workspace.getScale();
-    const newScale =
-      direction === "in" ? currentScale * 1.2 : currentScale / 1.2;
-    workspace.setScale(newScale);
-    setZoomLevel(Math.round(newScale * 100));
-  };
+    const currentZoom = workspace.scale;
 
-  const handleCenterWorkspace = () => {
-    if (!workspaceRef.current) return;
-    const workspace = workspaceRef.current;
-    workspace.scrollCenter();
-    workspace.setScale(1);
-    setZoomLevel(100);
+    if (typeof direction === "number") {
+      workspace.setScale(direction / 100);
+    } else if (direction === "in") {
+      workspace.setScale(currentZoom * 1.2);
+    } else if (direction === "out") {
+      workspace.setScale(currentZoom / 1.2);
+    } else if (direction === "reset") {
+      workspace.setScale(1.0);
+      workspace.scrollCenter();
+    }
+
+    const newZoom = workspace.scale;
+    setZoomLevel(Math.round(newZoom * 100));
   };
 
   return {
     handleZoom,
-    handleCenterWorkspace,
   };
 };
