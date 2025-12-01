@@ -42,9 +42,7 @@ export const BlocklyWorkspace = ({
 }: BlocklyWorkspaceProps = {}) => {
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
-  const [generatedCode, setGeneratedCode] = useState<string>("");
   const [generatedMqlCode, setGeneratedMqlCode] = useState<string>("");
-  const [codeLanguage, setCodeLanguage] = useState<'javascript' | 'mql'>('javascript');
   const [showCode, setShowCode] = useState(false);
   const [copied, setCopied] = useState(false);
   const [blockCount, setBlockCount] = useState(0);
@@ -54,7 +52,6 @@ export const BlocklyWorkspace = ({
   const [beautified, setBeautified] = useState(false);
   const [backtestResult, setBacktestResult] = useState<BacktestResult | null>(null);
   const [isBacktesting, setIsBacktesting] = useState(false);
-  const [isGeneratingMql, setIsGeneratingMql] = useState(false);
   const [showBacktest, setShowBacktest] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [showFloatingChart, setShowFloatingChart] = useState(false);
@@ -356,11 +353,6 @@ export const BlocklyWorkspace = ({
 
     // Listen to workspace changes to update code and stats
     workspace.addChangeListener(() => {
-      const code = generateCode(workspace, 'javascript');
-      const mqlCode = generateCode(workspace, 'mql');
-      setGeneratedCode(code);
-      setGeneratedMqlCode(mqlCode);
-
       // Update block count
       const allBlocks = workspace.getAllBlocks(false);
       setBlockCount(allBlocks.length);
@@ -414,86 +406,33 @@ export const BlocklyWorkspace = ({
     }
   }, [showCode, showAIPanel, showDevLogs]);
 
+  // Auto-generate MQL code when Code panel opens or workspace changes
+  useEffect(() => {
+    if (showCode && workspaceRef.current) {
+      const code = generateCode(workspaceRef.current, 'mql');
+      setGeneratedMqlCode(code);
+    }
+  }, [showCode, blockCount]);
+
   const handleCopyCode = () => {
-    navigator.clipboard.writeText(codeLanguage === 'mql' ? generatedMqlCode : generatedCode);
+    navigator.clipboard.writeText(generatedMqlCode);
     setCopied(true);
     toast.success("Code copied to clipboard!");
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleRefreshCode = async () => {
-    if (!workspaceRef.current) return;
-
-    // If MQL is selected, generate with AI from blocks structure
-    if (codeLanguage === 'mql') {
-      setIsGeneratingMql(true);
-      
-      // Get workspace XML (block structure)
-      const xml = Blockly.Xml.workspaceToDom(workspaceRef.current);
-      const xmlText = Blockly.Xml.domToText(xml);
-      
-      toast.info("Generating MQL code from blocks...", {
-        description: "AI is analyzing your strategy"
-      });
-
-      try {
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-mql-code`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            },
-            body: JSON.stringify({
-              workspaceXml: xmlText,
-              strategyName
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to generate MQL code");
-        }
-
-        const data = await response.json();
-        setGeneratedMqlCode(data.mqlCode);
-        
-        toast.success("MQL4 code generated!", {
-          description: "Expert Advisor code is ready"
-        });
-      } catch (error) {
-        console.error("Error generating MQL code:", error);
-        toast.error("Failed to generate MQL code", {
-          description: error instanceof Error ? error.message : "Unknown error"
-        });
-      } finally {
-        setIsGeneratingMql(false);
-      }
-    } else {
-      // JavaScript - generate locally
-      const code = generateCode(workspaceRef.current, 'javascript');
-      setGeneratedCode(code);
-      
-      toast.success("Code refreshed!", {
-        description: "Generated code from current blocks"
-      });
-    }
-  };
   const handleExportCode = () => {
-    if (!generatedCode) {
+    if (!generatedMqlCode || generatedMqlCode.includes('Add blocks to your workspace')) {
       toast.error("No code to export. Add blocks to your workspace first.");
       return;
     }
-    const content = codeLanguage === 'mql' ? generatedMqlCode : generatedCode;
-    const blob = new Blob([content], {
+    const blob = new Blob([generatedMqlCode], {
       type: "text/plain"
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = codeLanguage === 'mql' ? "trading-strategy.mq4" : "trading-strategy.js";
+    a.download = `${strategyName.replace(/[^a-z0-9]/gi, '_')}.mq4`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -501,12 +440,12 @@ export const BlocklyWorkspace = ({
     toast.success("Strategy exported successfully!");
   };
   const handleRunStrategy = () => {
-    if (!generatedCode) {
+    if (!generatedMqlCode || generatedMqlCode.includes('Add blocks to your workspace')) {
       toast.error("No strategy to run. Add blocks to your workspace first.");
       return;
     }
-    toast.info("Strategy execution would run here. Connect to a trading platform to execute live.");
-    console.log("Generated Strategy Code:\n", generatedCode);
+    toast.info("Export the MQL4 code and upload it to MetaTrader 4 to run your strategy.");
+    console.log("Generated Strategy Code:\n", generatedMqlCode);
   };
   const handleSaveWorkspace = () => {
     if (!workspaceRef.current) return;
@@ -600,7 +539,7 @@ export const BlocklyWorkspace = ({
       toast.error("Add blocks to your workspace first to run a backtest.");
       return;
     }
-    if (!generatedCode) {
+    if (!generatedMqlCode || generatedMqlCode.includes('Add blocks to your workspace')) {
       toast.error("No strategy code generated. Add blocks to create a strategy.");
       return;
     }
@@ -619,8 +558,8 @@ export const BlocklyWorkspace = ({
         outputsize: "full"
       });
 
-      // Run backtest with real data
-      const result = await runBacktest(generatedCode, "AAPL", 90, historicalData);
+      // Run backtest with real data (convert MQL to JS for simulation)
+      const result = await runBacktest(generatedMqlCode, "AAPL", 90, historicalData);
       setBacktestResult(result);
 
       // Dismiss loading toast
@@ -788,18 +727,17 @@ export const BlocklyWorkspace = ({
     return result;
   };
   const getCodeStatistics = () => {
-    const codeToCheck = codeLanguage === 'mql' ? generatedMqlCode : generatedCode;
-    if (!codeToCheck) return {
+    if (!generatedMqlCode) return {
       lines: 0,
       chars: 0,
       complexity: 0
     };
-    const lines = codeToCheck.split("\n").filter(line => line.trim()).length;
-    const chars = codeToCheck.length;
+    const lines = generatedMqlCode.split("\n").filter(line => line.trim()).length;
+    const chars = generatedMqlCode.length;
 
     // Simple complexity estimation based on control structures
-    const ifCount = (codeToCheck.match(/if\s*\(/g) || []).length;
-    const loopCount = (codeToCheck.match(/while\s*\(|for\s*\(/g) || []).length;
+    const ifCount = (generatedMqlCode.match(/if\s*\(/g) || []).length;
+    const loopCount = (generatedMqlCode.match(/while\s*\(|for\s*\(/g) || []).length;
     const complexity = ifCount + loopCount * 2 + Math.floor(blockCount / 5);
     return {
       lines,
@@ -1151,30 +1089,11 @@ export const BlocklyWorkspace = ({
       </div>
 
       {/* Code View Panel */}
-      {showCode && <div className="w-[400px] border-l border-border bg-card flex flex-col animate-in slide-in-from-right duration-300">
+      {showCode && <div className="w-[500px] border-l border-border bg-card flex flex-col animate-in slide-in-from-right duration-300">
         <div className="h-12 border-b border-border flex items-center justify-between px-4 bg-muted/30">
           <div className="flex items-center gap-2">
             <FileCode className="w-4 h-4 text-primary" />
-            <div className="flex bg-muted rounded-md p-0.5">
-              <button
-                onClick={() => setCodeLanguage('javascript')}
-                className={cn(
-                  "px-2 py-0.5 text-xs font-medium rounded-sm transition-all",
-                  codeLanguage === 'javascript' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                JS
-              </button>
-              <button
-                onClick={() => setCodeLanguage('mql')}
-                className={cn(
-                  "px-2 py-0.5 text-xs font-medium rounded-sm transition-all",
-                  codeLanguage === 'mql' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                MQL4
-              </button>
-            </div>
+            <span className="text-sm font-medium">MQL4 Expert Advisor</span>
           </div>
           <div className="flex items-center gap-1">
             <Tooltip>
@@ -1187,66 +1106,28 @@ export const BlocklyWorkspace = ({
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setBeautified(!beautified)}>
-                  <Wand2 className="w-3 h-3" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Format code</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8" 
-                  onClick={handleRefreshCode}
-                  disabled={isGeneratingMql}
-                >
-                  <RefreshCw className={cn("w-3 h-3", isGeneratingMql && "animate-spin")} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {isGeneratingMql ? "Generating MQL code..." : "Refresh code from blocks"}
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCopyCode}>
                   {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Copy to clipboard</TooltipContent>
             </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleExportCode}>
+                  <Download className="w-3 h-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Download .mq4 file</TooltipContent>
+            </Tooltip>
           </div>
         </div>
-        <div className="flex-1 overflow-auto p-4 custom-scrollbar relative">
-          {isGeneratingMql ? (
-            <div className="h-full flex flex-col items-center justify-center gap-4">
-              <div className="relative">
-                <div className="h-16 w-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-                <Code2 className="h-6 w-6 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-              </div>
-              <div className="text-center space-y-2">
-                <h3 className="font-semibold text-foreground">Generating MQL4 Code</h3>
-                <p className="text-sm text-muted-foreground">AI is converting your blocks to Expert Advisor code...</p>
-                <div className="flex items-center gap-2 justify-center mt-4">
-                  <div className="h-2 w-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="h-2 w-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="h-2 w-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
-              </div>
-            </div>
-          ) : codeLanguage === 'mql' ? (
-            <textarea
-              className="w-full h-full bg-transparent border-none resize-none focus:outline-none font-mono text-sm"
-              value={generatedMqlCode}
-              onChange={(e) => setGeneratedMqlCode(e.target.value)}
-              placeholder="// Click 'Refresh code from blocks' to generate MQL4 code from your strategy..."
-              spellCheck={false}
-            />
-          ) : (
-            renderCodeWithLineNumbers(generatedCode)
-          )}
+        <div className="flex-1 overflow-auto custom-scrollbar relative bg-muted/20">
+          <pre className="p-4 text-sm font-mono leading-relaxed">
+            <code className="text-foreground">
+              {generatedMqlCode || '// Add blocks to your workspace to generate MQL4 code'}
+            </code>
+          </pre>
         </div>
         <div className="h-10 border-t border-border flex items-center justify-between px-4 bg-muted/30 text-xs text-muted-foreground">
           <div className="flex gap-3">
