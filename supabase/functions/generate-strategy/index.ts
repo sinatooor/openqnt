@@ -36,6 +36,65 @@ CRITICAL RULES:
 3. Block IDs must only contain: letters, numbers, underscores, hyphens (NO special characters like (){}[]/#!)
 4. All value inputs MUST use <shadow type="math_number"><field name="NUM">value</field></shadow>
 5. NEVER invent new block types or modify existing block structures
+6. For Stop Loss and Take Profit, ALWAYS use trade_entry_price block with operator_subtract/operator_add to calculate offset from entry
+7. Stop Loss pattern: operator_subtract(trade_entry_price, offset) - NEVER use environment_price directly
+8. Take Profit pattern: operator_add(trade_entry_price, offset) - NEVER use environment_price directly
+
+=== TEMPLATE REFERENCE (How SL/TP should be structured) ===
+
+Example Stop Loss (1% below entry):
+<block type="trade_stop_loss">
+  <field name="CLOSE_TYPE">full</field>
+  <field name="TRADE_ID">trade1</field>
+  <value name="PRICE">
+    <block type="operator_subtract">
+      <value name="LEFT">
+        <block type="trade_entry_price">
+          <field name="TRADE_ID">trade1</field>
+        </block>
+      </value>
+      <value name="RIGHT">
+        <block type="operator_multiply">
+          <value name="LEFT">
+            <block type="environment_price"></block>
+          </value>
+          <value name="RIGHT">
+            <shadow type="math_number">
+              <field name="NUM">0.01</field>
+            </shadow>
+          </value>
+        </block>
+      </value>
+    </block>
+  </value>
+</block>
+
+Example Take Profit (2% above entry):
+<block type="trade_take_profit">
+  <field name="CLOSE_TYPE">full</field>
+  <field name="TRADE_ID">trade1</field>
+  <value name="PRICE">
+    <block type="operator_add">
+      <value name="LEFT">
+        <block type="trade_entry_price">
+          <field name="TRADE_ID">trade1</field>
+        </block>
+      </value>
+      <value name="RIGHT">
+        <block type="operator_multiply">
+          <value name="LEFT">
+            <block type="environment_price"></block>
+          </value>
+          <value name="RIGHT">
+            <shadow type="math_number">
+              <field name="NUM">0.02</field>
+            </shadow>
+          </value>
+        </block>
+      </value>
+    </block>
+  </value>
+</block>
 
 === COMPLETE BLOCK REFERENCE ===
 

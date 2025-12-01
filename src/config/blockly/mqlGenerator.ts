@@ -218,6 +218,29 @@ mqlGenerator.forBlock['variables_set'] = function (block: Blockly.Block) {
     return varName + ' = ' + argument0 + ';\n';
 };
 
+mqlGenerator.forBlock['variables_change'] = function (block: Blockly.Block) {
+    const delta = mqlGenerator.valueToCode(block, 'DELTA', mqlGenerator.ORDER_ADDITION) || '0';
+    const varName = mqlGenerator.variableDB_.getName(block.getFieldValue('VAR'),
+        Blockly.Names.NameType.VARIABLE);
+    return varName + ' += ' + delta + ';\n';
+};
+
+mqlGenerator.forBlock['function_define'] = function (block: Blockly.Block) {
+    const funcName = block.getFieldValue('NAME');
+    const stack = mqlGenerator.statementToCode(block, 'STACK');
+    return `void ${funcName}() {\n${stack}}\n`;
+};
+
+mqlGenerator.forBlock['function_call'] = function (block: Blockly.Block) {
+    const funcName = block.getFieldValue('NAME');
+    return `${funcName}();\n`;
+};
+
+mqlGenerator.forBlock['function_return'] = function (block: Blockly.Block) {
+    const value = mqlGenerator.valueToCode(block, 'VALUE', mqlGenerator.ORDER_NONE) || '0';
+    return `return ${value};\n`;
+};
+
 // =============================================================================
 // CUSTOM PROJECT BLOCKS
 // =============================================================================
@@ -246,6 +269,26 @@ mqlGenerator.forBlock['control_repeat'] = function (block: Blockly.Block) {
     const times = mqlGenerator.valueToCode(block, 'TIMES', mqlGenerator.ORDER_NONE) || '1';
     const doCode = mqlGenerator.statementToCode(block, 'DO');
     return `for (int i = 0; i < ${times}; i++) {\n${doCode}}\n`;
+};
+
+mqlGenerator.forBlock['control_wait'] = function (block: Blockly.Block) {
+    const seconds = mqlGenerator.valueToCode(block, 'SECONDS', mqlGenerator.ORDER_NONE) || '1';
+    return `Sleep(${seconds} * 1000);\n`;
+};
+
+mqlGenerator.forBlock['control_repeat_until'] = function (block: Blockly.Block) {
+    const condition = mqlGenerator.valueToCode(block, 'CONDITION', mqlGenerator.ORDER_NONE) || 'false';
+    const doCode = mqlGenerator.statementToCode(block, 'DO');
+    return `while (!(${condition})) {\n${doCode}}\n`;
+};
+
+mqlGenerator.forBlock['control_wait_until'] = function (block: Blockly.Block) {
+    const condition = mqlGenerator.valueToCode(block, 'CONDITION', mqlGenerator.ORDER_NONE) || 'false';
+    return `while (!(${condition})) { Sleep(100); }\n`;
+};
+
+mqlGenerator.forBlock['control_stop'] = function () {
+    return `return;\n`;
 };
 
 // --- Operator Blocks ---
@@ -303,9 +346,94 @@ mqlGenerator.forBlock['operator_divide'] = function (block: Blockly.Block) {
     return [`${left} / ${right}`, mqlGenerator.ORDER_DIVISION];
 };
 
+mqlGenerator.forBlock['operator_and'] = function (block: Blockly.Block) {
+    const left = mqlGenerator.valueToCode(block, 'LEFT', mqlGenerator.ORDER_LOGICAL_AND) || 'false';
+    const right = mqlGenerator.valueToCode(block, 'RIGHT', mqlGenerator.ORDER_LOGICAL_AND) || 'false';
+    return [`${left} && ${right}`, mqlGenerator.ORDER_LOGICAL_AND];
+};
+
+mqlGenerator.forBlock['operator_or'] = function (block: Blockly.Block) {
+    const left = mqlGenerator.valueToCode(block, 'LEFT', mqlGenerator.ORDER_LOGICAL_OR) || 'false';
+    const right = mqlGenerator.valueToCode(block, 'RIGHT', mqlGenerator.ORDER_LOGICAL_OR) || 'false';
+    return [`${left} || ${right}`, mqlGenerator.ORDER_LOGICAL_OR];
+};
+
+mqlGenerator.forBlock['operator_not'] = function (block: Blockly.Block) {
+    const value = mqlGenerator.valueToCode(block, 'VALUE', mqlGenerator.ORDER_LOGICAL_NOT) || 'false';
+    return [`!(${value})`, mqlGenerator.ORDER_LOGICAL_NOT];
+};
+
+mqlGenerator.forBlock['operator_not_equals'] = function (block: Blockly.Block) {
+    const left = mqlGenerator.valueToCode(block, 'LEFT', mqlGenerator.ORDER_EQUALITY) || '0';
+    const right = mqlGenerator.valueToCode(block, 'RIGHT', mqlGenerator.ORDER_EQUALITY) || '0';
+    return [`${left} != ${right}`, mqlGenerator.ORDER_EQUALITY];
+};
+
+mqlGenerator.forBlock['operator_advanced_math'] = function (block: Blockly.Block) {
+    const func = block.getFieldValue('FUNCTION');
+    const value = mqlGenerator.valueToCode(block, 'VALUE', mqlGenerator.ORDER_NONE) || '0';
+    const mqlFuncMap: { [key: string]: string } = {
+        'abs': 'MathAbs',
+        'sqrt': 'MathSqrt',
+        'sin': 'MathSin',
+        'cos': 'MathCos',
+        'tan': 'MathTan',
+        'log': 'MathLog10',
+        'ln': 'MathLog',
+        'exp': 'MathExp',
+        'round': 'MathRound',
+        'floor': 'MathFloor',
+        'ceil': 'MathCeil'
+    };
+    return [`${mqlFuncMap[func]}(${value})`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
 // --- Environment Blocks ---
 mqlGenerator.forBlock['environment_price'] = function () {
     return ['Close[0]', mqlGenerator.ORDER_ATOMIC];
+};
+
+mqlGenerator.forBlock['environment_spread'] = function () {
+    return ['(Ask - Bid)', mqlGenerator.ORDER_ATOMIC];
+};
+
+mqlGenerator.forBlock['environment_prev_candle_open'] = function (block: Blockly.Block) {
+    const timeframe = block.getFieldValue('TIMEFRAME');
+    const tfMap: { [key: string]: string } = {
+        '1m': 'PERIOD_M1', '5m': 'PERIOD_M5', '15m': 'PERIOD_M15',
+        '1h': 'PERIOD_H1', '4h': 'PERIOD_H4', '1d': 'PERIOD_D1'
+    };
+    return [`iOpen(NULL, ${tfMap[timeframe]}, 1)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['environment_prev_ticker_close'] = function (block: Blockly.Block) {
+    const timeframe = block.getFieldValue('TIMEFRAME');
+    const tfMap: { [key: string]: string } = {
+        '1m': 'PERIOD_M1', '5m': 'PERIOD_M5', '15m': 'PERIOD_M15',
+        '1h': 'PERIOD_H1', '4h': 'PERIOD_H4', '1d': 'PERIOD_D1'
+    };
+    return [`iClose(NULL, ${tfMap[timeframe]}, 1)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['environment_is_market_open'] = function () {
+    return ['(IsTradeAllowed() && !IsTradeContextBusy())', mqlGenerator.ORDER_ATOMIC];
+};
+
+mqlGenerator.forBlock['environment_time'] = function () {
+    return ['TimeCurrent()', mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['environment_day_of_week'] = function () {
+    return ['DayOfWeek()', mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['environment_new_candle_open'] = function (block: Blockly.Block) {
+    const timeframe = block.getFieldValue('TIMEFRAME');
+    const tfMap: { [key: string]: string } = {
+        '1m': 'PERIOD_M1', '5m': 'PERIOD_M5', '15m': 'PERIOD_M15',
+        '1h': 'PERIOD_H1', '4h': 'PERIOD_H4', '1d': 'PERIOD_D1'
+    };
+    return [`(iTime(NULL, ${tfMap[timeframe]}, 0) != iTime(NULL, ${tfMap[timeframe]}, 1))`, mqlGenerator.ORDER_RELATIONAL];
 };
 
 // --- Trading Blocks ---
@@ -362,6 +490,94 @@ mqlGenerator.forBlock['trade_pnl_of'] = function (block: Blockly.Block) {
 
 mqlGenerator.forBlock['trade_position_size'] = function (block: Blockly.Block) {
     return [`OrderLots()`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['trade_close'] = function (block: Blockly.Block) {
+    const percent = mqlGenerator.valueToCode(block, 'PERCENT', mqlGenerator.ORDER_NONE) || '100';
+    return `for(int i=OrdersTotal()-1; i>=0; i--) {
+   if(OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) {
+      if(OrderSymbol() == Symbol() && OrderMagicNumber() == 12345) {
+         double lotsToClose = OrderLots() * ${percent} / 100.0;
+         if(OrderType() == OP_BUY) {
+            if(!OrderClose(OrderTicket(), lotsToClose, Bid, 3, clrNONE)) {
+               Print("OrderClose failed error #", GetLastError());
+            }
+         } else if(OrderType() == OP_SELL) {
+            if(!OrderClose(OrderTicket(), lotsToClose, Ask, 3, clrNONE)) {
+               Print("OrderClose failed error #", GetLastError());
+            }
+         }
+      }
+   }
+}
+`;
+};
+
+// --- Risk Management Blocks ---
+mqlGenerator.forBlock['risk_fixed_amount'] = function (block: Blockly.Block) {
+    const amount = mqlGenerator.valueToCode(block, 'AMOUNT', mqlGenerator.ORDER_NONE) || '100';
+    return [amount, mqlGenerator.ORDER_ATOMIC];
+};
+
+mqlGenerator.forBlock['risk_trailing_stop'] = function (block: Blockly.Block) {
+    const percent = mqlGenerator.valueToCode(block, 'PERCENT', mqlGenerator.ORDER_NONE) || '2';
+    return `for(int i=OrdersTotal()-1; i>=0; i--) {
+   if(OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) {
+      if(OrderSymbol() == Symbol() && OrderMagicNumber() == 12345) {
+         double trailDistance = Close[0] * ${percent} / 100.0;
+         double newSL = 0;
+         if(OrderType() == OP_BUY && Close[0] - OrderOpenPrice() > trailDistance) {
+            newSL = Close[0] - trailDistance;
+            if(newSL > OrderStopLoss()) {
+               OrderModify(OrderTicket(), OrderOpenPrice(), newSL, OrderTakeProfit(), 0, clrNONE);
+            }
+         } else if(OrderType() == OP_SELL && OrderOpenPrice() - Close[0] > trailDistance) {
+            newSL = Close[0] + trailDistance;
+            if(newSL < OrderStopLoss() || OrderStopLoss() == 0) {
+               OrderModify(OrderTicket(), OrderOpenPrice(), newSL, OrderTakeProfit(), 0, clrNONE);
+            }
+         }
+      }
+   }
+}
+`;
+};
+
+mqlGenerator.forBlock['risk_scale_in'] = function (block: Blockly.Block) {
+    const amount = mqlGenerator.valueToCode(block, 'AMOUNT', mqlGenerator.ORDER_NONE) || '50';
+    const intervals = mqlGenerator.valueToCode(block, 'INTERVALS', mqlGenerator.ORDER_NONE) || '3';
+    return `// Scale in: Add ${amount} units over ${intervals} intervals\n`;
+};
+
+mqlGenerator.forBlock['risk_scale_out'] = function (block: Blockly.Block) {
+    const amount = mqlGenerator.valueToCode(block, 'AMOUNT', mqlGenerator.ORDER_NONE) || '50';
+    const intervals = mqlGenerator.valueToCode(block, 'INTERVALS', mqlGenerator.ORDER_NONE) || '3';
+    return `// Scale out: Remove ${amount} units over ${intervals} intervals\n`;
+};
+
+mqlGenerator.forBlock['risk_max_drawdown'] = function (block: Blockly.Block) {
+    const percent = mqlGenerator.valueToCode(block, 'PERCENT', mqlGenerator.ORDER_NONE) || '20';
+    return `if(AccountEquity() / AccountBalance() < (1 - ${percent}/100.0)) {
+   Print("Max drawdown reached, stopping trading");
+   return;
+}
+`;
+};
+
+mqlGenerator.forBlock['risk_daily_loss_limit'] = function (block: Blockly.Block) {
+    const amount = mqlGenerator.valueToCode(block, 'AMOUNT', mqlGenerator.ORDER_NONE) || '500';
+    return `// Daily loss limit check: ${amount}\n`;
+};
+
+mqlGenerator.forBlock['risk_position_percent'] = function (block: Blockly.Block) {
+    const percent = mqlGenerator.valueToCode(block, 'PERCENT', mqlGenerator.ORDER_NONE) || '10';
+    return [`(AccountBalance() * ${percent} / 100.0 / Close[0])`, mqlGenerator.ORDER_DIVISION];
+};
+
+mqlGenerator.forBlock['risk_kelly_criterion'] = function (block: Blockly.Block) {
+    const winRate = mqlGenerator.valueToCode(block, 'WIN_RATE', mqlGenerator.ORDER_NONE) || '0.6';
+    const winLossRatio = mqlGenerator.valueToCode(block, 'WIN_LOSS_RATIO', mqlGenerator.ORDER_NONE) || '2';
+    return [`((${winRate} * ${winLossRatio} - (1 - ${winRate})) / ${winLossRatio})`, mqlGenerator.ORDER_DIVISION];
 };
 
 // --- Indicator Blocks ---
@@ -435,4 +651,265 @@ mqlGenerator.forBlock['ta_stochastic'] = function (block: Blockly.Block) {
     // iStochastic(symbol, timeframe, %K, %D, slowing, method, price_field, mode, shift)
     // Note: Assuming main line - blocks should specify which line they want
     return [`iStochastic(NULL, ${period}, ${kPeriod}, ${dPeriod}, ${slowing}, ${method}, ${priceField}, MODE_MAIN, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+// Additional indicator blocks
+mqlGenerator.forBlock['ta_cci'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 14);
+    const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
+    return [`iCCI(NULL, ${period}, ${maPeriod}, ${appliedPrice}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['ta_adx'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 14);
+    const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
+    return [`iADX(NULL, ${period}, ${maPeriod}, ${appliedPrice}, MODE_MAIN, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['ta_mfi'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 14);
+    return [`iMFI(NULL, ${period}, ${maPeriod}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['ta_williams_r'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 14);
+    return [`iWPR(NULL, ${period}, ${maPeriod}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['ta_smma'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 14);
+    const shift = getIndicatorParam(block, 'shift', 0);
+    const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
+    return [`iMA(NULL, ${period}, ${maPeriod}, ${shift}, MODE_SMMA, ${appliedPrice}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['ta_lwma'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 14);
+    const shift = getIndicatorParam(block, 'shift', 0);
+    const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
+    return [`iMA(NULL, ${period}, ${maPeriod}, ${shift}, MODE_LWMA, ${appliedPrice}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['dema'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 14);
+    return [`iDEMA(NULL, ${period}, ${maPeriod}, 0, PRICE_CLOSE, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['tema'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 14);
+    return [`iTEMA(NULL, ${period}, ${maPeriod}, 0, PRICE_CLOSE, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['ac'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    return [`iAC(NULL, ${period}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['ao'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    return [`iAO(NULL, ${period}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['sar'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const step = getIndicatorParam(block, 'step', 0.02);
+    const maximum = getIndicatorParam(block, 'maximum', 0.2);
+    return [`iSAR(NULL, ${period}, ${step}, ${maximum}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['momentum'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 14);
+    const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
+    return [`iMomentum(NULL, ${period}, ${maPeriod}, ${appliedPrice}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['osma'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const fastEMA = getIndicatorParam(block, 'fastEMA', 12);
+    const slowEMA = getIndicatorParam(block, 'slowEMA', 26);
+    const signalSMA = getIndicatorParam(block, 'signalSMA', 9);
+    const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
+    return [`iOsMA(NULL, ${period}, ${fastEMA}, ${slowEMA}, ${signalSMA}, ${appliedPrice}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['obv'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    return [`iOBV(NULL, ${period}, PRICE_CLOSE, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['stddev'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 20);
+    const shift = getIndicatorParam(block, 'shift', 0);
+    const method = getIndicatorParam(block, 'method', 0);
+    const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
+    return [`iStdDev(NULL, ${period}, ${maPeriod}, ${shift}, ${method}, ${appliedPrice}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['envelopes'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 14);
+    const deviation = getIndicatorParam(block, 'deviation', 0.1);
+    const method = getIndicatorParam(block, 'method', 0);
+    const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
+    return [`iEnvelopes(NULL, ${period}, ${maPeriod}, 0, ${method}, ${appliedPrice}, ${deviation}, MODE_UPPER, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['donchian'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 20);
+    return [`iCustom(NULL, ${period}, "Donchian", ${maPeriod}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['fractals'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    return [`iFractals(NULL, ${period}, MODE_UPPER, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['alligator'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const jawPeriod = getIndicatorParam(block, 'jawPeriod', 13);
+    const teethPeriod = getIndicatorParam(block, 'teethPeriod', 8);
+    const lipsPeriod = getIndicatorParam(block, 'lipsPeriod', 5);
+    const jawShift = getIndicatorParam(block, 'jawShift', 8);
+    const teethShift = getIndicatorParam(block, 'teethShift', 5);
+    const lipsShift = getIndicatorParam(block, 'lipsShift', 3);
+    return [`iAlligator(NULL, ${period}, ${jawPeriod}, ${jawShift}, ${teethPeriod}, ${teethShift}, ${lipsPeriod}, ${lipsShift}, MODE_SMMA, PRICE_MEDIAN, MODE_GATORJAW, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['ichimoku'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const tenkan = getIndicatorParam(block, 'tenkan', 9);
+    const kijun = getIndicatorParam(block, 'kijun', 26);
+    const senkou = getIndicatorParam(block, 'senkou', 52);
+    return [`iIchimoku(NULL, ${period}, ${tenkan}, ${kijun}, ${senkou}, MODE_TENKANSEN, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['bearsPower'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 13);
+    return [`iBearsPower(NULL, ${period}, ${maPeriod}, PRICE_CLOSE, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['bullsPower'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 13);
+    return [`iBullsPower(NULL, ${period}, ${maPeriod}, PRICE_CLOSE, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['force'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 13);
+    const method = getIndicatorParam(block, 'method', 0);
+    const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
+    return [`iForce(NULL, ${period}, ${maPeriod}, ${method}, ${appliedPrice}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['bwmfi'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    return [`iBWMFI(NULL, ${period}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['gator'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const jawPeriod = getIndicatorParam(block, 'jawPeriod', 13);
+    const teethPeriod = getIndicatorParam(block, 'teethPeriod', 8);
+    const lipsPeriod = getIndicatorParam(block, 'lipsPeriod', 5);
+    return [`iGator(NULL, ${period}, ${jawPeriod}, 8, ${teethPeriod}, 5, ${lipsPeriod}, 3, MODE_SMMA, PRICE_MEDIAN, MODE_UPPER, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['chaikin'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const fastEMA = getIndicatorParam(block, 'fastEMA', 3);
+    const slowEMA = getIndicatorParam(block, 'slowEMA', 10);
+    return [`iCustom(NULL, ${period}, "Chaikin", ${fastEMA}, ${slowEMA}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['demarker'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 14);
+    return [`iDeMarker(NULL, ${period}, ${maPeriod}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['rvi'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 10);
+    return [`iRVI(NULL, ${period}, ${maPeriod}, MODE_MAIN, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['volumes'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    return [`iVolume(NULL, ${period}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['vwap'] = function () {
+    return [`iCustom(NULL, 0, "VWAP", 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['ad'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    return [`iAD(NULL, ${period}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['trix'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 14);
+    const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
+    return [`iCustom(NULL, ${period}, "TRIX", ${maPeriod}, ${appliedPrice}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['vidya'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 14);
+    return [`iCustom(NULL, ${period}, "VIDYA", ${maPeriod}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['ama'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 10);
+    return [`iCustom(NULL, ${period}, "AMA", ${maPeriod}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['frama'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 14);
+    return [`iCustom(NULL, ${period}, "FRAMA", ${maPeriod}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['keltner'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 20);
+    const atrPeriod = getIndicatorParam(block, 'atrPeriod', 10);
+    const multiplier = getIndicatorParam(block, 'multiplier', 2);
+    return [`iCustom(NULL, ${period}, "Keltner", ${maPeriod}, ${atrPeriod}, ${multiplier}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['adxWilder'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 14);
+    return [`iADX(NULL, ${period}, ${maPeriod}, PRICE_CLOSE, MODE_MAIN, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['dmi'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 14);
+    return [`iADX(NULL, ${period}, ${maPeriod}, PRICE_CLOSE, MODE_PLUSDI, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['macd_value'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'period', 5);
+    const fastEMA = getIndicatorParam(block, 'fastEMA', 12);
+    const slowEMA = getIndicatorParam(block, 'slowEMA', 26);
+    const signalSMA = getIndicatorParam(block, 'signalSMA', 9);
+    const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
+    return [`iMACD(NULL, ${period}, ${fastEMA}, ${slowEMA}, ${signalSMA}, ${appliedPrice}, MODE_MAIN, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
