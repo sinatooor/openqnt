@@ -16,7 +16,7 @@ import { FloatingChartModal } from "@/components/FloatingChartModal";
 import { AIChatPanel } from "@/features/ai/components/AIChatPanel";
 import { GuidedTour } from "@/components/GuidedTour";
 import { DevLogPanel, LogEntry } from "@/components/DevLogPanel";
-import { BlockSearchDialog } from "./BlockSearchDialog";
+import { BlockSearchDialog } from "@/components/BlockSearchDialog";
 
 import { StrategyTemplate } from "@/features/templates/strategyTemplates";
 import { cn } from "@/lib/utils";
