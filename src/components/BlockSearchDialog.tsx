@@ -14,7 +14,7 @@ import {
     tradeBlocksToolbox,
     taBlocksToolbox,
     myBlocksToolbox,
-} from "@/blockly/blocks";
+} from "@/config/blockly/toolbox";
 import { Blocks } from "lucide-react";
 
 interface BlockSearchDialogProps {

@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, Undo2, Redo2, Blocks, Wand2, FileCode, BarChart3, TrendingUp, BookOpen, Search, Pencil } from "lucide-react";
+import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, Undo2, Redo2, Blocks, Wand2, FileCode, BarChart3, TrendingUp, BookOpen, Search, Pencil, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { BacktestingPanel } from "src/features/backtest/components/BacktestingPanel";
 import { StrategyTemplatesDialog } from "@/components/StrategyTemplatesDialog";
@@ -43,6 +43,8 @@ export const BlocklyWorkspace = ({
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
   const [generatedCode, setGeneratedCode] = useState<string>("");
+  const [generatedMqlCode, setGeneratedMqlCode] = useState<string>("");
+  const [codeLanguage, setCodeLanguage] = useState<'javascript' | 'mql'>('javascript');
   const [showCode, setShowCode] = useState(false);
   const [copied, setCopied] = useState(false);
   const [blockCount, setBlockCount] = useState(0);
@@ -353,8 +355,10 @@ export const BlocklyWorkspace = ({
 
     // Listen to workspace changes to update code and stats
     workspace.addChangeListener(() => {
-      const code = generateCode(workspace);
+      const code = generateCode(workspace, 'javascript');
+      const mqlCode = generateCode(workspace, 'mql');
       setGeneratedCode(code);
+      setGeneratedMqlCode(mqlCode);
 
       // Update block count
       const allBlocks = workspace.getAllBlocks(false);
@@ -410,23 +414,40 @@ export const BlocklyWorkspace = ({
   }, [showCode, showAIPanel, showDevLogs]);
 
   const handleCopyCode = () => {
-    navigator.clipboard.writeText(generatedCode);
+    navigator.clipboard.writeText(codeLanguage === 'mql' ? generatedMqlCode : generatedCode);
     setCopied(true);
     toast.success("Code copied to clipboard!");
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleRefreshCode = () => {
+    if (!workspaceRef.current) return;
+
+    // Manually regenerate code from current workspace blocks
+    // Generate MQL first to avoid potential interference from JS generator
+    const mqlCode = generateCode(workspaceRef.current, 'mql');
+    const code = generateCode(workspaceRef.current, 'javascript');
+
+    setGeneratedCode(code);
+    setGeneratedMqlCode(mqlCode);
+
+    toast.success("Code refreshed!", {
+      description: "Generated code from current blocks"
+    });
   };
   const handleExportCode = () => {
     if (!generatedCode) {
       toast.error("No code to export. Add blocks to your workspace first.");
       return;
     }
-    const blob = new Blob([generatedCode], {
-      type: "text/javascript"
+    const content = codeLanguage === 'mql' ? generatedMqlCode : generatedCode;
+    const blob = new Blob([content], {
+      type: "text/plain"
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "trading-strategy.js";
+    a.download = codeLanguage === 'mql' ? "trading-strategy.mq4" : "trading-strategy.js";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -721,17 +742,18 @@ export const BlocklyWorkspace = ({
     return result;
   };
   const getCodeStatistics = () => {
-    if (!generatedCode) return {
+    const codeToCheck = codeLanguage === 'mql' ? generatedMqlCode : generatedCode;
+    if (!codeToCheck) return {
       lines: 0,
       chars: 0,
       complexity: 0
     };
-    const lines = generatedCode.split("\n").filter(line => line.trim()).length;
-    const chars = generatedCode.length;
+    const lines = codeToCheck.split("\n").filter(line => line.trim()).length;
+    const chars = codeToCheck.length;
 
     // Simple complexity estimation based on control structures
-    const ifCount = (generatedCode.match(/if\s*\(/g) || []).length;
-    const loopCount = (generatedCode.match(/while\s*\(|for\s*\(/g) || []).length;
+    const ifCount = (codeToCheck.match(/if\s*\(/g) || []).length;
+    const loopCount = (codeToCheck.match(/while\s*\(|for\s*\(/g) || []).length;
     const complexity = ifCount + loopCount * 2 + Math.floor(blockCount / 5);
     return {
       lines,
@@ -1087,7 +1109,26 @@ export const BlocklyWorkspace = ({
         <div className="h-12 border-b border-border flex items-center justify-between px-4 bg-muted/30">
           <div className="flex items-center gap-2">
             <FileCode className="w-4 h-4 text-primary" />
-            <span className="font-medium text-sm">Generated Code</span>
+            <div className="flex bg-muted rounded-md p-0.5">
+              <button
+                onClick={() => setCodeLanguage('javascript')}
+                className={cn(
+                  "px-2 py-0.5 text-xs font-medium rounded-sm transition-all",
+                  codeLanguage === 'javascript' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                JS
+              </button>
+              <button
+                onClick={() => setCodeLanguage('mql')}
+                className={cn(
+                  "px-2 py-0.5 text-xs font-medium rounded-sm transition-all",
+                  codeLanguage === 'mql' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                MQL4
+              </button>
+            </div>
           </div>
           <div className="flex items-center gap-1">
             <Tooltip>
@@ -1108,6 +1149,14 @@ export const BlocklyWorkspace = ({
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleRefreshCode}>
+                  <RefreshCw className="w-3 h-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Refresh code from blocks</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCopyCode}>
                   {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
                 </Button>
@@ -1116,8 +1165,18 @@ export const BlocklyWorkspace = ({
             </Tooltip>
           </div>
         </div>
-        <div className="flex-1 overflow-auto p-4 custom-scrollbar">
-          {renderCodeWithLineNumbers(generatedCode)}
+        <div className="flex-1 overflow-auto p-4 custom-scrollbar relative">
+          {codeLanguage === 'mql' ? (
+            <textarea
+              className="w-full h-full bg-transparent border-none resize-none focus:outline-none font-mono text-sm"
+              value={generatedMqlCode}
+              onChange={(e) => setGeneratedMqlCode(e.target.value)}
+              placeholder="// Paste your MQL code here..."
+              spellCheck={false}
+            />
+          ) : (
+            renderCodeWithLineNumbers(generatedCode)
+          )}
         </div>
         <div className="h-10 border-t border-border flex items-center justify-between px-4 bg-muted/30 text-xs text-muted-foreground">
           <div className="flex gap-3">
