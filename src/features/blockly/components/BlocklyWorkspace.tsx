@@ -54,6 +54,7 @@ export const BlocklyWorkspace = ({
   const [beautified, setBeautified] = useState(false);
   const [backtestResult, setBacktestResult] = useState<BacktestResult | null>(null);
   const [isBacktesting, setIsBacktesting] = useState(false);
+  const [isGeneratingMql, setIsGeneratingMql] = useState(false);
   const [showBacktest, setShowBacktest] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [showFloatingChart, setShowFloatingChart] = useState(false);
@@ -423,17 +424,16 @@ export const BlocklyWorkspace = ({
   const handleRefreshCode = async () => {
     if (!workspaceRef.current) return;
 
-    // If MQL is selected, generate with AI
+    // If MQL is selected, generate with AI from blocks structure
     if (codeLanguage === 'mql') {
-      // Generate draft MQL code
-      const draftMql = generateCode(workspaceRef.current, 'mql');
+      setIsGeneratingMql(true);
       
-      // Get workspace XML for context
+      // Get workspace XML (block structure)
       const xml = Blockly.Xml.workspaceToDom(workspaceRef.current);
       const xmlText = Blockly.Xml.domToText(xml);
       
-      toast.info("Generating MQL code with AI...", {
-        description: "This may take a few seconds"
+      toast.info("Generating MQL code from blocks...", {
+        description: "AI is analyzing your strategy"
       });
 
       try {
@@ -446,7 +446,6 @@ export const BlocklyWorkspace = ({
               Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             },
             body: JSON.stringify({
-              draftMql,
               workspaceXml: xmlText,
               strategyName
             }),
@@ -461,17 +460,16 @@ export const BlocklyWorkspace = ({
         const data = await response.json();
         setGeneratedMqlCode(data.mqlCode);
         
-        toast.success("MQL code generated!", {
-          description: "AI-refined Expert Advisor code ready"
+        toast.success("MQL4 code generated!", {
+          description: "Expert Advisor code is ready"
         });
       } catch (error) {
         console.error("Error generating MQL code:", error);
         toast.error("Failed to generate MQL code", {
           description: error instanceof Error ? error.message : "Unknown error"
         });
-        
-        // Fallback to draft code
-        setGeneratedMqlCode(draftMql);
+      } finally {
+        setIsGeneratingMql(false);
       }
     } else {
       // JavaScript - generate locally
@@ -1197,11 +1195,19 @@ export const BlocklyWorkspace = ({
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleRefreshCode}>
-                  <RefreshCw className="w-3 h-3" />
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8" 
+                  onClick={handleRefreshCode}
+                  disabled={isGeneratingMql}
+                >
+                  <RefreshCw className={cn("w-3 h-3", isGeneratingMql && "animate-spin")} />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Refresh code from blocks</TooltipContent>
+              <TooltipContent>
+                {isGeneratingMql ? "Generating MQL code..." : "Refresh code from blocks"}
+              </TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -1214,12 +1220,28 @@ export const BlocklyWorkspace = ({
           </div>
         </div>
         <div className="flex-1 overflow-auto p-4 custom-scrollbar relative">
-          {codeLanguage === 'mql' ? (
+          {isGeneratingMql ? (
+            <div className="h-full flex flex-col items-center justify-center gap-4">
+              <div className="relative">
+                <div className="h-16 w-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                <Code2 className="h-6 w-6 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+              </div>
+              <div className="text-center space-y-2">
+                <h3 className="font-semibold text-foreground">Generating MQL4 Code</h3>
+                <p className="text-sm text-muted-foreground">AI is converting your blocks to Expert Advisor code...</p>
+                <div className="flex items-center gap-2 justify-center mt-4">
+                  <div className="h-2 w-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="h-2 w-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="h-2 w-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              </div>
+            </div>
+          ) : codeLanguage === 'mql' ? (
             <textarea
               className="w-full h-full bg-transparent border-none resize-none focus:outline-none font-mono text-sm"
               value={generatedMqlCode}
               onChange={(e) => setGeneratedMqlCode(e.target.value)}
-              placeholder="// Paste your MQL code here..."
+              placeholder="// Click 'Refresh code from blocks' to generate MQL4 code from your strategy..."
               spellCheck={false}
             />
           ) : (
