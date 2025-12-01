@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, Undo2, Redo2, Blocks, Wand2, FileCode, BarChart3, TrendingUp, BookOpen } from "lucide-react";
+import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, Undo2, Redo2, Blocks, Wand2, FileCode, BarChart3, TrendingUp, BookOpen, Search, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { BacktestingPanel } from "src/features/backtest/components/BacktestingPanel";
 import { StrategyTemplatesDialog } from "./StrategyTemplatesDialog";
@@ -16,6 +16,7 @@ import { FloatingChartModal } from "./FloatingChartModal";
 import { AIChatPanel } from "./AIChatPanel";
 import { GuidedTour } from "./GuidedTour";
 import { DevLogPanel, LogEntry } from "./DevLogPanel";
+import { BlockSearchDialog } from "./BlockSearchDialog";
 
 import { StrategyTemplate } from "@/lib/strategyTemplates";
 import { cn } from "@/lib/utils";
@@ -65,6 +66,9 @@ export const BlocklyWorkspace = ({
     return localStorage.getItem('showDevLogs') === 'true';
   });
   const [devLogs, setDevLogs] = useState<LogEntry[]>([]);
+  const [showSearch, setShowSearch] = useState(false);
+  const [strategyName, setStrategyName] = useState("Untitled Strategy");
+  const [isEditingName, setIsEditingName] = useState(false);
 
   // Advanced Logic Modal State
   const [showAdvancedLogic, setShowAdvancedLogic] = useState(false);
@@ -107,6 +111,12 @@ export const BlocklyWorkspace = ({
         const newState = !showDevLogs;
         setShowDevLogs(newState);
         localStorage.setItem('showDevLogs', String(newState));
+      }
+
+      // Search shortcut (Cmd+F or Ctrl+F)
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'f' || e.key === 'F')) {
+        e.preventDefault();
+        setShowSearch(true);
       }
     };
 
@@ -802,6 +812,28 @@ export const BlocklyWorkspace = ({
     }
   };
 
+  const handleAddBlock = (type: string) => {
+    if (!workspaceRef.current) return;
+
+    const workspace = workspaceRef.current;
+    const block = workspace.newBlock(type);
+    block.initSvg();
+    block.render();
+
+    // Center the block in the view
+    const metrics = workspace.getMetrics();
+    if (metrics) {
+      const x = metrics.viewLeft + metrics.viewWidth / 2 - block.getHeightWidth().width / 2;
+      const y = metrics.viewTop + metrics.viewHeight / 2 - block.getHeightWidth().height / 2;
+      block.moveBy(x, y);
+    }
+
+    // Select the new block
+    block.select();
+
+    toast.success(`Added ${type.replace(/_/g, ' ')} block`);
+  };
+
   const highlightSyntax = (line: string) => {
     if (!line.trim()) return " ";
 
@@ -845,18 +877,42 @@ export const BlocklyWorkspace = ({
     {/* Action Bar */}
     <div className="h-14 bg-card border-b border-border flex items-center justify-between px-4 gap-3">
       <div className="flex items-center gap-3">
-        <h2 className="font-semibold text-foreground">Fire</h2>
-        <Badge variant="secondary" className="flex items-center gap-1">
-          <Blocks className="w-3 h-3" />
-          {blockCount} blocks
-        </Badge>
+        {isEditingName ? (
+          <input
+            type="text"
+            value={strategyName}
+            onChange={(e) => setStrategyName(e.target.value)}
+            onBlur={() => setIsEditingName(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') setIsEditingName(false);
+            }}
+            autoFocus
+            className="h-8 px-2 py-1 text-lg font-semibold bg-transparent border-b-2 border-primary focus:outline-none w-[200px]"
+          />
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div
+                className="flex items-center gap-2 px-2 py-1 rounded-md cursor-pointer hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200 group"
+                onClick={() => setIsEditingName(true)}
+              >
+                <h2 className="font-semibold text-foreground text-lg max-w-[200px] truncate">
+                  {strategyName}
+                </h2>
+                <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>Rename</TooltipContent>
+          </Tooltip>
+        )}
       </div>
+
       <div className="flex items-center gap-2">
         {/* File Operations Group */}
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={handleSaveWorkspace} className="save-workspace-trigger">
-              <Download className="w-4 h-4 mr-2" />
+            <Button variant="outline" size="sm" onClick={handleSaveWorkspace} className="save-workspace-trigger hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
+              <Download className="w-4 h-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
@@ -867,8 +923,8 @@ export const BlocklyWorkspace = ({
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={handleLoadWorkspace}>
-              <Upload className="w-4 h-4 mr-2" />
+            <Button variant="outline" size="sm" onClick={handleLoadWorkspace} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
+              <Upload className="w-4 h-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
@@ -879,7 +935,7 @@ export const BlocklyWorkspace = ({
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={() => setShowTemplates(true)}>
+            <Button variant="outline" size="sm" onClick={() => setShowTemplates(true)} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
               <BookOpen className="w-4 h-4 mr-2" />
               Templates
             </Button>
@@ -889,40 +945,28 @@ export const BlocklyWorkspace = ({
             <p className="text-xs text-muted-foreground mt-1">Learn from examples</p>
           </TooltipContent>
         </Tooltip>
+      </div>
 
-        <Separator orientation="vertical" className="h-6" />
+      {/* Search Bar */}
+      <div className="flex-1 max-w-xl mx-4">
+        <Button
+          variant="outline"
+          className="w-full justify-start text-muted-foreground bg-muted/50 hover:bg-muted relative h-9 hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200"
+          onClick={() => setShowSearch(true)}
+        >
+          <Search className="w-4 h-4 mr-2" />
+          Search for blocks...
+          <kbd className="pointer-events-none absolute right-2 top-[50%] translate-y-[-50%] inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+            <span className="text-xs">⌘</span>F
+          </kbd>
+        </Button>
+      </div>
 
-        {/* Execution Group */}
+      <div className="flex items-center gap-2">
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="default" size="sm" onClick={handleRunStrategy} className="run-strategy-trigger">
-              <Play className="w-4 h-4 mr-2" />
-              Run
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Execute trading strategy</p>
-            <p className="text-xs text-muted-foreground mt-1">Ctrl+Enter</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="secondary" size="sm" onClick={handlePreviewBacktest} disabled={isBacktesting || isEmpty} className={cn("transition-all duration-200 backtest-trigger", isBacktesting && "animate-pulse")}>
-              <TrendingUp className={cn("w-4 h-4 mr-2", isBacktesting && "animate-bounce")} />
-              {isBacktesting ? "Testing..." : "Backtest"}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Run backtest simulation</p>
-            <p className="text-xs text-muted-foreground mt-1">Test your strategy on historical data</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={() => setShowFloatingChart(!showFloatingChart)} className="transition-all duration-200 shadow-indigo ">
-              <BarChart3 className="w-4 h-4 mr-2" />
+            <Button variant="outline" size="sm" onClick={() => setShowFloatingChart(!showFloatingChart)} className="transition-all duration-200 shadow-indigo hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)]">
+              <BarChart3 className="w-4 h-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
@@ -936,7 +980,7 @@ export const BlocklyWorkspace = ({
         {/* Workspace Controls */}
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={handleUndo}>
+            <Button variant="outline" size="sm" onClick={handleUndo} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
               <Undo2 className="w-4 h-4" />
             </Button>
           </TooltipTrigger>
@@ -948,7 +992,7 @@ export const BlocklyWorkspace = ({
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={handleRedo}>
+            <Button variant="outline" size="sm" onClick={handleRedo} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
               <Redo2 className="w-4 h-4" />
             </Button>
           </TooltipTrigger>
@@ -963,7 +1007,7 @@ export const BlocklyWorkspace = ({
         {/* Zoom Controls */}
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={() => handleZoom("out")}>
+            <Button variant="outline" size="sm" onClick={() => handleZoom("out")} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
               <ZoomOut className="w-4 h-4" />
             </Button>
           </TooltipTrigger>
@@ -972,13 +1016,13 @@ export const BlocklyWorkspace = ({
           </TooltipContent>
         </Tooltip>
 
-        <Badge variant="secondary" className="px-2 min-w-[60px] justify-center">
+        <Badge variant="secondary" className="px-2 min-w-[60px] justify-center mx-1">
           {zoomLevel}%
         </Badge>
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={() => handleZoom("in")}>
+            <Button variant="outline" size="sm" onClick={() => handleZoom("in")} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
               <ZoomIn className="w-4 h-4" />
             </Button>
           </TooltipTrigger>
@@ -989,7 +1033,7 @@ export const BlocklyWorkspace = ({
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={handleCenterWorkspace}>
+            <Button variant="outline" size="sm" onClick={handleCenterWorkspace} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
               <Maximize2 className="w-4 h-4" />
             </Button>
           </TooltipTrigger>
@@ -1003,7 +1047,7 @@ export const BlocklyWorkspace = ({
         {/* View Group */}
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={() => setShowCode(!showCode)} className="transition-all duration-200 hover-scale">
+            <Button variant="outline" size="sm" onClick={() => setShowCode(!showCode)} className="transition-all duration-200 hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)]">
               <Code2 className="w-4 h-4 mr-2" />
               {showCode ? "Hide" : "Code"}
             </Button>
@@ -1155,6 +1199,13 @@ export const BlocklyWorkspace = ({
       indicatorName={currentIndicatorName}
       currentParams={currentIndicatorParams}
       onSave={handleSaveIndicatorSettings}
+    />
+
+    {/* Search Dialog */}
+    <BlockSearchDialog
+      open={showSearch}
+      onOpenChange={setShowSearch}
+      onSelectBlock={handleAddBlock}
     />
   </div>;
 };
