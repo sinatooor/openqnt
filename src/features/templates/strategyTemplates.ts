@@ -61,11 +61,14 @@ export const strategyTemplates: StrategyTemplate[] = [
                         <value name="RIGHT">
                           <block type="operator_multiply">
                             <value name="LEFT">
-                              <block type="environment_price"></block>
+                              <block type="ta_atr">
+                                <mutation period="5" ma_period="14"></mutation>
+                                <field name="NAME">ATR</field>
+                              </block>
                             </value>
                             <value name="RIGHT">
                               <shadow type="math_number">
-                                <field name="NUM">0.01</field>
+                                <field name="NUM">2</field>
                               </shadow>
                             </value>
                           </block>
@@ -86,11 +89,23 @@ export const strategyTemplates: StrategyTemplate[] = [
                             <value name="RIGHT">
                               <block type="operator_multiply">
                                 <value name="LEFT">
-                                  <block type="environment_price"></block>
+                                  <block type="operator_multiply">
+                                    <value name="LEFT">
+                                      <block type="ta_atr">
+                                        <mutation period="5" ma_period="14"></mutation>
+                                        <field name="NAME">ATR</field>
+                                      </block>
+                                    </value>
+                                    <value name="RIGHT">
+                                      <shadow type="math_number">
+                                        <field name="NUM">2</field>
+                                      </shadow>
+                                    </value>
+                                  </block>
                                 </value>
                                 <value name="RIGHT">
                                   <shadow type="math_number">
-                                    <field name="NUM">0.02</field>
+                                    <field name="NUM">3</field>
                                   </shadow>
                                 </value>
                               </block>
@@ -160,11 +175,14 @@ export const strategyTemplates: StrategyTemplate[] = [
                         <value name="RIGHT">
                           <block type="operator_multiply">
                             <value name="LEFT">
-                              <block type="environment_price"></block>
+                              <block type="ta_atr">
+                                <mutation period="5" ma_period="14"></mutation>
+                                <field name="NAME">ATR</field>
+                              </block>
                             </value>
                             <value name="RIGHT">
                               <shadow type="math_number">
-                                <field name="NUM">0.01</field>
+                                <field name="NUM">1.5</field>
                               </shadow>
                             </value>
                           </block>
@@ -185,11 +203,23 @@ export const strategyTemplates: StrategyTemplate[] = [
                             <value name="RIGHT">
                               <block type="operator_multiply">
                                 <value name="LEFT">
-                                  <block type="environment_price"></block>
+                                  <block type="operator_multiply">
+                                    <value name="LEFT">
+                                      <block type="ta_atr">
+                                        <mutation period="5" ma_period="14"></mutation>
+                                        <field name="NAME">ATR</field>
+                                      </block>
+                                    </value>
+                                    <value name="RIGHT">
+                                      <shadow type="math_number">
+                                        <field name="NUM">1.5</field>
+                                      </shadow>
+                                    </value>
+                                  </block>
                                 </value>
                                 <value name="RIGHT">
                                   <shadow type="math_number">
-                                    <field name="NUM">0.015</field>
+                                    <field name="NUM">2</field>
                                   </shadow>
                                 </value>
                               </block>
@@ -258,11 +288,14 @@ export const strategyTemplates: StrategyTemplate[] = [
                         <value name="RIGHT">
                           <block type="operator_multiply">
                             <value name="LEFT">
-                              <block type="environment_price"></block>
+                              <block type="ta_atr">
+                                <mutation period="5" ma_period="14"></mutation>
+                                <field name="NAME">ATR</field>
+                              </block>
                             </value>
                             <value name="RIGHT">
                               <shadow type="math_number">
-                                <field name="NUM">0.02</field>
+                                <field name="NUM">2.5</field>
                               </shadow>
                             </value>
                           </block>
@@ -283,11 +316,23 @@ export const strategyTemplates: StrategyTemplate[] = [
                             <value name="RIGHT">
                               <block type="operator_multiply">
                                 <value name="LEFT">
-                                  <block type="environment_price"></block>
+                                  <block type="operator_multiply">
+                                    <value name="LEFT">
+                                      <block type="ta_atr">
+                                        <mutation period="5" ma_period="14"></mutation>
+                                        <field name="NAME">ATR</field>
+                                      </block>
+                                    </value>
+                                    <value name="RIGHT">
+                                      <shadow type="math_number">
+                                        <field name="NUM">2.5</field>
+                                      </shadow>
+                                    </value>
+                                  </block>
                                 </value>
                                 <value name="RIGHT">
                                   <shadow type="math_number">
-                                    <field name="NUM">0.03</field>
+                                    <field name="NUM">3</field>
                                   </shadow>
                                 </value>
                               </block>
@@ -376,14 +421,17 @@ export const strategyTemplates: StrategyTemplate[] = [
                             <field name="TRADE_ID">macd_momentum_trade</field>
                           </block>
                         </value>
-                        <value name="RIGHT">
+                         <value name="RIGHT">
                           <block type="operator_multiply">
                             <value name="LEFT">
-                              <block type="environment_price"></block>
+                              <block type="ta_atr">
+                                <mutation period="5" ma_period="14"></mutation>
+                                <field name="NAME">ATR</field>
+                              </block>
                             </value>
                             <value name="RIGHT">
                               <shadow type="math_number">
-                                <field name="NUM">0.01</field>
+                                <field name="NUM">2</field>
                               </shadow>
                             </value>
                           </block>
@@ -401,14 +449,26 @@ export const strategyTemplates: StrategyTemplate[] = [
                                 <field name="TRADE_ID">macd_momentum_trade</field>
                               </block>
                             </value>
-                            <value name="RIGHT">
+                             <value name="RIGHT">
                               <block type="operator_multiply">
                                 <value name="LEFT">
-                                  <block type="environment_price"></block>
+                                  <block type="operator_multiply">
+                                    <value name="LEFT">
+                                      <block type="ta_atr">
+                                        <mutation period="5" ma_period="14"></mutation>
+                                        <field name="NAME">ATR</field>
+                                      </block>
+                                    </value>
+                                    <value name="RIGHT">
+                                      <shadow type="math_number">
+                                        <field name="NUM">2</field>
+                                      </shadow>
+                                    </value>
+                                  </block>
                                 </value>
                                 <value name="RIGHT">
                                   <shadow type="math_number">
-                                    <field name="NUM">0.025</field>
+                                    <field name="NUM">3</field>
                                   </shadow>
                                 </value>
                               </block>
@@ -495,11 +555,14 @@ export const strategyTemplates: StrategyTemplate[] = [
                         <value name="RIGHT">
                           <block type="operator_multiply">
                             <value name="LEFT">
-                              <block type="environment_price"></block>
+                              <block type="ta_atr">
+                                <mutation period="5" ma_period="14"></mutation>
+                                <field name="NAME">ATR</field>
+                              </block>
                             </value>
                             <value name="RIGHT">
                               <shadow type="math_number">
-                                <field name="NUM">0.005</field>
+                                <field name="NUM">1</field>
                               </shadow>
                             </value>
                           </block>
@@ -520,11 +583,23 @@ export const strategyTemplates: StrategyTemplate[] = [
                             <value name="RIGHT">
                               <block type="operator_multiply">
                                 <value name="LEFT">
-                                  <block type="environment_price"></block>
+                                  <block type="operator_multiply">
+                                    <value name="LEFT">
+                                      <block type="ta_atr">
+                                        <mutation period="5" ma_period="14"></mutation>
+                                        <field name="NAME">ATR</field>
+                                      </block>
+                                    </value>
+                                    <value name="RIGHT">
+                                      <shadow type="math_number">
+                                        <field name="NUM">1</field>
+                                      </shadow>
+                                    </value>
+                                  </block>
                                 </value>
                                 <value name="RIGHT">
                                   <shadow type="math_number">
-                                    <field name="NUM">0.008</field>
+                                    <field name="NUM">2</field>
                                   </shadow>
                                 </value>
                               </block>
@@ -615,11 +690,14 @@ export const strategyTemplates: StrategyTemplate[] = [
                         <value name="RIGHT">
                           <block type="operator_multiply">
                             <value name="LEFT">
-                              <block type="environment_price"></block>
+                              <block type="ta_atr">
+                                <mutation period="5" ma_period="14"></mutation>
+                                <field name="NAME">ATR</field>
+                              </block>
                             </value>
                             <value name="RIGHT">
                               <shadow type="math_number">
-                                <field name="NUM">0.015</field>
+                                <field name="NUM">2</field>
                               </shadow>
                             </value>
                           </block>
@@ -640,11 +718,23 @@ export const strategyTemplates: StrategyTemplate[] = [
                             <value name="RIGHT">
                               <block type="operator_multiply">
                                 <value name="LEFT">
-                                  <block type="environment_price"></block>
+                                  <block type="operator_multiply">
+                                    <value name="LEFT">
+                                      <block type="ta_atr">
+                                        <mutation period="5" ma_period="14"></mutation>
+                                        <field name="NAME">ATR</field>
+                                      </block>
+                                    </value>
+                                    <value name="RIGHT">
+                                      <shadow type="math_number">
+                                        <field name="NUM">2</field>
+                                      </shadow>
+                                    </value>
+                                  </block>
                                 </value>
                                 <value name="RIGHT">
                                   <shadow type="math_number">
-                                    <field name="NUM">0.03</field>
+                                    <field name="NUM">3</field>
                                   </shadow>
                                 </value>
                               </block>
