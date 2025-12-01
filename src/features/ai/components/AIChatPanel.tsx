@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Loader2, Send, Sparkles, MessageSquare, Code, Blocks, X, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
-import { LogEntry } from "./DevLogPanel";
+import { LogEntry } from "@/components/DevLogPanel";
 
 interface Message {
   role: "user" | "assistant";
