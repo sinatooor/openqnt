@@ -1,17 +1,38 @@
 import * as Blockly from 'blockly';
+import { createGearSettingsButton } from '@/lib/indicatorUtils';
+import { getIndicatorConfig, getDefaultParams } from '@/lib/indicatorConfigs';
 
 Blockly.Blocks['ta_stochastic'] = {
     init: function () {
-        this.appendValueInput("K_PERIOD")
-            .setCheck("Number")
-            .appendField("Stochastic K");
-        this.appendValueInput("D_PERIOD")
-            .setCheck("Number")
-            .appendField("D");
-        this.setInputsInline(true);
+        const config = getIndicatorConfig('stochastic');
+        this.appendDummyInput()
+            .appendField("Stochastic")
+            .appendField(new Blockly.FieldTextInput("Stochastic"), "NAME")
+            .appendField(new Blockly.FieldDropdown(
+                config?.components?.map(c => [c.label, c.value]) || []
+            ), "COMPONENT")
+            .appendField(createGearSettingsButton('stochastic'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("Stochastic Oscillator");
-        this.setHelpUrl("");
+        this.indicatorName = 'stochastic';
+        this.indicatorParams = getDefaultParams('stochastic');
+    },
+    mutationToDom: function() {
+        const container = Blockly.utils.xml.createElement('mutation');
+        if (this.indicatorParams) {
+            Object.keys(this.indicatorParams).forEach(key => {
+                container.setAttribute(key, String(this.indicatorParams[key]));
+            });
+        }
+        return container;
+    },
+    domToMutation: function(xmlElement: Element) {
+        this.indicatorParams = {};
+        Array.from(xmlElement.attributes).forEach(attr => {
+            if (attr.name !== 'type') {
+                this.indicatorParams[attr.name] = parseFloat(attr.value) || 0;
+            }
+        });
     }
 };

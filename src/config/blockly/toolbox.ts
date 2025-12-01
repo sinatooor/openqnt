@@ -308,216 +308,69 @@ export const tradeBlocksToolbox = [
 
 export const taBlocksToolbox = [
   { kind: 'label', text: 'Moving Averages' },
-  {
-    kind: 'block',
-    type: 'ta_sma',
-    inputs: {
-      PERIOD: {
-        shadow: {
-          type: 'math_number',
-          fields: { NUM: 14 }
-        }
-      }
-    }
-  },
-  {
-    kind: 'block',
-    type: 'ta_ema',
-    inputs: {
-      PERIOD: {
-        shadow: {
-          type: 'math_number',
-          fields: { NUM: 14 }
-        }
-      }
-    }
-  },
-  { kind: 'block', type: 'ta_vwap' },
-  { kind: 'label', text: 'Momentum' },
-  {
-    kind: 'block',
-    type: 'ta_rsi',
-    inputs: {
-      PERIOD: {
-        shadow: {
-          type: 'math_number',
-          fields: { NUM: 14 }
-        }
-      }
-    }
-  },
+  { kind: 'block', type: 'ta_sma' },
+  { kind: 'block', type: 'ta_ema' },
+  { kind: 'block', type: 'ta_smma' },
+  { kind: 'block', type: 'ta_lwma' },
+  { kind: 'block', type: 'dema' },
+  { kind: 'block', type: 'tema' },
+  { kind: 'block', type: 'frama' },
+  { kind: 'block', type: 'vidya' },
+  { kind: 'block', type: 'ama' },
+  
+  { kind: 'label', text: 'Oscillators' },
+  { kind: 'block', type: 'ta_rsi' },
+  { kind: 'block', type: 'ta_cci' },
+  { kind: 'block', type: 'ta_williams_r' },
+  { kind: 'block', type: 'ta_mfi' },
+  { kind: 'block', type: 'momentum' },
+  { kind: 'block', type: 'osma' },
+  { kind: 'block', type: 'rvi' },
+  { kind: 'block', type: 'ta_stochastic' },
+  { kind: 'block', type: 'trix' },
+  { kind: 'block', type: 'ac' },
+  { kind: 'block', type: 'ao' },
+  { kind: 'block', type: 'chaikin' },
+  { kind: 'block', type: 'demarker' },
+  { kind: 'block', type: 'force' },
+  
   { kind: 'label', text: 'MACD' },
   { kind: 'block', type: 'macd_value' },
-  { kind: 'label', text: 'Oscillators' },
-  {
-    kind: 'block',
-    type: 'ta_stochastic',
-    inputs: {
-      K_PERIOD: {
-        shadow: {
-          type: 'math_number',
-          fields: { NUM: 14 }
-        }
-      },
-      D_PERIOD: {
-        shadow: {
-          type: 'math_number',
-          fields: { NUM: 3 }
-        }
-      }
-    }
-  },
-  {
-    kind: 'block',
-    type: 'ta_adx',
-    inputs: {
-      PERIOD: {
-        shadow: {
-          type: 'math_number',
-          fields: { NUM: 14 }
-        }
-      }
-    }
-  },
-  {
-    kind: 'block',
-    type: 'ta_cci',
-    inputs: {
-      PERIOD: {
-        shadow: {
-          type: 'math_number',
-          fields: { NUM: 14 }
-        }
-      }
-    }
-  },
-  {
-    kind: 'block',
-    type: 'ta_williams_r',
-    inputs: {
-      PERIOD: {
-        shadow: {
-          type: 'math_number',
-          fields: { NUM: 14 }
-        }
-      }
-    }
-  },
-  {
-    kind: 'block',
-    type: 'ta_mfi',
-    inputs: {
-      PERIOD: {
-        shadow: {
-          type: 'math_number',
-          fields: { NUM: 14 }
-        }
-      }
-    }
-  },
-  { kind: 'label', text: 'Volatility' },
-  {
-    kind: 'block',
-    type: 'ta_bb',
-    inputs: {
-      PERIOD: {
-        shadow: {
-          type: 'math_number',
-          fields: { NUM: 20 }
-        }
-      }
-    }
-  },
-  {
-    kind: 'block',
-    type: 'ta_atr',
-    inputs: {
-      PERIOD: {
-        shadow: {
-          type: 'math_number',
-          fields: { NUM: 14 }
-        }
-      }
-    }
-  },
-  {
-    kind: 'block',
-    type: 'ta_keltner',
-    inputs: {
-      PERIOD: {
-        shadow: {
-          type: 'math_number',
-          fields: { NUM: 20 }
-        }
-      }
-    }
-  },
-  { kind: 'label', text: 'Trend' },
-  {
-    kind: 'block',
-    type: 'ta_sar',
-    inputs: {
-      ACCELERATION: {
-        shadow: {
-          type: 'math_number',
-          fields: { NUM: 0.02 }
-        }
-      },
-      MAX: {
-        shadow: {
-          type: 'math_number',
-          fields: { NUM: 0.2 }
-        }
-      }
-    }
-  },
+  
+  { kind: 'label', text: 'Bands & Channels' },
+  { kind: 'block', type: 'ta_bb' },
+  { kind: 'block', type: 'envelopes' },
+  { kind: 'block', type: 'donchian' },
+  { kind: 'block', type: 'ta_keltner' },
+  
+  { kind: 'label', text: 'Complex Indicators' },
   { kind: 'block', type: 'ta_ichimoku' },
-  {
-    kind: 'block',
-    type: 'ta_supertrend',
-    inputs: {
-      PERIOD: {
-        shadow: {
-          type: 'math_number',
-          fields: { NUM: 10 }
-        }
-      },
-      MULTIPLIER: {
-        shadow: {
-          type: 'math_number',
-          fields: { NUM: 3 }
-        }
-      }
-    }
-  },
-  {
-    kind: 'block',
-    type: 'ta_dmi',
-    inputs: {
-      PERIOD: {
-        shadow: {
-          type: 'math_number',
-          fields: { NUM: 14 }
-        }
-      }
-    }
-  },
+  { kind: 'block', type: 'alligator' },
+  { kind: 'block', type: 'gator' },
+  { kind: 'block', type: 'ta_dmi' },
+  { kind: 'block', type: 'ta_adx' },
+  { kind: 'block', type: 'adxWilder' },
+  
+  { kind: 'label', text: 'Volatility' },
+  { kind: 'block', type: 'ta_atr' },
+  { kind: 'block', type: 'stddev' },
+  
+  { kind: 'label', text: 'Trend' },
+  { kind: 'block', type: 'ta_sar' },
+  
   { kind: 'label', text: 'Volume' },
   { kind: 'block', type: 'ta_obv' },
-  {
-    kind: 'block',
-    type: 'ta_vp',
-    inputs: {
-      PERIOD: {
-        shadow: {
-          type: 'math_number',
-          fields: { NUM: 24 }
-        }
-      }
-    }
-  },
-  { kind: 'label', text: 'Support/Resistance' },
-  { kind: 'block', type: 'ta_pivot' },
+  { kind: 'block', type: 'volumes' },
+  { kind: 'block', type: 'bwmfi' },
+  { kind: 'block', type: 'ad' },
+  { kind: 'block', type: 'ta_vwap' },
+  
+  { kind: 'label', text: 'Power Indicators' },
+  { kind: 'block', type: 'bearsPower' },
+  { kind: 'block', type: 'bullsPower' },
+  
+  { kind: 'label', text: 'Other' },
+  { kind: 'block', type: 'fractals' },
 ];
 
 export const myBlocksToolbox = [

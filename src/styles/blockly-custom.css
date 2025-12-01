@@ -305,3 +305,39 @@ g[data-statement-gap] {
 .blocklyResizeSE {
   display: none !important;
 }
+
+/* Hide Blockly scrollbars */
+.blocklyScrollbarHandle,
+.blocklyScrollbarBackground {
+  display: none !important;
+}
+
+.blocklyScrollbarVertical,
+.blocklyScrollbarHorizontal {
+  display: none !important;
+}
+
+/* Fix text input overlay/shadow issue */
+.blocklyWidgetDiv {
+  z-index: 1000 !important;
+}
+
+.blocklyWidgetDiv .blocklyHtmlInput {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  position: relative !important;
+  z-index: 1001 !important;
+}
+
+/* Hide SVG text when editing - Blockly should handle this, but ensure it's hidden */
+.blocklyEditableText.blocklyTextSelected > text {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Ensure no duplicate text rendering */
+.blocklyEditableText > text {
+  pointer-events: none !important;
+}

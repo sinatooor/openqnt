@@ -2,17 +2,17 @@ import * as Blockly from 'blockly';
 import { createGearSettingsButton } from '@/lib/indicatorUtils';
 import { getDefaultParams } from '@/lib/indicatorConfigs';
 
-Blockly.Blocks['ta_adx'] = {
+Blockly.Blocks['chaikin'] = {
     init: function () {
         this.appendDummyInput()
-            .appendField("ADX")
-            .appendField(new Blockly.FieldTextInput("ADX"), "NAME")
-            .appendField(createGearSettingsButton('adx'));
+            .appendField("Chaikin Oscillator")
+            .appendField(new Blockly.FieldTextInput("Chaikin"), "NAME")
+            .appendField(createGearSettingsButton('chaikin'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
-        this.setTooltip("Average Directional Index - trend strength");
-        this.indicatorName = 'adx';
-        this.indicatorParams = getDefaultParams('adx');
+        this.setTooltip("Chaikin Oscillator");
+        this.indicatorName = 'chaikin';
+        this.indicatorParams = getDefaultParams('chaikin');
     },
     mutationToDom: function() {
         const container = Blockly.utils.xml.createElement('mutation');
@@ -32,3 +32,4 @@ Blockly.Blocks['ta_adx'] = {
         });
     }
 };
+

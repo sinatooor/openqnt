@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { fetchMarketData } from "@/services/marketData";
 import { BacktestResult, runBacktest } from "@/features/backtest/logic/engine";
+import { IndicatorSettingsModal } from "@/components/IndicatorSettingsModal";
 
 interface BlocklyWorkspaceProps {
   runTour?: boolean;
@@ -70,6 +71,12 @@ export const BlocklyWorkspace = ({
   const [currentLogicBlockId, setCurrentLogicBlockId] = useState<string | null>(null);
   const [currentLogicXml, setCurrentLogicXml] = useState<string>("");
   const [currentIndicatorType, setCurrentIndicatorType] = useState<string>("");
+
+  // Indicator Settings Modal State
+  const [showIndicatorSettings, setShowIndicatorSettings] = useState(false);
+  const [currentIndicatorBlockId, setCurrentIndicatorBlockId] = useState<string | null>(null);
+  const [currentIndicatorName, setCurrentIndicatorName] = useState<string>("");
+  const [currentIndicatorParams, setCurrentIndicatorParams] = useState<Record<string, number>>({});
 
   // Sync with prop changes
   useEffect(() => {
@@ -360,10 +367,23 @@ export const BlocklyWorkspace = ({
       setShowAdvancedLogic(true);
     };
 
+    // Register global handler for opening indicator settings
+    (window as any).openIndicatorSettings = (blockId: string, indicatorName: string) => {
+      if (!workspaceRef.current) return;
+      const block = workspaceRef.current.getBlockById(blockId) as any;
+      if (block) {
+        setCurrentIndicatorBlockId(blockId);
+        setCurrentIndicatorName(indicatorName);
+        setCurrentIndicatorParams(block.indicatorParams || {});
+        setShowIndicatorSettings(true);
+      }
+    };
+
     // Cleanup on unmount
     return () => {
       document.removeEventListener('mousemove', trackMouse);
       delete (window as any).openAdvancedLogicModal;
+      delete (window as any).openIndicatorSettings;
       workspace.dispose();
     };
   }, []);
@@ -767,6 +787,21 @@ export const BlocklyWorkspace = ({
     }
   };
 
+  const handleSaveIndicatorSettings = (params: Record<string, number>) => {
+    if (!workspaceRef.current || !currentIndicatorBlockId) return;
+
+    const block = workspaceRef.current.getBlockById(currentIndicatorBlockId) as any;
+    if (block) {
+      block.indicatorParams = params;
+      // Trigger mutation update
+      const mutation = block.mutationToDom();
+      if (mutation) {
+        Blockly.Events.fire(new Blockly.Events.BlockChange(block, 'mutation', null, '', Blockly.utils.xml.domToText(mutation)));
+      }
+      toast.success("Indicator settings saved");
+    }
+  };
+
   const highlightSyntax = (line: string) => {
     if (!line.trim()) return " ";
 
@@ -1111,6 +1146,15 @@ export const BlocklyWorkspace = ({
       run={runTour}
       onComplete={handleTourComplete}
       onStepChange={onStepChange}
+    />
+
+    {/* Indicator Settings Modal */}
+    <IndicatorSettingsModal
+      open={showIndicatorSettings}
+      onOpenChange={setShowIndicatorSettings}
+      indicatorName={currentIndicatorName}
+      currentParams={currentIndicatorParams}
+      onSave={handleSaveIndicatorSettings}
     />
   </div>;
 };
