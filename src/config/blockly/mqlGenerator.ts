@@ -851,8 +851,41 @@ mqlGenerator.forBlock['volumes'] = function (block: Blockly.Block) {
     return [`iVolume(NULL, ${period}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
 
-mqlGenerator.forBlock['vwap'] = function () {
-    return [`iCustom(NULL, 0, "VWAP", 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+mqlGenerator.forBlock['ta_vwap'] = function (block: Blockly.Block) {
+    // Add VWAP calculation function to definitions if not already present
+    if (!mqlGenerator.definitions_['vwap_function']) {
+        mqlGenerator.definitions_['vwap_function'] = `
+// VWAP Calculation Function
+double CalculateVWAP(int shift = 0)
+{
+   datetime currentBarTime = iTime(NULL, 0, shift);
+   datetime dayStart = currentBarTime - (currentBarTime % 86400); // Start of current day
+   
+   double cumulativeTPV = 0; // Cumulative (Typical Price * Volume)
+   double cumulativeVolume = 0;
+   
+   // Find the bar index at the start of the day
+   int dayStartBar = iBarShift(NULL, 0, dayStart);
+   
+   // Calculate from start of day to current bar
+   for(int i = dayStartBar; i >= shift; i--)
+   {
+      double typicalPrice = (iHigh(NULL, 0, i) + iLow(NULL, 0, i) + iClose(NULL, 0, i)) / 3.0;
+      double volume = iVolume(NULL, 0, i);
+      
+      cumulativeTPV += typicalPrice * volume;
+      cumulativeVolume += volume;
+   }
+   
+   // Avoid division by zero
+   if(cumulativeVolume > 0)
+      return cumulativeTPV / cumulativeVolume;
+   else
+      return iClose(NULL, 0, shift); // Return close price if no volume data
+}`;
+    }
+    
+    return [`CalculateVWAP(0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
 
 mqlGenerator.forBlock['ad'] = function (block: Blockly.Block) {
