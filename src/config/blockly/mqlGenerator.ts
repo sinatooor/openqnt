@@ -352,48 +352,74 @@ mqlGenerator.forBlock['trade_stop_loss'] = function (block: Blockly.Block) {
 };
 
 // --- Indicator Blocks ---
+// Helper to get param value with fallback
+const getIndicatorParam = (block: Blockly.Block, paramName: string, defaultValue: any) => {
+    return (block as any).indicatorParams?.[paramName] ?? defaultValue;
+};
+
 mqlGenerator.forBlock['ta_rsi'] = function (block: Blockly.Block) {
-    const period = mqlGenerator.valueToCode(block, 'PERIOD', mqlGenerator.ORDER_NONE) || '14';
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 14);
+    const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
     // iRSI(symbol, timeframe, period, applied_price, shift)
-    return [`iRSI(NULL, 0, ${period}, PRICE_CLOSE, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+    return [`iRSI(NULL, ${period}, ${maPeriod}, ${appliedPrice}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
 
 mqlGenerator.forBlock['ta_sma'] = function (block: Blockly.Block) {
-    const period = mqlGenerator.valueToCode(block, 'PERIOD', mqlGenerator.ORDER_NONE) || '14';
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 14);
+    const shift = getIndicatorParam(block, 'shift', 0);
+    const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
     // iMA(symbol, timeframe, period, ma_shift, ma_method, applied_price, shift)
-    return [`iMA(NULL, 0, ${period}, 0, MODE_SMA, PRICE_CLOSE, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+    return [`iMA(NULL, ${period}, ${maPeriod}, ${shift}, MODE_SMA, ${appliedPrice}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
 
 mqlGenerator.forBlock['ta_ema'] = function (block: Blockly.Block) {
-    const period = mqlGenerator.valueToCode(block, 'PERIOD', mqlGenerator.ORDER_NONE) || '14';
-    return [`iMA(NULL, 0, ${period}, 0, MODE_EMA, PRICE_CLOSE, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 14);
+    const shift = getIndicatorParam(block, 'shift', 0);
+    const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
+    // iMA(symbol, timeframe, period, ma_shift, ma_method, applied_price, shift)
+    return [`iMA(NULL, ${period}, ${maPeriod}, ${shift}, MODE_EMA, ${appliedPrice}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
 
 mqlGenerator.forBlock['ta_bb'] = function (block: Blockly.Block) {
-    const period = mqlGenerator.valueToCode(block, 'PERIOD', mqlGenerator.ORDER_NONE) || '20';
-    const deviation = mqlGenerator.valueToCode(block, 'DEVIATION', mqlGenerator.ORDER_NONE) || '2';
-    const band = block.getFieldValue('BAND') || 'MIDDLE';
-    const bandMode = band === 'UPPER' ? 'MODE_UPPER' : (band === 'LOWER' ? 'MODE_LOWER' : 'MODE_MAIN');
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 20);
+    const deviation = getIndicatorParam(block, 'deviation', 2.0);
+    const shift = getIndicatorParam(block, 'shift', 0);
+    const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
     // iBands(symbol, timeframe, period, deviation, bands_shift, applied_price, mode, shift)
-    return [`iBands(NULL, 0, ${period}, ${deviation}, 0, PRICE_CLOSE, ${bandMode}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+    // Note: Assuming middle band - blocks should specify which band they want
+    return [`iBands(NULL, ${period}, ${maPeriod}, ${deviation}, ${shift}, ${appliedPrice}, MODE_MAIN, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
 
 mqlGenerator.forBlock['ta_macd'] = function (block: Blockly.Block) {
-    const mode = block.getFieldValue('MODE') || 'MAIN';
-    const modeValue = mode === 'SIGNAL' ? 'MODE_SIGNAL' : 'MODE_MAIN';
+    const period = getIndicatorParam(block, 'period', 5);
+    const fastEMA = getIndicatorParam(block, 'fastEMA', 12);
+    const slowEMA = getIndicatorParam(block, 'slowEMA', 26);
+    const signalSMA = getIndicatorParam(block, 'signalSMA', 9);
+    const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
     // iMACD(symbol, timeframe, fast_ema, slow_ema, signal_sma, applied_price, mode, shift)
-    return [`iMACD(NULL, 0, 12, 26, 9, PRICE_CLOSE, ${modeValue}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+    // Note: Assuming main line - blocks should specify which line they want
+    return [`iMACD(NULL, ${period}, ${fastEMA}, ${slowEMA}, ${signalSMA}, ${appliedPrice}, MODE_MAIN, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
 
 mqlGenerator.forBlock['ta_atr'] = function (block: Blockly.Block) {
-    const period = mqlGenerator.valueToCode(block, 'PERIOD', mqlGenerator.ORDER_NONE) || '14';
+    const period = getIndicatorParam(block, 'period', 5);
+    const maPeriod = getIndicatorParam(block, 'ma_period', 14);
     // iATR(symbol, timeframe, period, shift)
-    return [`iATR(NULL, 0, ${period}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+    return [`iATR(NULL, ${period}, ${maPeriod}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
 
 mqlGenerator.forBlock['ta_stochastic'] = function (block: Blockly.Block) {
-    const mode = block.getFieldValue('MODE') || 'MAIN';
-    const modeValue = mode === 'SIGNAL' ? 'MODE_SIGNAL' : 'MODE_MAIN';
+    const period = getIndicatorParam(block, 'period', 5);
+    const kPeriod = getIndicatorParam(block, 'kPeriod', 5);
+    const dPeriod = getIndicatorParam(block, 'dPeriod', 3);
+    const slowing = getIndicatorParam(block, 'slowing', 3);
+    const method = getIndicatorParam(block, 'method', 0);
+    const priceField = getIndicatorParam(block, 'price', 0);
     // iStochastic(symbol, timeframe, %K, %D, slowing, method, price_field, mode, shift)
-    return [`iStochastic(NULL, 0, 5, 3, 3, MODE_SMA, 0, ${modeValue}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+    // Note: Assuming main line - blocks should specify which line they want
+    return [`iStochastic(NULL, ${period}, ${kPeriod}, ${dPeriod}, ${slowing}, ${method}, ${priceField}, MODE_MAIN, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
