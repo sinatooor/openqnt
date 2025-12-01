@@ -16,8 +16,8 @@ interface StrategyTemplatesDialogProps {
 export const StrategyTemplatesDialog = ({ open, onOpenChange, onLoadTemplate }: StrategyTemplatesDialogProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  const filteredTemplates = selectedCategory === 'all' 
-    ? strategyTemplates 
+  const filteredTemplates = selectedCategory === 'all'
+    ? strategyTemplates
     : strategyTemplates.filter(t => t.category === selectedCategory);
 
   const getDifficultyColor = (difficulty: string) => {
@@ -64,7 +64,7 @@ export const StrategyTemplatesDialog = ({ open, onOpenChange, onLoadTemplate }: 
           </TabsList>
 
           <div className="flex-1 overflow-y-auto mt-4">
-            <TabsContent value={selectedCategory} className="m-0 space-y-4">
+            <div className="m-0 space-y-4">
               {filteredTemplates.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   No templates found in this category.
@@ -72,9 +72,9 @@ export const StrategyTemplatesDialog = ({ open, onOpenChange, onLoadTemplate }: 
               ) : (
                 <div className="grid gap-4 md:grid-cols-2">
                   {filteredTemplates.map((template) => (
-                    <Card 
-                      key={template.id} 
-                      className="hover-scale transition-all cursor-pointer hover:border-primary/50"
+                    <Card
+                      key={template.id}
+                      className="transition-all cursor-pointer hover:border-primary/50"
                       onClick={() => {
                         onLoadTemplate(template);
                         onOpenChange(false);
@@ -86,8 +86,8 @@ export const StrategyTemplatesDialog = ({ open, onOpenChange, onLoadTemplate }: 
                             {getCategoryIcon(template.category)}
                             <CardTitle className="text-lg">{template.name}</CardTitle>
                           </div>
-                          <Badge 
-                            variant="outline" 
+                          <Badge
+                            variant="outline"
                             className={getDifficultyColor(template.difficulty)}
                           >
                             {template.difficulty}
@@ -98,8 +98,8 @@ export const StrategyTemplatesDialog = ({ open, onOpenChange, onLoadTemplate }: 
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           className="w-full"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -114,7 +114,7 @@ export const StrategyTemplatesDialog = ({ open, onOpenChange, onLoadTemplate }: 
                   ))}
                 </div>
               )}
-            </TabsContent>
+            </div>
           </div>
         </Tabs>
       </DialogContent>

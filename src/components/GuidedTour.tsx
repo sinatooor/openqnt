@@ -113,16 +113,17 @@ export const GuidedTour = ({ run, onComplete, onStepChange }: GuidedTourProps) =
 
 interface TourTriggerButtonProps {
   onClick: () => void;
+  className?: string;
 }
 
-export const TourTriggerButton = React.forwardRef<HTMLButtonElement, TourTriggerButtonProps>(({ onClick }, ref) => {
+export const TourTriggerButton = React.forwardRef<HTMLButtonElement, TourTriggerButtonProps>(({ onClick, className }, ref) => {
   return (
     <Button
       ref={ref}
       onClick={onClick}
       variant="outline"
       size="icon"
-      className="tour-trigger-btn"
+      className={`tour-trigger-btn ${className || ""}`}
       title="Start Guided Tour"
     >
       <Info className="w-4 h-4" />
