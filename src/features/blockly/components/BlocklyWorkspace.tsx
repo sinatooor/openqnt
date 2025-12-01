@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, Undo2, Redo2, Blocks, Wand2, FileCode, BarChart3, TrendingUp, BookOpen, Search, Pencil, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { BacktestingPanel } from "src/features/backtest/components/BacktestingPanel";
+import { BacktestingPanel } from "@/features/backtest/components/BacktestingPanel";
 import { StrategyTemplatesDialog } from "@/components/StrategyTemplatesDialog";
 import { FloatingChartModal } from "@/components/FloatingChartModal";
 import { AIChatPanel } from "@/features/ai/components/AIChatPanel";
@@ -420,20 +420,68 @@ export const BlocklyWorkspace = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleRefreshCode = () => {
+  const handleRefreshCode = async () => {
     if (!workspaceRef.current) return;
 
-    // Manually regenerate code from current workspace blocks
-    // Generate MQL first to avoid potential interference from JS generator
-    const mqlCode = generateCode(workspaceRef.current, 'mql');
-    const code = generateCode(workspaceRef.current, 'javascript');
+    // If MQL is selected, generate with AI
+    if (codeLanguage === 'mql') {
+      // Generate draft MQL code
+      const draftMql = generateCode(workspaceRef.current, 'mql');
+      
+      // Get workspace XML for context
+      const xml = Blockly.Xml.workspaceToDom(workspaceRef.current);
+      const xmlText = Blockly.Xml.domToText(xml);
+      
+      toast.info("Generating MQL code with AI...", {
+        description: "This may take a few seconds"
+      });
 
-    setGeneratedCode(code);
-    setGeneratedMqlCode(mqlCode);
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-mql-code`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+            body: JSON.stringify({
+              draftMql,
+              workspaceXml: xmlText,
+              strategyName
+            }),
+          }
+        );
 
-    toast.success("Code refreshed!", {
-      description: "Generated code from current blocks"
-    });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to generate MQL code");
+        }
+
+        const data = await response.json();
+        setGeneratedMqlCode(data.mqlCode);
+        
+        toast.success("MQL code generated!", {
+          description: "AI-refined Expert Advisor code ready"
+        });
+      } catch (error) {
+        console.error("Error generating MQL code:", error);
+        toast.error("Failed to generate MQL code", {
+          description: error instanceof Error ? error.message : "Unknown error"
+        });
+        
+        // Fallback to draft code
+        setGeneratedMqlCode(draftMql);
+      }
+    } else {
+      // JavaScript - generate locally
+      const code = generateCode(workspaceRef.current, 'javascript');
+      setGeneratedCode(code);
+      
+      toast.success("Code refreshed!", {
+        description: "Generated code from current blocks"
+      });
+    }
   };
   const handleExportCode = () => {
     if (!generatedCode) {
