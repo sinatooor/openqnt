@@ -12,16 +12,15 @@ serve(async (req) => {
   }
 
   try {
-    const { draftMql, workspaceXml, strategyName } = await req.json();
+    const { workspaceXml, strategyName } = await req.json();
     
     console.log('Received request to generate MQL code');
     console.log('Strategy name:', strategyName);
-    console.log('Draft MQL length:', draftMql?.length);
     console.log('Workspace XML length:', workspaceXml?.length);
 
-    if (!draftMql) {
+    if (!workspaceXml) {
       return new Response(
-        JSON.stringify({ error: 'No draft MQL code provided' }),
+        JSON.stringify({ error: 'No workspace XML provided' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -45,60 +44,93 @@ serve(async (req) => {
       }
     } catch (error) {
       console.warn('Could not load MQL4 syntax file:', error);
-      // Continue without syntax reference
     }
 
-    // Extract block descriptions from workspace XML
-    let blockDescriptions = '';
-    if (workspaceXml) {
-      try {
-        // Parse basic block info from XML
-        const blockMatches = Array.from(workspaceXml.matchAll(/<block type="([^"]+)"/g)) as RegExpMatchArray[];
-        const blockTypes = blockMatches.map(m => m[1]);
-        if (blockTypes.length > 0) {
-          blockDescriptions = `\n\nBLOCK TYPES USED:\n${blockTypes.map((type, i) => `${i + 1}. ${type.replace(/_/g, ' ')}`).join('\n')}`;
-        }
-      } catch (error) {
-        console.warn('Could not parse workspace XML:', error);
+    // Extract detailed block structure from workspace XML
+    let blockStructure = '';
+    try {
+      const blockMatches = Array.from(workspaceXml.matchAll(/<block type="([^"]+)"[^>]*>/g)) as RegExpMatchArray[];
+      const blocks: { [key: string]: number } = {};
+      
+      blockMatches.forEach(match => {
+        const blockType = match[1];
+        blocks[blockType] = (blocks[blockType] || 0) + 1;
+      });
+
+      if (Object.keys(blocks).length > 0) {
+        blockStructure = '\n\nBLOCK STRUCTURE:\n' + 
+          Object.entries(blocks)
+            .map(([type, count]) => `- ${type.replace(/_/g, ' ')} (${count}x)`)
+            .join('\n');
       }
+
+      // Extract field values for more context
+      const fieldMatches = Array.from(workspaceXml.matchAll(/<field name="([^"]+)">([^<]+)<\/field>/g)) as RegExpMatchArray[];
+      if (fieldMatches.length > 0) {
+        blockStructure += '\n\nFIELD VALUES:\n';
+        fieldMatches.slice(0, 20).forEach(match => {
+          blockStructure += `- ${match[1]}: ${match[2]}\n`;
+        });
+      }
+    } catch (error) {
+      console.warn('Could not parse workspace XML:', error);
     }
 
-    // Build comprehensive prompt
-    const systemPrompt = `You are an expert MQL4 programmer specializing in converting trading strategy logic into production-quality MetaTrader 4 Expert Advisor code.
+    // Build comprehensive prompt for MQL4 generation
+    const systemPrompt = `You are an expert MQL4 programmer specializing in creating production-quality MetaTrader 4 Expert Advisors.
 
-Your task is to take draft MQL4 code generated from visual blocks and refine it into clean, compilable, professional EA code.
+Your task is to analyze a trading strategy represented as visual blocks (in XML format) and generate complete, compilable MQL4 Expert Advisor code.
 
-${mql4Syntax ? `MQL4 SYNTAX REFERENCE:\n${mql4Syntax}\n` : ''}
+${mql4Syntax ? `MQL4 SYNTAX REFERENCE:\n${mql4Syntax}\n\n` : ''}
 
 REQUIREMENTS:
-1. Produce compilable MQL4 code that will work in MetaTrader 4
-2. Use proper MQL4 built-in functions (OrderSend, OrderClose, iRSI, iMA, iMACD, etc.)
+1. Generate complete, compilable MQL4 code for MetaTrader 4
+2. Use proper MQL4 built-in functions:
+   - OrderSend() for placing trades
+   - OrderClose() for closing positions
+   - OrderSelect() for selecting orders
+   - Technical indicators: iRSI(), iMA(), iMACD(), iStochastic(), iBands(), iATR(), etc.
+   - Price data: Open[], High[], Low[], Close[], Volume[]
 3. Include proper error handling with GetLastError()
 4. Follow MQL4 best practices and coding standards
-5. Preserve the exact trading logic from the draft code
-6. Add helpful comments explaining the strategy logic
-7. Include proper variable declarations and type safety
-8. Use correct MQL4 order management (OrderSelect, OrderTicket, etc.)
-9. Implement proper position sizing and risk management
-10. Return ONLY the MQL4 code without any explanations or markdown formatting
+5. Include #property directives at the top
+6. Implement OnInit(), OnDeinit(), and OnTick() functions
+7. Add clear comments explaining the strategy logic
+8. Use proper variable declarations and types
+9. Implement position sizing and risk management
+10. Handle order management correctly (check for existing positions)
+
+BLOCK TYPE MEANINGS:
+- environment_price: Access price data (Open, High, Low, Close)
+- indicator_* : Technical analysis indicators (RSI, MA, MACD, etc.)
+- control_if: Conditional logic
+- control_forever: Main strategy loop (goes in OnTick)
+- trade_order: Place buy/sell orders
+- trade_stop_loss: Set stop loss
+- trade_take_profit: Set take profit
+- operator_*: Arithmetic and comparison operations
+- math_number: Numeric values
 
 IMPORTANT:
-- Do NOT add features not present in the draft code
-- Do NOT change the core trading logic
-- Focus on syntax correctness and MQL4 compliance
-- Ensure all indicator calls use correct MQL4 function signatures`;
+- Return ONLY the MQL4 code without markdown formatting or explanations
+- Ensure all indicator calls use correct MQL4 function signatures
+- Include proper Symbol() and Period() in indicator calls
+- Handle trade execution errors properly
+- Use proper lot sizing (0.01, 0.1, 1.0, etc.)`;
 
-    const userPrompt = `Please refine this MQL4 Expert Advisor code for the strategy "${strategyName || 'Untitled Strategy'}".
-${blockDescriptions}
+    const userPrompt = `Generate a complete MQL4 Expert Advisor for the strategy: "${strategyName || 'Trading Strategy'}"
 
-DRAFT CODE TO REFINE:
-\`\`\`mql4
-${draftMql}
+WORKSPACE BLOCKS:
+${blockStructure}
+
+FULL XML STRUCTURE:
+\`\`\`xml
+${workspaceXml}
 \`\`\`
 
-Return the refined, production-ready MQL4 code.`;
+Generate the complete MQL4 Expert Advisor code that implements this trading strategy.`;
 
-    console.log('Calling Lovable AI for MQL generation...');
+    console.log('Calling Lovable AI for MQL generation from blocks...');
     
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -142,9 +174,9 @@ Return the refined, production-ready MQL4 code.`;
     }
 
     const aiData = await aiResponse.json();
-    const refinedCode = aiData.choices?.[0]?.message?.content || '';
+    const generatedCode = aiData.choices?.[0]?.message?.content || '';
 
-    if (!refinedCode) {
+    if (!generatedCode) {
       console.error('No code returned from AI');
       return new Response(
         JSON.stringify({ error: 'AI returned empty response' }),
@@ -153,12 +185,12 @@ Return the refined, production-ready MQL4 code.`;
     }
 
     // Clean up the response - remove markdown code blocks if present
-    let cleanedCode = refinedCode.trim();
+    let cleanedCode = generatedCode.trim();
     if (cleanedCode.startsWith('```')) {
       cleanedCode = cleanedCode.replace(/^```(?:mql4|mql)?\n/, '').replace(/\n```$/, '');
     }
 
-    console.log('Successfully generated refined MQL code');
+    console.log('Successfully generated MQL code from blocks');
     
     return new Response(
       JSON.stringify({ mqlCode: cleanedCode }),
