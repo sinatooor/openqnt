@@ -666,13 +666,13 @@ export const strategyTemplates: StrategyTemplate[] = [
                       <block type="operator_greater">
                         <value name="LEFT">
                           <block type="ta_ema">
-                            <mutation period="5" ma_period="8" shift="0" applied_price="0"></mutation>
+                            <mutation period="60" ma_period="8" shift="0" applied_price="0"></mutation>
                             <field name="NAME">Fast EMA</field>
                           </block>
                         </value>
                         <value name="RIGHT">
                           <block type="ta_ema">
-                            <mutation period="5" ma_period="21" shift="0" applied_price="0"></mutation>
+                            <mutation period="60" ma_period="21" shift="0" applied_price="0"></mutation>
                             <field name="NAME">Medium EMA</field>
                           </block>
                         </value>
@@ -682,13 +682,13 @@ export const strategyTemplates: StrategyTemplate[] = [
                       <block type="operator_greater">
                         <value name="LEFT">
                           <block type="ta_ema">
-                            <mutation period="5" ma_period="21" shift="0" applied_price="0"></mutation>
+                            <mutation period="60" ma_period="21" shift="0" applied_price="0"></mutation>
                             <field name="NAME">Medium EMA</field>
                           </block>
                         </value>
                         <value name="RIGHT">
                           <block type="ta_ema">
-                            <mutation period="5" ma_period="55" shift="0" applied_price="0"></mutation>
+                            <mutation period="60" ma_period="55" shift="0" applied_price="0"></mutation>
                             <field name="NAME">Slow EMA</field>
                           </block>
                         </value>
@@ -723,7 +723,7 @@ export const strategyTemplates: StrategyTemplate[] = [
                               <block type="operator_multiply">
                                 <value name="LEFT">
                                   <block type="ta_atr">
-                                    <mutation period="5" ma_period="14"></mutation>
+                                    <mutation period="60" ma_period="14"></mutation>
                                     <field name="NAME">ATR</field>
                                   </block>
                                 </value>
@@ -753,7 +753,7 @@ export const strategyTemplates: StrategyTemplate[] = [
                                       <block type="operator_multiply">
                                         <value name="LEFT">
                                           <block type="ta_atr">
-                                            <mutation period="5" ma_period="14"></mutation>
+                                            <mutation period="60" ma_period="14"></mutation>
                                             <field name="NAME">ATR</field>
                                           </block>
                                         </value>
