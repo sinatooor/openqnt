@@ -12,6 +12,7 @@ export const useBlocklyState = () => {
   const aiPanelRef = useRef<HTMLDivElement>(null);
 
   const [generatedCode, setGeneratedCode] = useState<string>("");
+  const [generatedMqlCode, setGeneratedMqlCode] = useState<string>("");
   const [blockCount, setBlockCount] = useState(0);
   const [zoomLevel, setZoomLevel] = useState(100);
   const [isEmpty, setIsEmpty] = useState(true);
@@ -44,6 +45,8 @@ export const useBlocklyState = () => {
     // Generated code
     generatedCode,
     setGeneratedCode,
+    generatedMqlCode,
+    setGeneratedMqlCode,
 
     // Block stats
     blockCount,

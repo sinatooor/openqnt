@@ -70,6 +70,8 @@ export const BlocklyWorkspace = ({
     aiPanelRef,
     generatedCode,
     setGeneratedCode,
+    generatedMqlCode,
+    setGeneratedMqlCode,
     blockCount,
     setBlockCount,
     isEmpty,
