@@ -2,12 +2,126 @@ export interface StrategyTemplate {
   id: string;
   name: string;
   description: string;
-  difficulty: "beginner" | "intermediate" | "advanced";
+  difficulty: "simple" | "intermediate" | "advanced";
   category: "trend" | "reversal" | "breakout" | "scalping" | "momentum";
   workspace: string; // XML representation of the Blockly workspace
 }
 
 export const strategyTemplates: StrategyTemplate[] = [
+  {
+    id: "rsi-oversold-reversal",
+    name: "RSI Oversold Reversal",
+    description:
+      "Buy when RSI drops below 30 (oversold), sell when it rises above 70 (overbought). Standard 14-period RSI mean reversion strategy.",
+    difficulty: "simple",
+    category: "reversal",
+    workspace: `<xml xmlns="https://developers.google.com/blockly/xml">
+      <block type="control_forever" x="50" y="50">
+        <statement name="DO">
+          <block type="control_if">
+            <value name="CONDITION">
+              <block type="operator_less">
+                <value name="LEFT">
+                  <block type="ta_rsi">
+                    <mutation period="15" ma_period="14" applied_price="0"></mutation>
+                    <field name="NAME">RSI</field>
+                  </block>
+                </value>
+                <value name="RIGHT">
+                  <shadow type="math_number">
+                    <field name="NUM">30</field>
+                  </shadow>
+                </value>
+              </block>
+            </value>
+            <statement name="DO">
+              <block type="trade_order">
+                <field name="TRADE_ID">rsi_reversal_trade</field>
+                <field name="DIRECTION">long</field>
+                <value name="SIZE">
+                  <shadow type="math_number">
+                    <field name="NUM">3</field>
+                  </shadow>
+                </value>
+                <field name="SIZE_TYPE">percent</field>
+                <field name="LEVERAGE">1</field>
+                <field name="ORDER_TYPE">market</field>
+                <next>
+                  <block type="trade_stop_loss">
+                    <field name="CLOSE_TYPE">full</field>
+                    <field name="TRADE_ID">rsi_reversal_trade</field>
+                    <value name="PRICE">
+                      <block type="operator_subtract">
+                        <value name="LEFT">
+                          <block type="trade_entry_price">
+                            <field name="TRADE_ID">rsi_reversal_trade</field>
+                          </block>
+                        </value>
+                        <value name="RIGHT">
+                          <block type="operator_multiply">
+                            <value name="LEFT">
+                              <block type="ta_atr">
+                                <mutation period="15" ma_period="14"></mutation>
+                                <field name="NAME">ATR</field>
+                              </block>
+                            </value>
+                            <value name="RIGHT">
+                              <shadow type="math_number">
+                                <field name="NUM">1.5</field>
+                              </shadow>
+                            </value>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                    <next>
+                      <block type="trade_take_profit">
+                        <field name="CLOSE_TYPE">full</field>
+                        <field name="TRADE_ID">rsi_reversal_trade</field>
+                        <value name="PRICE">
+                          <block type="operator_add">
+                            <value name="LEFT">
+                              <block type="trade_entry_price">
+                                <field name="TRADE_ID">rsi_reversal_trade</field>
+                              </block>
+                            </value>
+                            <value name="RIGHT">
+                              <block type="operator_multiply">
+                                <value name="LEFT">
+                                  <block type="operator_multiply">
+                                    <value name="LEFT">
+                                      <block type="ta_atr">
+                                        <mutation period="15" ma_period="14"></mutation>
+                                        <field name="NAME">ATR</field>
+                                      </block>
+                                    </value>
+                                    <value name="RIGHT">
+                                      <shadow type="math_number">
+                                        <field name="NUM">1.5</field>
+                                      </shadow>
+                                    </value>
+                                  </block>
+                                </value>
+                                <value name="RIGHT">
+                                  <shadow type="math_number">
+                                    <field name="NUM">2</field>
+                                  </shadow>
+                                </value>
+                              </block>
+                            </value>
+                          </block>
+                        </value>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </statement>
+          </block>
+        </statement>
+      </block>
+    </xml>`,
+  },
   {
     id: "simple-ma-crossover",
     name: "Simple MA Crossover",
@@ -139,120 +253,7 @@ export const strategyTemplates: StrategyTemplate[] = [
       </block>
     </xml>`,
   },
-  {
-    id: "rsi-oversold-reversal",
-    name: "RSI Oversold Reversal",
-    description:
-      "Buy when RSI drops below 30 (oversold), sell when it rises above 70 (overbought). Standard 14-period RSI mean reversion strategy.",
-    difficulty: "beginner",
-    category: "reversal",
-    workspace: `<xml xmlns="https://developers.google.com/blockly/xml">
-      <block type="control_forever" x="50" y="50">
-        <statement name="DO">
-          <block type="control_if">
-            <value name="CONDITION">
-              <block type="operator_less">
-                <value name="LEFT">
-                  <block type="ta_rsi">
-                    <mutation period="15" ma_period="14" applied_price="0"></mutation>
-                    <field name="NAME">RSI</field>
-                  </block>
-                </value>
-                <value name="RIGHT">
-                  <shadow type="math_number">
-                    <field name="NUM">30</field>
-                  </shadow>
-                </value>
-              </block>
-            </value>
-            <statement name="DO">
-              <block type="trade_order">
-                <field name="TRADE_ID">rsi_reversal_trade</field>
-                <field name="DIRECTION">long</field>
-                <value name="SIZE">
-                  <shadow type="math_number">
-                    <field name="NUM">3</field>
-                  </shadow>
-                </value>
-                <field name="SIZE_TYPE">percent</field>
-                <field name="LEVERAGE">1</field>
-                <field name="ORDER_TYPE">market</field>
-                <next>
-                  <block type="trade_stop_loss">
-                    <field name="CLOSE_TYPE">full</field>
-                    <field name="TRADE_ID">rsi_reversal_trade</field>
-                    <value name="PRICE">
-                      <block type="operator_subtract">
-                        <value name="LEFT">
-                          <block type="trade_entry_price">
-                            <field name="TRADE_ID">rsi_reversal_trade</field>
-                          </block>
-                        </value>
-                        <value name="RIGHT">
-                          <block type="operator_multiply">
-                            <value name="LEFT">
-                              <block type="ta_atr">
-                                <mutation period="15" ma_period="14"></mutation>
-                                <field name="NAME">ATR</field>
-                              </block>
-                            </value>
-                            <value name="RIGHT">
-                              <shadow type="math_number">
-                                <field name="NUM">1.5</field>
-                              </shadow>
-                            </value>
-                          </block>
-                        </value>
-                      </block>
-                    </value>
-                    <next>
-                      <block type="trade_take_profit">
-                        <field name="CLOSE_TYPE">full</field>
-                        <field name="TRADE_ID">rsi_reversal_trade</field>
-                        <value name="PRICE">
-                          <block type="operator_add">
-                            <value name="LEFT">
-                              <block type="trade_entry_price">
-                                <field name="TRADE_ID">rsi_reversal_trade</field>
-                              </block>
-                            </value>
-                            <value name="RIGHT">
-                              <block type="operator_multiply">
-                                <value name="LEFT">
-                                  <block type="operator_multiply">
-                                    <value name="LEFT">
-                                      <block type="ta_atr">
-                                        <mutation period="15" ma_period="14"></mutation>
-                                        <field name="NAME">ATR</field>
-                                      </block>
-                                    </value>
-                                    <value name="RIGHT">
-                                      <shadow type="math_number">
-                                        <field name="NUM">1.5</field>
-                                      </shadow>
-                                    </value>
-                                  </block>
-                                </value>
-                                <value name="RIGHT">
-                                  <shadow type="math_number">
-                                    <field name="NUM">2</field>
-                                  </shadow>
-                                </value>
-                              </block>
-                            </value>
-                          </block>
-                        </value>
-                      </block>
-                    </next>
-                  </block>
-                </next>
-              </block>
-            </statement>
-          </block>
-        </statement>
-      </block>
-    </xml>`,
-  },
+
   {
     id: "bollinger-breakout",
     name: "Bollinger Band Breakout",
