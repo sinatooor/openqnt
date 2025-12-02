@@ -10,9 +10,9 @@ export interface StrategyTemplate {
 export const strategyTemplates: StrategyTemplate[] = [
   {
     id: "simple-ma-crossover",
-    name: "MQL5 Default Moving Average",
+    name: "Simple MA Crossover",
     description:
-      "The standard Moving Average strategy included with MetaTrader 5. Uses SMA(12) with Shift(6). Enters on bar open if price crosses the MA. Reverses on opposite signal.",
+      "A simple Moving Average crossover strategy. Uses SMA(12) with Shift(6). Enters on bar open if price crosses the MA. Reverses on opposite signal.",
     difficulty: "intermediate",
     category: "trend",
     workspace: `<xml xmlns="https://developers.google.com/blockly/xml">
