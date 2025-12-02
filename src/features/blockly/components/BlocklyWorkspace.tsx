@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, Undo2, Redo2, Blocks, Wand2, FileCode, BarChart3, TrendingUp, BookOpen, Search, Pencil, RefreshCw } from "lucide-react";
+import { Code2, Copy, Check, Download, Upload, ZoomIn, ZoomOut, Maximize2, Undo2, Redo2, Wand2, FileCode, BarChart3, BookOpen, Search, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { BacktestingPanel } from "@/features/backtest/components/BacktestingPanel";
 import { StrategyTemplatesDialog } from "@/components/StrategyTemplatesDialog";
@@ -49,7 +49,7 @@ export const BlocklyWorkspace = ({
   const [zoomLevel, setZoomLevel] = useState(100);
   const [isEmpty, setIsEmpty] = useState(true);
   const [showLineNumbers, setShowLineNumbers] = useState(true);
-  const [beautified, setBeautified] = useState(false);
+  const [beautified, setBeautified] = useState(true);
   const [backtestResult, setBacktestResult] = useState<BacktestResult | null>(null);
   const [isBacktesting, setIsBacktesting] = useState(false);
   const [showBacktest, setShowBacktest] = useState(false);
@@ -421,32 +421,8 @@ export const BlocklyWorkspace = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleExportCode = () => {
-    if (!generatedMqlCode || generatedMqlCode.includes('Add blocks to your workspace')) {
-      toast.error("No code to export. Add blocks to your workspace first.");
-      return;
-    }
-    const blob = new Blob([generatedMqlCode], {
-      type: "text/plain"
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${strategyName.replace(/[^a-z0-9]/gi, '_')}.mq4`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success("Strategy exported successfully!");
-  };
-  const handleRunStrategy = () => {
-    if (!generatedMqlCode || generatedMqlCode.includes('Add blocks to your workspace')) {
-      toast.error("No strategy to run. Add blocks to your workspace first.");
-      return;
-    }
-    toast.info("Export the MQL4 code and upload it to MetaTrader 4 to run your strategy.");
-    console.log("Generated Strategy Code:\n", generatedMqlCode);
-  };
+
+
   const handleSaveWorkspace = () => {
     if (!workspaceRef.current) return;
     const xml = Blockly.Xml.workspaceToDom(workspaceRef.current);
@@ -711,16 +687,24 @@ export const BlocklyWorkspace = ({
       const trimmed = line.trim();
       if (!trimmed) continue;
 
-      // Decrease indent for closing braces
-      if (trimmed.startsWith("}")) {
+      // Check if line starts with closing brace to decrease indent BEFORE adding line
+      if (trimmed.startsWith("}") || trimmed.startsWith("];") || trimmed.startsWith(");")) {
         indent = Math.max(0, indent - 1);
       }
 
       // Add indentation
-      result += "  ".repeat(indent) + trimmed + "\n";
+      result += "    ".repeat(indent) + trimmed + "\n"; // Use 4 spaces for better readability
 
-      // Increase indent for opening braces
-      if (trimmed.endsWith("{")) {
+      // Check if line ends with opening brace to increase indent AFTER adding line
+      // Also handle case statements
+      if (trimmed.endsWith("{") || trimmed.endsWith("(") || trimmed.endsWith("[") || trimmed.endsWith(":") && !trimmed.includes("default:")) {
+        indent++;
+      }
+
+      // Special handling for 'default:' to align with cases but indent content
+      if (trimmed === "default:") {
+        // Usually case/default are at same level as switch, content indented
+        // But simple logic: if it ends in :, indent next line
         indent++;
       }
     }
@@ -756,14 +740,14 @@ export const BlocklyWorkspace = ({
     const displayCode = beautified ? beautifyCode(code) : code;
     const lines = displayCode.split("\n");
     return <div className="flex font-mono text-sm">
-      {showLineNumbers && <div className="select-none pr-4 text-muted-foreground/50 text-right border-r border-border">
+      {showLineNumbers && <div className="select-none pr-4 text-[#858585] text-right border-r border-[#404040] min-w-[3rem]">
         {lines.map((_, i) => <div key={i} className="leading-6">
           {i + 1}
         </div>)}
       </div>}
       <div className="flex-1 pl-4">
         {lines.map((line, i) => <div key={i} className="leading-6">
-          <code className="syntax-highlight">{highlightSyntax(line)}</code>
+          <code className="syntax-highlight whitespace-pre">{highlightSyntax(line)}</code>
         </div>)}
       </div>
     </div>;
@@ -843,34 +827,58 @@ export const BlocklyWorkspace = ({
   const highlightSyntax = (line: string) => {
     if (!line.trim()) return " ";
 
-    // Simple syntax highlighting for JavaScript
-    const keywords = ["if", "else", "while", "for", "function", "return", "var", "let", "const"];
+    // Simple syntax highlighting for MQL5
+    const keywords = [
+      "if", "else", "while", "for", "do", "break", "continue", "return", "switch", "case", "default",
+      "void", "int", "double", "bool", "string", "datetime", "ulong", "uint", "char", "short", "long", "float",
+      "class", "struct", "enum", "input", "const", "static", "virtual", "override", "public", "private", "protected",
+      "true", "false", "new", "delete", "operator", "this", "input", "sinput"
+    ];
     const parts: JSX.Element[] = [];
     let remaining = line;
     let key = 0;
 
     // Handle comments
     if (line.trim().startsWith("//")) {
-      return <span className="text-green-500/70">{line}</span>;
+      return <span className="syntax-comment">{line}</span>;
     }
 
     // Simple tokenization
-    const tokens = remaining.split(/(\s+|[{}();,])/);
+    const tokens = remaining.split(/(\s+|[{}();,\[\]])/);
     tokens.forEach(token => {
       if (keywords.includes(token)) {
-        parts.push(<span key={key++} className="text-purple-400 font-semibold">
+        parts.push(<span key={key++} className="syntax-keyword">
           {token}
         </span>);
       } else if (token.match(/^['"].*['"]$/)) {
-        parts.push(<span key={key++} className="text-green-400">
+        parts.push(<span key={key++} className="syntax-string">
           {token}
         </span>);
-      } else if (token.match(/^\d+$/)) {
-        parts.push(<span key={key++} className="text-orange-400">
+      } else if (token.match(/^\d+(\.\d+)?$/)) {
+        parts.push(<span key={key++} className="syntax-number">
           {token}
         </span>);
-      } else if (token.match(/^[{}();,]$/)) {
-        parts.push(<span key={key++} className="text-muted-foreground">
+      } else if (token.match(/^[{}();,\[\]]$/)) {
+        parts.push(<span key={key++} className="syntax-punctuation">
+          {token}
+        </span>);
+      } else if (token.match(/^[A-Z][a-zA-Z0-9_]*$/) && !keywords.includes(token)) {
+        // Capitalized words are likely types or classes
+        parts.push(<span key={key++} className="syntax-type">
+          {token}
+        </span>);
+      } else if (token.match(/^[a-zA-Z_][a-zA-Z0-9_]*(?=\()/) || (remaining.includes(token + '(') && !keywords.includes(token))) {
+        // Words followed by ( are likely functions - this is a rough heuristic
+        parts.push(<span key={key++} className="syntax-function">
+          {token}
+        </span>);
+      } else if (token.match(/^[+\-*/%=&|<>!^]+$/)) {
+        parts.push(<span key={key++} className="syntax-operator">
+          {token}
+        </span>);
+      } else if (token.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
+        // Variables/Identifiers - default color
+        parts.push(<span key={key++} className="syntax-variable">
           {token}
         </span>);
       } else {
@@ -1089,13 +1097,21 @@ export const BlocklyWorkspace = ({
       </div>
 
       {/* Code View Panel */}
-      {showCode && <div className="w-[500px] border-l border-border bg-card flex flex-col animate-in slide-in-from-right duration-300">
-        <div className="h-12 border-b border-border flex items-center justify-between px-4 bg-muted/30">
+      {showCode && <div className="w-[500px] border-l border-[#3e3e42] bg-[#1e1e1e] flex flex-col animate-in slide-in-from-right duration-300">
+        <div className="h-12 border-b border-[#3e3e42] flex items-center justify-between px-4 bg-[#252526]">
           <div className="flex items-center gap-2">
             <FileCode className="w-4 h-4 text-primary" />
             <span className="text-sm font-medium">MQL4 Expert Advisor</span>
           </div>
           <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setBeautified(!beautified)}>
+                  <Wand2 className={`w-3 h-3 ${beautified ? "text-primary" : ""}`} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Format Code</TooltipContent>
+            </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowLineNumbers(!showLineNumbers)}>
@@ -1112,24 +1128,15 @@ export const BlocklyWorkspace = ({
               </TooltipTrigger>
               <TooltipContent>Copy to clipboard</TooltipContent>
             </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleExportCode}>
-                  <Download className="w-3 h-3" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Download .mq4 file</TooltipContent>
-            </Tooltip>
+
           </div>
         </div>
-        <div className="flex-1 overflow-auto custom-scrollbar relative bg-muted/20">
-          <pre className="p-4 text-sm font-mono leading-relaxed">
-            <code className="text-foreground">
-              {generatedMqlCode || '// Add blocks to your workspace to generate MQL4 code'}
-            </code>
-          </pre>
+        <div className="flex-1 overflow-auto custom-scrollbar relative bg-[#1e1e1e] text-gray-300">
+          <div className="min-h-full p-4">
+            {renderCodeWithLineNumbers(generatedMqlCode)}
+          </div>
         </div>
-        <div className="h-10 border-t border-border flex items-center justify-between px-4 bg-muted/30 text-xs text-muted-foreground">
+        <div className="h-10 border-t border-[#3e3e42] flex items-center justify-between px-4 bg-[#252526] text-xs text-gray-400">
           <div className="flex gap-3">
             <span>{getCodeStatistics().lines} lines</span>
             <span>{getCodeStatistics().chars} chars</span>

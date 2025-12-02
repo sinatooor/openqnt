@@ -40,7 +40,7 @@ export const GuidedTour = ({ run, onComplete, onStepChange }: GuidedTourProps) =
     {
       target: ".save-workspace-trigger",
       content:
-        "Don't forget to save your work! You can save, load, and export your strategies anytime. Happy trading! 🚀",
+        "Don't forget to save your work! You can save and load your strategies anytime. Happy trading! 🚀",
       placement: "bottom",
     },
   ];
