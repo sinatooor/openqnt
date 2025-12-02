@@ -439,11 +439,11 @@ mqlGenerator.forBlock['operator_advanced_math'] = function (block: Blockly.Block
 
 // --- Environment Blocks ---
 mqlGenerator.forBlock['environment_price'] = function () {
-    return ['Close[0]', mqlGenerator.ORDER_ATOMIC];
+    return ['SymbolInfoDouble(Symbol(), SYMBOL_BID)', mqlGenerator.ORDER_ATOMIC];
 };
 
 mqlGenerator.forBlock['environment_spread'] = function () {
-    return ['(Ask - Bid)', mqlGenerator.ORDER_ATOMIC];
+    return ['(SymbolInfoDouble(Symbol(), SYMBOL_ASK) - SymbolInfoDouble(Symbol(), SYMBOL_BID))', mqlGenerator.ORDER_ATOMIC];
 };
 
 mqlGenerator.forBlock['environment_prev_candle_open'] = function (block: Blockly.Block) {
@@ -518,7 +518,19 @@ mqlGenerator.forBlock['trade_take_profit'] = function (block: Blockly.Block) {
    if(PositionGetString(POSITION_SYMBOL) == Symbol()) {
       double currentTP = PositionGetDouble(POSITION_TP);
       double newTP = ${price};
-      if(MathAbs(currentTP - newTP) > _Point) {
+      long type = PositionGetInteger(POSITION_TYPE);
+      double currentPrice = (type == POSITION_TYPE_BUY) ? SymbolInfoDouble(Symbol(), SYMBOL_BID) : SymbolInfoDouble(Symbol(), SYMBOL_ASK);
+      int stopsLevel = (int)SymbolInfoInteger(Symbol(), SYMBOL_TRADE_STOPS_LEVEL);
+      double minDistance = stopsLevel * _Point;
+
+      bool isValid = false;
+      if (type == POSITION_TYPE_BUY) {
+          isValid = (newTP > currentPrice + minDistance);
+      } else {
+          isValid = (newTP < currentPrice - minDistance);
+      }
+
+      if(isValid && MathAbs(currentTP - newTP) > _Point) {
           if(!trade.PositionModify(ticket, PositionGetDouble(POSITION_SL), newTP)) {
               Print("Modify TP failed. Code: ", trade.ResultRetcode(), ", Desc: ", trade.ResultRetcodeDescription());
           }
@@ -535,7 +547,19 @@ mqlGenerator.forBlock['trade_stop_loss'] = function (block: Blockly.Block) {
    if(PositionGetString(POSITION_SYMBOL) == Symbol()) {
       double currentSL = PositionGetDouble(POSITION_SL);
       double newSL = ${price};
-      if(MathAbs(currentSL - newSL) > _Point) {
+      long type = PositionGetInteger(POSITION_TYPE);
+      double currentPrice = (type == POSITION_TYPE_BUY) ? SymbolInfoDouble(Symbol(), SYMBOL_BID) : SymbolInfoDouble(Symbol(), SYMBOL_ASK);
+      int stopsLevel = (int)SymbolInfoInteger(Symbol(), SYMBOL_TRADE_STOPS_LEVEL);
+      double minDistance = stopsLevel * _Point;
+
+      bool isValid = false;
+      if (type == POSITION_TYPE_BUY) {
+          isValid = (newSL < currentPrice - minDistance);
+      } else {
+          isValid = (newSL > currentPrice + minDistance);
+      }
+
+      if(isValid && MathAbs(currentSL - newSL) > _Point) {
           if(!trade.PositionModify(ticket, newSL, PositionGetDouble(POSITION_TP))) {
               Print("Modify SL failed. Code: ", trade.ResultRetcode(), ", Desc: ", trade.ResultRetcodeDescription());
           }
@@ -607,7 +631,7 @@ mqlGenerator.forBlock['risk_trailing_stop'] = function (block: Blockly.Block) {
     return `for(int i=PositionsTotal()-1; i>=0; i--) {
    ulong ticket = PositionGetTicket(i);
    if(PositionGetString(POSITION_SYMBOL) == Symbol()) {
-      double trailDistance = Close[0] * ${percent} / 100.0;
+      double trailDistance = SymbolInfoDouble(Symbol(), SYMBOL_BID) * ${percent} / 100.0;
       double sl = PositionGetDouble(POSITION_SL);
       double tp = PositionGetDouble(POSITION_TP);
       double open = PositionGetDouble(POSITION_PRICE_OPEN);
@@ -664,7 +688,7 @@ mqlGenerator.forBlock['risk_daily_loss_limit'] = function (block: Blockly.Block)
 
 mqlGenerator.forBlock['risk_position_percent'] = function (block: Blockly.Block) {
     const percent = mqlGenerator.valueToCode(block, 'PERCENT', mqlGenerator.ORDER_NONE) || '10';
-    return [`(AccountBalance() * ${percent} / 100.0 / Close[0])`, mqlGenerator.ORDER_DIVISION];
+    return [`(AccountBalance() * ${percent} / 100.0 / SymbolInfoDouble(Symbol(), SYMBOL_BID))`, mqlGenerator.ORDER_DIVISION];
 };
 
 mqlGenerator.forBlock['risk_kelly_criterion'] = function (block: Blockly.Block) {
