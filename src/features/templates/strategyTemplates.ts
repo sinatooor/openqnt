@@ -12,7 +12,7 @@ export const strategyTemplates: StrategyTemplate[] = [
     id: "simple-ma-crossover",
     name: "Simple MA Crossover",
     description:
-      "Buy when fast MA crosses above slow MA, sell when it crosses below. Classic trend-following strategy.",
+      "Buy when fast MA crosses above slow MA, sell when it crosses below. Classic golden cross strategy with 50/200 SMA.",
     difficulty: "beginner",
     category: "trend",
     workspace: `<xml xmlns="https://developers.google.com/blockly/xml">
@@ -23,14 +23,14 @@ export const strategyTemplates: StrategyTemplate[] = [
               <block type="operator_greater">
                 <value name="LEFT">
                   <block type="ta_sma">
-                    <mutation period="20" ma_period="14" shift="0" applied_price="0"></mutation>
-                    <field name="NAME">SMA</field>
+                    <mutation period="5" ma_period="50" shift="0" applied_price="0"></mutation>
+                    <field name="NAME">Fast SMA</field>
                   </block>
                 </value>
                 <value name="RIGHT">
                   <block type="ta_sma">
-                    <mutation period="50" ma_period="14" shift="0" applied_price="0"></mutation>
-                    <field name="NAME">SMA</field>
+                    <mutation period="5" ma_period="200" shift="0" applied_price="0"></mutation>
+                    <field name="NAME">Slow SMA</field>
                   </block>
                 </value>
               </block>
@@ -49,20 +49,26 @@ export const strategyTemplates: StrategyTemplate[] = [
                 <field name="ORDER_TYPE">market</field>
                 <next>
                   <block type="trade_stop_loss">
+                    <field name="CLOSE_TYPE">full</field>
                     <field name="TRADE_ID">ma_crossover_trade</field>
                     <value name="PRICE">
                       <block type="operator_subtract">
                         <value name="LEFT">
-                          <block type="environment_price"></block>
+                          <block type="trade_entry_price">
+                            <field name="TRADE_ID">ma_crossover_trade</field>
+                          </block>
                         </value>
                         <value name="RIGHT">
                           <block type="operator_multiply">
                             <value name="LEFT">
-                              <block type="environment_price"></block>
+                              <block type="ta_atr">
+                                <mutation period="5" ma_period="14"></mutation>
+                                <field name="NAME">ATR</field>
+                              </block>
                             </value>
                             <value name="RIGHT">
                               <shadow type="math_number">
-                                <field name="NUM">0.01</field>
+                                <field name="NUM">2</field>
                               </shadow>
                             </value>
                           </block>
@@ -71,20 +77,35 @@ export const strategyTemplates: StrategyTemplate[] = [
                     </value>
                     <next>
                       <block type="trade_take_profit">
+                        <field name="CLOSE_TYPE">full</field>
                         <field name="TRADE_ID">ma_crossover_trade</field>
                         <value name="PRICE">
                           <block type="operator_add">
                             <value name="LEFT">
-                              <block type="environment_price"></block>
+                              <block type="trade_entry_price">
+                                <field name="TRADE_ID">ma_crossover_trade</field>
+                              </block>
                             </value>
                             <value name="RIGHT">
                               <block type="operator_multiply">
                                 <value name="LEFT">
-                                  <block type="environment_price"></block>
+                                  <block type="operator_multiply">
+                                    <value name="LEFT">
+                                      <block type="ta_atr">
+                                        <mutation period="5" ma_period="14"></mutation>
+                                        <field name="NAME">ATR</field>
+                                      </block>
+                                    </value>
+                                    <value name="RIGHT">
+                                      <shadow type="math_number">
+                                        <field name="NUM">2</field>
+                                      </shadow>
+                                    </value>
+                                  </block>
                                 </value>
                                 <value name="RIGHT">
                                   <shadow type="math_number">
-                                    <field name="NUM">0.02</field>
+                                    <field name="NUM">3</field>
                                   </shadow>
                                 </value>
                               </block>
@@ -106,7 +127,7 @@ export const strategyTemplates: StrategyTemplate[] = [
     id: "rsi-oversold-reversal",
     name: "RSI Oversold Reversal",
     description:
-      "Buy when RSI drops below 30 (oversold), sell when it rises above 70 (overbought). Mean reversion strategy.",
+      "Buy when RSI drops below 30 (oversold), sell when it rises above 70 (overbought). Standard 14-period RSI mean reversion strategy.",
     difficulty: "beginner",
     category: "reversal",
     workspace: `<xml xmlns="https://developers.google.com/blockly/xml">
@@ -117,7 +138,7 @@ export const strategyTemplates: StrategyTemplate[] = [
               <block type="operator_less">
                 <value name="LEFT">
                   <block type="ta_rsi">
-                    <mutation period="14" ma_period="14" applied_price="0"></mutation>
+                    <mutation period="5" ma_period="14" applied_price="0"></mutation>
                     <field name="NAME">RSI</field>
                   </block>
                 </value>
@@ -141,21 +162,27 @@ export const strategyTemplates: StrategyTemplate[] = [
                 <field name="LEVERAGE">1</field>
                 <field name="ORDER_TYPE">market</field>
                 <next>
-                  <block type="trade_take_profit">
+                  <block type="trade_stop_loss">
+                    <field name="CLOSE_TYPE">full</field>
                     <field name="TRADE_ID">rsi_reversal_trade</field>
                     <value name="PRICE">
-                      <block type="operator_add">
+                      <block type="operator_subtract">
                         <value name="LEFT">
-                          <block type="environment_price"></block>
+                          <block type="trade_entry_price">
+                            <field name="TRADE_ID">rsi_reversal_trade</field>
+                          </block>
                         </value>
                         <value name="RIGHT">
                           <block type="operator_multiply">
                             <value name="LEFT">
-                              <block type="environment_price"></block>
+                              <block type="ta_atr">
+                                <mutation period="5" ma_period="14"></mutation>
+                                <field name="NAME">ATR</field>
+                              </block>
                             </value>
                             <value name="RIGHT">
                               <shadow type="math_number">
-                                <field name="NUM">0.015</field>
+                                <field name="NUM">1.5</field>
                               </shadow>
                             </value>
                           </block>
@@ -163,21 +190,36 @@ export const strategyTemplates: StrategyTemplate[] = [
                       </block>
                     </value>
                     <next>
-                      <block type="trade_stop_loss">
+                      <block type="trade_take_profit">
+                        <field name="CLOSE_TYPE">full</field>
                         <field name="TRADE_ID">rsi_reversal_trade</field>
                         <value name="PRICE">
-                          <block type="operator_subtract">
+                          <block type="operator_add">
                             <value name="LEFT">
-                              <block type="environment_price"></block>
+                              <block type="trade_entry_price">
+                                <field name="TRADE_ID">rsi_reversal_trade</field>
+                              </block>
                             </value>
                             <value name="RIGHT">
                               <block type="operator_multiply">
                                 <value name="LEFT">
-                                  <block type="environment_price"></block>
+                                  <block type="operator_multiply">
+                                    <value name="LEFT">
+                                      <block type="ta_atr">
+                                        <mutation period="5" ma_period="14"></mutation>
+                                        <field name="NAME">ATR</field>
+                                      </block>
+                                    </value>
+                                    <value name="RIGHT">
+                                      <shadow type="math_number">
+                                        <field name="NUM">1.5</field>
+                                      </shadow>
+                                    </value>
+                                  </block>
                                 </value>
                                 <value name="RIGHT">
                                   <shadow type="math_number">
-                                    <field name="NUM">0.01</field>
+                                    <field name="NUM">2</field>
                                   </shadow>
                                 </value>
                               </block>
@@ -199,7 +241,7 @@ export const strategyTemplates: StrategyTemplate[] = [
     id: "bollinger-breakout",
     name: "Bollinger Band Breakout",
     description:
-      "Enter trades when price breaks above upper band (bullish) or below lower band (bearish). Volatility breakout strategy.",
+      "Enter trades when price breaks above upper band (bullish) or below lower band (bearish). Standard 20-period, 2-deviation volatility breakout strategy.",
     difficulty: "intermediate",
     category: "breakout",
     workspace: `<xml xmlns="https://developers.google.com/blockly/xml">
@@ -213,7 +255,7 @@ export const strategyTemplates: StrategyTemplate[] = [
                 </value>
                 <value name="RIGHT">
                   <block type="ta_bb">
-                    <mutation period="20" ma_period="20" deviation="2" shift="0" applied_price="0"></mutation>
+                    <mutation period="5" ma_period="20" deviation="2" shift="0" applied_price="0"></mutation>
                     <field name="NAME">BB</field>
                     <field name="COMPONENT">upper</field>
                   </block>
@@ -234,26 +276,71 @@ export const strategyTemplates: StrategyTemplate[] = [
                 <field name="ORDER_TYPE">market</field>
                 <next>
                   <block type="trade_stop_loss">
+                    <field name="CLOSE_TYPE">full</field>
                     <field name="TRADE_ID">bollinger_breakout_trade</field>
                     <value name="PRICE">
                       <block type="operator_subtract">
                         <value name="LEFT">
-                          <block type="environment_price"></block>
+                          <block type="trade_entry_price">
+                            <field name="TRADE_ID">bollinger_breakout_trade</field>
+                          </block>
                         </value>
                         <value name="RIGHT">
                           <block type="operator_multiply">
                             <value name="LEFT">
-                              <block type="environment_price"></block>
+                              <block type="ta_atr">
+                                <mutation period="5" ma_period="14"></mutation>
+                                <field name="NAME">ATR</field>
+                              </block>
                             </value>
                             <value name="RIGHT">
                               <shadow type="math_number">
-                                <field name="NUM">0.02</field>
+                                <field name="NUM">2.5</field>
                               </shadow>
                             </value>
                           </block>
                         </value>
                       </block>
                     </value>
+                    <next>
+                      <block type="trade_take_profit">
+                        <field name="CLOSE_TYPE">full</field>
+                        <field name="TRADE_ID">bollinger_breakout_trade</field>
+                        <value name="PRICE">
+                          <block type="operator_add">
+                            <value name="LEFT">
+                              <block type="trade_entry_price">
+                                <field name="TRADE_ID">bollinger_breakout_trade</field>
+                              </block>
+                            </value>
+                            <value name="RIGHT">
+                              <block type="operator_multiply">
+                                <value name="LEFT">
+                                  <block type="operator_multiply">
+                                    <value name="LEFT">
+                                      <block type="ta_atr">
+                                        <mutation period="5" ma_period="14"></mutation>
+                                        <field name="NAME">ATR</field>
+                                      </block>
+                                    </value>
+                                    <value name="RIGHT">
+                                      <shadow type="math_number">
+                                        <field name="NUM">2.5</field>
+                                      </shadow>
+                                    </value>
+                                  </block>
+                                </value>
+                                <value name="RIGHT">
+                                  <shadow type="math_number">
+                                    <field name="NUM">3</field>
+                                  </shadow>
+                                </value>
+                              </block>
+                            </value>
+                          </block>
+                        </value>
+                      </block>
+                    </next>
                   </block>
                 </next>
               </block>
@@ -267,7 +354,7 @@ export const strategyTemplates: StrategyTemplate[] = [
     id: "macd-momentum",
     name: "MACD Momentum",
     description:
-      "Buy when MACD crosses above signal line, sell when it crosses below. Momentum-based strategy with trend confirmation.",
+      "Buy when MACD crosses above signal line with ADX>25 trend confirmation. Standard MACD(12,26,9) momentum strategy.",
     difficulty: "intermediate",
     category: "momentum",
     workspace: `<xml xmlns="https://developers.google.com/blockly/xml">
@@ -298,7 +385,7 @@ export const strategyTemplates: StrategyTemplate[] = [
                   <block type="operator_greater">
                     <value name="LEFT">
                       <block type="ta_adx">
-                        <mutation period="14" ma_period="14"></mutation>
+                        <mutation period="5" ma_period="14"></mutation>
                         <field name="NAME">ADX</field>
                       </block>
                     </value>
@@ -325,26 +412,71 @@ export const strategyTemplates: StrategyTemplate[] = [
                 <field name="ORDER_TYPE">market</field>
                 <next>
                   <block type="trade_stop_loss">
+                    <field name="CLOSE_TYPE">full</field>
                     <field name="TRADE_ID">macd_momentum_trade</field>
                     <value name="PRICE">
                       <block type="operator_subtract">
                         <value name="LEFT">
-                          <block type="environment_price"></block>
+                          <block type="trade_entry_price">
+                            <field name="TRADE_ID">macd_momentum_trade</field>
+                          </block>
                         </value>
-                        <value name="RIGHT">
+                         <value name="RIGHT">
                           <block type="operator_multiply">
                             <value name="LEFT">
-                              <block type="environment_price"></block>
+                              <block type="ta_atr">
+                                <mutation period="5" ma_period="14"></mutation>
+                                <field name="NAME">ATR</field>
+                              </block>
                             </value>
                             <value name="RIGHT">
                               <shadow type="math_number">
-                                <field name="NUM">0.01</field>
+                                <field name="NUM">2</field>
                               </shadow>
                             </value>
                           </block>
                         </value>
                       </block>
                     </value>
+                    <next>
+                      <block type="trade_take_profit">
+                        <field name="CLOSE_TYPE">full</field>
+                        <field name="TRADE_ID">macd_momentum_trade</field>
+                        <value name="PRICE">
+                          <block type="operator_add">
+                            <value name="LEFT">
+                              <block type="trade_entry_price">
+                                <field name="TRADE_ID">macd_momentum_trade</field>
+                              </block>
+                            </value>
+                             <value name="RIGHT">
+                              <block type="operator_multiply">
+                                <value name="LEFT">
+                                  <block type="operator_multiply">
+                                    <value name="LEFT">
+                                      <block type="ta_atr">
+                                        <mutation period="5" ma_period="14"></mutation>
+                                        <field name="NAME">ATR</field>
+                                      </block>
+                                    </value>
+                                    <value name="RIGHT">
+                                      <shadow type="math_number">
+                                        <field name="NUM">2</field>
+                                      </shadow>
+                                    </value>
+                                  </block>
+                                </value>
+                                <value name="RIGHT">
+                                  <shadow type="math_number">
+                                    <field name="NUM">3</field>
+                                  </shadow>
+                                </value>
+                              </block>
+                            </value>
+                          </block>
+                        </value>
+                      </block>
+                    </next>
                   </block>
                 </next>
               </block>
@@ -358,7 +490,7 @@ export const strategyTemplates: StrategyTemplate[] = [
     id: "scalping-vwap",
     name: "VWAP Scalping",
     description:
-      "Quick scalping strategy: buy when price is below VWAP with RSI oversold, tight stops. For high-frequency trading.",
+      "Quick scalping strategy: buy when price is below VWAP with RSI(9)<40. Tight stops for high-frequency trading.",
     difficulty: "advanced",
     category: "scalping",
     workspace: `<xml xmlns="https://developers.google.com/blockly/xml">
@@ -384,7 +516,7 @@ export const strategyTemplates: StrategyTemplate[] = [
                   <block type="operator_less">
                     <value name="LEFT">
                       <block type="ta_rsi">
-                        <mutation period="14" ma_period="14" applied_price="0"></mutation>
+                        <mutation period="5" ma_period="9" applied_price="0"></mutation>
                         <field name="NAME">RSI</field>
                       </block>
                     </value>
@@ -411,20 +543,26 @@ export const strategyTemplates: StrategyTemplate[] = [
                 <field name="ORDER_TYPE">market</field>
                 <next>
                   <block type="trade_stop_loss">
+                    <field name="CLOSE_TYPE">full</field>
                     <field name="TRADE_ID">vwap_scalping_trade</field>
                     <value name="PRICE">
                       <block type="operator_subtract">
                         <value name="LEFT">
-                          <block type="environment_price"></block>
+                          <block type="trade_entry_price">
+                            <field name="TRADE_ID">vwap_scalping_trade</field>
+                          </block>
                         </value>
                         <value name="RIGHT">
                           <block type="operator_multiply">
                             <value name="LEFT">
-                              <block type="environment_price"></block>
+                              <block type="ta_atr">
+                                <mutation period="5" ma_period="14"></mutation>
+                                <field name="NAME">ATR</field>
+                              </block>
                             </value>
                             <value name="RIGHT">
                               <shadow type="math_number">
-                                <field name="NUM">0.005</field>
+                                <field name="NUM">1</field>
                               </shadow>
                             </value>
                           </block>
@@ -433,20 +571,35 @@ export const strategyTemplates: StrategyTemplate[] = [
                     </value>
                     <next>
                       <block type="trade_take_profit">
+                        <field name="CLOSE_TYPE">full</field>
                         <field name="TRADE_ID">vwap_scalping_trade</field>
                         <value name="PRICE">
                           <block type="operator_add">
                             <value name="LEFT">
-                              <block type="environment_price"></block>
+                              <block type="trade_entry_price">
+                                <field name="TRADE_ID">vwap_scalping_trade</field>
+                              </block>
                             </value>
                             <value name="RIGHT">
                               <block type="operator_multiply">
                                 <value name="LEFT">
-                                  <block type="environment_price"></block>
+                                  <block type="operator_multiply">
+                                    <value name="LEFT">
+                                      <block type="ta_atr">
+                                        <mutation period="5" ma_period="14"></mutation>
+                                        <field name="NAME">ATR</field>
+                                      </block>
+                                    </value>
+                                    <value name="RIGHT">
+                                      <shadow type="math_number">
+                                        <field name="NUM">1</field>
+                                      </shadow>
+                                    </value>
+                                  </block>
                                 </value>
                                 <value name="RIGHT">
                                   <shadow type="math_number">
-                                    <field name="NUM">0.008</field>
+                                    <field name="NUM">2</field>
                                   </shadow>
                                 </value>
                               </block>
@@ -468,7 +621,7 @@ export const strategyTemplates: StrategyTemplate[] = [
     id: "triple-ema-trend",
     name: "Triple EMA Trend",
     description:
-      "Advanced trend following with three EMAs. Enter when fast > medium > slow (aligned trend). Strong trend filter.",
+      "Advanced trend following with three EMAs (8,21,55 Fibonacci periods). Enter when fast > medium > slow (aligned trend). Strong trend filter.",
     difficulty: "advanced",
     category: "trend",
     workspace: `<xml xmlns="https://developers.google.com/blockly/xml">
@@ -481,14 +634,14 @@ export const strategyTemplates: StrategyTemplate[] = [
                   <block type="operator_greater">
                     <value name="LEFT">
                       <block type="ta_ema">
-                        <mutation period="9" ma_period="14" shift="0" applied_price="0"></mutation>
-                        <field name="NAME">EMA</field>
+                        <mutation period="5" ma_period="8" shift="0" applied_price="0"></mutation>
+                        <field name="NAME">Fast EMA</field>
                       </block>
                     </value>
                     <value name="RIGHT">
                       <block type="ta_ema">
-                        <mutation period="21" ma_period="14" shift="0" applied_price="0"></mutation>
-                        <field name="NAME">EMA</field>
+                        <mutation period="5" ma_period="21" shift="0" applied_price="0"></mutation>
+                        <field name="NAME">Medium EMA</field>
                       </block>
                     </value>
                   </block>
@@ -497,14 +650,14 @@ export const strategyTemplates: StrategyTemplate[] = [
                   <block type="operator_greater">
                     <value name="LEFT">
                       <block type="ta_ema">
-                        <mutation period="21" ma_period="14" shift="0" applied_price="0"></mutation>
-                        <field name="NAME">EMA</field>
+                        <mutation period="5" ma_period="21" shift="0" applied_price="0"></mutation>
+                        <field name="NAME">Medium EMA</field>
                       </block>
                     </value>
                     <value name="RIGHT">
                       <block type="ta_ema">
-                        <mutation period="55" ma_period="14" shift="0" applied_price="0"></mutation>
-                        <field name="NAME">EMA</field>
+                        <mutation period="5" ma_period="55" shift="0" applied_price="0"></mutation>
+                        <field name="NAME">Slow EMA</field>
                       </block>
                     </value>
                   </block>
@@ -524,13 +677,72 @@ export const strategyTemplates: StrategyTemplate[] = [
                 <field name="LEVERAGE">1</field>
                 <field name="ORDER_TYPE">market</field>
                 <next>
-                  <block type="trade_close">
+                  <block type="trade_stop_loss">
+                    <field name="CLOSE_TYPE">full</field>
                     <field name="TRADE_ID">triple_ema_trade</field>
-                    <value name="PERCENT">
-                      <shadow type="math_number">
-                        <field name="NUM">100</field>
-                      </shadow>
+                    <value name="PRICE">
+                      <block type="operator_subtract">
+                        <value name="LEFT">
+                          <block type="trade_entry_price">
+                            <field name="TRADE_ID">triple_ema_trade</field>
+                          </block>
+                        </value>
+                        <value name="RIGHT">
+                          <block type="operator_multiply">
+                            <value name="LEFT">
+                              <block type="ta_atr">
+                                <mutation period="5" ma_period="14"></mutation>
+                                <field name="NAME">ATR</field>
+                              </block>
+                            </value>
+                            <value name="RIGHT">
+                              <shadow type="math_number">
+                                <field name="NUM">2</field>
+                              </shadow>
+                            </value>
+                          </block>
+                        </value>
+                      </block>
                     </value>
+                    <next>
+                      <block type="trade_take_profit">
+                        <field name="CLOSE_TYPE">full</field>
+                        <field name="TRADE_ID">triple_ema_trade</field>
+                        <value name="PRICE">
+                          <block type="operator_add">
+                            <value name="LEFT">
+                              <block type="trade_entry_price">
+                                <field name="TRADE_ID">triple_ema_trade</field>
+                              </block>
+                            </value>
+                            <value name="RIGHT">
+                              <block type="operator_multiply">
+                                <value name="LEFT">
+                                  <block type="operator_multiply">
+                                    <value name="LEFT">
+                                      <block type="ta_atr">
+                                        <mutation period="5" ma_period="14"></mutation>
+                                        <field name="NAME">ATR</field>
+                                      </block>
+                                    </value>
+                                    <value name="RIGHT">
+                                      <shadow type="math_number">
+                                        <field name="NUM">2</field>
+                                      </shadow>
+                                    </value>
+                                  </block>
+                                </value>
+                                <value name="RIGHT">
+                                  <shadow type="math_number">
+                                    <field name="NUM">3</field>
+                                  </shadow>
+                                </value>
+                              </block>
+                            </value>
+                          </block>
+                        </value>
+                      </block>
+                    </next>
                   </block>
                 </next>
               </block>

@@ -1,0 +1,388 @@
+{
+  "MQL4": {
+    "comments": {
+      "single_line": "//",
+      "multi_line": "/* */",
+      "description": "Single‑line comments in MQL4 start with \"//\" and end with the newline. Multi‑line comments start with \"/*\" and end with \"*/\"; nested single‑line comments may appear inside multi‑line comments. Comments may occur anywhere that whitespace is permitted"  
+    },
+    "identifiers": {
+      "max_length": 63,
+      "allowed_characters": "letters (a‑z, A‑Z), digits (0‑9) and underscore (_)",
+      "rules": "Identifiers cannot start with a digit and must not coincide with a reserved word"  
+    },
+    "reserved_words": {
+      "data_types": [
+        "bool",
+        "enum",
+        "struct",
+        "char",
+        "float",
+        "uchar",
+        "class",
+        "int",
+        "uint",
+        "color",
+        "long",
+        "ulong",
+        "datetime",
+        "short",
+        "ushort",
+        "double",
+        "string",
+        "void"
+      ],
+      "access_specifiers": [
+        "const",
+        "private",
+        "protected",
+        "public",
+        "virtual"
+      ],
+      "memory_classes": [
+        "extern",
+        "input",
+        "static"
+      ],
+      "operators": [
+        "break",
+        "dynamic_cast",
+        "return",
+        "case",
+        "else",
+        "sizeof",
+        "continue",
+        "for",
+        "switch",
+        "default",
+        "if",
+        "while",
+        "delete",
+        "new",
+        "do",
+        "operator"
+      ],
+      "other": [
+        "false",
+        "#define",
+        "#property",
+        "this",
+        "#import",
+        "template",
+        "true",
+        "#include",
+        "typename",
+        "strict"
+      ]
+    },
+    "data_types": {
+      "basic_types": ["char", "uchar", "short", "ushort", "int", "uint", "long", "ulong", "bool", "double", "float", "string", "color", "datetime", "enum"],
+      "integer_types": [
+        {"type": "char",   "size_bytes": 1, "min": -128, "max": 127},
+        {"type": "uchar",  "size_bytes": 1, "min": 0, "max": 255},
+        {"type": "bool",   "size_bytes": 1, "min": 0, "max": 1},
+        {"type": "short",  "size_bytes": 2, "min": -32768, "max": 32767},
+        {"type": "ushort", "size_bytes": 2, "min": 0, "max": 65535},
+        {"type": "int",    "size_bytes": 4, "min": -2147483648, "max": 2147483647},
+        {"type": "uint",   "size_bytes": 4, "min": 0, "max": 4294967295},
+        {"type": "color",  "size_bytes": 4, "min": -1, "max": 16777215},
+        {"type": "long",   "size_bytes": 8, "min": -9223372036854775808, "max": 9223372036854775807},
+        {"type": "ulong",  "size_bytes": 8, "min": 0, "max": 18446744073709551615},
+        {"type": "datetime", "size_bytes": 8, "min": 0, "max": 32535244799}
+      ],
+      "real_types": [
+        {"type": "float",  "size_bytes": 4, "min": 1.175494351e-38, "max": 3.402823466e+38},
+        {"type": "double", "size_bytes": 8, "min": 2.2250738585072014e-308, "max": 1.7976931348623158e+308}
+      ],
+      "other_types": [
+        {"type": "bool", "values": ["false", "true"]},
+        {"type": "string"},
+        {"type": "color"},
+        {"type": "datetime"},
+        {"type": "enum", "description": "user‑defined enumeration"},
+        {"type": "struct", "description": "user‑defined structure"},
+        {"type": "class", "description": "user‑defined class"},
+        {"type": "void", "description": "no return value"}
+      ]
+    },
+    "operators_and_expressions": {
+      "arithmetic": {
+        "operators": ["+", "-", "*", "/", "%", "++", "--"],
+        "description": "MQL4 supports additive and multiplicative arithmetic operators (sum, difference, negation, product, quotient and remainder of division) and increment/decrement operations"  
+      },
+      "assignment": {
+        "operators": ["=", "+=", "-=", "*=", "/=", "%=", ">>=", "<<=", "&=", "|=", "^="],
+        "description": "Assignment operations return the value of the left operand after assignment. Compound assignments combine an arithmetic or bitwise operation with assignment"  
+      },
+      "relational": {
+        "operators": ["==", "!=", "<", ">", "<=", ">="],
+        "description": "Relational operators compare numeric values; the result of a comparison is 1 (TRUE) or 0 (FALSE)"  
+      },
+      "logical": {
+        "operators": ["!", "||", "&&"],
+        "description": "Logical NOT negates a boolean value; logical OR returns TRUE if either operand is true; logical AND returns TRUE only if both operands are true; MQL4 uses short‑circuit (brief estimate) evaluation"  
+      },
+      "bitwise": {
+        "operators": ["~", ">>", "<<", "&", "|", "^"],
+        "description": "Bitwise complement (~), right shift (>>), left shift (<<), AND (&), OR (|) and XOR (^) operate on the bit representations of integer values"  
+      },
+      "ternary": {
+        "operators": ["?:"],
+        "description": "Ternary conditional operator returns one of two expressions depending on a boolean condition"  
+      },
+      "other": {
+        "operators": ["sizeof", "new", "delete", "dynamic_cast"],
+        "description": "Other operations include the sizeof operator, object creation and deletion (new/delete) and dynamic casting"  
+      }
+    },
+    "control_structures": {
+      "compound": "{ }",
+      "expression": ";",
+      "return": "return",
+      "conditional": ["if", "else"],
+      "ternary": "?:",
+      "selection": "switch",
+      "loops": ["while", "for", "do"],
+      "break": "break",
+      "continue": "continue",
+      "object_management": ["new", "delete"]
+    },
+    "functions": {
+      "definition_syntax": "return_type function_name(parameter_list) { statements }",
+      "call_syntax": "function_name(arguments)",
+      "parameters_limit": 64,
+      "return_operator": "The return operator terminates a function and optionally returns a value; the returned expression is converted to the function return type",
+      "overloading": "Functions can be overloaded by defining functions with the same name but different parameter lists",
+      "default_parameters": "Parameters may have default values; once a parameter has a default value, all subsequent parameters must also have default values"
+    },
+    "variables": {
+      "declaration": "Variables must be declared with a type and unique name before use; the declaration is not an operator",
+      "simple_types": ["char", "short", "int", "long", "uchar", "ushort", "uint", "ulong", "bool", "double", "float", "string", "color", "datetime"],
+      "complex_types": ["struct", "class", "enum"],
+      "arrays": "Arrays are indexed sequences of elements of the same type. MQL4 supports up to four‑dimensional arrays; indices start at 0",
+      "scope_and_storage": {
+        "local": "Declared within a function or block and valid only inside that scope",
+        "static": "Static variables retain their values between function calls",
+        "global": "Declared outside functions and accessible throughout the program",
+        "input": "Input variables receive values from the EA/indicator property dialog; they are read‑only",
+        "extern": "Variables declared in external modules",
+        "const": "Declares a constant that cannot be changed after initialization"
+      },
+      "access_specifiers": ["public", "protected", "private", "virtual"],
+      "storage_classes": ["static", "input", "extern"]
+    },
+    "preprocessor": {
+      "directives": ["#define", "#property", "#include", "#import", "#ifdef", "#ifndef", "#else", "#endif"],
+      "description": "Preprocessor directives start with '#'. They can define constants, set program properties, include files, import functions and conditionally compile sections of code"
+    },
+    "oop": {
+      "concepts": ["encapsulation", "inheritance", "polymorphism", "overloading", "virtual functions"],
+      "templates": ["function templates", "class templates"],
+      "abstract_classes": "MQL4 supports the creation of abstract classes with pure virtual functions"
+    }
+  },
+  "MQL5": {
+    "comments": {
+      "single_line": "//",
+      "multi_line": "/* */",
+      "description": "Comments in MQL5 use the same syntax as MQL4: // for single‑line and /* */ for multi‑line comments"
+    },
+    "identifiers": {
+      "max_length": 63,
+      "allowed_characters": "letters (a‑z, A‑Z), digits (0‑9) and underscore (_)",
+      "rules": "Identifiers cannot start with a digit and must not be reserved words"
+    },
+    "reserved_words": {
+      "data_types": [
+        "bool",
+        "float",
+        "uint",
+        "char",
+        "int",
+        "ulong",
+        "class",
+        "long",
+        "union",
+        "color",
+        "short",
+        "ushort",
+        "datetime",
+        "string",
+        "void",
+        "double",
+        "struct",
+        "enum",
+        "uchar",
+        "complex"
+      ],
+      "access_specifiers": [
+        "const",
+        "private",
+        "virtual",
+        "delete",
+        "protected",
+        "override",
+        "public"
+      ],
+      "memory_classes": [
+        "extern",
+        "input",
+        "static"
+      ],
+      "operators": [
+        "break",
+        "dynamic_cast",
+        "operator",
+        "case",
+        "else",
+        "pack",
+        "continue",
+        "for",
+        "return",
+        "default",
+        "if",
+        "sizeof",
+        "delete",
+        "new",
+        "switch",
+        "do",
+        "offsetof",
+        "while"
+      ],
+      "other": [
+        "this",
+        "#define",
+        "#import",
+        "true",
+        "#ifdef",
+        "#include",
+        "false",
+        "#ifndef",
+        "#property",
+        "template",
+        "#else",
+        "group",
+        "typename",
+        "#endif",
+        "namespace",
+        "union",
+        "override",
+        "pack",
+        "offsetof"
+      ]
+    },
+    "data_types": {
+      "basic_types": ["char", "uchar", "short", "ushort", "int", "uint", "long", "ulong", "bool", "double", "float", "string", "color", "datetime", "enum", "complex"],
+      "integer_types": [
+        {"type": "char",   "size_bytes": 1, "min": -128, "max": 127},
+        {"type": "uchar",  "size_bytes": 1, "min": 0, "max": 255},
+        {"type": "bool",   "size_bytes": 1, "min": 0, "max": 1},
+        {"type": "short",  "size_bytes": 2, "min": -32768, "max": 32767},
+        {"type": "ushort", "size_bytes": 2, "min": 0, "max": 65535},
+        {"type": "int",    "size_bytes": 4, "min": -2147483648, "max": 2147483647},
+        {"type": "uint",   "size_bytes": 4, "min": 0, "max": 4294967295},
+        {"type": "color",  "size_bytes": 4, "min": -1, "max": 16777215},
+        {"type": "long",   "size_bytes": 8, "min": -9223372036854775808, "max": 9223372036854775807},
+        {"type": "ulong",  "size_bytes": 8, "min": 0, "max": 18446744073709551615},
+        {"type": "datetime", "size_bytes": 8, "min": 0, "max": 32535244799}
+      ],
+      "real_types": [
+        {"type": "float",  "size_bytes": 4, "min": 1.175494351e-38, "max": 3.402823466e+38},
+        {"type": "double", "size_bytes": 8, "min": 2.2250738585072014e-308, "max": 1.7976931348623158e+308}
+      ],
+      "special_types": [
+        {"type": "complex", "description": "complex number consisting of real and imaginary parts"},
+        {"type": "matrix",  "description": "matrix type used for mathematical operations on matrices"},
+        {"type": "vector",  "description": "vector type used for mathematical operations on vectors"}
+      ],
+      "other_types": [
+        {"type": "bool", "values": ["false", "true"]},
+        {"type": "string"},
+        {"type": "color"},
+        {"type": "datetime"},
+        {"type": "enum", "description": "user‑defined enumeration"},
+        {"type": "struct", "description": "user‑defined structure"},
+        {"type": "class", "description": "user‑defined class"},
+        {"type": "union", "description": "user‑defined union"},
+        {"type": "void", "description": "no return value"}
+      ]
+    },
+    "operators_and_expressions": {
+      "arithmetic": {
+        "operators": ["+", "-", "*", "/", "%", "++", "--"],
+        "description": "MQL5 supports the same arithmetic operators as MQL4"
+      },
+      "assignment": {
+        "operators": ["=", "+=", "-=", "*=", "/=", "%=", ">>=", "<<=", "&=", "|=", "^="],
+        "description": "Compound assignments combine an arithmetic or bitwise operation with assignment"
+      },
+      "relational": {
+        "operators": ["==", "!=", "<", ">", "<=", ">="],
+        "description": "Relational operators compare numeric values and return true (1) or false (0)"
+      },
+      "logical": {
+        "operators": ["!", "||", "&&"],
+        "description": "Logical NOT, OR and AND operators with short‑circuit evaluation"
+      },
+      "bitwise": {
+        "operators": ["~", ">>", "<<", "&", "|", "^"],
+        "description": "Bitwise complement, shifts, AND, OR and XOR on integer values"
+      },
+      "ternary": {
+        "operators": ["?:"],
+        "description": "Ternary conditional operator"
+      },
+      "other": {
+        "operators": ["sizeof", "new", "delete", "dynamic_cast", "pack", "offsetof"],
+        "description": "Additional operators include sizeof, object creation/deletion, dynamic cast, packing structures and computing offsets"
+      }
+    },
+    "control_structures": {
+      "compound": "{ }",
+      "expression": ";",
+      "return": "return",
+      "conditional": ["if", "else"],
+      "ternary": "?:",
+      "selection": "switch",
+      "loops": ["while", "for", "do"],
+      "break": "break",
+      "continue": "continue",
+      "object_management": ["new", "delete"],
+      "namespaces": "MQL5 introduces the namespace keyword to group identifiers into named scopes"
+    },
+    "functions": {
+      "definition_syntax": "return_type function_name(parameter_list) { statements }",
+      "call_syntax": "function_name(arguments)",
+      "parameters_limit": 64,
+      "return_operator": "The return operator terminates a function and optionally returns a value converted to the return type",
+      "overloading": "Function overloading is supported",
+      "default_parameters": "Parameters may have default values; once a default is specified, all subsequent parameters must also have defaults"
+    },
+    "variables": {
+      "declaration": "Variables must be declared with a type and unique name before use",
+      "simple_types": ["char", "short", "int", "long", "uchar", "ushort", "uint", "ulong", "bool", "double", "float", "string", "color", "datetime", "complex"],
+      "complex_types": ["struct", "class", "union", "enum"],
+      "arrays": "Arrays are sequences of elements of the same type; MQL5 supports multi‑dimensional arrays and dynamic arrays via vector and matrix classes",
+      "scope_and_storage": {
+        "local": "Declared within a function or block and valid only there",
+        "static": "Static variables retain values between calls",
+        "global": "Declared outside functions and accessible throughout the program",
+        "input": "Read‑only variables whose values are set via EA/indicator properties",
+        "extern": "Variables declared in external modules",
+        "const": "Constant variables",
+        "group": "group qualifier groups input variables into categories"
+      },
+      "access_specifiers": ["public", "protected", "private", "virtual", "override"],
+      "storage_classes": ["static", "input", "extern"]
+    },
+    "preprocessor": {
+      "directives": ["#define", "#property", "#include", "#import", "#ifdef", "#ifndef", "#else", "#endif"],
+      "description": "Preprocessor directives control compilation: macro substitution, program properties, file inclusion, function import and conditional compilation"
+    },
+    "oop": {
+      "concepts": ["encapsulation", "inheritance", "polymorphism", "overloading", "virtual functions"],
+      "templates": ["function templates", "class templates"],
+      "abstract_classes": "MQL5 supports abstract classes with pure virtual functions",
+      "namespaces": "The namespace keyword allows grouping declarations into named scopes to avoid name conflicts"
+    }
+  }
+}

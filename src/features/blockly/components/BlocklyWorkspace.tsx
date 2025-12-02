@@ -8,9 +8,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, Undo2, Redo2, Blocks, Wand2, FileCode, BarChart3, TrendingUp, BookOpen, Search, Pencil } from "lucide-react";
+import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, Undo2, Redo2, Blocks, Wand2, FileCode, BarChart3, TrendingUp, BookOpen, Search, Pencil, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { BacktestingPanel } from "src/features/backtest/components/BacktestingPanel";
+import { BacktestingPanel } from "@/features/backtest/components/BacktestingPanel";
 import { StrategyTemplatesDialog } from "@/components/StrategyTemplatesDialog";
 import { FloatingChartModal } from "@/components/FloatingChartModal";
 import { AIChatPanel } from "@/features/ai/components/AIChatPanel";
@@ -398,9 +398,6 @@ export const BlocklyWorkspace = ({
 
     // Listen to workspace changes to update code and stats
     workspace.addChangeListener(() => {
-      const code = generateCode(workspace);
-      setGeneratedCode(code);
-
       // Update block count
       const allBlocks = workspace.getAllBlocks(false);
       setBlockCount(allBlocks.length);
@@ -453,6 +450,14 @@ export const BlocklyWorkspace = ({
       return () => clearTimeout(timer);
     }
   }, [showCode, showAIPanel, showDevLogs]);
+
+  // Auto-generate MQL code when Code panel opens or workspace changes
+  useEffect(() => {
+    if (showCode && workspaceRef.current) {
+      const code = generateCode(workspaceRef.current, 'mql');
+      setGeneratedMqlCode(code);
+    }
+  }, [showCode, blockCount]);
 
 
   const handleBlocksGenerated = (xml: string, isEdit: boolean = false) => {
@@ -689,11 +694,11 @@ export const BlocklyWorkspace = ({
       </div>
 
       {/* Code View Panel */}
-      {showCode && <div className="w-[400px] border-l border-border bg-card flex flex-col animate-in slide-in-from-right duration-300">
+      {showCode && <div className="w-[500px] border-l border-border bg-card flex flex-col animate-in slide-in-from-right duration-300">
         <div className="h-12 border-b border-border flex items-center justify-between px-4 bg-muted/30">
           <div className="flex items-center gap-2">
             <FileCode className="w-4 h-4 text-primary" />
-            <span className="font-medium text-sm">Generated Code</span>
+            <span className="text-sm font-medium">MQL4 Expert Advisor</span>
           </div>
           <div className="flex items-center gap-1">
             <Tooltip>
@@ -706,24 +711,28 @@ export const BlocklyWorkspace = ({
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setBeautified(!beautified)}>
-                  <Wand2 className="w-3 h-3" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Format code</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCopyCode}>
                   {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Copy to clipboard</TooltipContent>
             </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleExportCode}>
+                  <Download className="w-3 h-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Download .mq4 file</TooltipContent>
+            </Tooltip>
           </div>
         </div>
-        <div className="flex-1 overflow-auto p-4 custom-scrollbar">
-          {renderCodeWithLineNumbers(generatedCode, { showLineNumbers, beautified })}
+        <div className="flex-1 overflow-auto custom-scrollbar relative bg-muted/20">
+          <pre className="p-4 text-sm font-mono leading-relaxed">
+            <code className="text-foreground">
+              {generatedMqlCode || '// Add blocks to your workspace to generate MQL4 code'}
+            </code>
+          </pre>
         </div>
         <div className="h-10 border-t border-border flex items-center justify-between px-4 bg-muted/30 text-xs text-muted-foreground">
           <div className="flex gap-3">

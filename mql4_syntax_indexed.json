@@ -1,0 +1,797 @@
+{
+  "comments": [
+    {
+      "index": 1,
+      "syntax": "//",
+      "description": "Single-line comments start with double slashes and extend to the end of the line\u3010610611899728558\u2020L43-L47\u3011."
+    },
+    {
+      "index": 2,
+      "syntax": "/* */",
+      "description": "Multi-line comments start with /* and end with */; they may span multiple lines\u3010610611899728558\u2020L43-L47\u3011."
+    }
+  ],
+  "identifiers": [
+    {
+      "index": 1,
+      "syntax": "identifier",
+      "description": "Identifiers (names for variables, functions, etc.) may contain letters, digits and underscores; they cannot start with a digit, cannot exceed 63 characters, and must not be reserved words\u3010413453431039501\u2020L43-L49\u3011."
+    }
+  ],
+  "reserved_words": {
+    "data_types": [
+      {
+        "index": 1,
+        "word": "bool",
+        "description": "Boolean type representing logical true or false; stored in 1 byte\u3010768075811836515\u2020L46-L170\u3011."
+      },
+      {
+        "index": 2,
+        "word": "enum",
+        "description": "Defines an enumeration: a user\u2011defined integer type consisting of named constants\u3010877245130296965\u2020L63-L73\u3011."
+      },
+      {
+        "index": 3,
+        "word": "struct",
+        "description": "Defines a structure type that groups multiple variables of different types under one name; used to create complex data types."
+      },
+      {
+        "index": 4,
+        "word": "char",
+        "description": "1\u2011byte signed integer type with range \u2011128 to 127\u3010768075811836515\u2020L46-L170\u3011."
+      },
+      {
+        "index": 5,
+        "word": "float",
+        "description": "Single\u2011precision floating\u2011point type (4 bytes); represents real numbers with a range roughly 1.17\u00d710\u207b\u00b3\u2078 to 3.4\u00d710\u00b3\u2078\u3010835471496294377\u2020L50-L83\u3011."
+      },
+      {
+        "index": 6,
+        "word": "uchar",
+        "description": "1\u2011byte unsigned integer type with range 0 to 255\u3010768075811836515\u2020L46-L170\u3011."
+      },
+      {
+        "index": 7,
+        "word": "class",
+        "description": "Defines a class for object\u2011oriented programming; classes encapsulate data and functions and support inheritance, polymorphism and encapsulation\u3010973481063463211\u2020L47-L60\u3011."
+      },
+      {
+        "index": 8,
+        "word": "int",
+        "description": "4\u2011byte signed integer type with range \u22122147483648 to 2147483647\u3010768075811836515\u2020L46-L170\u3011."
+      },
+      {
+        "index": 9,
+        "word": "uint",
+        "description": "4\u2011byte unsigned integer type with range 0 to 4294967295\u3010768075811836515\u2020L46-L170\u3011."
+      },
+      {
+        "index": 10,
+        "word": "color",
+        "description": "32\u2011bit type used to represent colors; high\u2011order byte can be reserved for system use\u3010768075811836515\u2020L46-L170\u3011."
+      },
+      {
+        "index": 11,
+        "word": "long",
+        "description": "8\u2011byte signed integer type with range \u22129223372036854775808 to 9223372036854775807\u3010768075811836515\u2020L46-L170\u3011."
+      },
+      {
+        "index": 12,
+        "word": "ulong",
+        "description": "8\u2011byte unsigned integer type with range 0 to 18446744073709551615\u3010768075811836515\u2020L46-L170\u3011."
+      },
+      {
+        "index": 13,
+        "word": "datetime",
+        "description": "8\u2011byte integer type storing seconds elapsed since 1 Jan 1970; used to represent dates and times\u3010768075811836515\u2020L46-L170\u3011."
+      },
+      {
+        "index": 14,
+        "word": "short",
+        "description": "2\u2011byte signed integer type with range \u221232768 to 32767\u3010768075811836515\u2020L46-L170\u3011."
+      },
+      {
+        "index": 15,
+        "word": "ushort",
+        "description": "2\u2011byte unsigned integer type with range 0 to 65535\u3010768075811836515\u2020L46-L170\u3011."
+      },
+      {
+        "index": 16,
+        "word": "double",
+        "description": "Double\u2011precision floating\u2011point type (8 bytes) providing higher precision and range than float; approximately 2.23\u00d710\u207b\u00b3\u2070\u2078 to 1.79\u00d710\u00b3\u2070\u2078\u3010835471496294377\u2020L50-L83\u3011."
+      },
+      {
+        "index": 17,
+        "word": "string",
+        "description": "Sequence of characters forming a text string; can vary in length and supports standard string operations."
+      },
+      {
+        "index": 18,
+        "word": "void",
+        "description": "Indicates that a function does not return a value."
+      }
+    ],
+    "access_specifiers": [
+      {
+        "index": 1,
+        "word": "const",
+        "description": "Qualifies a variable or parameter as constant so that its value cannot be changed after initialization\u3010539297262116978\u2020L117-L149\u3011."
+      },
+      {
+        "index": 2,
+        "word": "private",
+        "description": "Class member access specifier restricting access to members only within the class\u3010539297262116978\u2020L117-L149\u3011."
+      },
+      {
+        "index": 3,
+        "word": "protected",
+        "description": "Class member access specifier allowing access within the class and its derived classes\u3010539297262116978\u2020L117-L149\u3011."
+      },
+      {
+        "index": 4,
+        "word": "public",
+        "description": "Class member access specifier allowing unrestricted access to members from any code\u3010539297262116978\u2020L117-L149\u3011."
+      },
+      {
+        "index": 5,
+        "word": "virtual",
+        "description": "Specifies that a member function can be overridden in derived classes to implement polymorphic behaviour\u3010973481063463211\u2020L47-L60\u3011."
+      }
+    ],
+    "memory_classes": [
+      {
+        "index": 1,
+        "word": "extern",
+        "description": "Declares a variable that is defined in another module; used to share variables between modules\u3010539297262116978\u2020L117-L149\u3011."
+      },
+      {
+        "index": 2,
+        "word": "input",
+        "description": "Declares a user\u2011modifiable input variable whose value can be configured in the terminal\u3010539297262116978\u2020L117-L149\u3011."
+      },
+      {
+        "index": 3,
+        "word": "static",
+        "description": "Declares a static storage class; variables retain their value between function calls\u3010539297262116978\u2020L117-L149\u3011."
+      }
+    ],
+    "operators": [
+      {
+        "index": 1,
+        "word": "break",
+        "description": "Terminates the nearest enclosing loop or switch and transfers control to the statement following the loop or switch\u3010786933659818190\u2020L52-L118\u3011."
+      },
+      {
+        "index": 2,
+        "word": "dynamic_cast",
+        "description": "Performs a safe type cast of pointers or references within an inheritance hierarchy."
+      },
+      {
+        "index": 3,
+        "word": "return",
+        "description": "Exits a function and optionally returns a value to the caller\u3010731200081161575\u2020L52-L83\u3011."
+      },
+      {
+        "index": 4,
+        "word": "case",
+        "description": "Label inside a switch statement that matches a constant value of the controlling expression; control flows until a break or return is encountered\u3010786933659818190\u2020L52-L118\u3011."
+      },
+      {
+        "index": 5,
+        "word": "else",
+        "description": "Specifies an alternative block of code to be executed when an if condition is false\u3010786933659818190\u2020L52-L118\u3011."
+      },
+      {
+        "index": 6,
+        "word": "sizeof",
+        "description": "Returns the size, in bytes, of a data type or variable."
+      },
+      {
+        "index": 7,
+        "word": "continue",
+        "description": "Skips the remaining statements in the current loop iteration and begins the next iteration\u3010786933659818190\u2020L52-L118\u3011."
+      },
+      {
+        "index": 8,
+        "word": "for",
+        "description": "Loop construct that repeats a block of code for a specified number of iterations; consists of initialization, condition and iteration expressions\u3010786933659818190\u2020L52-L118\u3011."
+      },
+      {
+        "index": 9,
+        "word": "switch",
+        "description": "Conditional branching statement that selects a code block to execute based on the value of an integral expression\u3010786933659818190\u2020L52-L118\u3011."
+      },
+      {
+        "index": 10,
+        "word": "default",
+        "description": "Label in a switch statement executed when none of the case labels match\u3010786933659818190\u2020L52-L118\u3011."
+      },
+      {
+        "index": 11,
+        "word": "if",
+        "description": "Conditional operator that executes a block of code if its expression evaluates to true\u3010786933659818190\u2020L52-L118\u3011."
+      },
+      {
+        "index": 12,
+        "word": "while",
+        "description": "Loop construct that repeats a block while a condition remains true\u3010786933659818190\u2020L52-L118\u3011."
+      },
+      {
+        "index": 13,
+        "word": "delete",
+        "description": "Deallocates memory previously allocated with new, destroying the object."
+      },
+      {
+        "index": 14,
+        "word": "new",
+        "description": "Allocates memory for an object and returns a pointer to it."
+      },
+      {
+        "index": 15,
+        "word": "do",
+        "description": "Used with while to create a loop that executes the body at least once and then continues while the condition is true\u3010786933659818190\u2020L52-L118\u3011."
+      },
+      {
+        "index": 16,
+        "word": "operator",
+        "description": "Keyword used when overloading an operator in a class."
+      }
+    ],
+    "other": [
+      {
+        "index": 1,
+        "word": "false",
+        "description": "Boolean literal representing logical false\u3010770565347045534\u2020L41-L158\u3011."
+      },
+      {
+        "index": 2,
+        "word": "#define",
+        "description": "Preprocessor directive used to define a macro substitution\u3010436213582272699\u2020L42-L62\u3011."
+      },
+      {
+        "index": 3,
+        "word": "#property",
+        "description": "Preprocessor directive specifying program properties such as version or icon\u3010436213582272699\u2020L42-L62\u3011."
+      },
+      {
+        "index": 4,
+        "word": "this",
+        "description": "Pointer to the current object within class member functions."
+      },
+      {
+        "index": 5,
+        "word": "#import",
+        "description": "Preprocessor directive declaring external functions imported from DLLs\u3010436213582272699\u2020L42-L62\u3011."
+      },
+      {
+        "index": 6,
+        "word": "template",
+        "description": "Keyword used to define generic classes or functions with type parameters\u3010973481063463211\u2020L47-L60\u3011."
+      },
+      {
+        "index": 7,
+        "word": "true",
+        "description": "Boolean literal representing logical true\u3010770565347045534\u2020L41-L158\u3011."
+      },
+      {
+        "index": 8,
+        "word": "#include",
+        "description": "Preprocessor directive for including source files; angle brackets mean standard include path and quotes mean local directory\u3010436213582272699\u2020L42-L62\u3011."
+      },
+      {
+        "index": 9,
+        "word": "typename",
+        "description": "Keyword used in templates to refer to a type parameter."
+      },
+      {
+        "index": 10,
+        "word": "strict",
+        "description": "Directive that enforces additional compile\u2011time checks to help catch errors early."
+      }
+    ]
+  },
+  "data_types": {
+    "integer_types": [
+      {
+        "index": 1,
+        "type": "char",
+        "size_bytes": 1,
+        "min": -128,
+        "max": 127,
+        "description": "1\u2011byte signed integer type representing characters or small integers\u3010768075811836515\u2020L46-L170\u3011."
+      },
+      {
+        "index": 2,
+        "type": "uchar",
+        "size_bytes": 1,
+        "min": 0,
+        "max": 255,
+        "description": "1\u2011byte unsigned integer type for small positive values\u3010768075811836515\u2020L46-L170\u3011."
+      },
+      {
+        "index": 3,
+        "type": "bool",
+        "size_bytes": 1,
+        "min": 0,
+        "max": 1,
+        "description": "Boolean type representing true (non\u2011zero) or false (zero)\u3010768075811836515\u2020L46-L170\u3011."
+      },
+      {
+        "index": 4,
+        "type": "short",
+        "size_bytes": 2,
+        "min": -32768,
+        "max": 32767,
+        "description": "2\u2011byte signed integer type\u3010768075811836515\u2020L46-L170\u3011."
+      },
+      {
+        "index": 5,
+        "type": "ushort",
+        "size_bytes": 2,
+        "min": 0,
+        "max": 65535,
+        "description": "2\u2011byte unsigned integer type\u3010768075811836515\u2020L46-L170\u3011."
+      },
+      {
+        "index": 6,
+        "type": "int",
+        "size_bytes": 4,
+        "min": -2147483648,
+        "max": 2147483647,
+        "description": "Standard 4\u2011byte signed integer type\u3010768075811836515\u2020L46-L170\u3011."
+      },
+      {
+        "index": 7,
+        "type": "uint",
+        "size_bytes": 4,
+        "min": 0,
+        "max": 4294967295,
+        "description": "4\u2011byte unsigned integer type\u3010768075811836515\u2020L46-L170\u3011."
+      },
+      {
+        "index": 8,
+        "type": "color",
+        "size_bytes": 4,
+        "min": 0,
+        "max": 4294967295,
+        "description": "32\u2011bit integer used for colors; range 0 to 4,294,967,295; the highest byte may be used for system purposes\u3010768075811836515\u2020L46-L170\u3011."
+      },
+      {
+        "index": 9,
+        "type": "long",
+        "size_bytes": 8,
+        "min": -9223372036854775808,
+        "max": 9223372036854775807,
+        "description": "8\u2011byte signed integer type for large whole numbers\u3010768075811836515\u2020L46-L170\u3011."
+      },
+      {
+        "index": 10,
+        "type": "ulong",
+        "size_bytes": 8,
+        "min": 0,
+        "max": 18446744073709551615,
+        "description": "8\u2011byte unsigned integer type\u3010768075811836515\u2020L46-L170\u3011."
+      },
+      {
+        "index": 11,
+        "type": "datetime",
+        "size_bytes": 8,
+        "min": 0,
+        "max": 18446744073709551615,
+        "description": "Represents date/time as seconds elapsed since 1 January 1970\u3010768075811836515\u2020L46-L170\u3011."
+      }
+    ],
+    "real_types": [
+      {
+        "index": 1,
+        "type": "float",
+        "size_bytes": 4,
+        "min": 1.175494351e-38,
+        "max": 3.402823466e+38,
+        "description": "Single\u2011precision floating\u2011point type with 4 bytes of storage and approximate range 1.17\u00d710\u207b\u00b3\u2078 to 3.4\u00d710\u00b3\u2078\u3010835471496294377\u2020L50-L83\u3011."
+      },
+      {
+        "index": 2,
+        "type": "double",
+        "size_bytes": 8,
+        "min": 2.2250738585072014e-308,
+        "max": 1.7976931348623157e+308,
+        "description": "Double\u2011precision floating\u2011point type with 8 bytes of storage; provides twice the precision of float and a wider range\u3010835471496294377\u2020L50-L83\u3011."
+      }
+    ],
+    "other_types": [
+      {
+        "index": 1,
+        "type": "bool",
+        "description": "Logical type with values true or false\u3010770565347045534\u2020L41-L158\u3011."
+      },
+      {
+        "index": 2,
+        "type": "string",
+        "description": "Sequence of characters used to store textual data."
+      },
+      {
+        "index": 3,
+        "type": "color",
+        "description": "32\u2011bit integer representing colors; high\u2011order byte reserved for system use\u3010768075811836515\u2020L46-L170\u3011."
+      },
+      {
+        "index": 4,
+        "type": "datetime",
+        "description": "Represents date and time as seconds elapsed since 1970\u201101\u201101\u3010768075811836515\u2020L46-L170\u3011."
+      }
+    ]
+  },
+  "operators": {
+    "arithmetic": [
+      {
+        "index": 1,
+        "operator": "+",
+        "description": "Addition; sums two operands\u301028449630635833\u2020L48-L64\u3011."
+      },
+      {
+        "index": 2,
+        "operator": "-",
+        "description": "Subtraction or unary minus; subtracts one operand from another or negates a value\u301028449630635833\u2020L48-L64\u3011."
+      },
+      {
+        "index": 3,
+        "operator": "*",
+        "description": "Multiplication; multiplies two operands\u301028449630635833\u2020L48-L64\u3011."
+      },
+      {
+        "index": 4,
+        "operator": "/",
+        "description": "Division; divides the left operand by the right operand\u301028449630635833\u2020L48-L64\u3011."
+      },
+      {
+        "index": 5,
+        "operator": "%",
+        "description": "Modulo; yields the remainder after dividing the left operand by the right operand\u301028449630635833\u2020L48-L64\u3011."
+      },
+      {
+        "index": 6,
+        "operator": "++",
+        "description": "Increment operator; increases a variable by 1; can be used as prefix or postfix with different evaluation order\u301028449630635833\u2020L48-L64\u3011."
+      },
+      {
+        "index": 7,
+        "operator": "--",
+        "description": "Decrement operator; decreases a variable by 1; prefix or postfix forms\u301028449630635833\u2020L48-L64\u3011."
+      }
+    ],
+    "assignment": [
+      {
+        "index": 1,
+        "operator": "=",
+        "description": "Assigns the value of the right operand to the left operand."
+      },
+      {
+        "index": 2,
+        "operator": "+=",
+        "description": "Adds the right operand to the left operand and assigns the result to the left operand\u3010687789900525068\u2020L51-L67\u3011."
+      },
+      {
+        "index": 3,
+        "operator": "-=",
+        "description": "Subtracts the right operand from the left operand and assigns the result to the left operand\u3010687789900525068\u2020L51-L67\u3011."
+      },
+      {
+        "index": 4,
+        "operator": "*=",
+        "description": "Multiplies the left operand by the right operand and assigns the result to the left operand\u3010687789900525068\u2020L51-L67\u3011."
+      },
+      {
+        "index": 5,
+        "operator": "/=",
+        "description": "Divides the left operand by the right operand and assigns the result to the left operand\u3010687789900525068\u2020L51-L67\u3011."
+      },
+      {
+        "index": 6,
+        "operator": "%=",
+        "description": "Assigns the remainder of dividing the left operand by the right operand to the left operand\u3010687789900525068\u2020L51-L67\u3011."
+      },
+      {
+        "index": 7,
+        "operator": ">>=",
+        "description": "Right\u2011shift assignment; shifts the left operand right by the number of bits specified by the right operand and assigns the result."
+      },
+      {
+        "index": 8,
+        "operator": "<<=",
+        "description": "Left\u2011shift assignment; shifts the left operand left by the number of bits specified by the right operand and assigns the result."
+      },
+      {
+        "index": 9,
+        "operator": "&=",
+        "description": "Bitwise AND assignment; performs bitwise AND on the operands and assigns the result."
+      },
+      {
+        "index": 10,
+        "operator": "|=",
+        "description": "Bitwise OR assignment; performs bitwise OR on the operands and assigns the result."
+      },
+      {
+        "index": 11,
+        "operator": "^=",
+        "description": "Bitwise XOR assignment; performs bitwise XOR on the operands and assigns the result."
+      }
+    ],
+    "relational": [
+      {
+        "index": 1,
+        "operator": "==",
+        "description": "Equality comparison; returns true if operands are equal\u3010818006071481343\u2020L48-L60\u3011."
+      },
+      {
+        "index": 2,
+        "operator": "!=",
+        "description": "Inequality comparison; returns true if operands are not equal\u3010818006071481343\u2020L48-L60\u3011."
+      },
+      {
+        "index": 3,
+        "operator": "<",
+        "description": "Less\u2011than comparison; returns true if left operand is less than right operand\u3010818006071481343\u2020L48-L60\u3011."
+      },
+      {
+        "index": 4,
+        "operator": ">",
+        "description": "Greater\u2011than comparison; returns true if left operand is greater than right operand\u3010818006071481343\u2020L48-L60\u3011."
+      },
+      {
+        "index": 5,
+        "operator": "<=",
+        "description": "Less\u2011than or equal comparison\u3010818006071481343\u2020L48-L60\u3011."
+      },
+      {
+        "index": 6,
+        "operator": ">=",
+        "description": "Greater\u2011than or equal comparison\u3010818006071481343\u2020L48-L60\u3011."
+      }
+    ],
+    "logical": [
+      {
+        "index": 1,
+        "operator": "!",
+        "description": "Logical NOT; returns true if operand is false and false if operand is true\u3010894695048909558\u2020L48-L66\u3011."
+      },
+      {
+        "index": 2,
+        "operator": "||",
+        "description": "Logical OR; returns true if either operand is true; evaluation is short\u2011circuited\u3010894695048909558\u2020L48-L66\u3011."
+      },
+      {
+        "index": 3,
+        "operator": "&&",
+        "description": "Logical AND; returns true only if both operands are true; evaluation is short\u2011circuited\u3010894695048909558\u2020L48-L66\u3011."
+      }
+    ],
+    "bitwise": [
+      {
+        "index": 1,
+        "operator": "~",
+        "description": "Bitwise NOT; inverts each bit of its operand\u3010562041208282356\u2020L48-L103\u3011."
+      },
+      {
+        "index": 2,
+        "operator": ">>",
+        "description": "Right shift; shifts bits of the left operand right by a specified number; sign bit is preserved for signed types\u3010562041208282356\u2020L48-L103\u3011."
+      },
+      {
+        "index": 3,
+        "operator": "<<",
+        "description": "Left shift; shifts bits of the left operand left by a specified number\u3010562041208282356\u2020L48-L103\u3011."
+      },
+      {
+        "index": 4,
+        "operator": "&",
+        "description": "Bitwise AND; performs logical AND on each pair of bits of the operands."
+      },
+      {
+        "index": 5,
+        "operator": "|",
+        "description": "Bitwise OR; performs logical inclusive OR on each pair of bits of the operands."
+      },
+      {
+        "index": 6,
+        "operator": "^",
+        "description": "Bitwise XOR; performs logical exclusive OR on each pair of bits of the operands."
+      }
+    ]
+  },
+  "control_structures": [
+    {
+      "index": 1,
+      "structure": "if-else",
+      "description": "Conditional construct that executes one block of code if a condition is true and optionally another block if it is false\u3010786933659818190\u2020L52-L118\u3011."
+    },
+    {
+      "index": 2,
+      "structure": "switch",
+      "description": "Multi-way branching construct that selects a block to execute based on the value of an integral expression\u3010786933659818190\u2020L52-L118\u3011."
+    },
+    {
+      "index": 3,
+      "structure": "for",
+      "description": "Loop with initialization, condition and iteration expressions; used for repeating a block of code a specified number of times\u3010786933659818190\u2020L52-L118\u3011."
+    },
+    {
+      "index": 4,
+      "structure": "while",
+      "description": "Pre\u2011test loop that repeatedly executes a block while its condition remains true\u3010786933659818190\u2020L52-L118\u3011."
+    },
+    {
+      "index": 5,
+      "structure": "do-while",
+      "description": "Post\u2011test loop that executes its body at least once and then continues while the condition is true\u3010786933659818190\u2020L52-L118\u3011."
+    },
+    {
+      "index": 6,
+      "structure": "break",
+      "description": "Statement that exits the nearest enclosing loop or switch\u3010786933659818190\u2020L52-L118\u3011."
+    },
+    {
+      "index": 7,
+      "structure": "continue",
+      "description": "Statement that skips the remainder of the current loop iteration and proceeds to the next iteration\u3010786933659818190\u2020L52-L118\u3011."
+    },
+    {
+      "index": 8,
+      "structure": "return",
+      "description": "Statement that exits a function and optionally returns a value to the caller\u3010731200081161575\u2020L52-L83\u3011."
+    },
+    {
+      "index": 9,
+      "structure": "new/delete",
+      "description": "new allocates memory for an object and returns a pointer; delete deallocates memory and destroys the object\u3010786933659818190\u2020L52-L118\u3011."
+    },
+    {
+      "index": 10,
+      "structure": "?: (ternary)",
+      "description": "Conditional operator that returns one of two values depending on a condition; syntax: condition ? value_if_true : value_if_false\u3010786933659818190\u2020L52-L118\u3011."
+    },
+    {
+      "index": 11,
+      "structure": "compound",
+      "description": "A block of statements enclosed in braces; allows multiple statements where one is expected\u3010786933659818190\u2020L52-L118\u3011."
+    },
+    {
+      "index": 12,
+      "structure": "; (empty statement)",
+      "description": "The expression operator or empty statement represented by a semicolon; acts as a no\u2011operation\u3010786933659818190\u2020L52-L118\u3011."
+    }
+  ],
+  "variables": [
+    {
+      "index": 1,
+      "concept": "declaration",
+      "description": "Variables must be declared with a type before use; declaration syntax is: type name [= initial_value]; multiple variables can be declared in one statement\u3010539297262116978\u2020L48-L66\u3011."
+    },
+    {
+      "index": 2,
+      "concept": "arrays",
+      "description": "Arrays are sequences of elements of the same type; up to four dimensions are allowed; indexing starts at 0 and ends at size\u00a0\u2011\u00a01\u3010539297262116978\u2020L92-L113\u3011."
+    },
+    {
+      "index": 3,
+      "concept": "const qualifier",
+      "description": "Using const before a variable declaration makes the variable read\u2011only; its value cannot change after initialization\u3010539297262116978\u2020L117-L149\u3011."
+    },
+    {
+      "index": 4,
+      "concept": "static storage",
+      "description": "static keyword declares variables with static storage duration; they retain their value between function calls and are initialized once\u3010539297262116978\u2020L117-L149\u3011."
+    },
+    {
+      "index": 5,
+      "concept": "extern variable",
+      "description": "extern keyword declares a variable defined in another module; allows sharing global variables among modules\u3010539297262116978\u2020L117-L149\u3011."
+    },
+    {
+      "index": 6,
+      "concept": "input variable",
+      "description": "input keyword declares a user\u2011modifiable input variable; the value can be set from the terminal when launching a program\u3010539297262116978\u2020L117-L149\u3011."
+    },
+    {
+      "index": 7,
+      "concept": "access specifiers",
+      "description": "Class member declarations can be prefaced with public, protected or private to control access visibility\u3010539297262116978\u2020L117-L149\u3011."
+    }
+  ],
+  "preprocessor": [
+    {
+      "index": 1,
+      "directive": "#define",
+      "description": "Defines a macro substitution that replaces occurrences of an identifier with replacement text\u3010436213582272699\u2020L42-L62\u3011."
+    },
+    {
+      "index": 2,
+      "directive": "#property",
+      "description": "Specifies program properties such as version, copyright, description and icon\u3010436213582272699\u2020L42-L62\u3011."
+    },
+    {
+      "index": 3,
+      "directive": "#include",
+      "description": "Includes the contents of another file into the source code; angle brackets specify standard include directory and quotes specify local files\u3010436213582272699\u2020L42-L62\u3011."
+    },
+    {
+      "index": 4,
+      "directive": "#import",
+      "description": "Declares functions imported from external DLLs; defines prototypes for external functions used in the program\u3010436213582272699\u2020L42-L62\u3011."
+    },
+    {
+      "index": 5,
+      "directive": "#ifdef/#ifndef",
+      "description": "Conditional compilation directives that include or exclude sections of code depending on whether an identifier is defined\u3010436213582272699\u2020L42-L62\u3011."
+    },
+    {
+      "index": 6,
+      "directive": "#else",
+      "description": "Directive that provides an alternative section of code in a conditional compilation block\u3010436213582272699\u2020L42-L62\u3011."
+    },
+    {
+      "index": 7,
+      "directive": "#endif",
+      "description": "Marks the end of a conditional compilation block started with #ifdef or #ifndef\u3010436213582272699\u2020L42-L62\u3011."
+    }
+  ],
+  "functions": [
+    {
+      "index": 1,
+      "concept": "definition",
+      "description": "A function definition consists of a return type, function name and parameter list followed by a body enclosed in braces; functions can be called multiple times and help structure code\u3010731200081161575\u2020L52-L83\u3011."
+    },
+    {
+      "index": 2,
+      "concept": "parameters",
+      "description": "A function can have up to 64 parameters; each parameter has a type and name; parameters are passed by value unless specified otherwise\u3010731200081161575\u2020L52-L83\u3011."
+    },
+    {
+      "index": 3,
+      "concept": "return statement",
+      "description": "The return operator terminates a function and optionally returns a value; the returned value is converted to the function's return type\u3010731200081161575\u2020L52-L83\u3011."
+    },
+    {
+      "index": 4,
+      "concept": "default parameters",
+      "description": "Parameters can be given default values; once a parameter is assigned a default value all subsequent parameters must also have default values\u3010731200081161575\u2020L90-L118\u3011."
+    },
+    {
+      "index": 5,
+      "concept": "function overloading",
+      "description": "Multiple functions can share the same name provided they have different parameter lists, enabling polymorphism."
+    }
+  ],
+  "object_oriented": [
+    {
+      "index": 1,
+      "concept": "class",
+      "description": "Class defines a new data type that encapsulates variables and functions; instances of classes are objects\u3010973481063463211\u2020L47-L60\u3011."
+    },
+    {
+      "index": 2,
+      "concept": "encapsulation",
+      "description": "Combining data and methods in one unit (class) to model real\u2011world objects\u3010973481063463211\u2020L47-L60\u3011."
+    },
+    {
+      "index": 3,
+      "concept": "inheritance",
+      "description": "Mechanism by which a class (derived class) can acquire the properties and behaviour of another class (base class)\u3010973481063463211\u2020L47-L60\u3011."
+    },
+    {
+      "index": 4,
+      "concept": "polymorphism",
+      "description": "Ability for different classes to be treated through a common interface; often implemented using virtual functions and function overloading\u3010973481063463211\u2020L47-L60\u3011."
+    },
+    {
+      "index": 5,
+      "concept": "virtual function",
+      "description": "Member function declared with the virtual keyword that can be overridden in derived classes to support dynamic binding\u3010973481063463211\u2020L47-L60\u3011."
+    },
+    {
+      "index": 6,
+      "concept": "template",
+      "description": "Allows the creation of generic classes or functions that operate on different types\u3010973481063463211\u2020L47-L60\u3011."
+    }
+  ]
+}
