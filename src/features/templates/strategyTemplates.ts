@@ -10,110 +10,126 @@ export interface StrategyTemplate {
 export const strategyTemplates: StrategyTemplate[] = [
   {
     id: "simple-ma-crossover",
-    name: "Simple MA Crossover",
+    name: "MQL5 Default Moving Average",
     description:
-      "Buy when fast MA crosses above slow MA, sell when it crosses below. Classic golden cross strategy with 50/200 SMA.",
-    difficulty: "beginner",
+      "The standard Moving Average strategy included with MetaTrader 5. Uses SMA(12) with Shift(6). Enters on bar open if price crosses the MA. Reverses on opposite signal.",
+    difficulty: "intermediate",
     category: "trend",
     workspace: `<xml xmlns="https://developers.google.com/blockly/xml">
       <block type="control_forever" x="50" y="50">
         <statement name="DO">
           <block type="control_if">
             <value name="CONDITION">
-              <block type="operator_greater">
-                <value name="LEFT">
-                  <block type="ta_sma">
-                    <mutation period="5" ma_period="50" shift="0" applied_price="0"></mutation>
-                    <field name="NAME">Fast SMA</field>
-                  </block>
-                </value>
-                <value name="RIGHT">
-                  <block type="ta_sma">
-                    <mutation period="5" ma_period="200" shift="0" applied_price="0"></mutation>
-                    <field name="NAME">Slow SMA</field>
-                  </block>
-                </value>
+              <block type="environment_new_candle_open">
+                <field name="TIMEFRAME">1h</field>
               </block>
             </value>
             <statement name="DO">
-              <block type="trade_order">
-                <field name="TRADE_ID">ma_crossover_trade</field>
-                <field name="DIRECTION">long</field>
-                <value name="SIZE">
-                  <shadow type="math_number">
-                    <field name="NUM">2</field>
-                  </shadow>
-                </value>
-                <field name="SIZE_TYPE">percent</field>
-                <field name="LEVERAGE">1</field>
-                <field name="ORDER_TYPE">market</field>
-                <next>
-                  <block type="trade_stop_loss">
-                    <field name="CLOSE_TYPE">full</field>
-                    <field name="TRADE_ID">ma_crossover_trade</field>
-                    <value name="PRICE">
-                      <block type="operator_subtract">
+              <block type="control_if">
+                <value name="CONDITION">
+                  <block type="operator_and">
+                    <value name="LEFT">
+                      <block type="operator_less">
                         <value name="LEFT">
-                          <block type="trade_entry_price">
-                            <field name="TRADE_ID">ma_crossover_trade</field>
+                          <block type="environment_prev_candle_open">
+                            <field name="TIMEFRAME">1h</field>
                           </block>
                         </value>
                         <value name="RIGHT">
-                          <block type="operator_multiply">
+                          <block type="ta_sma">
+                            <mutation period="16385" ma_period="12" shift="6" applied_price="0"></mutation>
+                            <field name="NAME">MA</field>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                    <value name="RIGHT">
+                      <block type="operator_greater">
+                        <value name="LEFT">
+                          <block type="environment_prev_ticker_close">
+                            <field name="TIMEFRAME">1h</field>
+                          </block>
+                        </value>
+                        <value name="RIGHT">
+                          <block type="ta_sma">
+                            <mutation period="16385" ma_period="12" shift="6" applied_price="0"></mutation>
+                            <field name="NAME">MA</field>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+                <statement name="DO">
+                  <block type="trade_close_all">
+                    <next>
+                      <block type="trade_order">
+                        <field name="TRADE_ID">ma_buy</field>
+                        <field name="DIRECTION">long</field>
+                        <value name="SIZE">
+                          <shadow type="math_number">
+                            <field name="NUM">0.1</field>
+                          </shadow>
+                        </value>
+                        <field name="LEVERAGE">1</field>
+                        <field name="ORDER_TYPE">market</field>
+                      </block>
+                    </next>
+                  </block>
+                </statement>
+                <next>
+                  <block type="control_if">
+                    <value name="CONDITION">
+                      <block type="operator_and">
+                        <value name="LEFT">
+                          <block type="operator_greater">
                             <value name="LEFT">
-                              <block type="ta_atr">
-                                <mutation period="5" ma_period="14"></mutation>
-                                <field name="NAME">ATR</field>
+                              <block type="environment_prev_candle_open">
+                                <field name="TIMEFRAME">1h</field>
                               </block>
                             </value>
                             <value name="RIGHT">
-                              <shadow type="math_number">
-                                <field name="NUM">2</field>
-                              </shadow>
+                              <block type="ta_sma">
+                                <mutation period="16385" ma_period="12" shift="6" applied_price="0"></mutation>
+                                <field name="NAME">MA</field>
+                              </block>
+                            </value>
+                          </block>
+                        </value>
+                        <value name="RIGHT">
+                          <block type="operator_less">
+                            <value name="LEFT">
+                              <block type="environment_prev_ticker_close">
+                                <field name="TIMEFRAME">1h</field>
+                              </block>
+                            </value>
+                            <value name="RIGHT">
+                              <block type="ta_sma">
+                                <mutation period="16385" ma_period="12" shift="6" applied_price="0"></mutation>
+                                <field name="NAME">MA</field>
+                              </block>
                             </value>
                           </block>
                         </value>
                       </block>
                     </value>
-                    <next>
-                      <block type="trade_take_profit">
-                        <field name="CLOSE_TYPE">full</field>
-                        <field name="TRADE_ID">ma_crossover_trade</field>
-                        <value name="PRICE">
-                          <block type="operator_add">
-                            <value name="LEFT">
-                              <block type="trade_entry_price">
-                                <field name="TRADE_ID">ma_crossover_trade</field>
-                              </block>
+                    <statement name="DO">
+                      <block type="trade_close_all">
+                        <next>
+                          <block type="trade_order">
+                            <field name="TRADE_ID">ma_sell</field>
+                            <field name="DIRECTION">short</field>
+                            <value name="SIZE">
+                              <shadow type="math_number">
+                                <field name="NUM">0.1</field>
+                              </shadow>
                             </value>
-                            <value name="RIGHT">
-                              <block type="operator_multiply">
-                                <value name="LEFT">
-                                  <block type="operator_multiply">
-                                    <value name="LEFT">
-                                      <block type="ta_atr">
-                                        <mutation period="5" ma_period="14"></mutation>
-                                        <field name="NAME">ATR</field>
-                                      </block>
-                                    </value>
-                                    <value name="RIGHT">
-                                      <shadow type="math_number">
-                                        <field name="NUM">2</field>
-                                      </shadow>
-                                    </value>
-                                  </block>
-                                </value>
-                                <value name="RIGHT">
-                                  <shadow type="math_number">
-                                    <field name="NUM">3</field>
-                                  </shadow>
-                                </value>
-                              </block>
-                            </value>
+                            <field name="LEVERAGE">1</field>
+                            <field name="ORDER_TYPE">market</field>
                           </block>
-                        </value>
+                        </next>
                       </block>
-                    </next>
+                    </statement>
                   </block>
                 </next>
               </block>
