@@ -3,7 +3,9 @@ import * as Blockly from "blockly";
 Blockly.Blocks["trade_order"] = {
     init: function () {
         this.appendDummyInput()
-            .appendField("Trade ID:")
+            .appendField("Close")
+            .appendField(new Blockly.FieldNumber(100, 0, 100), "PERCENT")
+            .appendField("% of trade ID")
             .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
         this.appendDummyInput()
             .appendField("Trade")
@@ -16,15 +18,8 @@ Blockly.Blocks["trade_order"] = {
             );
         this.appendDummyInput()
             .appendField("Size")
-            .appendField(new Blockly.FieldNumber(100, 0), "SIZE");
-        this.appendDummyInput()
-            .appendField(
-                new Blockly.FieldDropdown([
-                    ["trade value", "value"],
-                    ["percent of capital", "percent"],
-                ]),
-                "SIZE_TYPE",
-            );
+            .appendField(new Blockly.FieldNumber(0.1, 0), "SIZE");
+
         this.appendDummyInput()
             .appendField("Leverage")
             .appendField(
@@ -65,5 +60,17 @@ Blockly.Blocks["trade_order"] = {
         } else if (value === 'market' && limitPriceInput) {
             this.removeInput('LIMIT_PRICE');
         }
+    }
+};
+
+Blockly.Blocks["trade_close_all"] = {
+    init: function () {
+        this.appendDummyInput()
+            .appendField("Close All Trades");
+        this.setPreviousStatement(true, "TradeAction");
+        this.setNextStatement(true, "TradeAction");
+        this.setStyle("trade_blocks");
+        this.setTooltip("Close all open trades for this strategy");
+        this.setHelpUrl("");
     }
 };

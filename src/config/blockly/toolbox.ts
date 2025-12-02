@@ -300,6 +300,7 @@ export const tradeBlocksToolbox = [
       }
     }
   },
+  { kind: 'block', type: 'trade_close_all' },
   { kind: 'label', text: 'Info' },
   { kind: 'block', type: 'trade_pnl_of' },
   { kind: 'block', type: 'trade_entry_price' },
@@ -317,7 +318,7 @@ export const taBlocksToolbox = [
   { kind: 'block', type: 'frama' },
   { kind: 'block', type: 'vidya' },
   { kind: 'block', type: 'ama' },
-  
+
   { kind: 'label', text: 'Oscillators' },
   { kind: 'block', type: 'ta_rsi' },
   { kind: 'block', type: 'ta_cci' },
@@ -333,16 +334,16 @@ export const taBlocksToolbox = [
   { kind: 'block', type: 'chaikin' },
   { kind: 'block', type: 'demarker' },
   { kind: 'block', type: 'force' },
-  
+
   { kind: 'label', text: 'MACD' },
   { kind: 'block', type: 'macd_value' },
-  
+
   { kind: 'label', text: 'Bands & Channels' },
   { kind: 'block', type: 'ta_bb' },
   { kind: 'block', type: 'envelopes' },
   { kind: 'block', type: 'donchian' },
   { kind: 'block', type: 'ta_keltner' },
-  
+
   { kind: 'label', text: 'Complex Indicators' },
   { kind: 'block', type: 'ta_ichimoku' },
   { kind: 'block', type: 'alligator' },
@@ -350,25 +351,25 @@ export const taBlocksToolbox = [
   { kind: 'block', type: 'ta_dmi' },
   { kind: 'block', type: 'ta_adx' },
   { kind: 'block', type: 'adxWilder' },
-  
+
   { kind: 'label', text: 'Volatility' },
   { kind: 'block', type: 'ta_atr' },
   { kind: 'block', type: 'stddev' },
-  
+
   { kind: 'label', text: 'Trend' },
   { kind: 'block', type: 'ta_sar' },
-  
+
   { kind: 'label', text: 'Volume' },
   { kind: 'block', type: 'ta_obv' },
   { kind: 'block', type: 'volumes' },
   { kind: 'block', type: 'bwmfi' },
   { kind: 'block', type: 'ad' },
   { kind: 'block', type: 'ta_vwap' },
-  
+
   { kind: 'label', text: 'Power Indicators' },
   { kind: 'block', type: 'bearsPower' },
   { kind: 'block', type: 'bullsPower' },
-  
+
   { kind: 'label', text: 'Other' },
   { kind: 'block', type: 'fractals' },
 ];
