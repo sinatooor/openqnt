@@ -521,13 +521,6 @@ export const strategyTemplates: StrategyTemplate[] = [
     workspace: `<xml xmlns="https://developers.google.com/blockly/xml">
       <block type="control_forever" x="50" y="50">
         <statement name="DO">
-          <block type="control_if">
-            <value name="CONDITION">
-              <block type="environment_new_candle_open">
-                <field name="TIMEFRAME">5m</field>
-              </block>
-            </value>
-            <statement name="DO">
               <block type="control_if">
                 <value name="CONDITION">
                   <block type="operator_and">
@@ -538,7 +531,7 @@ export const strategyTemplates: StrategyTemplate[] = [
                         </value>
                         <value name="RIGHT">
                           <block type="ta_vwap">
-                            <mutation period="5"></mutation>
+                            <mutation period="60"></mutation>
                             <field name="NAME">VWAP</field>
                           </block>
                         </value>
@@ -548,7 +541,7 @@ export const strategyTemplates: StrategyTemplate[] = [
                       <block type="operator_less">
                         <value name="LEFT">
                           <block type="ta_rsi">
-                            <mutation period="5" ma_period="9" applied_price="0"></mutation>
+                            <mutation period="60" ma_period="9" applied_price="0"></mutation>
                             <field name="NAME">RSI</field>
                           </block>
                         </value>
@@ -588,7 +581,7 @@ export const strategyTemplates: StrategyTemplate[] = [
                               <block type="operator_multiply">
                                 <value name="LEFT">
                                   <block type="ta_atr">
-                                    <mutation period="5" ma_period="14"></mutation>
+                                    <mutation period="60" ma_period="14"></mutation>
                                     <field name="NAME">ATR</field>
                                   </block>
                                 </value>
@@ -618,7 +611,7 @@ export const strategyTemplates: StrategyTemplate[] = [
                                       <block type="operator_multiply">
                                         <value name="LEFT">
                                           <block type="ta_atr">
-                                            <mutation period="5" ma_period="14"></mutation>
+                                            <mutation period="60" ma_period="14"></mutation>
                                             <field name="NAME">ATR</field>
                                           </block>
                                         </value>
@@ -645,8 +638,6 @@ export const strategyTemplates: StrategyTemplate[] = [
                   </block>
                 </statement>
               </block>
-            </statement>
-          </block>
         </statement>
       </block>
     </xml>`,
