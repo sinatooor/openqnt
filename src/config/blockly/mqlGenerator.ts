@@ -707,6 +707,22 @@ const getIndicatorPeriod = (block: Blockly.Block) => {
     return (block as any).indicatorParams?.['period'] ?? 0; // Default to 0 (PERIOD_CURRENT)
 };
 
+const toMqlTimeframe = (period: any) => {
+    const periodStr = String(period);
+    switch (periodStr) {
+        case '1': return 'PERIOD_M1';
+        case '5': return 'PERIOD_M5';
+        case '15': return 'PERIOD_M15';
+        case '30': return 'PERIOD_M30';
+        case '60': return 'PERIOD_H1';
+        case '240': return 'PERIOD_H4';
+        case '1440': return 'PERIOD_D1';
+        case '10080': return 'PERIOD_W1';
+        case '43200': return 'PERIOD_MN1';
+        default: return 'PERIOD_CURRENT';
+    }
+};
+
 mqlGenerator.forBlock['ta_rsi'] = function (block: Blockly.Block) {
     const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 14);
@@ -714,7 +730,7 @@ mqlGenerator.forBlock['ta_rsi'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_rsi_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iRSI(NULL, ${period}, ${maPeriod}, ${appliedPrice});`);
+    mqlGenerator.initializations_.push(`${handleName} = iRSI(NULL, ${toMqlTimeframe(period)}, ${maPeriod}, ${appliedPrice});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -734,7 +750,7 @@ mqlGenerator.forBlock['ta_sma'] = function (block: Blockly.Block) {
     if (!handleName) {
         handleName = 'handle_sma_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
         mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-        mqlGenerator.initializations_.push(`${handleName} = iMA(NULL, ${period}, ${maPeriod}, ${shift}, MODE_SMA, ${appliedPrice});`);
+        mqlGenerator.initializations_.push(`${handleName} = iMA(NULL, ${toMqlTimeframe(period)}, ${maPeriod}, ${shift}, MODE_SMA, ${appliedPrice});`);
         mqlGenerator.handleCache_[paramKey] = handleName;
     }
 
@@ -749,7 +765,7 @@ mqlGenerator.forBlock['ta_ema'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_ema_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iMA(NULL, ${period}, ${maPeriod}, ${shift}, MODE_EMA, ${appliedPrice});`);
+    mqlGenerator.initializations_.push(`${handleName} = iMA(NULL, ${toMqlTimeframe(period)}, ${maPeriod}, ${shift}, MODE_EMA, ${appliedPrice});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -764,7 +780,7 @@ mqlGenerator.forBlock['ta_bb'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_bb_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iBands(NULL, ${period}, ${maPeriod}, ${shift}, ${deviation}, ${appliedPrice});`);
+    mqlGenerator.initializations_.push(`${handleName} = iBands(NULL, ${toMqlTimeframe(period)}, ${maPeriod}, ${shift}, ${deviation}, ${appliedPrice});`);
 
     let buffer = 0; // BASE_LINE
     if (component === 'upper') buffer = 1; // UPPER_BAND
@@ -773,23 +789,7 @@ mqlGenerator.forBlock['ta_bb'] = function (block: Blockly.Block) {
     return [`GetIndicatorValue(${handleName}, ${buffer}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
 
-mqlGenerator.forBlock['ta_macd'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
-    const fastEMA = getIndicatorParam(block, 'fastEMA', 12);
-    const slowEMA = getIndicatorParam(block, 'slowEMA', 26);
-    const signalSMA = getIndicatorParam(block, 'signalSMA', 9);
-    const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
-    const component = block.getFieldValue('COMPONENT') || 'line';
 
-    const handleName = 'handle_macd_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
-    mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iMACD(NULL, ${period}, ${fastEMA}, ${slowEMA}, ${signalSMA}, ${appliedPrice});`);
-
-    let buffer = 0; // MAIN_LINE
-    if (component === 'signal') buffer = 1; // SIGNAL_LINE
-
-    return [`GetIndicatorValue(${handleName}, ${buffer}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
-};
 
 mqlGenerator.forBlock['ta_atr'] = function (block: Blockly.Block) {
     const period = getIndicatorParam(block, 'period', 5);
@@ -797,7 +797,7 @@ mqlGenerator.forBlock['ta_atr'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_atr_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iATR(NULL, ${period}, ${maPeriod});`);
+    mqlGenerator.initializations_.push(`${handleName} = iATR(NULL, ${toMqlTimeframe(period)}, ${maPeriod});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -813,7 +813,7 @@ mqlGenerator.forBlock['ta_stochastic'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_stoch_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iStochastic(NULL, ${period}, ${kPeriod}, ${dPeriod}, ${slowing}, ${method}, ${priceField});`);
+    mqlGenerator.initializations_.push(`${handleName} = iStochastic(NULL, ${toMqlTimeframe(period)}, ${kPeriod}, ${dPeriod}, ${slowing}, ${method}, ${priceField});`);
 
     let buffer = 0; // MAIN_LINE (%K)
     if (component === 'd' || component === 'signal') buffer = 1; // SIGNAL_LINE (%D)
@@ -829,7 +829,7 @@ mqlGenerator.forBlock['ta_cci'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_cci_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iCCI(NULL, ${period}, ${maPeriod}, ${appliedPrice});`);
+    mqlGenerator.initializations_.push(`${handleName} = iCCI(NULL, ${toMqlTimeframe(period)}, ${maPeriod}, ${appliedPrice});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -844,7 +844,7 @@ mqlGenerator.forBlock['ta_adx'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_adx_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iADX(NULL, ${period}, ${maPeriod});`);
+    mqlGenerator.initializations_.push(`${handleName} = iADX(NULL, ${toMqlTimeframe(period)}, ${maPeriod});`);
 
     const component = block.getFieldValue('COMPONENT') || 'main';
     let buffer = 0; // MAIN_LINE
@@ -861,7 +861,7 @@ mqlGenerator.forBlock['ta_mfi'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_mfi_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iMFI(NULL, ${period}, ${maPeriod}, ${volumeType});`);
+    mqlGenerator.initializations_.push(`${handleName} = iMFI(NULL, ${toMqlTimeframe(period)}, ${maPeriod}, ${volumeType});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -872,7 +872,7 @@ mqlGenerator.forBlock['ta_williams_r'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_wpr_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iWPR(NULL, ${period}, ${maPeriod});`);
+    mqlGenerator.initializations_.push(`${handleName} = iWPR(NULL, ${toMqlTimeframe(period)}, ${maPeriod});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -885,7 +885,7 @@ mqlGenerator.forBlock['ta_smma'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_smma_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iMA(NULL, ${period}, ${maPeriod}, ${shift}, MODE_SMMA, ${appliedPrice});`);
+    mqlGenerator.initializations_.push(`${handleName} = iMA(NULL, ${toMqlTimeframe(period)}, ${maPeriod}, ${shift}, MODE_SMMA, ${appliedPrice});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -898,7 +898,7 @@ mqlGenerator.forBlock['ta_lwma'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_lwma_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iMA(NULL, ${period}, ${maPeriod}, ${shift}, MODE_LWMA, ${appliedPrice});`);
+    mqlGenerator.initializations_.push(`${handleName} = iMA(NULL, ${toMqlTimeframe(period)}, ${maPeriod}, ${shift}, MODE_LWMA, ${appliedPrice});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -909,7 +909,7 @@ mqlGenerator.forBlock['dema'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_dema_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iDEMA(NULL, ${period}, ${maPeriod}, 0, PRICE_CLOSE);`);
+    mqlGenerator.initializations_.push(`${handleName} = iDEMA(NULL, ${toMqlTimeframe(period)}, ${maPeriod}, 0, PRICE_CLOSE);`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -920,7 +920,7 @@ mqlGenerator.forBlock['tema'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_tema_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iTEMA(NULL, ${period}, ${maPeriod}, 0, PRICE_CLOSE);`);
+    mqlGenerator.initializations_.push(`${handleName} = iTEMA(NULL, ${toMqlTimeframe(period)}, ${maPeriod}, 0, PRICE_CLOSE);`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -930,7 +930,7 @@ mqlGenerator.forBlock['ac'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_ac_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iAC(NULL, ${period});`);
+    mqlGenerator.initializations_.push(`${handleName} = iAC(NULL, ${toMqlTimeframe(period)});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -940,7 +940,7 @@ mqlGenerator.forBlock['ao'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_ao_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iAO(NULL, ${period});`);
+    mqlGenerator.initializations_.push(`${handleName} = iAO(NULL, ${toMqlTimeframe(period)});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -952,7 +952,7 @@ mqlGenerator.forBlock['sar'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_sar_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iSAR(NULL, ${period}, ${step}, ${maximum});`);
+    mqlGenerator.initializations_.push(`${handleName} = iSAR(NULL, ${toMqlTimeframe(period)}, ${step}, ${maximum});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -964,7 +964,7 @@ mqlGenerator.forBlock['momentum'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_mom_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iMomentum(NULL, ${period}, ${maPeriod}, ${appliedPrice});`);
+    mqlGenerator.initializations_.push(`${handleName} = iMomentum(NULL, ${toMqlTimeframe(period)}, ${maPeriod}, ${appliedPrice});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -978,7 +978,7 @@ mqlGenerator.forBlock['osma'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_osma_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iOsMA(NULL, ${period}, ${fastEMA}, ${slowEMA}, ${signalSMA}, ${appliedPrice});`);
+    mqlGenerator.initializations_.push(`${handleName} = iOsMA(NULL, ${toMqlTimeframe(period)}, ${fastEMA}, ${slowEMA}, ${signalSMA}, ${appliedPrice});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -988,7 +988,7 @@ mqlGenerator.forBlock['obv'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_obv_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iOBV(NULL, ${period}, PRICE_CLOSE);`);
+    mqlGenerator.initializations_.push(`${handleName} = iOBV(NULL, ${toMqlTimeframe(period)}, PRICE_CLOSE);`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -1002,7 +1002,7 @@ mqlGenerator.forBlock['stddev'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_stddev_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iStdDev(NULL, ${period}, ${maPeriod}, ${shift}, ${method}, ${appliedPrice});`);
+    mqlGenerator.initializations_.push(`${handleName} = iStdDev(NULL, ${toMqlTimeframe(period)}, ${maPeriod}, ${shift}, ${method}, ${appliedPrice});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -1017,7 +1017,7 @@ mqlGenerator.forBlock['envelopes'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_env_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iEnvelopes(NULL, ${period}, ${maPeriod}, 0, ${method}, ${appliedPrice}, ${deviation});`);
+    mqlGenerator.initializations_.push(`${handleName} = iEnvelopes(NULL, ${toMqlTimeframe(period)}, ${maPeriod}, 0, ${method}, ${appliedPrice}, ${deviation});`);
 
     let buffer = 0; // UPPER_BAND
     if (component === 'lower') buffer = 1; // LOWER_BAND
@@ -1032,7 +1032,7 @@ mqlGenerator.forBlock['donchian'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_donch_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iCustom(NULL, ${period}, "Donchian", ${maPeriod});`);
+    mqlGenerator.initializations_.push(`${handleName} = iCustom(NULL, ${toMqlTimeframe(period)}, "Donchian", ${maPeriod});`);
 
     let buffer = 0; // UPPER
     if (component === 'middle') buffer = 1;
@@ -1047,7 +1047,7 @@ mqlGenerator.forBlock['fractals'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_fract_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iFractals(NULL, ${period});`);
+    mqlGenerator.initializations_.push(`${handleName} = iFractals(NULL, ${toMqlTimeframe(period)});`);
 
     let buffer = 0; // UPPER
     if (component === 'lower') buffer = 1;
@@ -1067,7 +1067,7 @@ mqlGenerator.forBlock['alligator'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_alli_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iAlligator(NULL, ${period}, ${jawPeriod}, ${jawShift}, ${teethPeriod}, ${teethShift}, ${lipsPeriod}, ${lipsShift}, MODE_SMMA, PRICE_MEDIAN);`);
+    mqlGenerator.initializations_.push(`${handleName} = iAlligator(NULL, ${toMqlTimeframe(period)}, ${jawPeriod}, ${jawShift}, ${teethPeriod}, ${teethShift}, ${lipsPeriod}, ${lipsShift}, MODE_SMMA, PRICE_MEDIAN);`);
 
     let buffer = 0; // JAW
     if (component === 'teeth') buffer = 1;
@@ -1076,7 +1076,7 @@ mqlGenerator.forBlock['alligator'] = function (block: Blockly.Block) {
     return [`GetIndicatorValue(${handleName}, ${buffer}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
 
-mqlGenerator.forBlock['ichimoku'] = function (block: Blockly.Block) {
+mqlGenerator.forBlock['ta_ichimoku'] = function (block: Blockly.Block) {
     const period = getIndicatorParam(block, 'period', 5);
     const tenkan = getIndicatorParam(block, 'tenkan', 9);
     const kijun = getIndicatorParam(block, 'kijun', 26);
@@ -1085,7 +1085,7 @@ mqlGenerator.forBlock['ichimoku'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_ichi_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iIchimoku(NULL, ${period}, ${tenkan}, ${kijun}, ${senkou});`);
+    mqlGenerator.initializations_.push(`${handleName} = iIchimoku(NULL, ${toMqlTimeframe(period)}, ${tenkan}, ${kijun}, ${senkou});`);
 
     let buffer = 0; // TENKAN
     if (component === 'kijun') buffer = 1;
@@ -1102,7 +1102,7 @@ mqlGenerator.forBlock['bearsPower'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_bears_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iBearsPower(NULL, ${period}, ${maPeriod}, PRICE_CLOSE);`);
+    mqlGenerator.initializations_.push(`${handleName} = iBearsPower(NULL, ${toMqlTimeframe(period)}, ${maPeriod}, PRICE_CLOSE);`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -1110,7 +1110,7 @@ mqlGenerator.forBlock['bearsPower'] = function (block: Blockly.Block) {
 mqlGenerator.forBlock['bullsPower'] = function (block: Blockly.Block) {
     const period = getIndicatorParam(block, 'period', 5);
     const maPeriod = getIndicatorParam(block, 'ma_period', 13);
-    return [`iBullsPower(NULL, ${period}, ${maPeriod}, PRICE_CLOSE, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+    return [`iBullsPower(NULL, ${toMqlTimeframe(period)}, ${maPeriod}, PRICE_CLOSE, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
 
 mqlGenerator.forBlock['force'] = function (block: Blockly.Block) {
@@ -1121,7 +1121,7 @@ mqlGenerator.forBlock['force'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_force_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iForce(NULL, ${period}, ${maPeriod}, ${method}, ${appliedPrice});`);
+    mqlGenerator.initializations_.push(`${handleName} = iForce(NULL, ${toMqlTimeframe(period)}, ${maPeriod}, ${method}, ${appliedPrice});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -1131,7 +1131,7 @@ mqlGenerator.forBlock['bwmfi'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_bwmfi_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iBWMFI(NULL, ${period}, 1);`); // 1 = VOLUME_TICK
+    mqlGenerator.initializations_.push(`${handleName} = iBWMFI(NULL, ${toMqlTimeframe(period)}, 1);`); // 1 = VOLUME_TICK
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -1148,7 +1148,7 @@ mqlGenerator.forBlock['gator'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_gator_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iGator(NULL, ${period}, ${jawPeriod}, ${jawShift}, ${teethPeriod}, ${teethShift}, ${lipsPeriod}, ${lipsShift}, MODE_SMMA, PRICE_MEDIAN);`);
+    mqlGenerator.initializations_.push(`${handleName} = iGator(NULL, ${toMqlTimeframe(period)}, ${jawPeriod}, ${jawShift}, ${teethPeriod}, ${teethShift}, ${lipsPeriod}, ${lipsShift}, MODE_SMMA, PRICE_MEDIAN);`);
 
     let buffer = 0; // UPPER
     if (component === 'lower') buffer = 1;
@@ -1163,7 +1163,7 @@ mqlGenerator.forBlock['chaikin'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_chaikin_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iCustom(NULL, ${period}, "Chaikin", ${fastEMA}, ${slowEMA});`);
+    mqlGenerator.initializations_.push(`${handleName} = iCustom(NULL, ${toMqlTimeframe(period)}, "Chaikin", ${fastEMA}, ${slowEMA});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -1174,7 +1174,7 @@ mqlGenerator.forBlock['demarker'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_demarker_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iDeMarker(NULL, ${period}, ${maPeriod});`);
+    mqlGenerator.initializations_.push(`${handleName} = iDeMarker(NULL, ${toMqlTimeframe(period)}, ${maPeriod});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -1186,7 +1186,7 @@ mqlGenerator.forBlock['rvi'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_rvi_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iRVI(NULL, ${period}, ${maPeriod});`);
+    mqlGenerator.initializations_.push(`${handleName} = iRVI(NULL, ${toMqlTimeframe(period)}, ${maPeriod});`);
 
     let buffer = 0; // MAIN
     if (component === 'signal') buffer = 1;
@@ -1199,7 +1199,7 @@ mqlGenerator.forBlock['volumes'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_vols_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iVolumes(NULL, ${period}, VOLUME_TICK);`);
+    mqlGenerator.initializations_.push(`${handleName} = iVolumes(NULL, ${toMqlTimeframe(period)}, VOLUME_TICK);`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -1214,7 +1214,7 @@ mqlGenerator.forBlock['ta_vwap'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_vwap_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iCustom(NULL, ${period}, "VWAP");`);
+    mqlGenerator.initializations_.push(`${handleName} = iCustom(NULL, ${toMqlTimeframe(period)}, "VWAP");`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -1224,7 +1224,7 @@ mqlGenerator.forBlock['ad'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_ad_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iAD(NULL, ${period}, VOLUME_TICK);`);
+    mqlGenerator.initializations_.push(`${handleName} = iAD(NULL, ${toMqlTimeframe(period)}, VOLUME_TICK);`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -1236,7 +1236,7 @@ mqlGenerator.forBlock['trix'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_trix_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iCustom(NULL, ${period}, "TRIX", ${maPeriod}, ${appliedPrice});`);
+    mqlGenerator.initializations_.push(`${handleName} = iCustom(NULL, ${toMqlTimeframe(period)}, "TRIX", ${maPeriod}, ${appliedPrice});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -1247,7 +1247,7 @@ mqlGenerator.forBlock['vidya'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_vidya_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iCustom(NULL, ${period}, "VIDYA", ${maPeriod});`);
+    mqlGenerator.initializations_.push(`${handleName} = iCustom(NULL, ${toMqlTimeframe(period)}, "VIDYA", ${maPeriod});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -1258,7 +1258,7 @@ mqlGenerator.forBlock['ama'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_ama_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iCustom(NULL, ${period}, "AMA", ${maPeriod});`);
+    mqlGenerator.initializations_.push(`${handleName} = iCustom(NULL, ${toMqlTimeframe(period)}, "AMA", ${maPeriod});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -1269,22 +1269,27 @@ mqlGenerator.forBlock['frama'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_frama_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iCustom(NULL, ${period}, "FRAMA", ${maPeriod});`);
+    mqlGenerator.initializations_.push(`${handleName} = iCustom(NULL, ${toMqlTimeframe(period)}, "FRAMA", ${maPeriod});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
 
-mqlGenerator.forBlock['keltner'] = function (block: Blockly.Block) {
+mqlGenerator.forBlock['ta_keltner'] = function (block: Blockly.Block) {
     const period = getIndicatorParam(block, 'period', 5);
     const maPeriod = getIndicatorParam(block, 'ma_period', 20);
     const atrPeriod = getIndicatorParam(block, 'atrPeriod', 10);
     const multiplier = getIndicatorParam(block, 'multiplier', 2);
+    const component = block.getFieldValue('COMPONENT') || 'upper';
 
     const handleName = 'handle_keltner_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iCustom(NULL, ${period}, "Keltner", ${maPeriod}, ${atrPeriod}, ${multiplier});`);
+    mqlGenerator.initializations_.push(`${handleName} = iCustom(NULL, ${toMqlTimeframe(period)}, "Keltner", ${maPeriod}, ${atrPeriod}, ${multiplier});`);
 
-    return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+    let buffer = 0; // UPPER
+    if (component === 'lower') buffer = 1;
+    if (component === 'middle') buffer = 2;
+
+    return [`GetIndicatorValue(${handleName}, ${buffer}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
 
 mqlGenerator.forBlock['adxWilder'] = function (block: Blockly.Block) {
@@ -1293,20 +1298,25 @@ mqlGenerator.forBlock['adxWilder'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_adxw_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iADXWilder(NULL, ${period}, ${maPeriod});`);
+    mqlGenerator.initializations_.push(`${handleName} = iADXWilder(NULL, ${toMqlTimeframe(period)}, ${maPeriod});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
 
-mqlGenerator.forBlock['dmi'] = function (block: Blockly.Block) {
+mqlGenerator.forBlock['ta_dmi'] = function (block: Blockly.Block) {
     const period = getIndicatorParam(block, 'period', 5);
     const maPeriod = getIndicatorParam(block, 'ma_period', 14);
+    const component = block.getFieldValue('COMPONENT') || 'plus';
 
     const handleName = 'handle_dmi_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iADXWilder(NULL, ${period}, ${maPeriod});`);
+    mqlGenerator.initializations_.push(`${handleName} = iADXWilder(NULL, ${toMqlTimeframe(period)}, ${maPeriod});`);
 
-    return [`GetIndicatorValue(${handleName}, 1, 0)`, mqlGenerator.ORDER_FUNCTION_CALL]; // PLUSDI
+    let buffer = 1; // PLUSDI
+    if (component === 'minus') buffer = 2; // MINUSDI
+    if (component === 'adx') buffer = 0; // MAIN
+
+    return [`GetIndicatorValue(${handleName}, ${buffer}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
 
 mqlGenerator.forBlock['macd_value'] = function (block: Blockly.Block) {
@@ -1315,10 +1325,14 @@ mqlGenerator.forBlock['macd_value'] = function (block: Blockly.Block) {
     const slowEMA = getIndicatorParam(block, 'slowEMA', 26);
     const signalSMA = getIndicatorParam(block, 'signalSMA', 9);
     const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
+    const component = block.getFieldValue('COMPONENT') || 'line';
 
     const handleName = 'handle_macd_val_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iMACD(NULL, ${period}, ${fastEMA}, ${slowEMA}, ${signalSMA}, ${appliedPrice});`);
+    mqlGenerator.initializations_.push(`${handleName} = iMACD(NULL, ${toMqlTimeframe(period)}, ${fastEMA}, ${slowEMA}, ${signalSMA}, ${appliedPrice});`);
 
-    return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+    let buffer = 0; // MAIN_LINE
+    if (component === 'signal') buffer = 1; // SIGNAL_LINE
+
+    return [`GetIndicatorValue(${handleName}, ${buffer}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
