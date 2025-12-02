@@ -154,7 +154,7 @@ export const strategyTemplates: StrategyTemplate[] = [
               <block type="operator_less">
                 <value name="LEFT">
                   <block type="ta_rsi">
-                    <mutation period="5" ma_period="14" applied_price="0"></mutation>
+                    <mutation period="15" ma_period="14" applied_price="0"></mutation>
                     <field name="NAME">RSI</field>
                   </block>
                 </value>
@@ -192,7 +192,7 @@ export const strategyTemplates: StrategyTemplate[] = [
                           <block type="operator_multiply">
                             <value name="LEFT">
                               <block type="ta_atr">
-                                <mutation period="5" ma_period="14"></mutation>
+                                <mutation period="15" ma_period="14"></mutation>
                                 <field name="NAME">ATR</field>
                               </block>
                             </value>
@@ -222,7 +222,7 @@ export const strategyTemplates: StrategyTemplate[] = [
                                   <block type="operator_multiply">
                                     <value name="LEFT">
                                       <block type="ta_atr">
-                                        <mutation period="5" ma_period="14"></mutation>
+                                        <mutation period="15" ma_period="14"></mutation>
                                         <field name="NAME">ATR</field>
                                       </block>
                                     </value>

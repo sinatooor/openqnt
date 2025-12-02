@@ -516,8 +516,12 @@ mqlGenerator.forBlock['trade_take_profit'] = function (block: Blockly.Block) {
     return `for(int i=PositionsTotal()-1; i>=0; i--) {
    ulong ticket = PositionGetTicket(i);
    if(PositionGetString(POSITION_SYMBOL) == Symbol()) {
-      if(!trade.PositionModify(ticket, PositionGetDouble(POSITION_SL), ${price})) {
-          Print("Modify TP failed. Code: ", trade.ResultRetcode(), ", Desc: ", trade.ResultRetcodeDescription());
+      double currentTP = PositionGetDouble(POSITION_TP);
+      double newTP = ${price};
+      if(MathAbs(currentTP - newTP) > _Point) {
+          if(!trade.PositionModify(ticket, PositionGetDouble(POSITION_SL), newTP)) {
+              Print("Modify TP failed. Code: ", trade.ResultRetcode(), ", Desc: ", trade.ResultRetcodeDescription());
+          }
       }
    }
 }
@@ -529,8 +533,12 @@ mqlGenerator.forBlock['trade_stop_loss'] = function (block: Blockly.Block) {
     return `for(int i=PositionsTotal()-1; i>=0; i--) {
    ulong ticket = PositionGetTicket(i);
    if(PositionGetString(POSITION_SYMBOL) == Symbol()) {
-      if(!trade.PositionModify(ticket, ${price}, PositionGetDouble(POSITION_TP))) {
-          Print("Modify SL failed. Code: ", trade.ResultRetcode(), ", Desc: ", trade.ResultRetcodeDescription());
+      double currentSL = PositionGetDouble(POSITION_SL);
+      double newSL = ${price};
+      if(MathAbs(currentSL - newSL) > _Point) {
+          if(!trade.PositionModify(ticket, newSL, PositionGetDouble(POSITION_TP))) {
+              Print("Modify SL failed. Code: ", trade.ResultRetcode(), ", Desc: ", trade.ResultRetcodeDescription());
+          }
       }
    }
 }
