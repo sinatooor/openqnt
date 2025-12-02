@@ -1205,18 +1205,32 @@ mqlGenerator.forBlock['volumes'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['ta_vwap'] = function (block: Blockly.Block) {
-    // VWAP in MQL5 usually requires a custom indicator or manual calculation.
-    // For simplicity, we will assume a "VWAP" custom indicator exists or use a simplified calculation.
-    // Rewriting the inline calculation for MQL5 is complex due to array handling.
-    // We will use iCustom("VWAP") as a placeholder or standard implementation.
-
     const period = getIndicatorParam(block, 'period', 5);
+    const timeframe = toMqlTimeframe(period);
 
-    const handleName = 'handle_vwap_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
-    mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iCustom(NULL, ${toMqlTimeframe(period)}, "VWAP");`);
+    // Define the CalculateVWAP function if not already defined
+    if (!mqlGenerator.definitions_['CalculateVWAP']) {
+        mqlGenerator.definitions_['CalculateVWAP'] = `
+// Calculate VWAP for the given timeframe and number of bars
+double CalculateVWAP(ENUM_TIMEFRAMES timeframe, int bars) {
+    double cumulativePV = 0;   // sum of (price * volume)
+    double cumulativeVol = 0;  // sum of volume
 
-    return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+    for(int i = 0; i < bars; i++) {
+        double hlc3 = (iHigh(NULL, timeframe, i) + iLow(NULL, timeframe, i) + iClose(NULL, timeframe, i)) / 3.0;
+        double vol = (double)iVolume(NULL, timeframe, i);
+        cumulativePV += hlc3 * vol;
+        cumulativeVol += vol;
+    }
+
+    if(cumulativeVol == 0) return 0;
+    return cumulativePV / cumulativeVol;
+}
+`;
+    }
+
+    // Return the function call with a default lookback of 30 bars (approx 1 session for M5, or just a recent trend for others)
+    return [`CalculateVWAP(${timeframe}, 30)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
 
 mqlGenerator.forBlock['ad'] = function (block: Blockly.Block) {
