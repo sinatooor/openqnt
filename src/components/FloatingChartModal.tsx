@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import Draggable from "react-draggable";
-import { TradingViewChart } from "@/features/chart/components/TradingViewChart";
+import { TradingViewChart } from "@/features/chart";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader } from "./ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { X, GripHorizontal } from "lucide-react";
-import { useMarketData } from "@/hooks/useMarketData";
-import { cn } from "@/lib/utils";
+import { useMarketData } from "@/hooks";
+import { cn } from "@/lib";
 
 const SYMBOLS = ["AAPL", "MSFT", "GOOGL", "TSLA", "BTC/USD", "ETH/USD", "SPY"];
 interface FloatingChartModalProps {

@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
+import { Card, ScrollArea, Button } from "@/components/ui";
 import { Download, Trash2, X } from "lucide-react";
 
 export interface LogEntry {

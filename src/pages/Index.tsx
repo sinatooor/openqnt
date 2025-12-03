@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { BlocklyWorkspace } from "@/features/blockly/components/BlocklyWorkspace";
-import { SettingsPanel } from "@/components/SettingsPanel";
+import { BlocklyWorkspace } from "@/features/blockly";
+import { SettingsPanel } from "@/components";
 
 const Index = () => {
   const [runTour, setRunTour] = useState(false);

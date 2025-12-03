@@ -2,45 +2,36 @@ import { useEffect, useRef, useState } from "react";
 import * as Blockly from "blockly";
 import { environmentBlocksToolbox, operatorBlocksToolbox, controlBlocksToolbox, tradeBlocksToolbox, taBlocksToolbox, myBlocksToolbox } from "@/config/blockly/toolbox";
 import { generateCode } from "@/config/blockly/generator";
-import { Button } from "@/components/ui/button";
+import { Button, Tooltip, TooltipContent, TooltipTrigger, Separator, Badge, Card, CardContent, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui";
 import "@/styles/blockly-custom.css";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, Undo2, Redo2, Blocks, Wand2, FileCode, BarChart3, TrendingUp, BookOpen, Search, Pencil, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { BacktestingPanel } from "@/features/backtest/components/BacktestingPanel";
-import { StrategyTemplatesDialog } from "@/components/StrategyTemplatesDialog";
-import { FloatingChartModal } from "@/components/FloatingChartModal";
-import { AIChatPanel } from "@/features/ai/components/AIChatPanel";
-import { GuidedTour } from "@/components/GuidedTour";
-import { DevLogPanel, LogEntry } from "@/components/DevLogPanel";
-import { BlockSearchDialog } from "@/components/BlockSearchDialog";
+import { BacktestingPanel } from "@/features/backtest";
+import { StrategyTemplatesDialog, FloatingChartModal, GuidedTour, DevLogPanel, LogEntry, BlockSearchDialog, IndicatorSettingsModal } from "@/components";
+import { AIChatPanel } from "@/features/ai";
 
 import { StrategyTemplate } from "@/features/templates/strategyTemplates";
-import { cn } from "@/lib/utils";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { cn } from "@/lib";
 import { fetchMarketData } from "@/services/marketData";
 import { BacktestResult, runBacktest } from "@/features/backtest/logic/engine";
-import { IndicatorSettingsModal } from "@/components/IndicatorSettingsModal";
 
 // Utility imports
-import { beautifyCode, getCodeStatistics } from "@/features/blockly/utils/codeFormatting";
-import { renderCodeWithLineNumbers } from "@/features/blockly/utils/codeDisplay";
+import { beautifyCode, getCodeStatistics, renderCodeWithLineNumbers } from "@/features/blockly/utils";
 
 // Hook imports
-import { useBlocklyState } from "@/features/blockly/hooks/useBlocklyState";
-import { usePanelVisibility } from "@/features/blockly/hooks/usePanelVisibility";
-import { useTourState } from "@/features/blockly/hooks/useTourState";
-import { useModalState } from "@/features/blockly/hooks/useModalState";
+import { 
+  useBlocklyState, 
+  usePanelVisibility, 
+  useTourState, 
+  useModalState,
+  useWorkspaceHandlers,
+  useCodeHandlers,
+  useZoomHandlers,
+  useBacktestHandlers
+} from "@/features/blockly/hooks";
 
 // Component imports
-import { WorkspaceToolbar } from "@/features/blockly/components/workspace/WorkspaceToolbar";
-import { useWorkspaceHandlers } from "@/features/blockly/hooks/useWorkspaceHandlers";
-import { useCodeHandlers } from "@/features/blockly/hooks/useCodeHandlers";
-import { useZoomHandlers } from "@/features/blockly/hooks/useZoomHandlers";
-import { useBacktestHandlers } from "@/features/blockly/hooks/useBacktestHandlers";
+import { WorkspaceToolbar } from "@/features/blockly/components";
 
 interface BlocklyWorkspaceProps {
   runTour?: boolean;

@@ -3,10 +3,7 @@
  * Contains all action bar controls for the Blockly workspace
  */
 
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
+import { Button, Tooltip, TooltipContent, TooltipTrigger, Separator, Badge } from "@/components/ui";
 import {
   Download,
   Upload,

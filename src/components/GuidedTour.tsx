@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import React from "react";
 import Joyride, { CallBackProps, STATUS, Step } from "react-joyride";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui";
 import { Info } from "lucide-react";
 
 interface GuidedTourProps {

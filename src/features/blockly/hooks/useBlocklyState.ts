@@ -4,7 +4,7 @@
 
 import { useRef, useState } from "react";
 import * as Blockly from "blockly";
-import { LogEntry } from "@/components/DevLogPanel";
+import { LogEntry } from "@/components";
 
 export const useBlocklyState = () => {
   const blocklyDiv = useRef<HTMLDivElement>(null);

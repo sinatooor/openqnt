@@ -1,12 +1,9 @@
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card } from "@/components/ui/card";
+import { Button, Input, ScrollArea, Card } from "@/components/ui";
 import { Loader2, Send, Sparkles, MessageSquare, Code, Blocks, X, Eye } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks";
 import ReactMarkdown from "react-markdown";
-import { LogEntry } from "@/components/DevLogPanel";
+import { LogEntry } from "@/components";
 
 interface Message {
   role: "user" | "assistant";

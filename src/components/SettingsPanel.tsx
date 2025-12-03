@@ -1,20 +1,6 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Input, Label, Tooltip, TooltipContent, TooltipTrigger, Separator, Badge, Collapsible, CollapsibleContent, CollapsibleTrigger, Card, CardContent } from "@/components/ui";
 import { X, TrendingUp, History, Network, Zap, AlertCircle, CheckCircle2, ChevronDown, Shield, DollarSign } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Card, CardContent } from "@/components/ui/card";
 import { TourTriggerButton } from "./GuidedTour";
 import { Wand2 } from "lucide-react";
 
