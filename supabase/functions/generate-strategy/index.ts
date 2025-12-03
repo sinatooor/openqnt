@@ -41,77 +41,763 @@ CRITICAL RULES:
 8. Take Profit pattern: operator_add(trade_entry_price, ATR * multiplier * risk_reward_ratio) - Use 2:1 or 3:1 risk-reward ratios
 9. INDUSTRY STANDARD: Use ATR (Average True Range) with 14-period for dynamic stop losses that adapt to market volatility
 10. RISK MANAGEMENT: Stop Loss = 1.5-2.5x ATR from entry | Take Profit = Stop Loss distance * 2-3 (risk-reward ratio)
+11. NEVER use control_wait or control_wait_until blocks. Use environment_new_candle_open for timing logic.
 
-=== TEMPLATE REFERENCE (Industry-Standard ATR-Based SL/TP) ===
+=== TEMPLATE REFERENCE (Use these as starting points) ===
 
-Example Stop Loss (2x ATR below entry - adapts to volatility):
-<block type="trade_stop_loss">
-  <field name="CLOSE_TYPE">full</field>
-  <field name="TRADE_ID">trade1</field>
-  <value name="PRICE">
-    <block type="operator_subtract">
-      <value name="LEFT">
-        <block type="trade_entry_price">
-          <field name="TRADE_ID">trade1</field>
-        </block>
-      </value>
-      <value name="RIGHT">
-        <block type="operator_multiply">
-          <value name="LEFT">
-            <block type="ta_atr">
-              <mutation period="5" ma_period="14"></mutation>
-              <field name="NAME">ATR</field>
-            </block>
-          </value>
-          <value name="RIGHT">
-            <shadow type="math_number">
-              <field name="NUM">2</field>
-            </shadow>
-          </value>
-        </block>
-      </value>
-    </block>
-  </value>
-</block>
+TEMPLATE 1: RSI Oversold Reversal (Simple)
+Description: Buy when RSI drops below 30 (oversold), sell when it rises above 70 (overbought). Standard 14-period RSI mean reversion strategy.
+XML:
+<xml xmlns="https://developers.google.com/blockly/xml">
+  <block type="control_forever" x="50" y="50">
+    <statement name="DO">
+      <block type="control_if">
+        <value name="CONDITION">
+          <block type="operator_less">
+            <value name="LEFT">
+              <block type="ta_rsi">
+                <mutation period="15" ma_period="14" applied_price="0"></mutation>
+                <field name="NAME">RSI</field>
+              </block>
+            </value>
+            <value name="RIGHT">
+              <shadow type="math_number">
+                <field name="NUM">30</field>
+              </shadow>
+            </value>
+          </block>
+        </value>
+        <statement name="DO">
+          <block type="trade_order">
+            <field name="TRADE_ID">rsi_reversal_trade</field>
+            <field name="DIRECTION">long</field>
+            <value name="SIZE">
+              <shadow type="math_number">
+                <field name="NUM">3</field>
+              </shadow>
+            </value>
+            <field name="SIZE_TYPE">percent</field>
+            <field name="LEVERAGE">1</field>
+            <field name="ORDER_TYPE">market</field>
+            <next>
+              <block type="trade_stop_loss">
+                <field name="CLOSE_TYPE">full</field>
+                <field name="TRADE_ID">rsi_reversal_trade</field>
+                <value name="PRICE">
+                  <block type="operator_subtract">
+                    <value name="LEFT">
+                      <block type="trade_entry_price">
+                        <field name="TRADE_ID">rsi_reversal_trade</field>
+                      </block>
+                    </value>
+                    <value name="RIGHT">
+                      <block type="operator_multiply">
+                        <value name="LEFT">
+                          <block type="ta_atr">
+                            <mutation period="15" ma_period="14"></mutation>
+                            <field name="NAME">ATR</field>
+                          </block>
+                        </value>
+                        <value name="RIGHT">
+                          <shadow type="math_number">
+                            <field name="NUM">1.5</field>
+                          </shadow>
+                        </value>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+                <next>
+                  <block type="trade_take_profit">
+                    <field name="CLOSE_TYPE">full</field>
+                    <field name="TRADE_ID">rsi_reversal_trade</field>
+                    <value name="PRICE">
+                      <block type="operator_add">
+                        <value name="LEFT">
+                          <block type="trade_entry_price">
+                            <field name="TRADE_ID">rsi_reversal_trade</field>
+                          </block>
+                        </value>
+                        <value name="RIGHT">
+                          <block type="operator_multiply">
+                            <value name="LEFT">
+                              <block type="operator_multiply">
+                                <value name="LEFT">
+                                  <block type="ta_atr">
+                                    <mutation period="15" ma_period="14"></mutation>
+                                    <field name="NAME">ATR</field>
+                                  </block>
+                                </value>
+                                <value name="RIGHT">
+                                  <shadow type="math_number">
+                                    <field name="NUM">1.5</field>
+                                  </shadow>
+                                </value>
+                              </block>
+                            </value>
+                            <value name="RIGHT">
+                              <shadow type="math_number">
+                                <field name="NUM">2</field>
+                              </shadow>
+                            </value>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </statement>
+      </block>
+    </statement>
+  </block>
+</xml>
 
-Example Take Profit (2x ATR * 3 risk-reward ratio = 6x ATR above entry):
-<block type="trade_take_profit">
-  <field name="CLOSE_TYPE">full</field>
-  <field name="TRADE_ID">trade1</field>
-  <value name="PRICE">
-    <block type="operator_add">
-      <value name="LEFT">
-        <block type="trade_entry_price">
-          <field name="TRADE_ID">trade1</field>
-        </block>
-      </value>
-      <value name="RIGHT">
-        <block type="operator_multiply">
-          <value name="LEFT">
-            <block type="operator_multiply">
-              <value name="LEFT">
-                <block type="ta_atr">
-                  <mutation period="5" ma_period="14"></mutation>
-                  <field name="NAME">ATR</field>
-                </block>
-              </value>
-              <value name="RIGHT">
-                <shadow type="math_number">
-                  <field name="NUM">2</field>
-                </shadow>
-              </value>
-            </block>
-          </value>
-          <value name="RIGHT">
-            <shadow type="math_number">
-              <field name="NUM">3</field>
-            </shadow>
-          </value>
-        </block>
-      </value>
-    </block>
-  </value>
-</block>
+TEMPLATE 2: Simple MA Crossover (Intermediate)
+Description: A simple Moving Average crossover strategy. Uses SMA(12) with Shift(6). Enters on bar open if price crosses the MA. Reverses on opposite signal.
+XML:
+<xml xmlns="https://developers.google.com/blockly/xml">
+  <block type="control_forever" x="50" y="50">
+    <statement name="DO">
+      <block type="control_if">
+        <value name="CONDITION">
+          <block type="environment_new_candle_open">
+            <field name="TIMEFRAME">1h</field>
+          </block>
+        </value>
+        <statement name="DO">
+          <block type="control_if">
+            <value name="CONDITION">
+              <block type="operator_and">
+                <value name="LEFT">
+                  <block type="operator_less">
+                    <value name="LEFT">
+                      <block type="environment_prev_candle_open">
+                        <field name="TIMEFRAME">1h</field>
+                      </block>
+                    </value>
+                    <value name="RIGHT">
+                      <block type="ta_sma">
+                        <mutation period="60" ma_period="12" shift="6" applied_price="0"></mutation>
+                        <field name="NAME">MA</field>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+                <value name="RIGHT">
+                  <block type="operator_greater">
+                    <value name="LEFT">
+                      <block type="environment_prev_ticker_close">
+                        <field name="TIMEFRAME">1h</field>
+                      </block>
+                    </value>
+                    <value name="RIGHT">
+                      <block type="ta_sma">
+                        <mutation period="60" ma_period="12" shift="6" applied_price="0"></mutation>
+                        <field name="NAME">MA</field>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+              </block>
+            </value>
+            <statement name="DO">
+              <block type="trade_close_all">
+                <next>
+                  <block type="trade_order">
+                    <field name="TRADE_ID">ma_buy</field>
+                    <field name="DIRECTION">long</field>
+                    <value name="SIZE">
+                      <shadow type="math_number">
+                        <field name="NUM">0.1</field>
+                      </shadow>
+                    </value>
+                    <field name="LEVERAGE">1</field>
+                    <field name="ORDER_TYPE">market</field>
+                  </block>
+                </next>
+              </block>
+            </statement>
+            <next>
+              <block type="control_if">
+                <value name="CONDITION">
+                  <block type="operator_and">
+                    <value name="LEFT">
+                      <block type="operator_greater">
+                        <value name="LEFT">
+                          <block type="environment_prev_candle_open">
+                            <field name="TIMEFRAME">1h</field>
+                          </block>
+                        </value>
+                        <value name="RIGHT">
+                          <block type="ta_sma">
+                            <mutation period="60" ma_period="12" shift="6" applied_price="0"></mutation>
+                            <field name="NAME">MA</field>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                    <value name="RIGHT">
+                      <block type="operator_less">
+                        <value name="LEFT">
+                          <block type="environment_prev_ticker_close">
+                            <field name="TIMEFRAME">1h</field>
+                          </block>
+                        </value>
+                        <value name="RIGHT">
+                          <block type="ta_sma">
+                            <mutation period="60" ma_period="12" shift="6" applied_price="0"></mutation>
+                            <field name="NAME">MA</field>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+                <statement name="DO">
+                  <block type="trade_close_all">
+                    <next>
+                      <block type="trade_order">
+                        <field name="TRADE_ID">ma_sell</field>
+                        <field name="DIRECTION">short</field>
+                        <value name="SIZE">
+                          <shadow type="math_number">
+                            <field name="NUM">0.1</field>
+                          </shadow>
+                        </value>
+                        <field name="LEVERAGE">1</field>
+                        <field name="ORDER_TYPE">market</field>
+                      </block>
+                    </next>
+                  </block>
+                </statement>
+              </block>
+            </next>
+          </block>
+        </statement>
+      </block>
+    </statement>
+  </block>
+</xml>
+
+TEMPLATE 3: Bollinger Band Breakout (Intermediate)
+Description: Enter trades when price breaks above upper band (bullish) or below lower band (bearish). Standard 20-period, 2-deviation volatility breakout strategy.
+XML:
+<xml xmlns="https://developers.google.com/blockly/xml">
+  <block type="control_forever" x="50" y="50">
+    <statement name="DO">
+      <block type="control_if">
+        <value name="CONDITION">
+          <block type="operator_greater">
+            <value name="LEFT">
+              <block type="environment_price"></block>
+            </value>
+            <value name="RIGHT">
+              <block type="ta_bb">
+                <mutation period="30" ma_period="20" deviation="2" shift="0" applied_price="0"></mutation>
+                <field name="NAME">BB</field>
+                <field name="COMPONENT">upper</field>
+              </block>
+            </value>
+          </block>
+        </value>
+        <statement name="DO">
+          <block type="trade_order">
+            <field name="TRADE_ID">bollinger_breakout_trade</field>
+            <field name="DIRECTION">long</field>
+            <value name="SIZE">
+              <shadow type="math_number">
+                <field name="NUM">100</field>
+              </shadow>
+            </value>
+            <field name="SIZE_TYPE">value</field>
+            <field name="LEVERAGE">1</field>
+            <field name="ORDER_TYPE">market</field>
+            <next>
+              <block type="trade_stop_loss">
+                <field name="CLOSE_TYPE">full</field>
+                <field name="TRADE_ID">bollinger_breakout_trade</field>
+                <value name="PRICE">
+                  <block type="operator_subtract">
+                    <value name="LEFT">
+                      <block type="trade_entry_price">
+                        <field name="TRADE_ID">bollinger_breakout_trade</field>
+                      </block>
+                    </value>
+                    <value name="RIGHT">
+                      <block type="operator_multiply">
+                        <value name="LEFT">
+                          <block type="ta_atr">
+                            <mutation period="30" ma_period="14"></mutation>
+                            <field name="NAME">ATR</field>
+                          </block>
+                        </value>
+                        <value name="RIGHT">
+                          <shadow type="math_number">
+                            <field name="NUM">2.5</field>
+                          </shadow>
+                        </value>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+                <next>
+                  <block type="trade_take_profit">
+                    <field name="CLOSE_TYPE">full</field>
+                    <field name="TRADE_ID">bollinger_breakout_trade</field>
+                    <value name="PRICE">
+                      <block type="operator_add">
+                        <value name="LEFT">
+                          <block type="trade_entry_price">
+                            <field name="TRADE_ID">bollinger_breakout_trade</field>
+                          </block>
+                        </value>
+                        <value name="RIGHT">
+                          <block type="operator_multiply">
+                            <value name="LEFT">
+                              <block type="operator_multiply">
+                                <value name="LEFT">
+                                  <block type="ta_atr">
+                                    <mutation period="30" ma_period="14"></mutation>
+                                    <field name="NAME">ATR</field>
+                                  </block>
+                                </value>
+                                <value name="RIGHT">
+                                  <shadow type="math_number">
+                                    <field name="NUM">2.5</field>
+                                  </shadow>
+                                </value>
+                              </block>
+                            </value>
+                            <value name="RIGHT">
+                              <shadow type="math_number">
+                                <field name="NUM">3</field>
+                              </shadow>
+                            </value>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </statement>
+      </block>
+    </statement>
+  </block>
+</xml>
+
+TEMPLATE 4: MACD Momentum (Intermediate)
+Description: Buy when MACD crosses above signal line with ADX>25 trend confirmation. Standard MACD(12,26,9) momentum strategy.
+XML:
+<xml xmlns="https://developers.google.com/blockly/xml">
+  <block type="control_forever" x="50" y="50">
+    <statement name="DO">
+      <block type="control_if">
+        <value name="CONDITION">
+          <block type="environment_new_candle_open">
+            <field name="TIMEFRAME">1h</field>
+          </block>
+        </value>
+        <statement name="DO">
+          <block type="control_if">
+            <value name="CONDITION">
+              <block type="operator_and">
+                <value name="LEFT">
+                  <block type="operator_greater">
+                    <value name="LEFT">
+                      <block type="macd_value">
+                        <mutation period="60" fastema="12" slowema="26" signalsma="9" applied_price="0"></mutation>
+                        <field name="NAME">MACD</field>
+                        <field name="COMPONENT">line</field>
+                      </block>
+                    </value>
+                    <value name="RIGHT">
+                      <block type="macd_value">
+                        <mutation period="60" fastema="12" slowema="26" signalsma="9" applied_price="0"></mutation>
+                        <field name="NAME">MACD</field>
+                        <field name="COMPONENT">signal</field>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+                <value name="RIGHT">
+                  <block type="operator_greater">
+                    <value name="LEFT">
+                      <block type="ta_adx">
+                        <mutation period="60" ma_period="14"></mutation>
+                        <field name="NAME">ADX</field>
+                      </block>
+                    </value>
+                    <value name="RIGHT">
+                      <shadow type="math_number">
+                        <field name="NUM">25</field>
+                      </shadow>
+                    </value>
+                  </block>
+                </value>
+              </block>
+            </value>
+            <statement name="DO">
+              <block type="trade_order">
+                <field name="TRADE_ID">macd_momentum_trade</field>
+                <field name="DIRECTION">long</field>
+                <value name="SIZE">
+                  <shadow type="math_number">
+                    <field name="NUM">0.6</field>
+                  </shadow>
+                </value>
+                <field name="SIZE_TYPE">percent</field>
+                <field name="LEVERAGE">1</field>
+                <field name="ORDER_TYPE">market</field>
+                <next>
+                  <block type="trade_stop_loss">
+                    <field name="CLOSE_TYPE">full</field>
+                    <field name="TRADE_ID">macd_momentum_trade</field>
+                    <value name="PRICE">
+                      <block type="operator_subtract">
+                        <value name="LEFT">
+                          <block type="trade_entry_price">
+                            <field name="TRADE_ID">macd_momentum_trade</field>
+                          </block>
+                        </value>
+                         <value name="RIGHT">
+                          <block type="operator_multiply">
+                            <value name="LEFT">
+                              <block type="ta_atr">
+                                <mutation period="60" ma_period="14"></mutation>
+                                <field name="NAME">ATR</field>
+                              </block>
+                            </value>
+                            <value name="RIGHT">
+                              <shadow type="math_number">
+                                <field name="NUM">2</field>
+                              </shadow>
+                            </value>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                    <next>
+                      <block type="trade_take_profit">
+                        <field name="CLOSE_TYPE">full</field>
+                        <field name="TRADE_ID">macd_momentum_trade</field>
+                        <value name="PRICE">
+                          <block type="operator_add">
+                            <value name="LEFT">
+                              <block type="trade_entry_price">
+                                <field name="TRADE_ID">macd_momentum_trade</field>
+                              </block>
+                            </value>
+                             <value name="RIGHT">
+                              <block type="operator_multiply">
+                                <value name="LEFT">
+                                  <block type="operator_multiply">
+                                    <value name="LEFT">
+                                      <block type="ta_atr">
+                                        <mutation period="60" ma_period="14"></mutation>
+                                        <field name="NAME">ATR</field>
+                                      </block>
+                                    </value>
+                                    <value name="RIGHT">
+                                      <shadow type="math_number">
+                                        <field name="NUM">2</field>
+                                      </shadow>
+                                    </value>
+                                  </block>
+                                </value>
+                                <value name="RIGHT">
+                                  <shadow type="math_number">
+                                    <field name="NUM">3</field>
+                                  </shadow>
+                                </value>
+                              </block>
+                            </value>
+                          </block>
+                        </value>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </statement>
+          </block>
+        </statement>
+      </block>
+    </statement>
+  </block>
+</xml>
+
+TEMPLATE 5: VWAP Scalping (Advanced)
+Description: Quick scalping strategy: buy when price is below VWAP with RSI(9)<40. Tight stops for high-frequency trading.
+XML:
+<xml xmlns="https://developers.google.com/blockly/xml">
+  <block type="control_forever" x="50" y="50">
+    <statement name="DO">
+      <block type="control_if">
+        <value name="CONDITION">
+          <block type="operator_and">
+            <value name="LEFT">
+              <block type="operator_less">
+                <value name="LEFT">
+                  <block type="environment_price"></block>
+                </value>
+                <value name="RIGHT">
+                  <block type="ta_vwap">
+                    <mutation period="60"></mutation>
+                    <field name="NAME">VWAP</field>
+                  </block>
+                </value>
+              </block>
+            </value>
+            <value name="RIGHT">
+              <block type="operator_less">
+                <value name="LEFT">
+                  <block type="ta_rsi">
+                    <mutation period="60" ma_period="9" applied_price="0"></mutation>
+                    <field name="NAME">RSI</field>
+                  </block>
+                </value>
+                <value name="RIGHT">
+                  <shadow type="math_number">
+                    <field name="NUM">40</field>
+                  </shadow>
+                </value>
+              </block>
+            </value>
+          </block>
+        </value>
+        <statement name="DO">
+          <block type="trade_order">
+            <field name="TRADE_ID">vwap_scalping_trade</field>
+            <field name="DIRECTION">long</field>
+            <value name="SIZE">
+              <shadow type="math_number">
+                <field name="NUM">50</field>
+              </shadow>
+            </value>
+            <field name="SIZE_TYPE">value</field>
+            <field name="LEVERAGE">1</field>
+            <field name="ORDER_TYPE">market</field>
+            <next>
+              <block type="trade_stop_loss">
+                <field name="CLOSE_TYPE">full</field>
+                <field name="TRADE_ID">vwap_scalping_trade</field>
+                <value name="PRICE">
+                  <block type="operator_subtract">
+                    <value name="LEFT">
+                      <block type="trade_entry_price">
+                        <field name="TRADE_ID">vwap_scalping_trade</field>
+                      </block>
+                    </value>
+                    <value name="RIGHT">
+                      <block type="operator_multiply">
+                        <value name="LEFT">
+                          <block type="ta_atr">
+                            <mutation period="60" ma_period="14"></mutation>
+                            <field name="NAME">ATR</field>
+                          </block>
+                        </value>
+                        <value name="RIGHT">
+                          <shadow type="math_number">
+                            <field name="NUM">1</field>
+                          </shadow>
+                        </value>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+                <next>
+                  <block type="trade_take_profit">
+                    <field name="CLOSE_TYPE">full</field>
+                    <field name="TRADE_ID">vwap_scalping_trade</field>
+                    <value name="PRICE">
+                      <block type="operator_add">
+                        <value name="LEFT">
+                          <block type="trade_entry_price">
+                            <field name="TRADE_ID">vwap_scalping_trade</field>
+                          </block>
+                        </value>
+                        <value name="RIGHT">
+                          <block type="operator_multiply">
+                            <value name="LEFT">
+                              <block type="operator_multiply">
+                                <value name="LEFT">
+                                  <block type="ta_atr">
+                                    <mutation period="60" ma_period="14"></mutation>
+                                    <field name="NAME">ATR</field>
+                                  </block>
+                                </value>
+                                <value name="RIGHT">
+                                  <shadow type="math_number">
+                                    <field name="NUM">2</field>
+                                  </shadow>
+                                </value>
+                              </block>
+                            </value>
+                            <value name="RIGHT">
+                              <shadow type="math_number">
+                                <field name="NUM">3</field>
+                              </shadow>
+                            </value>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </statement>
+      </block>
+    </statement>
+  </block>
+</xml>
+
+TEMPLATE 6: Triple EMA Trend (Advanced)
+Description: Advanced trend following with three EMAs (8,21,55 Fibonacci periods). Enter when fast > medium > slow (aligned trend). Strong trend filter.
+XML:
+<xml xmlns="https://developers.google.com/blockly/xml">
+  <block type="control_forever" x="50" y="50">
+    <statement name="DO">
+      <block type="control_if">
+        <value name="CONDITION">
+          <block type="environment_new_candle_open">
+            <field name="TIMEFRAME">1h</field>
+          </block>
+        </value>
+        <statement name="DO">
+          <block type="control_if">
+            <value name="CONDITION">
+              <block type="operator_and">
+                <value name="LEFT">
+                  <block type="operator_greater">
+                    <value name="LEFT">
+                      <block type="ta_ema">
+                        <mutation period="60" ma_period="8" shift="0" applied_price="0"></mutation>
+                        <field name="NAME">Fast EMA</field>
+                      </block>
+                    </value>
+                    <value name="RIGHT">
+                      <block type="ta_ema">
+                        <mutation period="60" ma_period="21" shift="0" applied_price="0"></mutation>
+                        <field name="NAME">Medium EMA</field>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+                <value name="RIGHT">
+                  <block type="operator_greater">
+                    <value name="LEFT">
+                      <block type="ta_ema">
+                        <mutation period="60" ma_period="21" shift="0" applied_price="0"></mutation>
+                        <field name="NAME">Medium EMA</field>
+                      </block>
+                    </value>
+                    <value name="RIGHT">
+                      <block type="ta_ema">
+                        <mutation period="60" ma_period="55" shift="0" applied_price="0"></mutation>
+                        <field name="NAME">Slow EMA</field>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+              </block>
+            </value>
+            <statement name="DO">
+              <block type="trade_order">
+                <field name="TRADE_ID">triple_ema_trade</field>
+                <field name="DIRECTION">long</field>
+                <value name="SIZE">
+                  <shadow type="math_number">
+                    <field name="NUM">4</field>
+                  </shadow>
+                </value>
+                <field name="SIZE_TYPE">percent</field>
+                <field name="LEVERAGE">1</field>
+                <field name="ORDER_TYPE">market</field>
+                <next>
+                  <block type="trade_stop_loss">
+                    <field name="CLOSE_TYPE">full</field>
+                    <field name="TRADE_ID">triple_ema_trade</field>
+                    <value name="PRICE">
+                      <block type="operator_subtract">
+                        <value name="LEFT">
+                          <block type="trade_entry_price">
+                            <field name="TRADE_ID">triple_ema_trade</field>
+                          </block>
+                        </value>
+                        <value name="RIGHT">
+                          <block type="operator_multiply">
+                            <value name="LEFT">
+                              <block type="ta_atr">
+                                <mutation period="60" ma_period="14"></mutation>
+                                <field name="NAME">ATR</field>
+                              </block>
+                            </value>
+                            <value name="RIGHT">
+                              <shadow type="math_number">
+                                <field name="NUM">2</field>
+                              </shadow>
+                            </value>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                    <next>
+                      <block type="trade_take_profit">
+                        <field name="CLOSE_TYPE">full</field>
+                        <field name="TRADE_ID">triple_ema_trade</field>
+                        <value name="PRICE">
+                          <block type="operator_add">
+                            <value name="LEFT">
+                              <block type="trade_entry_price">
+                                <field name="TRADE_ID">triple_ema_trade</field>
+                              </block>
+                            </value>
+                            <value name="RIGHT">
+                              <block type="operator_multiply">
+                                <value name="LEFT">
+                                  <block type="operator_multiply">
+                                    <value name="LEFT">
+                                      <block type="ta_atr">
+                                        <mutation period="60" ma_period="14"></mutation>
+                                        <field name="NAME">ATR</field>
+                                      </block>
+                                    </value>
+                                    <value name="RIGHT">
+                                      <shadow type="math_number">
+                                        <field name="NUM">2</field>
+                                      </shadow>
+                                    </value>
+                                  </block>
+                                </value>
+                                <value name="RIGHT">
+                                  <shadow type="math_number">
+                                    <field name="NUM">3</field>
+                                  </shadow>
+                                </value>
+                              </block>
+                            </value>
+                          </block>
+                        </value>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </statement>
+          </block>
+        </statement>
+      </block>
+    </statement>
+  </block>
+</xml>
 
 PROFESSIONAL RISK MANAGEMENT GUIDELINES:
 - Trend Strategies: 2x ATR SL, 3:1 RR (6x ATR TP)
@@ -150,21 +836,7 @@ Blockly.Blocks['control_repeat'] = {
   }
 };
 
-Blockly.Blocks['control_wait'] = {
-  init: function() {
-    this.appendValueInput("SECONDS")
-      .setCheck("Number")
-      .appendField("Wait");
-    this.appendDummyInput()
-      .appendField("seconds");
-    this.setInputsInline(true);
-    this.setPreviousStatement(true, ["Control", "TradeAction"]);
-    this.setNextStatement(true, ["Control", "TradeAction"]);
-    this.setStyle('control_blocks');
-    this.setTooltip("Pause execution for specified seconds");
-    this.setHelpUrl("");
-  }
-};
+
 
 Blockly.Blocks['control_forever'] = {
   init: function() {
@@ -209,20 +881,7 @@ Blockly.Blocks['control_if_else'] = {
   }
 };
 
-Blockly.Blocks['control_wait_until'] = {
-  init: function() {
-    this.appendDummyInput()
-      .appendField("Wait until");
-    this.appendValueInput("CONDITION")
-      .setCheck("Boolean");
-    this.setInputsInline(true);
-    this.setPreviousStatement(true, ["Control", "TradeAction"]);
-    this.setNextStatement(true, ["Control", "TradeAction"]);
-    this.setStyle('control_blocks');
-    this.setTooltip("Pause execution until condition is true");
-    this.setHelpUrl("");
-  }
-};
+
 
 Blockly.Blocks['control_stop'] = {
   init: function() {
