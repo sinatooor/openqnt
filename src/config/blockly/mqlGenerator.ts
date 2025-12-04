@@ -1201,10 +1201,12 @@ mqlGenerator.forBlock['chaikin'] = function (block: Blockly.Block) {
     const period = getIndicatorPeriod(block);
     const fastEMA = getIndicatorParam(block, 'fastEMA', 3);
     const slowEMA = getIndicatorParam(block, 'slowEMA', 10);
+    const method = getIndicatorParam(block, 'method', 1); // MODE_EMA
+    const appliedVolume = getIndicatorParam(block, 'applied_volume', 0); // VOLUME_TICK
 
     const handleName = 'handle_chaikin_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iCustom(NULL, ${toMqlTimeframe(period)}, "Chaikin", ${fastEMA}, ${slowEMA});`);
+    mqlGenerator.initializations_.push(`${handleName} = iChaikin(NULL, ${toMqlTimeframe(period)}, ${fastEMA}, ${slowEMA}, ${method}, ${appliedVolume});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -1291,29 +1293,36 @@ mqlGenerator.forBlock['trix'] = function (block: Blockly.Block) {
 
     const handleName = 'handle_trix_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iCustom(NULL, ${toMqlTimeframe(period)}, "TRIX", ${maPeriod}, ${appliedPrice});`);
+    mqlGenerator.initializations_.push(`${handleName} = iTriX(NULL, ${toMqlTimeframe(period)}, ${maPeriod}, ${appliedPrice});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
 
 mqlGenerator.forBlock['vidya'] = function (block: Blockly.Block) {
     const period = getIndicatorPeriod(block);
-    const maPeriod = getIndicatorParam(block, 'ma_period', 14);
+    const cmoPeriod = getIndicatorParam(block, 'ma_period', 9);
+    const emaPeriod = 12; // Default as it's not exposed in block
+    const shift = getIndicatorParam(block, 'shift', 0);
+    const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
 
     const handleName = 'handle_vidya_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iCustom(NULL, ${toMqlTimeframe(period)}, "VIDYA", ${maPeriod});`);
+    mqlGenerator.initializations_.push(`${handleName} = iVIDyA(NULL, ${toMqlTimeframe(period)}, ${cmoPeriod}, ${emaPeriod}, ${shift}, ${appliedPrice});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
 
 mqlGenerator.forBlock['ama'] = function (block: Blockly.Block) {
     const period = getIndicatorPeriod(block);
-    const maPeriod = getIndicatorParam(block, 'ma_period', 10);
+    const amaPeriod = getIndicatorParam(block, 'ma_period', 9);
+    const fastPeriod = getIndicatorParam(block, 'fastPeriod', 2);
+    const slowPeriod = getIndicatorParam(block, 'slowPeriod', 30);
+    const shift = getIndicatorParam(block, 'shift', 0);
+    const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
 
     const handleName = 'handle_ama_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iCustom(NULL, ${toMqlTimeframe(period)}, "AMA", ${maPeriod});`);
+    mqlGenerator.initializations_.push(`${handleName} = iAMA(NULL, ${toMqlTimeframe(period)}, ${amaPeriod}, ${fastPeriod}, ${slowPeriod}, ${shift}, ${appliedPrice});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -1321,10 +1330,12 @@ mqlGenerator.forBlock['ama'] = function (block: Blockly.Block) {
 mqlGenerator.forBlock['frama'] = function (block: Blockly.Block) {
     const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 14);
+    const shift = getIndicatorParam(block, 'shift', 0);
+    const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
 
     const handleName = 'handle_frama_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iCustom(NULL, ${toMqlTimeframe(period)}, "FRAMA", ${maPeriod});`);
+    mqlGenerator.initializations_.push(`${handleName} = iFrAMA(NULL, ${toMqlTimeframe(period)}, ${maPeriod}, ${shift}, ${appliedPrice});`);
 
     return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
