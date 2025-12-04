@@ -110,6 +110,8 @@ BLOCK TYPE MEANINGS:
 - trade_take_profit: Set take profit
 - operator_*: Arithmetic and comparison operations
 - math_number: Numeric values
+- ta_highest: Highest high value over a period
+- ta_lowest: Lowest low value over a period
 
 IMPORTANT:
 - Return ONLY the MQL5 code without markdown formatting or explanations

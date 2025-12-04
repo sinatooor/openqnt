@@ -385,7 +385,7 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
     defaultTimeframe: 5,
     params: [
       { name: 'ma_period', label: 'Period', type: 'number', default: 20, min: 1 },
-      { name: 'shift', label: 'Shift', type: 'number', default: 0 }
+      { name: 'shift', label: 'Shift', type: 'number', default: 1, min: 1 }
     ],
     components: [
       { value: 'upper', label: 'Upper' },
@@ -401,7 +401,7 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
     params: [
       { name: 'ma_period', label: 'Period', type: 'number', default: 20, min: 1 },
       { name: 'deviation', label: 'Deviation', type: 'double', default: 2.0, min: 0, step: 0.1 },
-      { name: 'shift', label: 'Shift', type: 'number', default: 0 },
+      { name: 'shift', label: 'Shift', type: 'number', default: 1, min: 1 },
       { name: 'method', label: 'MA Method', type: 'number', default: 0, min: 0, max: 3, options: maMethods },
       { name: 'applied_price', label: 'Applied Price', type: 'number', default: 0, min: 0, max: 6, options: appliedPrices }
     ],
@@ -636,6 +636,26 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
     params: [
     ],
     mqlFunction: 'VWAP'
+  },
+  'ta_highest': {
+    name: 'ta_highest',
+    displayName: 'Highest High',
+    defaultTimeframe: 60,
+    params: [
+      { name: 'count', label: 'Count', type: 'number', default: 20, min: 1 },
+      { name: 'shift', label: 'Shift', type: 'number', default: 1, min: 0 }
+    ],
+    mqlFunction: 'iHighest'
+  },
+  'ta_lowest': {
+    name: 'ta_lowest',
+    displayName: 'Lowest Low',
+    defaultTimeframe: 60,
+    params: [
+      { name: 'count', label: 'Count', type: 'number', default: 20, min: 1 },
+      { name: 'shift', label: 'Shift', type: 'number', default: 1, min: 0 }
+    ],
+    mqlFunction: 'iLowest'
   }
 };
 

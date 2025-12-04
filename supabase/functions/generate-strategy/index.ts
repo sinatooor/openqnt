@@ -43,7 +43,9 @@ CRITICAL RULES:
 10. RISK MANAGEMENT: Stop Loss = 1.5-2.5x ATR from entry | Take Profit = Stop Loss distance * 2-3 (risk-reward ratio)
 11. NEVER use control_wait or control_wait_until blocks. Use environment_new_candle_open for timing logic.
 12. ALWAYS set the "SIZE" field to 0.1 in trade_order blocks unless explicitly instructed otherwise. THIS IS CRITICAL. NEVER USE 100.
-13. TIMEFRAMES: The 'period' attribute in mutation represents the timeframe in minutes (e.g., 1, 5, 15, 30, 60, 240, 1440). ALWAYS set this to the user's requested timeframe (default to 60 if unspecified). NEVER DEFAULT TO 5.
+13. TIMEFRAME: The 'period' attribute in mutation represents the timeframe in minutes (e.g., 1, 5, 15, 30, 60, 240, 1440). ALWAYS set this to the user's requested timeframe (default to 60 if unspecified). NEVER DEFAULT TO 5.
+14. Use ta_highest and ta_lowest blocks for finding highest/lowest values over a period.
+15. For Donchian and Keltner blocks, the 'shift' attribute in mutation MUST be a positive integer (>= 1). NEVER use 0.
 
 === TEMPLATE REFERENCE (Use these as starting points) ===
 
@@ -1565,7 +1567,7 @@ Blockly.Blocks['ta_dmi'] = {
 };
 
 // 18. Donchian Channels
-// XML: <block type="donchian"><field name="PERIOD">60</field><mutation ma_period="20" shift="0"></mutation><field name="NAME">Donchian</field><field name="COMPONENT">upper|middle|lower</field></block>
+// XML: <block type="donchian"><field name="PERIOD">60</field><mutation ma_period="20" shift="1"></mutation><field name="NAME">Donchian</field><field name="COMPONENT">upper|middle|lower</field></block>
 Blockly.Blocks['donchian'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1729,7 +1731,7 @@ Blockly.Blocks['ta_ichimoku'] = {
 };
 
 // 26. Keltner Channels
-// XML: <block type="ta_keltner"><field name="PERIOD">60</field><mutation ma_period="20" deviation="2" shift="0" method="0" applied_price="0"></mutation><field name="NAME">Keltner</field><field name="COMPONENT">upper|middle|lower</field></block>
+// XML: <block type="ta_keltner"><field name="PERIOD">60</field><mutation ma_period="20" deviation="2" shift="1" method="0" applied_price="0"></mutation><field name="NAME">Keltner</field><field name="COMPONENT">upper|middle|lower</field></block>
 Blockly.Blocks['ta_keltner'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -2106,6 +2108,38 @@ Blockly.Blocks['ta_supertrend'] = {
     this.setStyle('ta_blocks');
     this.setTooltip("SuperTrend indicator");
     this.setHelpUrl("");
+  }
+};
+
+// 47. Highest High
+// XML: <block type="ta_highest"><field name="PERIOD">60</field><mutation count="20" shift="1"></mutation></block>
+Blockly.Blocks['ta_highest'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Highest High");
+    this.appendDummyInput()
+      .appendField("TF:")
+      .appendField(new Blockly.FieldTextInput("60"), "PERIOD");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Returns the highest high value over the specified number of bars");
+  }
+};
+
+// 48. Lowest Low
+// XML: <block type="ta_lowest"><field name="PERIOD">60</field><mutation count="20" shift="1"></mutation></block>
+Blockly.Blocks['ta_lowest'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("Lowest Low");
+    this.appendDummyInput()
+      .appendField("TF:")
+      .appendField(new Blockly.FieldTextInput("60"), "PERIOD");
+    this.setInputsInline(true);
+    this.setOutput(true, "TAValue");
+    this.setStyle('ta_blocks');
+    this.setTooltip("Returns the lowest low value over the specified number of bars");
   }
 };
 

@@ -372,6 +372,8 @@ export const taBlocksToolbox = [
 
   { kind: 'label', text: 'Other' },
   { kind: 'block', type: 'fractals' },
+  { kind: 'block', type: 'ta_highest' },
+  { kind: 'block', type: 'ta_lowest' },
 ];
 
 export const myBlocksToolbox = [
