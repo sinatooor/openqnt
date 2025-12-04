@@ -7,14 +7,15 @@ Blockly.Blocks['ta_vwap'] = {
         this.appendDummyInput()
             .appendField("VWAP")
             .appendField(new Blockly.FieldTextInput("VWAP"), "NAME")
-            .appendField(createGearSettingsButton('vwap'));
+            .appendField("TF:")
+            .appendField(new Blockly.FieldTextInput("60"), "PERIOD");
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("Volume Weighted Average Price");
         this.indicatorName = 'vwap';
         this.indicatorParams = getDefaultParams('vwap');
     },
-    mutationToDom: function() {
+    mutationToDom: function () {
         const container = Blockly.utils.xml.createElement('mutation');
         if (this.indicatorParams) {
             Object.keys(this.indicatorParams).forEach(key => {
@@ -23,12 +24,15 @@ Blockly.Blocks['ta_vwap'] = {
         }
         return container;
     },
-    domToMutation: function(xmlElement: Element) {
+    domToMutation: function (xmlElement: Element) {
         this.indicatorParams = {};
         Array.from(xmlElement.attributes).forEach(attr => {
             if (attr.name !== 'type') {
                 this.indicatorParams[attr.name] = parseFloat(attr.value) || 0;
             }
         });
+        if (this.indicatorParams["period"]) {
+            this.setFieldValue(String(this.indicatorParams["period"]), "PERIOD");
+        }
     }
 };

@@ -7,7 +7,7 @@ Blockly.Blocks['bearsPower'] = {
         this.appendDummyInput()
             .appendField("Bears Power")
             .appendField(new Blockly.FieldTextInput("Bears Power"), "NAME")
-            .appendField(createGearSettingsButton('bearsPower'));
+            .appendField("TF:").appendField(new Blockly.FieldTextInput("60"), "PERIOD").appendField(createGearSettingsButton('bearsPower'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("Bears Power");
@@ -30,6 +30,9 @@ Blockly.Blocks['bearsPower'] = {
                 this.indicatorParams[attr.name] = parseFloat(attr.value) || 0;
             }
         });
+        if (this.indicatorParams["period"]) {
+            this.setFieldValue(String(this.indicatorParams["period"]), "PERIOD");
+        }
     }
 };
 

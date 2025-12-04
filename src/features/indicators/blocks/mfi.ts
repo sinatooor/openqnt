@@ -7,7 +7,7 @@ Blockly.Blocks['ta_mfi'] = {
         this.appendDummyInput()
             .appendField("MFI")
             .appendField(new Blockly.FieldTextInput("MFI"), "NAME")
-            .appendField(createGearSettingsButton('mfi'));
+            .appendField("TF:").appendField(new Blockly.FieldTextInput("60"), "PERIOD").appendField(createGearSettingsButton('mfi'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("Money Flow Index");
@@ -30,5 +30,8 @@ Blockly.Blocks['ta_mfi'] = {
                 this.indicatorParams[attr.name] = parseFloat(attr.value) || 0;
             }
         });
+        if (this.indicatorParams["period"]) {
+            this.setFieldValue(String(this.indicatorParams["period"]), "PERIOD");
+        }
     }
 };

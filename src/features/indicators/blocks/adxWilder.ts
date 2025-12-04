@@ -7,7 +7,7 @@ Blockly.Blocks['adxWilder'] = {
         this.appendDummyInput()
             .appendField("ADX Wilder")
             .appendField(new Blockly.FieldTextInput("ADX Wilder"), "NAME")
-            .appendField(createGearSettingsButton('adxWilder'));
+            .appendField("TF:").appendField(new Blockly.FieldTextInput("60"), "PERIOD").appendField(createGearSettingsButton('adxWilder'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("ADX by Welles Wilder");
@@ -30,6 +30,9 @@ Blockly.Blocks['adxWilder'] = {
                 this.indicatorParams[attr.name] = parseFloat(attr.value) || 0;
             }
         });
+        if (this.indicatorParams["period"]) {
+            this.setFieldValue(String(this.indicatorParams["period"]), "PERIOD");
+        }
     }
 };
 

@@ -7,7 +7,7 @@ Blockly.Blocks['vidya'] = {
         this.appendDummyInput()
             .appendField("VIDyA")
             .appendField(new Blockly.FieldTextInput("VIDyA"), "NAME")
-            .appendField(createGearSettingsButton('vidya'));
+            .appendField("TF:").appendField(new Blockly.FieldTextInput("60"), "PERIOD").appendField(createGearSettingsButton('vidya'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("Variable Index Dynamic Average");
@@ -30,6 +30,9 @@ Blockly.Blocks['vidya'] = {
                 this.indicatorParams[attr.name] = parseFloat(attr.value) || 0;
             }
         });
+        if (this.indicatorParams["period"]) {
+            this.setFieldValue(String(this.indicatorParams["period"]), "PERIOD");
+        }
     }
 };
 

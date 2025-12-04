@@ -7,7 +7,7 @@ Blockly.Blocks['ta_lwma'] = {
         this.appendDummyInput()
             .appendField("LWMA")
             .appendField(new Blockly.FieldTextInput("LWMA"), "NAME")
-            .appendField(createGearSettingsButton('lwma'));
+            .appendField("TF:").appendField(new Blockly.FieldTextInput("60"), "PERIOD").appendField(createGearSettingsButton('lwma'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("Linear Weighted Moving Average");
@@ -30,6 +30,9 @@ Blockly.Blocks['ta_lwma'] = {
                 this.indicatorParams[attr.name] = parseFloat(attr.value) || 0;
             }
         });
+        if (this.indicatorParams["period"]) {
+            this.setFieldValue(String(this.indicatorParams["period"]), "PERIOD");
+        }
     }
 };
 

@@ -7,7 +7,7 @@ Blockly.Blocks['dema'] = {
         this.appendDummyInput()
             .appendField("DEMA")
             .appendField(new Blockly.FieldTextInput("DEMA"), "NAME")
-            .appendField(createGearSettingsButton('dema'));
+            .appendField("TF:").appendField(new Blockly.FieldTextInput("60"), "PERIOD").appendField(createGearSettingsButton('dema'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("Double Exponential Moving Average");
@@ -30,6 +30,9 @@ Blockly.Blocks['dema'] = {
                 this.indicatorParams[attr.name] = parseFloat(attr.value) || 0;
             }
         });
+        if (this.indicatorParams["period"]) {
+            this.setFieldValue(String(this.indicatorParams["period"]), "PERIOD");
+        }
     }
 };
 

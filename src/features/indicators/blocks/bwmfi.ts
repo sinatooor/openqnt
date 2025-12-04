@@ -11,7 +11,7 @@ Blockly.Blocks['bwmfi'] = {
             .appendField(new Blockly.FieldDropdown(
                 config?.components?.map(c => [c.label, c.value]) || []
             ), "COMPONENT")
-            .appendField(createGearSettingsButton('bwmfi'));
+            .appendField("TF:").appendField(new Blockly.FieldTextInput("60"), "PERIOD").appendField(createGearSettingsButton('bwmfi'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("Market Facilitation Index by Bill Williams");
@@ -34,6 +34,9 @@ Blockly.Blocks['bwmfi'] = {
                 this.indicatorParams[attr.name] = parseFloat(attr.value) || 0;
             }
         });
+        if (this.indicatorParams["period"]) {
+            this.setFieldValue(String(this.indicatorParams["period"]), "PERIOD");
+        }
     }
 };
 

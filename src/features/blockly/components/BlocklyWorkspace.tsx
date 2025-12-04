@@ -1101,7 +1101,7 @@ export const BlocklyWorkspace = ({
         <div className="h-12 border-b border-[#3e3e42] flex items-center justify-between px-4 bg-[#252526]">
           <div className="flex items-center gap-2">
             <FileCode className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium">MQL4 Expert Advisor</span>
+            <span className="text-sm font-medium">MQL5 Export</span>
           </div>
           <div className="flex items-center gap-1">
             <Tooltip>

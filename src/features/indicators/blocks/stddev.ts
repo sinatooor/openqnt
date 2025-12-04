@@ -7,7 +7,7 @@ Blockly.Blocks['stddev'] = {
         this.appendDummyInput()
             .appendField("Standard Deviation")
             .appendField(new Blockly.FieldTextInput("StdDev"), "NAME")
-            .appendField(createGearSettingsButton('stddev'));
+            .appendField("TF:").appendField(new Blockly.FieldTextInput("60"), "PERIOD").appendField(createGearSettingsButton('stddev'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("Standard Deviation");
@@ -30,6 +30,9 @@ Blockly.Blocks['stddev'] = {
                 this.indicatorParams[attr.name] = parseFloat(attr.value) || 0;
             }
         });
+        if (this.indicatorParams["period"]) {
+            this.setFieldValue(String(this.indicatorParams["period"]), "PERIOD");
+        }
     }
 };
 

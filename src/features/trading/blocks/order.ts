@@ -18,7 +18,8 @@ Blockly.Blocks["trade_order"] = {
             );
         this.appendDummyInput()
             .appendField("Size")
-            .appendField(new Blockly.FieldNumber(0.1, 0), "SIZE");
+            .appendField(new Blockly.FieldNumber(0.1, 0), "SIZE")
+            .appendField("lots");
 
         this.appendDummyInput()
             .appendField("Leverage")

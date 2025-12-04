@@ -1,6 +1,6 @@
 import * as Blockly from 'blockly';
 
-export const mqlGenerator = new Blockly.Generator('MQL') as any;
+export const mqlGenerator = new Blockly.Generator('MQL5') as any;
 
 // Order of operation ENUMs
 mqlGenerator.ORDER_ATOMIC = 0;           // 0 "" ...
@@ -704,7 +704,11 @@ const getIndicatorParam = (block: Blockly.Block, paramName: string, defaultValue
 };
 
 const getIndicatorPeriod = (block: Blockly.Block) => {
-    return (block as any).indicatorParams?.['period'] ?? 0; // Default to 0 (PERIOD_CURRENT)
+    // Try to get from explicit field first (new style)
+    const val = block.getFieldValue('PERIOD');
+    if (val !== null && val !== undefined) return val;
+    // Fallback to mutation param (old style)
+    return (block as any).indicatorParams?.['period'] ?? 0;
 };
 
 const toMqlTimeframe = (period: any) => {
@@ -771,7 +775,7 @@ mqlGenerator.forBlock['ta_ema'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['ta_bb'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 20);
     const deviation = getIndicatorParam(block, 'deviation', 2.0);
     const shift = getIndicatorParam(block, 'shift', 0);
@@ -792,7 +796,7 @@ mqlGenerator.forBlock['ta_bb'] = function (block: Blockly.Block) {
 
 
 mqlGenerator.forBlock['ta_atr'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 14);
 
     const handleName = 'handle_atr_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
@@ -803,7 +807,7 @@ mqlGenerator.forBlock['ta_atr'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['ta_stochastic'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const kPeriod = getIndicatorParam(block, 'kPeriod', 5);
     const dPeriod = getIndicatorParam(block, 'dPeriod', 3);
     const slowing = getIndicatorParam(block, 'slowing', 3);
@@ -823,7 +827,7 @@ mqlGenerator.forBlock['ta_stochastic'] = function (block: Blockly.Block) {
 
 // Additional indicator blocks
 mqlGenerator.forBlock['ta_cci'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 14);
     const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
 
@@ -835,11 +839,11 @@ mqlGenerator.forBlock['ta_cci'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['ta_adx'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 14);
     const appliedPrice = getIndicatorParam(block, 'applied_price', 0); // Not used in MQL5 iADX? Check docs. MQL5 iADX(symbol, period, adx_period). No applied_price.
     // Wait, MQL5 iADX signature: iADX(symbol, timeframe, adx_period).
-    // MQL4 iADX: iADX(symbol, timeframe, period, applied_price, mode, shift).
+    // MQL5 iADX: iADX(symbol, timeframe, period).
     // It seems MQL5 iADX does not take applied_price.
 
     const handleName = 'handle_adx_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
@@ -855,7 +859,7 @@ mqlGenerator.forBlock['ta_adx'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['ta_mfi'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 14);
     const volumeType = 1; // VOLUME_TICK
 
@@ -867,7 +871,7 @@ mqlGenerator.forBlock['ta_mfi'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['ta_williams_r'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 14);
 
     const handleName = 'handle_wpr_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
@@ -878,7 +882,7 @@ mqlGenerator.forBlock['ta_williams_r'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['ta_smma'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 14);
     const shift = getIndicatorParam(block, 'shift', 0);
     const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
@@ -891,7 +895,7 @@ mqlGenerator.forBlock['ta_smma'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['ta_lwma'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 14);
     const shift = getIndicatorParam(block, 'shift', 0);
     const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
@@ -904,7 +908,7 @@ mqlGenerator.forBlock['ta_lwma'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['dema'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 14);
 
     const handleName = 'handle_dema_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
@@ -915,7 +919,7 @@ mqlGenerator.forBlock['dema'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['tema'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 14);
 
     const handleName = 'handle_tema_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
@@ -926,7 +930,7 @@ mqlGenerator.forBlock['tema'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['ac'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
 
     const handleName = 'handle_ac_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
@@ -936,7 +940,7 @@ mqlGenerator.forBlock['ac'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['ao'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
 
     const handleName = 'handle_ao_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
@@ -946,7 +950,7 @@ mqlGenerator.forBlock['ao'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['sar'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const step = getIndicatorParam(block, 'step', 0.02);
     const maximum = getIndicatorParam(block, 'maximum', 0.2);
 
@@ -958,7 +962,7 @@ mqlGenerator.forBlock['sar'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['momentum'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 14);
     const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
 
@@ -970,7 +974,7 @@ mqlGenerator.forBlock['momentum'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['osma'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const fastEMA = getIndicatorParam(block, 'fastEMA', 12);
     const slowEMA = getIndicatorParam(block, 'slowEMA', 26);
     const signalSMA = getIndicatorParam(block, 'signalSMA', 9);
@@ -984,7 +988,7 @@ mqlGenerator.forBlock['osma'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['obv'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
 
     const handleName = 'handle_obv_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
@@ -994,7 +998,7 @@ mqlGenerator.forBlock['obv'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['stddev'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 20);
     const shift = getIndicatorParam(block, 'shift', 0);
     const method = getIndicatorParam(block, 'method', 0);
@@ -1008,7 +1012,7 @@ mqlGenerator.forBlock['stddev'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['envelopes'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 14);
     const deviation = getIndicatorParam(block, 'deviation', 0.1);
     const method = getIndicatorParam(block, 'method', 0);
@@ -1026,7 +1030,7 @@ mqlGenerator.forBlock['envelopes'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['donchian'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 20);
     const component = block.getFieldValue('COMPONENT') || 'upper';
 
@@ -1042,7 +1046,7 @@ mqlGenerator.forBlock['donchian'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['fractals'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const component = block.getFieldValue('COMPONENT') || 'upper';
 
     const handleName = 'handle_fract_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
@@ -1056,7 +1060,7 @@ mqlGenerator.forBlock['fractals'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['alligator'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const jawPeriod = getIndicatorParam(block, 'jawPeriod', 13);
     const teethPeriod = getIndicatorParam(block, 'teethPeriod', 8);
     const lipsPeriod = getIndicatorParam(block, 'lipsPeriod', 5);
@@ -1077,7 +1081,7 @@ mqlGenerator.forBlock['alligator'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['ta_ichimoku'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const tenkan = getIndicatorParam(block, 'tenkan', 9);
     const kijun = getIndicatorParam(block, 'kijun', 26);
     const senkou = getIndicatorParam(block, 'senkou', 52);
@@ -1097,7 +1101,7 @@ mqlGenerator.forBlock['ta_ichimoku'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['bearsPower'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 13);
 
     const handleName = 'handle_bears_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
@@ -1108,13 +1112,13 @@ mqlGenerator.forBlock['bearsPower'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['bullsPower'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 13);
     return [`iBullsPower(NULL, ${toMqlTimeframe(period)}, ${maPeriod}, PRICE_CLOSE, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
 
 mqlGenerator.forBlock['force'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 13);
     const method = getIndicatorParam(block, 'method', 0);
     const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
@@ -1127,7 +1131,7 @@ mqlGenerator.forBlock['force'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['bwmfi'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
 
     const handleName = 'handle_bwmfi_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
@@ -1137,7 +1141,7 @@ mqlGenerator.forBlock['bwmfi'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['gator'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const jawPeriod = getIndicatorParam(block, 'jawPeriod', 13);
     const teethPeriod = getIndicatorParam(block, 'teethPeriod', 8);
     const lipsPeriod = getIndicatorParam(block, 'lipsPeriod', 5);
@@ -1157,7 +1161,7 @@ mqlGenerator.forBlock['gator'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['chaikin'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const fastEMA = getIndicatorParam(block, 'fastEMA', 3);
     const slowEMA = getIndicatorParam(block, 'slowEMA', 10);
 
@@ -1169,7 +1173,7 @@ mqlGenerator.forBlock['chaikin'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['demarker'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 14);
 
     const handleName = 'handle_demarker_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
@@ -1180,7 +1184,7 @@ mqlGenerator.forBlock['demarker'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['rvi'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 10);
     const component = block.getFieldValue('COMPONENT') || 'main';
 
@@ -1195,7 +1199,7 @@ mqlGenerator.forBlock['rvi'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['volumes'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
 
     const handleName = 'handle_vols_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
@@ -1205,7 +1209,7 @@ mqlGenerator.forBlock['volumes'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['ta_vwap'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const timeframe = toMqlTimeframe(period);
 
     // Define the CalculateVWAP function if not already defined
@@ -1234,7 +1238,7 @@ double CalculateVWAP(ENUM_TIMEFRAMES timeframe, int bars) {
 };
 
 mqlGenerator.forBlock['ad'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
 
     const handleName = 'handle_ad_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
     mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
@@ -1244,7 +1248,7 @@ mqlGenerator.forBlock['ad'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['trix'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 14);
     const appliedPrice = getIndicatorParam(block, 'applied_price', 0);
 
@@ -1256,7 +1260,7 @@ mqlGenerator.forBlock['trix'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['vidya'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 14);
 
     const handleName = 'handle_vidya_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
@@ -1267,7 +1271,7 @@ mqlGenerator.forBlock['vidya'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['ama'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 10);
 
     const handleName = 'handle_ama_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
@@ -1278,7 +1282,7 @@ mqlGenerator.forBlock['ama'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['frama'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 14);
 
     const handleName = 'handle_frama_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
@@ -1289,7 +1293,7 @@ mqlGenerator.forBlock['frama'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['ta_keltner'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 20);
     const atrPeriod = getIndicatorParam(block, 'atrPeriod', 10);
     const multiplier = getIndicatorParam(block, 'multiplier', 2);
@@ -1307,7 +1311,7 @@ mqlGenerator.forBlock['ta_keltner'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['adxWilder'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 14);
 
     const handleName = 'handle_adxw_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
@@ -1318,7 +1322,7 @@ mqlGenerator.forBlock['adxWilder'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['ta_dmi'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 14);
     const component = block.getFieldValue('COMPONENT') || 'plus';
 
@@ -1334,7 +1338,7 @@ mqlGenerator.forBlock['ta_dmi'] = function (block: Blockly.Block) {
 };
 
 mqlGenerator.forBlock['macd_value'] = function (block: Blockly.Block) {
-    const period = getIndicatorParam(block, 'period', 5);
+    const period = getIndicatorPeriod(block);
     const fastEMA = getIndicatorParam(block, 'fastEMA', 12);
     const slowEMA = getIndicatorParam(block, 'slowEMA', 26);
     const signalSMA = getIndicatorParam(block, 'signalSMA', 9);

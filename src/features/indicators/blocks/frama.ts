@@ -7,7 +7,7 @@ Blockly.Blocks['frama'] = {
         this.appendDummyInput()
             .appendField("FrAMA")
             .appendField(new Blockly.FieldTextInput("FrAMA"), "NAME")
-            .appendField(createGearSettingsButton('frama'));
+            .appendField("TF:").appendField(new Blockly.FieldTextInput("60"), "PERIOD").appendField(createGearSettingsButton('frama'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("Fractal Adaptive Moving Average");
@@ -30,6 +30,9 @@ Blockly.Blocks['frama'] = {
                 this.indicatorParams[attr.name] = parseFloat(attr.value) || 0;
             }
         });
+        if (this.indicatorParams["period"]) {
+            this.setFieldValue(String(this.indicatorParams["period"]), "PERIOD");
+        }
     }
 };
 

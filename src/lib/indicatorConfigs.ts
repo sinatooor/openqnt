@@ -29,6 +29,7 @@ export interface IndicatorConfig {
   params: IndicatorParam[];
   components?: IndicatorComponent[];
   mqlFunction: string;
+  defaultTimeframe?: number;
 }
 
 // MA Method options: 0=MODE_SMA, 1=MODE_EMA, 2=MODE_SMMA, 3=MODE_LWMA
@@ -80,24 +81,24 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'ac': {
     name: 'ac',
     displayName: 'Accelerator Oscillator',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes }
     ],
     mqlFunction: 'iAC'
   },
   'ao': {
     name: 'ao',
     displayName: 'Awesome Oscillator',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes }
     ],
     mqlFunction: 'iAO'
   },
   'ad': {
     name: 'ad',
     displayName: 'Accumulation/Distribution',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'applied_volume', label: 'Applied Volume', type: 'number', default: 0, min: 0, max: 1, options: appliedVolumes }
     ],
     mqlFunction: 'iAD'
@@ -105,8 +106,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'cci': {
     name: 'cci',
     displayName: 'Commodity Channel Index',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 14, min: 1 },
       { name: 'applied_price', label: 'Applied Price', type: 'number', default: 0, min: 0, max: 6, options: appliedPrices }
     ],
@@ -115,8 +116,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'chaikin': {
     name: 'chaikin',
     displayName: 'Chaikin Oscillator',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'fastMA', label: 'Fast MA Period', type: 'number', default: 3, min: 1 },
       { name: 'slowMA', label: 'Slow MA Period', type: 'number', default: 10, min: 1 },
       { name: 'method', label: 'MA Method', type: 'number', default: 1, min: 0, max: 3, options: maMethods },
@@ -127,8 +128,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'demarker': {
     name: 'demarker',
     displayName: 'DeMarker',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 14, min: 1 }
     ],
     mqlFunction: 'iDeMarker'
@@ -136,8 +137,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'force': {
     name: 'force',
     displayName: 'Force Index',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 13, min: 1 },
       { name: 'method', label: 'MA Method', type: 'number', default: 0, min: 0, max: 3, options: maMethods },
       { name: 'applied_volume', label: 'Applied Volume', type: 'number', default: 0, min: 0, max: 1, options: appliedVolumes }
@@ -147,8 +148,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'momentum': {
     name: 'momentum',
     displayName: 'Momentum',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 14, min: 1 },
       { name: 'applied_price', label: 'Applied Price', type: 'number', default: 0, min: 0, max: 6, options: appliedPrices }
     ],
@@ -157,8 +158,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'mfi': {
     name: 'mfi',
     displayName: 'Money Flow Index',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 14, min: 1 },
       { name: 'applied_volume', label: 'Applied Volume', type: 'number', default: 0, min: 0, max: 1, options: appliedVolumes }
     ],
@@ -167,8 +168,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'osma': {
     name: 'osma',
     displayName: 'Moving Average of Oscillator',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'fastEMA', label: 'Fast EMA', type: 'number', default: 12, min: 1 },
       { name: 'slowEMA', label: 'Slow EMA', type: 'number', default: 26, min: 1 },
       { name: 'signalSMA', label: 'Signal SMA', type: 'number', default: 9, min: 1 },
@@ -183,8 +184,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'rsi': {
     name: 'rsi',
     displayName: 'Relative Strength Index',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 14, min: 1 },
       { name: 'applied_price', label: 'Applied Price', type: 'number', default: 0, min: 0, max: 6, options: appliedPrices }
     ],
@@ -193,8 +194,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'rvi': {
     name: 'rvi',
     displayName: 'Relative Vigor Index',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 10, min: 1 }
     ],
     components: [
@@ -206,8 +207,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'stochastic': {
     name: 'stochastic',
     displayName: 'Stochastic Oscillator',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'kPeriod', label: 'K Period', type: 'number', default: 5, min: 1 },
       { name: 'dPeriod', label: 'D Period', type: 'number', default: 3, min: 1 },
       { name: 'slowing', label: 'Slowing', type: 'number', default: 3, min: 1 },
@@ -223,8 +224,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'williams_r': {
     name: 'williams_r',
     displayName: 'Williams\' %R',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 14, min: 1 }
     ],
     mqlFunction: 'iWPR'
@@ -232,8 +233,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'trix': {
     name: 'trix',
     displayName: 'Triple Exponential Moving Averages Oscillator',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 14, min: 1 },
       { name: 'applied_price', label: 'Applied Price', type: 'number', default: 0, min: 0, max: 6, options: appliedPrices }
     ],
@@ -244,8 +245,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'sma': {
     name: 'sma',
     displayName: 'Simple Moving Average',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 14, min: 1 },
       { name: 'shift', label: 'Shift', type: 'number', default: 0 },
       { name: 'applied_price', label: 'Applied Price', type: 'number', default: 0, min: 0, max: 6, options: appliedPrices }
@@ -255,8 +256,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'ema': {
     name: 'ema',
     displayName: 'Exponential Moving Average',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 14, min: 1 },
       { name: 'shift', label: 'Shift', type: 'number', default: 0 },
       { name: 'applied_price', label: 'Applied Price', type: 'number', default: 0, min: 0, max: 6, options: appliedPrices }
@@ -266,8 +267,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'smma': {
     name: 'smma',
     displayName: 'Smoothed Moving Average',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 14, min: 1 },
       { name: 'shift', label: 'Shift', type: 'number', default: 0 },
       { name: 'applied_price', label: 'Applied Price', type: 'number', default: 0, min: 0, max: 6, options: appliedPrices }
@@ -277,8 +278,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'lwma': {
     name: 'lwma',
     displayName: 'Linear Weighted Moving Average',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 14, min: 1 },
       { name: 'shift', label: 'Shift', type: 'number', default: 0 },
       { name: 'applied_price', label: 'Applied Price', type: 'number', default: 0, min: 0, max: 6, options: appliedPrices }
@@ -288,8 +289,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'dema': {
     name: 'dema',
     displayName: 'Double Exponential Moving Average',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 14, min: 1 },
       { name: 'shift', label: 'Shift', type: 'number', default: 0 },
       { name: 'applied_price', label: 'Applied Price', type: 'number', default: 0, min: 0, max: 6, options: appliedPrices }
@@ -299,8 +300,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'tema': {
     name: 'tema',
     displayName: 'Triple Exponential Moving Average',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 14, min: 1 },
       { name: 'shift', label: 'Shift', type: 'number', default: 0 },
       { name: 'applied_price', label: 'Applied Price', type: 'number', default: 0, min: 0, max: 6, options: appliedPrices }
@@ -310,8 +311,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'frama': {
     name: 'frama',
     displayName: 'Fractal Adaptive Moving Average',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 14, min: 1 },
       { name: 'shift', label: 'Shift', type: 'number', default: 0 },
       { name: 'applied_price', label: 'Applied Price', type: 'number', default: 0, min: 0, max: 6, options: appliedPrices }
@@ -321,8 +322,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'vidya': {
     name: 'vidya',
     displayName: 'Variable Index Dynamic Average',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 9, min: 1 },
       { name: 'shift', label: 'Shift', type: 'number', default: 0 },
       { name: 'applied_price', label: 'Applied Price', type: 'number', default: 0, min: 0, max: 6, options: appliedPrices }
@@ -332,8 +333,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'ama': {
     name: 'ama',
     displayName: 'Adaptive Moving Average',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 9, min: 1 },
       { name: 'fastPeriod', label: 'Fast Period', type: 'number', default: 2, min: 1 },
       { name: 'slowPeriod', label: 'Slow Period', type: 'number', default: 30, min: 1 },
@@ -347,8 +348,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'bb': {
     name: 'bb',
     displayName: 'Bollinger Bands',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 20, min: 1 },
       { name: 'deviation', label: 'Deviation', type: 'double', default: 2.0, min: 0, step: 0.1 },
       { name: 'shift', label: 'Shift', type: 'number', default: 0 },
@@ -364,8 +365,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'envelopes': {
     name: 'envelopes',
     displayName: 'Envelopes',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 14, min: 1 },
       { name: 'deviation', label: 'Deviation', type: 'double', default: 0.1, min: 0, step: 0.01 },
       { name: 'shift', label: 'Shift', type: 'number', default: 0 },
@@ -381,8 +382,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'donchian': {
     name: 'donchian',
     displayName: 'Donchian Channels',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 20, min: 1 },
       { name: 'shift', label: 'Shift', type: 'number', default: 0 }
     ],
@@ -396,8 +397,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'keltner': {
     name: 'keltner',
     displayName: 'Keltner Channels',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 20, min: 1 },
       { name: 'deviation', label: 'Deviation', type: 'double', default: 2.0, min: 0, step: 0.1 },
       { name: 'shift', label: 'Shift', type: 'number', default: 0 },
@@ -416,8 +417,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'macd': {
     name: 'macd',
     displayName: 'MACD',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'fastEMA', label: 'Fast EMA', type: 'number', default: 12, min: 1 },
       { name: 'slowEMA', label: 'Slow EMA', type: 'number', default: 26, min: 1 },
       { name: 'signalSMA', label: 'Signal SMA', type: 'number', default: 9, min: 1 },
@@ -433,8 +434,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'ichimoku': {
     name: 'ichimoku',
     displayName: 'Ichimoku Kinko Hyo',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'tenkanSen', label: 'Tenkan-sen', type: 'number', default: 9, min: 1 },
       { name: 'kijunSen', label: 'Kijun-sen', type: 'number', default: 26, min: 1 },
       { name: 'senkouSpanB', label: 'Senkou Span B', type: 'number', default: 52, min: 1 }
@@ -451,8 +452,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'alligator': {
     name: 'alligator',
     displayName: 'Alligator',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'jawPeriod', label: 'Jaw Period', type: 'number', default: 13, min: 1 },
       { name: 'jawShift', label: 'Jaw Shift', type: 'number', default: 8 },
       { name: 'teethPeriod', label: 'Teeth Period', type: 'number', default: 8, min: 1 },
@@ -472,8 +473,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'gator': {
     name: 'gator',
     displayName: 'Gator Oscillator',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'jawPeriod', label: 'Jaw Period', type: 'number', default: 13, min: 1 },
       { name: 'jawShift', label: 'Jaw Shift', type: 'number', default: 8 },
       { name: 'teethPeriod', label: 'Teeth Period', type: 'number', default: 8, min: 1 },
@@ -492,8 +493,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'dmi': {
     name: 'dmi',
     displayName: 'Directional Movement Index',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 14, min: 1 }
     ],
     components: [
@@ -506,8 +507,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'adx': {
     name: 'adx',
     displayName: 'Average Directional Index',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 14, min: 1 }
     ],
     mqlFunction: 'iADX'
@@ -515,8 +516,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'adxwilder': {
     name: 'adxWilder',
     displayName: 'ADX by Welles Wilder',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 14, min: 1 }
     ],
     mqlFunction: 'iADXWilder'
@@ -526,8 +527,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'atr': {
     name: 'atr',
     displayName: 'Average True Range',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 14, min: 1 }
     ],
     mqlFunction: 'iATR'
@@ -535,8 +536,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'stddev': {
     name: 'stddev',
     displayName: 'Standard Deviation',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 20, min: 1 },
       { name: 'shift', label: 'Shift', type: 'number', default: 0 },
       { name: 'method', label: 'MA Method', type: 'number', default: 0, min: 0, max: 3, options: maMethods },
@@ -549,8 +550,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'sar': {
     name: 'sar',
     displayName: 'Parabolic SAR',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'step', label: 'Step', type: 'double', default: 0.02, min: 0, max: 1, step: 0.01 },
       { name: 'maximum', label: 'Maximum', type: 'double', default: 0.2, min: 0, max: 1, step: 0.01 }
     ],
@@ -561,8 +562,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'obv': {
     name: 'obv',
     displayName: 'On Balance Volume',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'applied_volume', label: 'Applied Volume', type: 'number', default: 0, min: 0, max: 1, options: appliedVolumes }
     ],
     mqlFunction: 'iOBV'
@@ -570,8 +571,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'volumes': {
     name: 'volumes',
     displayName: 'Volumes',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'applied_volume', label: 'Applied Volume', type: 'number', default: 0, min: 0, max: 1, options: appliedVolumes }
     ],
     components: [
@@ -583,8 +584,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'bwmfi': {
     name: 'bwmfi',
     displayName: 'Market Facilitation Index',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'applied_volume', label: 'Applied Volume', type: 'number', default: 0, min: 0, max: 1, options: appliedVolumes }
     ],
     components: [
@@ -599,8 +600,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'bearspower': {
     name: 'bearsPower',
     displayName: 'Bears Power',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 13, min: 1 }
     ],
     mqlFunction: 'iBearsPower'
@@ -608,8 +609,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'bullspower': {
     name: 'bullsPower',
     displayName: 'Bulls Power',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes },
       { name: 'ma_period', label: 'Period', type: 'number', default: 13, min: 1 }
     ],
     mqlFunction: 'iBullsPower'
@@ -619,8 +620,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'fractals': {
     name: 'fractals',
     displayName: 'Fractals',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes }
     ],
     components: [
       { value: 'upper', label: 'Upper' },
@@ -631,8 +632,8 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
   'vwap': {
     name: 'vwap',
     displayName: 'Volume Weighted Average Price',
+    defaultTimeframe: 5,
     params: [
-      { name: 'period', label: 'Timeframe', type: 'number', default: 5, min: 0, max: 43200, options: timeframes }
     ],
     mqlFunction: 'VWAP'
   }

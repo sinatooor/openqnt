@@ -7,7 +7,7 @@ Blockly.Blocks['ta_atr'] = {
         this.appendDummyInput()
             .appendField("ATR")
             .appendField(new Blockly.FieldTextInput("ATR"), "NAME")
-            .appendField(createGearSettingsButton('atr'));
+            .appendField("TF:").appendField(new Blockly.FieldTextInput("60"), "PERIOD").appendField(createGearSettingsButton('atr'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("Average True Range - volatility indicator");
@@ -30,5 +30,8 @@ Blockly.Blocks['ta_atr'] = {
                 this.indicatorParams[attr.name] = parseFloat(attr.value) || 0;
             }
         });
+        if (this.indicatorParams["period"]) {
+            this.setFieldValue(String(this.indicatorParams["period"]), "PERIOD");
+        }
     }
 };

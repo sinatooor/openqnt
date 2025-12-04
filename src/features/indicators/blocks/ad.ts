@@ -7,7 +7,7 @@ Blockly.Blocks['ad'] = {
         this.appendDummyInput()
             .appendField("Accumulation/Distribution")
             .appendField(new Blockly.FieldTextInput("AD"), "NAME")
-            .appendField(createGearSettingsButton('ad'));
+            .appendField("TF:").appendField(new Blockly.FieldTextInput("60"), "PERIOD").appendField(createGearSettingsButton('ad'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("Accumulation/Distribution");
@@ -30,6 +30,9 @@ Blockly.Blocks['ad'] = {
                 this.indicatorParams[attr.name] = parseFloat(attr.value) || 0;
             }
         });
+        if (this.indicatorParams["period"]) {
+            this.setFieldValue(String(this.indicatorParams["period"]), "PERIOD");
+        }
     }
 };
 

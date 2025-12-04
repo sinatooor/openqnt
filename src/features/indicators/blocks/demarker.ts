@@ -7,7 +7,7 @@ Blockly.Blocks['demarker'] = {
         this.appendDummyInput()
             .appendField("DeMarker")
             .appendField(new Blockly.FieldTextInput("DeMarker"), "NAME")
-            .appendField(createGearSettingsButton('demarker'));
+            .appendField("TF:").appendField(new Blockly.FieldTextInput("60"), "PERIOD").appendField(createGearSettingsButton('demarker'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("DeMarker");
@@ -30,6 +30,9 @@ Blockly.Blocks['demarker'] = {
                 this.indicatorParams[attr.name] = parseFloat(attr.value) || 0;
             }
         });
+        if (this.indicatorParams["period"]) {
+            this.setFieldValue(String(this.indicatorParams["period"]), "PERIOD");
+        }
     }
 };
 
