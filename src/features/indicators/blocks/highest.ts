@@ -1,3 +1,4 @@
+import { TIMEFRAME_OPTIONS } from "./timeframes";
 import * as Blockly from 'blockly';
 import { createGearSettingsButton } from '@/lib/indicatorUtils';
 import { getDefaultParams } from '@/lib/indicatorConfigs';
@@ -8,7 +9,7 @@ Blockly.Blocks['ta_highest'] = {
             .appendField("Highest High");
         this.appendDummyInput()
             .appendField("TF:")
-            .appendField(new Blockly.FieldTextInput("60"), "PERIOD")
+            .appendField(new Blockly.FieldDropdown(TIMEFRAME_OPTIONS), "PERIOD")
             .appendField(createGearSettingsButton('ta_highest'));
         this.setInputsInline(true);
         this.setOutput(true, "TAValue");
@@ -16,6 +17,7 @@ Blockly.Blocks['ta_highest'] = {
         this.setTooltip("Returns the highest high value over the specified number of bars");
         this.indicatorName = 'ta_highest';
         this.indicatorParams = getDefaultParams('ta_highest');
+        this.setFieldValue('60', 'PERIOD');
     },
     mutationToDom: function () {
         const container = Blockly.utils.xml.createElement('mutation');

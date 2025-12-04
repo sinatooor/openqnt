@@ -3,23 +3,28 @@ import * as Blockly from "blockly";
 Blockly.Blocks["trade_order"] = {
     init: function () {
         this.appendDummyInput()
-            .appendField("Close")
-            .appendField(new Blockly.FieldNumber(100, 0, 100), "PERCENT")
-            .appendField("% of trade ID")
-            .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
+            .appendField("Place Order")
+            .appendField(new Blockly.FieldTextInput("Trade ID"), "TRADE_ID");
         this.appendDummyInput()
-            .appendField("Trade")
+            .appendField("Direction")
             .appendField(
                 new Blockly.FieldDropdown([
-                    ["long", "long"],
-                    ["short", "short"],
+                    ["Long", "long"],
+                    ["Short", "short"],
                 ]),
                 "DIRECTION",
             );
         this.appendDummyInput()
             .appendField("Size")
             .appendField(new Blockly.FieldNumber(0.1, 0), "SIZE")
-            .appendField("lots");
+            .appendField(
+                new Blockly.FieldDropdown([
+                    ["Lots", "lots"],
+                    ["USD", "usd"],
+                    ["% Equity", "percent"],
+                ]),
+                "SIZE_TYPE"
+            );
 
         this.appendDummyInput()
             .appendField("Leverage")
@@ -40,8 +45,8 @@ Blockly.Blocks["trade_order"] = {
             .appendField("Order type:")
             .appendField(
                 new Blockly.FieldDropdown([
-                    ["market", "market"],
-                    ["limit", "limit"],
+                    ["Market", "market"],
+                    ["Limit", "limit"],
                 ], this.updateOrderType_.bind(this)),
                 "ORDER_TYPE",
             );

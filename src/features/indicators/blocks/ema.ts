@@ -1,3 +1,4 @@
+import { TIMEFRAME_OPTIONS } from "./timeframes";
 import * as Blockly from 'blockly';
 import { createGearSettingsButton } from '@/lib/indicatorUtils';
 import { getDefaultParams } from '@/lib/indicatorConfigs';
@@ -7,14 +8,15 @@ Blockly.Blocks['ta_ema'] = {
         this.appendDummyInput()
             .appendField("EMA")
             .appendField(new Blockly.FieldTextInput("EMA"), "NAME")
-            .appendField("TF:").appendField(new Blockly.FieldTextInput("60"), "PERIOD").appendField(createGearSettingsButton('ema'));
+            .appendField("TF:").appendField(new Blockly.FieldDropdown(TIMEFRAME_OPTIONS), "PERIOD").appendField(createGearSettingsButton('ema'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("Exponential Moving Average");
         this.indicatorName = 'ema';
         this.indicatorParams = getDefaultParams('ema');
+        this.setFieldValue('60', 'PERIOD');
     },
-    mutationToDom: function() {
+    mutationToDom: function () {
         const container = Blockly.utils.xml.createElement('mutation');
         if (this.indicatorParams) {
             Object.keys(this.indicatorParams).forEach(key => {
@@ -23,7 +25,7 @@ Blockly.Blocks['ta_ema'] = {
         }
         return container;
     },
-    domToMutation: function(xmlElement: Element) {
+    domToMutation: function (xmlElement: Element) {
         this.indicatorParams = {};
         Array.from(xmlElement.attributes).forEach(attr => {
             if (attr.name !== 'type') {
