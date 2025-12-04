@@ -1,3 +1,4 @@
+import { TIMEFRAME_OPTIONS } from "./timeframes";
 import * as Blockly from 'blockly';
 import { createGearSettingsButton } from '@/lib/indicatorUtils';
 import { getDefaultParams } from '@/lib/indicatorConfigs';
@@ -7,14 +8,15 @@ Blockly.Blocks['ta_obv'] = {
         this.appendDummyInput()
             .appendField("OBV")
             .appendField(new Blockly.FieldTextInput("OBV"), "NAME")
-            .appendField("TF:").appendField(new Blockly.FieldTextInput("60"), "PERIOD").appendField(createGearSettingsButton('obv'));
+            .appendField("TF:").appendField(new Blockly.FieldDropdown(TIMEFRAME_OPTIONS), "PERIOD").appendField(createGearSettingsButton('obv'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("On Balance Volume");
         this.indicatorName = 'obv';
         this.indicatorParams = getDefaultParams('obv');
+        this.setFieldValue('60', 'PERIOD');
     },
-    mutationToDom: function() {
+    mutationToDom: function () {
         const container = Blockly.utils.xml.createElement('mutation');
         if (this.indicatorParams) {
             Object.keys(this.indicatorParams).forEach(key => {
@@ -23,7 +25,7 @@ Blockly.Blocks['ta_obv'] = {
         }
         return container;
     },
-    domToMutation: function(xmlElement: Element) {
+    domToMutation: function (xmlElement: Element) {
         this.indicatorParams = {};
         Array.from(xmlElement.attributes).forEach(attr => {
             if (attr.name !== 'type') {

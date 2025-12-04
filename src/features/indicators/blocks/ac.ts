@@ -1,3 +1,4 @@
+import { TIMEFRAME_OPTIONS } from "./timeframes";
 import * as Blockly from 'blockly';
 import { createGearSettingsButton } from '@/lib/indicatorUtils';
 import { getDefaultParams } from '@/lib/indicatorConfigs';
@@ -8,12 +9,13 @@ Blockly.Blocks['ac'] = {
             .appendField("Accelerator Oscillator")
             .appendField(new Blockly.FieldTextInput("AO"), "NAME")
             .appendField("TF:")
-            .appendField(new Blockly.FieldTextInput("60"), "PERIOD");
+            .appendField(new Blockly.FieldDropdown(TIMEFRAME_OPTIONS), "PERIOD");
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("Accelerator Oscillator");
         this.indicatorName = 'ac';
         this.indicatorParams = getDefaultParams('ac');
+        this.setFieldValue('60', 'PERIOD');
     },
     mutationToDom: function () {
         const container = Blockly.utils.xml.createElement('mutation');

@@ -1,3 +1,4 @@
+import { TIMEFRAME_OPTIONS } from "./timeframes";
 import * as Blockly from 'blockly';
 import { createGearSettingsButton } from '@/lib/indicatorUtils';
 import { getIndicatorConfig, getDefaultParams } from '@/lib/indicatorConfigs';
@@ -11,14 +12,15 @@ Blockly.Blocks['alligator'] = {
             .appendField(new Blockly.FieldDropdown(
                 config?.components?.map(c => [c.label, c.value]) || []
             ), "COMPONENT")
-            .appendField("TF:").appendField(new Blockly.FieldTextInput("60"), "PERIOD").appendField(createGearSettingsButton('alligator'));
+            .appendField("TF:").appendField(new Blockly.FieldDropdown(TIMEFRAME_OPTIONS), "PERIOD").appendField(createGearSettingsButton('alligator'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("Alligator");
         this.indicatorName = 'alligator';
         this.indicatorParams = getDefaultParams('alligator');
+        this.setFieldValue('60', 'PERIOD');
     },
-    mutationToDom: function() {
+    mutationToDom: function () {
         const container = Blockly.utils.xml.createElement('mutation');
         if (this.indicatorParams) {
             Object.keys(this.indicatorParams).forEach(key => {
@@ -27,7 +29,7 @@ Blockly.Blocks['alligator'] = {
         }
         return container;
     },
-    domToMutation: function(xmlElement: Element) {
+    domToMutation: function (xmlElement: Element) {
         this.indicatorParams = {};
         Array.from(xmlElement.attributes).forEach(attr => {
             if (attr.name !== 'type') {

@@ -322,7 +322,7 @@ mqlGenerator.forBlock['control_repeat'] = function (block: Blockly.Block) {
 
 mqlGenerator.forBlock['control_wait'] = function (block: Blockly.Block) {
     const seconds = mqlGenerator.valueToCode(block, 'SECONDS', mqlGenerator.ORDER_NONE) || '1';
-    return `Sleep(${seconds} * 1000);\n`;
+    return `if(!MQLInfoInteger(MQL_TESTER)) Sleep(${seconds} * 1000);\n`;
 };
 
 mqlGenerator.forBlock['control_repeat_until'] = function (block: Blockly.Block) {
@@ -333,7 +333,7 @@ mqlGenerator.forBlock['control_repeat_until'] = function (block: Blockly.Block) 
 
 mqlGenerator.forBlock['control_wait_until'] = function (block: Blockly.Block) {
     const condition = mqlGenerator.valueToCode(block, 'CONDITION', mqlGenerator.ORDER_NONE) || 'false';
-    return `while (!(${condition})) { Sleep(100); }\n`;
+    return `if (!(${condition})) return;\n`;
 };
 
 mqlGenerator.forBlock['control_stop'] = function () {
@@ -450,7 +450,9 @@ mqlGenerator.forBlock['environment_prev_candle_open'] = function (block: Blockly
     const timeframe = block.getFieldValue('TIMEFRAME');
     const tfMap: { [key: string]: string } = {
         '1m': 'PERIOD_M1', '5m': 'PERIOD_M5', '15m': 'PERIOD_M15',
-        '1h': 'PERIOD_H1', '4h': 'PERIOD_H4', '1d': 'PERIOD_D1'
+        '1h': 'PERIOD_H1', '4h': 'PERIOD_H4', '1d': 'PERIOD_D1',
+        '1': 'PERIOD_M1', '5': 'PERIOD_M5', '15': 'PERIOD_M15', '30': 'PERIOD_M30',
+        '60': 'PERIOD_H1', '240': 'PERIOD_H4', '1440': 'PERIOD_D1', '10080': 'PERIOD_W1', '43200': 'PERIOD_MN1'
     };
     return [`iOpen(NULL, ${tfMap[timeframe]}, 1)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -459,7 +461,9 @@ mqlGenerator.forBlock['environment_prev_ticker_close'] = function (block: Blockl
     const timeframe = block.getFieldValue('TIMEFRAME');
     const tfMap: { [key: string]: string } = {
         '1m': 'PERIOD_M1', '5m': 'PERIOD_M5', '15m': 'PERIOD_M15',
-        '1h': 'PERIOD_H1', '4h': 'PERIOD_H4', '1d': 'PERIOD_D1'
+        '1h': 'PERIOD_H1', '4h': 'PERIOD_H4', '1d': 'PERIOD_D1',
+        '1': 'PERIOD_M1', '5': 'PERIOD_M5', '15': 'PERIOD_M15', '30': 'PERIOD_M30',
+        '60': 'PERIOD_H1', '240': 'PERIOD_H4', '1440': 'PERIOD_D1', '10080': 'PERIOD_W1', '43200': 'PERIOD_MN1'
     };
     return [`iClose(NULL, ${tfMap[timeframe]}, 1)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
@@ -480,7 +484,9 @@ mqlGenerator.forBlock['environment_new_candle_open'] = function (block: Blockly.
     const timeframe = block.getFieldValue('TIMEFRAME') || 'PERIOD_CURRENT';
     const tfMap: { [key: string]: string } = {
         '1m': 'PERIOD_M1', '5m': 'PERIOD_M5', '15m': 'PERIOD_M15', '30m': 'PERIOD_M30',
-        '1h': 'PERIOD_H1', '4h': 'PERIOD_H4', '1d': 'PERIOD_D1', '1w': 'PERIOD_W1'
+        '1h': 'PERIOD_H1', '4h': 'PERIOD_H4', '1d': 'PERIOD_D1', '1w': 'PERIOD_W1',
+        '1': 'PERIOD_M1', '5': 'PERIOD_M5', '15': 'PERIOD_M15', '30': 'PERIOD_M30',
+        '60': 'PERIOD_H1', '240': 'PERIOD_H4', '1440': 'PERIOD_D1', '10080': 'PERIOD_W1', '43200': 'PERIOD_MN1'
     };
     const period = tfMap[timeframe] || 'PERIOD_CURRENT';
 

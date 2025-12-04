@@ -1,3 +1,4 @@
+import { TIMEFRAME_OPTIONS } from "./timeframes";
 import * as Blockly from 'blockly';
 import { createGearSettingsButton } from '@/lib/indicatorUtils';
 import { getIndicatorConfig, getDefaultParams } from '@/lib/indicatorConfigs';
@@ -12,12 +13,13 @@ Blockly.Blocks['fractals'] = {
                 config?.components?.map(c => [c.label, c.value]) || []
             ), "COMPONENT")
             .appendField("TF:")
-            .appendField(new Blockly.FieldTextInput("60"), "PERIOD");
+            .appendField(new Blockly.FieldDropdown(TIMEFRAME_OPTIONS), "PERIOD");
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("Fractals");
         this.indicatorName = 'fractals';
         this.indicatorParams = getDefaultParams('fractals');
+        this.setFieldValue('60', 'PERIOD');
     },
     mutationToDom: function () {
         const container = Blockly.utils.xml.createElement('mutation');
