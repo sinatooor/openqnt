@@ -7,7 +7,7 @@ Blockly.Blocks['ta_obv'] = {
         this.appendDummyInput()
             .appendField("OBV")
             .appendField(new Blockly.FieldTextInput("OBV"), "NAME")
-            .appendField(createGearSettingsButton('obv'));
+            .appendField("TF:").appendField(new Blockly.FieldTextInput("60"), "PERIOD").appendField(createGearSettingsButton('obv'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("On Balance Volume");
@@ -30,5 +30,8 @@ Blockly.Blocks['ta_obv'] = {
                 this.indicatorParams[attr.name] = parseFloat(attr.value) || 0;
             }
         });
+        if (this.indicatorParams["period"]) {
+            this.setFieldValue(String(this.indicatorParams["period"]), "PERIOD");
+        }
     }
 };

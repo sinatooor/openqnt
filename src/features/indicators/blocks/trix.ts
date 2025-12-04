@@ -7,7 +7,7 @@ Blockly.Blocks['trix'] = {
         this.appendDummyInput()
             .appendField("TriX")
             .appendField(new Blockly.FieldTextInput("TriX"), "NAME")
-            .appendField(createGearSettingsButton('trix'));
+            .appendField("TF:").appendField(new Blockly.FieldTextInput("60"), "PERIOD").appendField(createGearSettingsButton('trix'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("Triple Exponential Moving Averages Oscillator");
@@ -30,6 +30,9 @@ Blockly.Blocks['trix'] = {
                 this.indicatorParams[attr.name] = parseFloat(attr.value) || 0;
             }
         });
+        if (this.indicatorParams["period"]) {
+            this.setFieldValue(String(this.indicatorParams["period"]), "PERIOD");
+        }
     }
 };
 

@@ -11,7 +11,7 @@ Blockly.Blocks['ta_dmi'] = {
             .appendField(new Blockly.FieldDropdown(
                 config?.components?.map(c => [c.label, c.value]) || []
             ), "COMPONENT")
-            .appendField(createGearSettingsButton('dmi'));
+            .appendField("TF:").appendField(new Blockly.FieldTextInput("60"), "PERIOD").appendField(createGearSettingsButton('dmi'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("Directional Movement Index");
@@ -34,5 +34,8 @@ Blockly.Blocks['ta_dmi'] = {
                 this.indicatorParams[attr.name] = parseFloat(attr.value) || 0;
             }
         });
+        if (this.indicatorParams["period"]) {
+            this.setFieldValue(String(this.indicatorParams["period"]), "PERIOD");
+        }
     }
 };

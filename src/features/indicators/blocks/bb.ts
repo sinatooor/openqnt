@@ -11,7 +11,7 @@ Blockly.Blocks['ta_bb'] = {
             .appendField(new Blockly.FieldDropdown(
                 config?.components?.map(c => [c.label, c.value]) || []
             ), "COMPONENT")
-            .appendField(createGearSettingsButton('bb'));
+            .appendField("TF:").appendField(new Blockly.FieldTextInput("60"), "PERIOD").appendField(createGearSettingsButton('bb'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("Bollinger Bands");
@@ -34,5 +34,8 @@ Blockly.Blocks['ta_bb'] = {
                 this.indicatorParams[attr.name] = parseFloat(attr.value) || 0;
             }
         });
+        if (this.indicatorParams["period"]) {
+            this.setFieldValue(String(this.indicatorParams["period"]), "PERIOD");
+        }
     }
 };

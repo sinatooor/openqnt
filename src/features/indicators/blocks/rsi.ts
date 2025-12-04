@@ -7,7 +7,7 @@ Blockly.Blocks['ta_rsi'] = {
         this.appendDummyInput()
             .appendField("RSI")
             .appendField(new Blockly.FieldTextInput("RSI"), "NAME")
-            .appendField(createGearSettingsButton('rsi'));
+            .appendField("TF:").appendField(new Blockly.FieldTextInput("60"), "PERIOD").appendField(createGearSettingsButton('rsi'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("Relative Strength Index");
@@ -30,5 +30,8 @@ Blockly.Blocks['ta_rsi'] = {
                 this.indicatorParams[attr.name] = parseFloat(attr.value) || 0;
             }
         });
+        if (this.indicatorParams["period"]) {
+            this.setFieldValue(String(this.indicatorParams["period"]), "PERIOD");
+        }
     }
 };

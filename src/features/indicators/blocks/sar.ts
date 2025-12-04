@@ -7,7 +7,7 @@ Blockly.Blocks['ta_sar'] = {
         this.appendDummyInput()
             .appendField("Parabolic SAR")
             .appendField(new Blockly.FieldTextInput("SAR"), "NAME")
-            .appendField(createGearSettingsButton('sar'));
+            .appendField("TF:").appendField(new Blockly.FieldTextInput("60"), "PERIOD").appendField(createGearSettingsButton('sar'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("Parabolic Stop and Reverse");
@@ -30,5 +30,8 @@ Blockly.Blocks['ta_sar'] = {
                 this.indicatorParams[attr.name] = parseFloat(attr.value) || 0;
             }
         });
+        if (this.indicatorParams["period"]) {
+            this.setFieldValue(String(this.indicatorParams["period"]), "PERIOD");
+        }
     }
 };

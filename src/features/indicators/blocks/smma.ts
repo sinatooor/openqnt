@@ -7,7 +7,7 @@ Blockly.Blocks['ta_smma'] = {
         this.appendDummyInput()
             .appendField("SMMA")
             .appendField(new Blockly.FieldTextInput("SMMA"), "NAME")
-            .appendField(createGearSettingsButton('smma'));
+            .appendField("TF:").appendField(new Blockly.FieldTextInput("60"), "PERIOD").appendField(createGearSettingsButton('smma'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("Smoothed Moving Average");
@@ -30,6 +30,9 @@ Blockly.Blocks['ta_smma'] = {
                 this.indicatorParams[attr.name] = parseFloat(attr.value) || 0;
             }
         });
+        if (this.indicatorParams["period"]) {
+            this.setFieldValue(String(this.indicatorParams["period"]), "PERIOD");
+        }
     }
 };
 

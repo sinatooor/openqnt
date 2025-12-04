@@ -7,7 +7,7 @@ Blockly.Blocks['chaikin'] = {
         this.appendDummyInput()
             .appendField("Chaikin Oscillator")
             .appendField(new Blockly.FieldTextInput("Chaikin"), "NAME")
-            .appendField(createGearSettingsButton('chaikin'));
+            .appendField("TF:").appendField(new Blockly.FieldTextInput("60"), "PERIOD").appendField(createGearSettingsButton('chaikin'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("Chaikin Oscillator");
@@ -30,6 +30,9 @@ Blockly.Blocks['chaikin'] = {
                 this.indicatorParams[attr.name] = parseFloat(attr.value) || 0;
             }
         });
+        if (this.indicatorParams["period"]) {
+            this.setFieldValue(String(this.indicatorParams["period"]), "PERIOD");
+        }
     }
 };
 

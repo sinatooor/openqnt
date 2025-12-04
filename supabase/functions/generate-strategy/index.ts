@@ -42,6 +42,8 @@ CRITICAL RULES:
 9. INDUSTRY STANDARD: Use ATR (Average True Range) with 14-period for dynamic stop losses that adapt to market volatility
 10. RISK MANAGEMENT: Stop Loss = 1.5-2.5x ATR from entry | Take Profit = Stop Loss distance * 2-3 (risk-reward ratio)
 11. NEVER use control_wait or control_wait_until blocks. Use environment_new_candle_open for timing logic.
+12. ALWAYS set the "SIZE" field to 0.1 in trade_order blocks unless explicitly instructed otherwise. THIS IS CRITICAL. NEVER USE 100.
+13. TIMEFRAMES: The 'period' attribute in mutation represents the timeframe in minutes (e.g., 1, 5, 15, 30, 60, 240, 1440). ALWAYS set this to the user's requested timeframe (default to 60 if unspecified). NEVER DEFAULT TO 5.
 
 === TEMPLATE REFERENCE (Use these as starting points) ===
 
@@ -56,7 +58,8 @@ XML:
           <block type="operator_less">
             <value name="LEFT">
               <block type="ta_rsi">
-                <mutation period="15" ma_period="14" applied_price="0"></mutation>
+                <field name="PERIOD">15</field>
+                <mutation ma_period="14" applied_price="0"></mutation>
                 <field name="NAME">RSI</field>
               </block>
             </value>
@@ -73,10 +76,9 @@ XML:
             <field name="DIRECTION">long</field>
             <value name="SIZE">
               <shadow type="math_number">
-                <field name="NUM">3</field>
+                <field name="NUM">0.1</field>
               </shadow>
             </value>
-            <field name="SIZE_TYPE">percent</field>
             <field name="LEVERAGE">1</field>
             <field name="ORDER_TYPE">market</field>
             <next>
@@ -94,7 +96,8 @@ XML:
                       <block type="operator_multiply">
                         <value name="LEFT">
                           <block type="ta_atr">
-                            <mutation period="15" ma_period="14"></mutation>
+                            <field name="PERIOD">15</field>
+                            <mutation ma_period="14"></mutation>
                             <field name="NAME">ATR</field>
                           </block>
                         </value>
@@ -124,7 +127,8 @@ XML:
                               <block type="operator_multiply">
                                 <value name="LEFT">
                                   <block type="ta_atr">
-                                    <mutation period="15" ma_period="14"></mutation>
+                                    <field name="PERIOD">15</field>
+                                    <mutation ma_period="14"></mutation>
                                     <field name="NAME">ATR</field>
                                   </block>
                                 </value>
@@ -180,7 +184,8 @@ XML:
                     </value>
                     <value name="RIGHT">
                       <block type="ta_sma">
-                        <mutation period="60" ma_period="12" shift="6" applied_price="0"></mutation>
+                        <field name="PERIOD">60</field>
+                        <mutation ma_period="12" shift="6" applied_price="0"></mutation>
                         <field name="NAME">MA</field>
                       </block>
                     </value>
@@ -195,7 +200,8 @@ XML:
                     </value>
                     <value name="RIGHT">
                       <block type="ta_sma">
-                        <mutation period="60" ma_period="12" shift="6" applied_price="0"></mutation>
+                        <field name="PERIOD">60</field>
+                        <mutation ma_period="12" shift="6" applied_price="0"></mutation>
                         <field name="NAME">MA</field>
                       </block>
                     </value>
@@ -233,7 +239,8 @@ XML:
                         </value>
                         <value name="RIGHT">
                           <block type="ta_sma">
-                            <mutation period="60" ma_period="12" shift="6" applied_price="0"></mutation>
+                            <field name="PERIOD">60</field>
+                            <mutation ma_period="12" shift="6" applied_price="0"></mutation>
                             <field name="NAME">MA</field>
                           </block>
                         </value>
@@ -248,7 +255,8 @@ XML:
                         </value>
                         <value name="RIGHT">
                           <block type="ta_sma">
-                            <mutation period="60" ma_period="12" shift="6" applied_price="0"></mutation>
+                            <field name="PERIOD">60</field>
+                            <mutation ma_period="12" shift="6" applied_price="0"></mutation>
                             <field name="NAME">MA</field>
                           </block>
                         </value>
@@ -296,7 +304,8 @@ XML:
             </value>
             <value name="RIGHT">
               <block type="ta_bb">
-                <mutation period="30" ma_period="20" deviation="2" shift="0" applied_price="0"></mutation>
+                <field name="PERIOD">30</field>
+                <mutation ma_period="20" deviation="2" shift="0" applied_price="0"></mutation>
                 <field name="NAME">BB</field>
                 <field name="COMPONENT">upper</field>
               </block>
@@ -309,10 +318,9 @@ XML:
             <field name="DIRECTION">long</field>
             <value name="SIZE">
               <shadow type="math_number">
-                <field name="NUM">100</field>
+                <field name="NUM">0.1</field>
               </shadow>
             </value>
-            <field name="SIZE_TYPE">value</field>
             <field name="LEVERAGE">1</field>
             <field name="ORDER_TYPE">market</field>
             <next>
@@ -330,7 +338,8 @@ XML:
                       <block type="operator_multiply">
                         <value name="LEFT">
                           <block type="ta_atr">
-                            <mutation period="30" ma_period="14"></mutation>
+                            <field name="PERIOD">30</field>
+                            <mutation ma_period="14"></mutation>
                             <field name="NAME">ATR</field>
                           </block>
                         </value>
@@ -360,7 +369,8 @@ XML:
                               <block type="operator_multiply">
                                 <value name="LEFT">
                                   <block type="ta_atr">
-                                    <mutation period="30" ma_period="14"></mutation>
+                                    <field name="PERIOD">30</field>
+                                    <mutation ma_period="14"></mutation>
                                     <field name="NAME">ATR</field>
                                   </block>
                                 </value>
@@ -411,14 +421,16 @@ XML:
                   <block type="operator_greater">
                     <value name="LEFT">
                       <block type="macd_value">
-                        <mutation period="60" fastema="12" slowema="26" signalsma="9" applied_price="0"></mutation>
+                        <field name="PERIOD">60</field>
+                        <mutation fastema="12" slowema="26" signalsma="9" applied_price="0"></mutation>
                         <field name="NAME">MACD</field>
                         <field name="COMPONENT">line</field>
                       </block>
                     </value>
                     <value name="RIGHT">
                       <block type="macd_value">
-                        <mutation period="60" fastema="12" slowema="26" signalsma="9" applied_price="0"></mutation>
+                        <field name="PERIOD">60</field>
+                        <mutation fastema="12" slowema="26" signalsma="9" applied_price="0"></mutation>
                         <field name="NAME">MACD</field>
                         <field name="COMPONENT">signal</field>
                       </block>
@@ -429,7 +441,8 @@ XML:
                   <block type="operator_greater">
                     <value name="LEFT">
                       <block type="ta_adx">
-                        <mutation period="60" ma_period="14"></mutation>
+                        <field name="PERIOD">60</field>
+                        <mutation ma_period="14"></mutation>
                         <field name="NAME">ADX</field>
                       </block>
                     </value>
@@ -448,10 +461,9 @@ XML:
                 <field name="DIRECTION">long</field>
                 <value name="SIZE">
                   <shadow type="math_number">
-                    <field name="NUM">0.6</field>
+                    <field name="NUM">0.1</field>
                   </shadow>
                 </value>
-                <field name="SIZE_TYPE">percent</field>
                 <field name="LEVERAGE">1</field>
                 <field name="ORDER_TYPE">market</field>
                 <next>
@@ -469,7 +481,8 @@ XML:
                           <block type="operator_multiply">
                             <value name="LEFT">
                               <block type="ta_atr">
-                                <mutation period="60" ma_period="14"></mutation>
+                                <field name="PERIOD">60</field>
+                                <mutation ma_period="14"></mutation>
                                 <field name="NAME">ATR</field>
                               </block>
                             </value>
@@ -499,7 +512,8 @@ XML:
                                   <block type="operator_multiply">
                                     <value name="LEFT">
                                       <block type="ta_atr">
-                                        <mutation period="60" ma_period="14"></mutation>
+                                        <field name="PERIOD">60</field>
+                                        <mutation ma_period="14"></mutation>
                                         <field name="NAME">ATR</field>
                                       </block>
                                     </value>
@@ -548,7 +562,8 @@ XML:
                 </value>
                 <value name="RIGHT">
                   <block type="ta_vwap">
-                    <mutation period="60"></mutation>
+                    <field name="PERIOD">60</field>
+                    <mutation></mutation>
                     <field name="NAME">VWAP</field>
                   </block>
                 </value>
@@ -558,7 +573,8 @@ XML:
               <block type="operator_less">
                 <value name="LEFT">
                   <block type="ta_rsi">
-                    <mutation period="60" ma_period="9" applied_price="0"></mutation>
+                    <field name="PERIOD">60</field>
+                    <mutation ma_period="9" applied_price="0"></mutation>
                     <field name="NAME">RSI</field>
                   </block>
                 </value>
@@ -577,10 +593,9 @@ XML:
             <field name="DIRECTION">long</field>
             <value name="SIZE">
               <shadow type="math_number">
-                <field name="NUM">50</field>
+                <field name="NUM">0.1</field>
               </shadow>
             </value>
-            <field name="SIZE_TYPE">value</field>
             <field name="LEVERAGE">1</field>
             <field name="ORDER_TYPE">market</field>
             <next>
@@ -598,7 +613,8 @@ XML:
                       <block type="operator_multiply">
                         <value name="LEFT">
                           <block type="ta_atr">
-                            <mutation period="60" ma_period="14"></mutation>
+                            <field name="PERIOD">60</field>
+                            <mutation ma_period="14"></mutation>
                             <field name="NAME">ATR</field>
                           </block>
                         </value>
@@ -628,7 +644,8 @@ XML:
                               <block type="operator_multiply">
                                 <value name="LEFT">
                                   <block type="ta_atr">
-                                    <mutation period="60" ma_period="14"></mutation>
+                                    <field name="PERIOD">60</field>
+                                    <mutation ma_period="14"></mutation>
                                     <field name="NAME">ATR</field>
                                   </block>
                                 </value>
@@ -679,13 +696,15 @@ XML:
                   <block type="operator_greater">
                     <value name="LEFT">
                       <block type="ta_ema">
-                        <mutation period="60" ma_period="8" shift="0" applied_price="0"></mutation>
+                        <field name="PERIOD">60</field>
+                        <mutation ma_period="8" shift="0" applied_price="0"></mutation>
                         <field name="NAME">Fast EMA</field>
                       </block>
                     </value>
                     <value name="RIGHT">
                       <block type="ta_ema">
-                        <mutation period="60" ma_period="21" shift="0" applied_price="0"></mutation>
+                        <field name="PERIOD">60</field>
+                        <mutation ma_period="21" shift="0" applied_price="0"></mutation>
                         <field name="NAME">Medium EMA</field>
                       </block>
                     </value>
@@ -695,13 +714,15 @@ XML:
                   <block type="operator_greater">
                     <value name="LEFT">
                       <block type="ta_ema">
-                        <mutation period="60" ma_period="21" shift="0" applied_price="0"></mutation>
+                        <field name="PERIOD">60</field>
+                        <mutation ma_period="21" shift="0" applied_price="0"></mutation>
                         <field name="NAME">Medium EMA</field>
                       </block>
                     </value>
                     <value name="RIGHT">
                       <block type="ta_ema">
-                        <mutation period="60" ma_period="55" shift="0" applied_price="0"></mutation>
+                        <field name="PERIOD">60</field>
+                        <mutation ma_period="55" shift="0" applied_price="0"></mutation>
                         <field name="NAME">Slow EMA</field>
                       </block>
                     </value>
@@ -715,10 +736,9 @@ XML:
                 <field name="DIRECTION">long</field>
                 <value name="SIZE">
                   <shadow type="math_number">
-                    <field name="NUM">4</field>
+                    <field name="NUM">0.1</field>
                   </shadow>
                 </value>
-                <field name="SIZE_TYPE">percent</field>
                 <field name="LEVERAGE">1</field>
                 <field name="ORDER_TYPE">market</field>
                 <next>
@@ -736,7 +756,8 @@ XML:
                           <block type="operator_multiply">
                             <value name="LEFT">
                               <block type="ta_atr">
-                                <mutation period="60" ma_period="14"></mutation>
+                                <field name="PERIOD">60</field>
+                                <mutation ma_period="14"></mutation>
                                 <field name="NAME">ATR</field>
                               </block>
                             </value>
@@ -766,7 +787,8 @@ XML:
                                   <block type="operator_multiply">
                                     <value name="LEFT">
                                       <block type="ta_atr">
-                                        <mutation period="60" ma_period="14"></mutation>
+                                        <field name="PERIOD">60</field>
+                                        <mutation ma_period="14"></mutation>
                                         <field name="NAME">ATR</field>
                                       </block>
                                     </value>
@@ -1227,7 +1249,7 @@ Blockly.Blocks['operator_advanced_math'] = {
 // === TECHNICAL ANALYSIS BLOCKS (46 TOOLS) ===
 
 // 1. AC (Accelerator Oscillator)
-// XML: <block type="ac"><mutation period="5"></mutation><field name="NAME">AC</field></block>
+// XML: <block type="ac"><field name="PERIOD">60</field><mutation></mutation><field name="NAME">AC</field></block>
 Blockly.Blocks['ac'] = {
   init: function() {
     this.appendDummyInput()
@@ -1244,7 +1266,7 @@ Blockly.Blocks['ac'] = {
 };
 
 // 2. AD (Accumulation/Distribution)
-// XML: <block type="ad"><mutation period="5" applied_volume="0"></mutation><field name="NAME">AD</field></block>
+// XML: <block type="ad"><field name="PERIOD">60</field><mutation applied_volume="0"></mutation><field name="NAME">AD</field></block>
 Blockly.Blocks['ad'] = {
   init: function() {
     this.appendDummyInput()
@@ -1267,7 +1289,7 @@ Blockly.Blocks['ad'] = {
 };
 
 // 3. ADX (Average Directional Index)
-// XML: <block type="ta_adx"><mutation period="14" ma_period="14"></mutation><field name="NAME">ADX</field></block>
+// XML: <block type="ta_adx"><field name="PERIOD">60</field><mutation ma_period="14"></mutation><field name="NAME">ADX</field></block>
 Blockly.Blocks['ta_adx'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1284,7 +1306,7 @@ Blockly.Blocks['ta_adx'] = {
 };
 
 // 4. ADX Wilder
-// XML: <block type="adxWilder"><mutation period="14" ma_period="14"></mutation><field name="NAME">ADX Wilder</field></block>
+// XML: <block type="adxWilder"><field name="PERIOD">60</field><mutation ma_period="14"></mutation><field name="NAME">ADX Wilder</field></block>
 Blockly.Blocks['adxWilder'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1301,7 +1323,7 @@ Blockly.Blocks['adxWilder'] = {
 };
 
 // 5. Alligator
-// XML: <block type="alligator"><mutation period="5" jawperiod="13" jawshift="8" teethperiod="8" teethshift="5" lipsperiod="5" lipsshift="3" method="2" applied_price="0"></mutation><field name="NAME">Alligator</field></block>
+// XML: <block type="alligator"><field name="PERIOD">60</field><mutation jawperiod="13" jawshift="8" teethperiod="8" teethshift="5" lipsperiod="60" lipsshift="3" method="2" applied_price="0"></mutation><field name="NAME">Alligator</field></block>
 Blockly.Blocks['alligator'] = {
   init: function() {
     this.appendDummyInput()
@@ -1324,7 +1346,7 @@ Blockly.Blocks['alligator'] = {
 };
 
 // 6. AMA (Adaptive Moving Average)
-// XML: <block type="ama"><mutation period="5" ma_period="9" fastperiod="2" slowperiod="30" shift="0" applied_price="0"></mutation><field name="NAME">AMA</field></block>
+// XML: <block type="ama"><field name="PERIOD">60</field><mutation ma_period="9" fastperiod="2" slowperiod="30" shift="0" applied_price="0"></mutation><field name="NAME">AMA</field></block>
 Blockly.Blocks['ama'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1341,7 +1363,7 @@ Blockly.Blocks['ama'] = {
 };
 
 // 7. AO (Awesome Oscillator)
-// XML: <block type="ao"><mutation period="5"></mutation><field name="NAME">AO</field></block>
+// XML: <block type="ao"><field name="PERIOD">60</field><mutation></mutation><field name="NAME">AO</field></block>
 Blockly.Blocks['ao'] = {
   init: function() {
     this.appendDummyInput()
@@ -1354,7 +1376,7 @@ Blockly.Blocks['ao'] = {
 };
 
 // 8. ATR (Average True Range)
-// XML: <block type="ta_atr"><mutation period="14" ma_period="14"></mutation><field name="NAME">ATR</field></block>
+// XML: <block type="ta_atr"><field name="PERIOD">60</field><mutation ma_period="14"></mutation><field name="NAME">ATR</field></block>
 Blockly.Blocks['ta_atr'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1371,7 +1393,7 @@ Blockly.Blocks['ta_atr'] = {
 };
 
 // 9. Bears Power
-// XML: <block type="bearsPower"><mutation period="5" ma_period="13"></mutation><field name="NAME">Bears Power</field></block>
+// XML: <block type="bearsPower"><field name="PERIOD">60</field><mutation ma_period="13"></mutation><field name="NAME">Bears Power</field></block>
 Blockly.Blocks['bearsPower'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1388,7 +1410,7 @@ Blockly.Blocks['bearsPower'] = {
 };
 
 // 10. Bollinger Bands
-// XML: <block type="ta_bb"><mutation period="20" ma_period="20" deviation="2" shift="0" applied_price="0"></mutation><field name="NAME">BB</field><field name="COMPONENT">upper|middle|lower</field></block>
+// XML: <block type="ta_bb"><field name="PERIOD">60</field><mutation ma_period="20" deviation="2" shift="0" applied_price="0"></mutation><field name="NAME">BB</field><field name="COMPONENT">upper|middle|lower</field></block>
 Blockly.Blocks['ta_bb'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1412,7 +1434,7 @@ Blockly.Blocks['ta_bb'] = {
 };
 
 // 11. Bulls Power
-// XML: <block type="bullsPower"><mutation period="5" ma_period="13"></mutation><field name="NAME">Bulls Power</field></block>
+// XML: <block type="bullsPower"><field name="PERIOD">60</field><mutation ma_period="13"></mutation><field name="NAME">Bulls Power</field></block>
 Blockly.Blocks['bullsPower'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1429,7 +1451,7 @@ Blockly.Blocks['bullsPower'] = {
 };
 
 // 12. BWMFI (Market Facilitation Index)
-// XML: <block type="bwmfi"><mutation period="5" applied_volume="0"></mutation><field name="NAME">BWMFI</field><field name="COMPONENT">main|plus|minus</field></block>
+// XML: <block type="bwmfi"><field name="PERIOD">60</field><mutation applied_volume="0"></mutation><field name="NAME">BWMFI</field><field name="COMPONENT">main|plus|minus</field></block>
 Blockly.Blocks['bwmfi'] = {
   init: function() {
     this.appendDummyInput()
@@ -1450,7 +1472,7 @@ Blockly.Blocks['bwmfi'] = {
 };
 
 // 13. CCI (Commodity Channel Index)
-// XML: <block type="ta_cci"><mutation period="14" ma_period="14" applied_price="0"></mutation><field name="NAME">CCI</field></block>
+// XML: <block type="ta_cci"><field name="PERIOD">60</field><mutation ma_period="14" applied_price="0"></mutation><field name="NAME">CCI</field></block>
 Blockly.Blocks['ta_cci'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1467,7 +1489,7 @@ Blockly.Blocks['ta_cci'] = {
 };
 
 // 14. Chaikin Oscillator
-// XML: <block type="chaikin"><mutation period="5" fastma="3" slowma="10" method="1" applied_volume="0"></mutation><field name="NAME">Chaikin</field></block>
+// XML: <block type="chaikin"><field name="PERIOD">60</field><mutation fastma="3" slowma="10" method="1" applied_volume="0"></mutation><field name="NAME">Chaikin</field></block>
 Blockly.Blocks['chaikin'] = {
   init: function() {
     this.appendValueInput("FAST_MA")
@@ -1485,7 +1507,7 @@ Blockly.Blocks['chaikin'] = {
 };
 
 // 15. DEMA (Double Exponential Moving Average)
-// XML: <block type="dema"><mutation period="14" ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">DEMA</field></block>
+// XML: <block type="dema"><field name="PERIOD">60</field><mutation ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">DEMA</field></block>
 Blockly.Blocks['dema'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1502,7 +1524,7 @@ Blockly.Blocks['dema'] = {
 };
 
 // 16. DeMarker
-// XML: <block type="demarker"><mutation period="14" ma_period="14"></mutation><field name="NAME">DeMarker</field></block>
+// XML: <block type="demarker"><field name="PERIOD">60</field><mutation ma_period="14"></mutation><field name="NAME">DeMarker</field></block>
 Blockly.Blocks['demarker'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1519,7 +1541,7 @@ Blockly.Blocks['demarker'] = {
 };
 
 // 17. DMI (Directional Movement Index)
-// XML: <block type="ta_dmi"><mutation period="14" ma_period="14"></mutation><field name="NAME">DMI</field><field name="COMPONENT">plusDI|minusDI|adx</field></block>
+// XML: <block type="ta_dmi"><field name="PERIOD">60</field><mutation ma_period="14"></mutation><field name="NAME">DMI</field><field name="COMPONENT">plusDI|minusDI|adx</field></block>
 Blockly.Blocks['ta_dmi'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1543,7 +1565,7 @@ Blockly.Blocks['ta_dmi'] = {
 };
 
 // 18. Donchian Channels
-// XML: <block type="donchian"><mutation period="20" ma_period="20" shift="0"></mutation><field name="NAME">Donchian</field><field name="COMPONENT">upper|middle|lower</field></block>
+// XML: <block type="donchian"><field name="PERIOD">60</field><mutation ma_period="20" shift="0"></mutation><field name="NAME">Donchian</field><field name="COMPONENT">upper|middle|lower</field></block>
 Blockly.Blocks['donchian'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1567,7 +1589,7 @@ Blockly.Blocks['donchian'] = {
 };
 
 // 19. EMA (Exponential Moving Average)
-// XML: <block type="ta_ema"><mutation period="14" ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">EMA</field></block>
+// XML: <block type="ta_ema"><field name="PERIOD">60</field><mutation ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">EMA</field></block>
 Blockly.Blocks['ta_ema'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1584,7 +1606,7 @@ Blockly.Blocks['ta_ema'] = {
 };
 
 // 20. Envelopes
-// XML: <block type="envelopes"><mutation period="14" ma_period="14" deviation="0.1" shift="0" method="0" applied_price="0"></mutation><field name="NAME">Envelopes</field><field name="COMPONENT">upper|lower</field></block>
+// XML: <block type="envelopes"><field name="PERIOD">60</field><mutation ma_period="14" deviation="0.1" shift="0" method="0" applied_price="0"></mutation><field name="NAME">Envelopes</field><field name="COMPONENT">upper|lower</field></block>
 Blockly.Blocks['envelopes'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1610,7 +1632,7 @@ Blockly.Blocks['envelopes'] = {
 };
 
 // 21. Force Index
-// XML: <block type="force"><mutation period="13" ma_period="13" method="0" applied_volume="0"></mutation><field name="NAME">Force</field></block>
+// XML: <block type="force"><field name="PERIOD">60</field><mutation ma_period="13" method="0" applied_volume="0"></mutation><field name="NAME">Force</field></block>
 Blockly.Blocks['force'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1627,7 +1649,7 @@ Blockly.Blocks['force'] = {
 };
 
 // 22. Fractals
-// XML: <block type="fractals"><mutation period="5"></mutation><field name="NAME">Fractals</field><field name="COMPONENT">upper|lower</field></block>
+// XML: <block type="fractals"><field name="PERIOD">60</field><mutation></mutation><field name="NAME">Fractals</field><field name="COMPONENT">upper|lower</field></block>
 Blockly.Blocks['fractals'] = {
   init: function() {
     this.appendDummyInput()
@@ -1647,7 +1669,7 @@ Blockly.Blocks['fractals'] = {
 };
 
 // 23. FrAMA (Fractal Adaptive Moving Average)
-// XML: <block type="frama"><mutation period="14" ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">FrAMA</field></block>
+// XML: <block type="frama"><field name="PERIOD">60</field><mutation ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">FrAMA</field></block>
 Blockly.Blocks['frama'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1664,7 +1686,7 @@ Blockly.Blocks['frama'] = {
 };
 
 // 24. Gator Oscillator
-// XML: <block type="gator"><mutation period="5" jawperiod="13" jawshift="8" teethperiod="8" teethshift="5" lipsperiod="5" lipsshift="3" method="2" applied_price="0"></mutation><field name="NAME">Gator</field><field name="COMPONENT">upper|lower</field></block>
+// XML: <block type="gator"><field name="PERIOD">60</field><mutation jawperiod="13" jawshift="8" teethperiod="8" teethshift="5" lipsperiod="60" lipsshift="3" method="2" applied_price="0"></mutation><field name="NAME">Gator</field><field name="COMPONENT">upper|lower</field></block>
 Blockly.Blocks['gator'] = {
   init: function() {
     this.appendDummyInput()
@@ -1684,7 +1706,7 @@ Blockly.Blocks['gator'] = {
 };
 
 // 25. Ichimoku Kinko Hyo
-// XML: <block type="ta_ichimoku"><mutation period="5" tenkansen="9" kijunsen="26" senkouspanb="52"></mutation><field name="NAME">Ichimoku</field><field name="COMPONENT">tenkan|kijun|chikou|senkouA|senkouB</field></block>
+// XML: <block type="ta_ichimoku"><field name="PERIOD">60</field><mutation tenkansen="9" kijunsen="26" senkouspanb="52"></mutation><field name="NAME">Ichimoku</field><field name="COMPONENT">tenkan|kijun|chikou|senkouA|senkouB</field></block>
 Blockly.Blocks['ta_ichimoku'] = {
   init: function() {
     this.appendDummyInput()
@@ -1707,7 +1729,7 @@ Blockly.Blocks['ta_ichimoku'] = {
 };
 
 // 26. Keltner Channels
-// XML: <block type="ta_keltner"><mutation period="20" ma_period="20" deviation="2" shift="0" method="0" applied_price="0"></mutation><field name="NAME">Keltner</field><field name="COMPONENT">upper|middle|lower</field></block>
+// XML: <block type="ta_keltner"><field name="PERIOD">60</field><mutation ma_period="20" deviation="2" shift="0" method="0" applied_price="0"></mutation><field name="NAME">Keltner</field><field name="COMPONENT">upper|middle|lower</field></block>
 Blockly.Blocks['ta_keltner'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1731,7 +1753,7 @@ Blockly.Blocks['ta_keltner'] = {
 };
 
 // 27. LWMA (Linear Weighted Moving Average)
-// XML: <block type="ta_lwma"><mutation period="14" ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">LWMA</field></block>
+// XML: <block type="ta_lwma"><field name="PERIOD">60</field><mutation ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">LWMA</field></block>
 Blockly.Blocks['ta_lwma'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1748,7 +1770,7 @@ Blockly.Blocks['ta_lwma'] = {
 };
 
 // 28. MACD (Moving Average Convergence Divergence)
-// XML: <block type="macd_value"><mutation period="5" fastema="12" slowema="26" signalsma="9" applied_price="0"></mutation><field name="NAME">MACD</field><field name="COMPONENT">line|signal|histogram</field></block>
+// XML: <block type="macd_value"><field name="PERIOD">60</field><mutation fastema="12" slowema="26" signalsma="9" applied_price="0"></mutation><field name="NAME">MACD</field><field name="COMPONENT">line|signal|histogram</field></block>
 Blockly.Blocks['macd_value'] = {
   init: function() {
     this.appendDummyInput()
@@ -1769,7 +1791,7 @@ Blockly.Blocks['macd_value'] = {
 };
 
 // 29. MFI (Money Flow Index)
-// XML: <block type="ta_mfi"><mutation period="14" ma_period="14" applied_volume="0"></mutation><field name="NAME">MFI</field></block>
+// XML: <block type="ta_mfi"><field name="PERIOD">60</field><mutation ma_period="14" applied_volume="0"></mutation><field name="NAME">MFI</field></block>
 Blockly.Blocks['ta_mfi'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1786,7 +1808,7 @@ Blockly.Blocks['ta_mfi'] = {
 };
 
 // 30. Momentum
-// XML: <block type="momentum"><mutation period="14" ma_period="14" applied_price="0"></mutation><field name="NAME">Momentum</field></block>
+// XML: <block type="momentum"><field name="PERIOD">60</field><mutation ma_period="14" applied_price="0"></mutation><field name="NAME">Momentum</field></block>
 Blockly.Blocks['momentum'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1803,7 +1825,7 @@ Blockly.Blocks['momentum'] = {
 };
 
 // 31. OBV (On Balance Volume)
-// XML: <block type="ta_obv"><mutation period="5" applied_volume="0"></mutation><field name="NAME">OBV</field></block>
+// XML: <block type="ta_obv"><field name="PERIOD">60</field><mutation applied_volume="0"></mutation><field name="NAME">OBV</field></block>
 Blockly.Blocks['ta_obv'] = {
   init: function() {
     this.appendDummyInput()
@@ -1816,7 +1838,7 @@ Blockly.Blocks['ta_obv'] = {
 };
 
 // 32. OsMA (Moving Average of Oscillator)
-// XML: <block type="osma"><mutation period="5" fastema="12" slowema="26" signalsma="9" applied_price="0"></mutation><field name="NAME">OsMA</field><field name="COMPONENT">main|signal</field></block>
+// XML: <block type="osma"><field name="PERIOD">60</field><mutation fastema="12" slowema="26" signalsma="9" applied_price="0"></mutation><field name="NAME">OsMA</field><field name="COMPONENT">main|signal</field></block>
 Blockly.Blocks['osma'] = {
   init: function() {
     this.appendDummyInput()
@@ -1836,7 +1858,7 @@ Blockly.Blocks['osma'] = {
 };
 
 // 33. RSI (Relative Strength Index)
-// XML: <block type="ta_rsi"><mutation period="14" ma_period="14" applied_price="0"></mutation><field name="NAME">RSI</field></block>
+// XML: <block type="ta_rsi"><field name="PERIOD">60</field><mutation ma_period="14" applied_price="0"></mutation><field name="NAME">RSI</field></block>
 Blockly.Blocks['ta_rsi'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1853,7 +1875,7 @@ Blockly.Blocks['ta_rsi'] = {
 };
 
 // 34. RVI (Relative Vigor Index)
-// XML: <block type="rvi"><mutation period="10" ma_period="10"></mutation><field name="NAME">RVI</field><field name="COMPONENT">main|signal</field></block>
+// XML: <block type="rvi"><field name="PERIOD">60</field><mutation ma_period="10"></mutation><field name="NAME">RVI</field><field name="COMPONENT">main|signal</field></block>
 Blockly.Blocks['rvi'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1876,7 +1898,7 @@ Blockly.Blocks['rvi'] = {
 };
 
 // 35. SAR (Parabolic SAR)
-// XML: <block type="ta_sar"><mutation period="5" step="0.02" maximum="0.2"></mutation><field name="NAME">SAR</field></block>
+// XML: <block type="ta_sar"><field name="PERIOD">60</field><mutation step="0.02" maximum="0.2"></mutation><field name="NAME">SAR</field></block>
 Blockly.Blocks['ta_sar'] = {
   init: function() {
     this.appendValueInput("ACCELERATION")
@@ -1894,7 +1916,7 @@ Blockly.Blocks['ta_sar'] = {
 };
 
 // 36. SMA (Simple Moving Average)
-// XML: <block type="ta_sma"><mutation period="14" ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">SMA</field></block>
+// XML: <block type="ta_sma"><field name="PERIOD">60</field><mutation ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">SMA</field></block>
 Blockly.Blocks['ta_sma'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1911,7 +1933,7 @@ Blockly.Blocks['ta_sma'] = {
 };
 
 // 37. SMMA (Smoothed Moving Average)
-// XML: <block type="ta_smma"><mutation period="14" ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">SMMA</field></block>
+// XML: <block type="ta_smma"><field name="PERIOD">60</field><mutation ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">SMMA</field></block>
 Blockly.Blocks['ta_smma'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1928,7 +1950,7 @@ Blockly.Blocks['ta_smma'] = {
 };
 
 // 38. StdDev (Standard Deviation)
-// XML: <block type="stddev"><mutation period="20" ma_period="20" shift="0" method="0" applied_price="0"></mutation><field name="NAME">StdDev</field></block>
+// XML: <block type="stddev"><field name="PERIOD">60</field><mutation ma_period="20" shift="0" method="0" applied_price="0"></mutation><field name="NAME">StdDev</field></block>
 Blockly.Blocks['stddev'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1945,7 +1967,7 @@ Blockly.Blocks['stddev'] = {
 };
 
 // 39. Stochastic Oscillator
-// XML: <block type="ta_stochastic"><mutation period="5" kperiod="5" dperiod="3" slowing="3" method="0" price="0"></mutation><field name="NAME">Stochastic</field><field name="COMPONENT">main|signal</field></block>
+// XML: <block type="ta_stochastic"><field name="PERIOD">60</field><mutation kperiod="60" dperiod="3" slowing="3" method="0" price="0"></mutation><field name="NAME">Stochastic</field><field name="COMPONENT">main|signal</field></block>
 Blockly.Blocks['ta_stochastic'] = {
   init: function() {
     this.appendValueInput("K_PERIOD")
@@ -1969,7 +1991,7 @@ Blockly.Blocks['ta_stochastic'] = {
 };
 
 // 40. TEMA (Triple Exponential Moving Average)
-// XML: <block type="tema"><mutation period="14" ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">TEMA</field></block>
+// XML: <block type="tema"><field name="PERIOD">60</field><mutation ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">TEMA</field></block>
 Blockly.Blocks['tema'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -1986,7 +2008,7 @@ Blockly.Blocks['tema'] = {
 };
 
 // 41. TRIX (Triple Exponential Moving Averages Oscillator)
-// XML: <block type="trix"><mutation period="14" ma_period="14" applied_price="0"></mutation><field name="NAME">TRIX</field></block>
+// XML: <block type="trix"><field name="PERIOD">60</field><mutation ma_period="14" applied_price="0"></mutation><field name="NAME">TRIX</field></block>
 Blockly.Blocks['trix'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -2003,7 +2025,7 @@ Blockly.Blocks['trix'] = {
 };
 
 // 42. VIDYA (Variable Index Dynamic Average)
-// XML: <block type="vidya"><mutation period="9" ma_period="9" shift="0" applied_price="0"></mutation><field name="NAME">VIDYA</field></block>
+// XML: <block type="vidya"><field name="PERIOD">60</field><mutation ma_period="9" shift="0" applied_price="0"></mutation><field name="NAME">VIDYA</field></block>
 Blockly.Blocks['vidya'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -2020,7 +2042,7 @@ Blockly.Blocks['vidya'] = {
 };
 
 // 43. Volumes
-// XML: <block type="volumes"><mutation period="5" applied_volume="0"></mutation><field name="NAME">Volumes</field><field name="COMPONENT">real|tick</field></block>
+// XML: <block type="volumes"><field name="PERIOD">60</field><mutation applied_volume="0"></mutation><field name="NAME">Volumes</field><field name="COMPONENT">real|tick</field></block>
 Blockly.Blocks['volumes'] = {
   init: function() {
     this.appendDummyInput()
@@ -2040,7 +2062,7 @@ Blockly.Blocks['volumes'] = {
 };
 
 // 44. VWAP (Volume Weighted Average Price)
-// XML: <block type="ta_vwap"><mutation period="5"></mutation><field name="NAME">VWAP</field></block>
+// XML: <block type="ta_vwap"><field name="PERIOD">60</field><mutation></mutation><field name="NAME">VWAP</field></block>
 Blockly.Blocks['ta_vwap'] = {
   init: function() {
     this.appendDummyInput()
@@ -2053,7 +2075,7 @@ Blockly.Blocks['ta_vwap'] = {
 };
 
 // 45. Williams %R
-// XML: <block type="ta_williams_r"><mutation period="14" ma_period="14"></mutation><field name="NAME">Williams %R</field></block>
+// XML: <block type="ta_williams_r"><field name="PERIOD">60</field><mutation ma_period="14"></mutation><field name="NAME">Williams %R</field></block>
 Blockly.Blocks['ta_williams_r'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -2070,7 +2092,7 @@ Blockly.Blocks['ta_williams_r'] = {
 };
 
 // 46. SuperTrend
-// XML: <block type="ta_supertrend"><mutation period="10" multiplier="3"></mutation><field name="NAME">SuperTrend</field></block>
+// XML: <block type="ta_supertrend"><field name="PERIOD">60</field><mutation multiplier="3"></mutation><field name="NAME">SuperTrend</field></block>
 Blockly.Blocks['ta_supertrend'] = {
   init: function() {
     this.appendValueInput("PERIOD")
@@ -2103,15 +2125,8 @@ Blockly.Blocks["trade_order"] = {
       );
     this.appendDummyInput()
       .appendField("Size")
-      .appendField(new Blockly.FieldNumber(100, 0), "SIZE");
-    this.appendDummyInput()
-      .appendField(
-        new Blockly.FieldDropdown([
-          ["trade value", "value"],
-          ["percent of capital", "percent"],
-        ]),
-        "SIZE_TYPE",
-      );
+      .appendField(new Blockly.FieldNumber(0.1, 0), "SIZE")
+      .appendField("lots");
     this.appendDummyInput()
       .appendField("Leverage")
       .appendField(
@@ -2405,8 +2420,7 @@ Output:
           <block type="trade_order">
             <field name="TRADE_ID">ma_crossover_trade</field>
             <field name="DIRECTION">long</field>
-            <field name="SIZE">100</field>
-            <field name="SIZE_TYPE">percent</field>
+            <field name="SIZE">0.1</field>
             <field name="LEVERAGE">1</field>
             <field name="ORDER_TYPE">market</field>
             <next>
@@ -2456,8 +2470,7 @@ Output:
           <block type="trade_order">
             <field name="TRADE_ID">rsi_reversal_trade</field>
             <field name="DIRECTION">long</field>
-            <field name="SIZE">100</field>
-            <field name="SIZE_TYPE">percent</field>
+            <field name="SIZE">0.1</field>
             <field name="LEVERAGE">1</field>
             <field name="ORDER_TYPE">market</field>
             <next>
@@ -2505,8 +2518,7 @@ Output:
           <block type="trade_order">
             <field name="TRADE_ID">bollinger_breakout_trade</field>
             <field name="DIRECTION">long</field>
-            <field name="SIZE">100</field>
-            <field name="SIZE_TYPE">value</field>
+            <field name="SIZE">0.1</field>
             <field name="LEVERAGE">1</field>
             <field name="ORDER_TYPE">market</field>
             <next>
@@ -2572,8 +2584,7 @@ Output:
           <block type="trade_order">
             <field name="TRADE_ID">macd_momentum_trade</field>
             <field name="DIRECTION">long</field>
-            <field name="SIZE">100</field>
-            <field name="SIZE_TYPE">percent</field>
+            <field name="SIZE">0.1</field>
             <field name="LEVERAGE">2</field>
             <field name="ORDER_TYPE">market</field>
             <next>
@@ -2641,14 +2652,14 @@ REMEMBER: If you're not sure if a block exists, CHECK THE LIST ABOVE. If it's no
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-3-pro",
         messages: [
           { role: "system", content: systemPrompt },
           {
             role: "user",
             content: currentWorkspace
               ? `Here is my current trading strategy workspace:\n\n${currentWorkspace}\n\nPlease modify it according to this request: ${message}\n\nIMPORTANT: You MUST only use blocks from the list provided in the system prompt. Do not invent new blocks. Return ONLY the complete updated XML wrapped in <xml></xml> tags. No explanations.`
-              : `Generate Blockly XML for this trading strategy: ${message}\n\nIMPORTANT: You MUST only use the 77 blocks listed in the system prompt. Do not invent new blocks. Return ONLY the XML wrapped in <xml></xml> tags. No explanations.`,
+              : `Generate Blockly XML for this trading strategy: ${message}\n\nIMPORTANT: You MUST only use the 77 blocks listed in the system prompt. Do not invent new blocks. Return ONLY the XML wrapped in <xml></xml> tags. No explanations.\n\nBEFORE GENERATING XML, THINK STEP-BY-STEP:\n1. What is the requested timeframe? (Set 'period' attribute to this value in minutes, e.g., 60 for 1h)\n2. What is the trade size? (Set 'SIZE' to 0.1 unless specified)\n3. What indicators are needed?`,
           },
         ],
       }),

@@ -7,7 +7,7 @@ Blockly.Blocks['momentum'] = {
         this.appendDummyInput()
             .appendField("Momentum")
             .appendField(new Blockly.FieldTextInput("Momentum"), "NAME")
-            .appendField(createGearSettingsButton('momentum'));
+            .appendField("TF:").appendField(new Blockly.FieldTextInput("60"), "PERIOD").appendField(createGearSettingsButton('momentum'));
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
         this.setTooltip("Momentum");
@@ -30,6 +30,9 @@ Blockly.Blocks['momentum'] = {
                 this.indicatorParams[attr.name] = parseFloat(attr.value) || 0;
             }
         });
+        if (this.indicatorParams["period"]) {
+            this.setFieldValue(String(this.indicatorParams["period"]), "PERIOD");
+        }
     }
 };
 
