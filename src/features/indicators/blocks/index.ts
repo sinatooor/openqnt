@@ -61,4 +61,6 @@ import './bullsPower';
 
 // Other
 import './fractals';
+import './highest';
+import './lowest';
 

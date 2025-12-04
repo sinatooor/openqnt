@@ -1032,17 +1032,26 @@ mqlGenerator.forBlock['envelopes'] = function (block: Blockly.Block) {
 mqlGenerator.forBlock['donchian'] = function (block: Blockly.Block) {
     const period = getIndicatorPeriod(block);
     const maPeriod = getIndicatorParam(block, 'ma_period', 20);
+    const shift = getIndicatorParam(block, 'shift', 1);
     const component = block.getFieldValue('COMPONENT') || 'upper';
+    const timeframe = toMqlTimeframe(period);
 
-    const handleName = 'handle_donch_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
-    mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iCustom(NULL, ${toMqlTimeframe(period)}, "Donchian", ${maPeriod});`);
+    // Donchian Channel Logic:
+    // Upper = Highest High over maPeriod
+    // Lower = Lowest Low over maPeriod
+    // Middle = (Upper + Lower) / 2
 
-    let buffer = 0; // UPPER
-    if (component === 'middle') buffer = 1;
-    if (component === 'lower') buffer = 2;
+    const upperCode = `iHigh(NULL, ${timeframe}, iHighest(NULL, ${timeframe}, MODE_HIGH, ${maPeriod}, ${shift}))`;
+    const lowerCode = `iLow(NULL, ${timeframe}, iLowest(NULL, ${timeframe}, MODE_LOW, ${maPeriod}, ${shift}))`;
 
-    return [`GetIndicatorValue(${handleName}, ${buffer}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+    if (component === 'upper') {
+        return [upperCode, mqlGenerator.ORDER_FUNCTION_CALL];
+    } else if (component === 'lower') {
+        return [lowerCode, mqlGenerator.ORDER_FUNCTION_CALL];
+    } else {
+        // Middle
+        return [`((${upperCode} + ${lowerCode}) / 2.0)`, mqlGenerator.ORDER_DIVISION];
+    }
 };
 
 mqlGenerator.forBlock['fractals'] = function (block: Blockly.Block) {
@@ -1057,6 +1066,28 @@ mqlGenerator.forBlock['fractals'] = function (block: Blockly.Block) {
     if (component === 'lower') buffer = 1;
 
     return [`GetIndicatorValue(${handleName}, ${buffer}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['ta_highest'] = function (block: Blockly.Block) {
+    const period = getIndicatorPeriod(block);
+    const count = getIndicatorParam(block, 'count', 20);
+    const start = getIndicatorParam(block, 'shift', 1);
+
+    const timeframe = toMqlTimeframe(period);
+
+    // iHighest returns the index. We use iHigh to get the price at that index.
+    return [`iHigh(NULL, ${timeframe}, iHighest(NULL, ${timeframe}, MODE_HIGH, ${count}, ${start}))`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['ta_lowest'] = function (block: Blockly.Block) {
+    const period = getIndicatorPeriod(block);
+    const count = getIndicatorParam(block, 'count', 20);
+    const start = getIndicatorParam(block, 'shift', 1);
+
+    const timeframe = toMqlTimeframe(period);
+
+    // iLowest returns the index. We use iLow to get the price at that index.
+    return [`iLow(NULL, ${timeframe}, iLowest(NULL, ${timeframe}, MODE_LOW, ${count}, ${start}))`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
 
 mqlGenerator.forBlock['alligator'] = function (block: Blockly.Block) {
@@ -1297,17 +1328,37 @@ mqlGenerator.forBlock['ta_keltner'] = function (block: Blockly.Block) {
     const maPeriod = getIndicatorParam(block, 'ma_period', 20);
     const atrPeriod = getIndicatorParam(block, 'atrPeriod', 10);
     const multiplier = getIndicatorParam(block, 'multiplier', 2);
+    const shift = getIndicatorParam(block, 'shift', 1);
     const component = block.getFieldValue('COMPONENT') || 'upper';
+    const timeframe = toMqlTimeframe(period);
 
-    const handleName = 'handle_keltner_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
-    mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
-    mqlGenerator.initializations_.push(`${handleName} = iCustom(NULL, ${toMqlTimeframe(period)}, "Keltner", ${maPeriod}, ${atrPeriod}, ${multiplier});`);
+    // Keltner Channel Logic:
+    // Middle = EMA(maPeriod) of Close
+    // Upper = Middle + multiplier * ATR(atrPeriod)
+    // Lower = Middle - multiplier * ATR(atrPeriod)
 
-    let buffer = 0; // UPPER
-    if (component === 'lower') buffer = 1;
-    if (component === 'middle') buffer = 2;
+    // 1. Create Handle for EMA
+    const maHandleName = 'handle_keltner_ma_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
+    mqlGenerator.definitions_[maHandleName] = `int ${maHandleName} = INVALID_HANDLE;`;
+    mqlGenerator.initializations_.push(`${maHandleName} = iMA(NULL, ${timeframe}, ${maPeriod}, 0, MODE_EMA, PRICE_CLOSE);`);
 
-    return [`GetIndicatorValue(${handleName}, ${buffer}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+    // 2. Create Handle for ATR
+    const atrHandleName = 'handle_keltner_atr_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
+    mqlGenerator.definitions_[atrHandleName] = `int ${atrHandleName} = INVALID_HANDLE;`;
+    mqlGenerator.initializations_.push(`${atrHandleName} = iATR(NULL, ${timeframe}, ${atrPeriod});`);
+
+    // 3. Construct the formula
+    const middleVal = `GetIndicatorValue(${maHandleName}, 0, ${shift})`;
+    const atrVal = `GetIndicatorValue(${atrHandleName}, 0, ${shift})`;
+
+    if (component === 'middle') {
+        return [middleVal, mqlGenerator.ORDER_FUNCTION_CALL];
+    } else if (component === 'upper') {
+        return [`(${middleVal} + ${multiplier} * ${atrVal})`, mqlGenerator.ORDER_ADDITION];
+    } else {
+        // Lower
+        return [`(${middleVal} - ${multiplier} * ${atrVal})`, mqlGenerator.ORDER_SUBTRACTION];
+    }
 };
 
 mqlGenerator.forBlock['adxWilder'] = function (block: Blockly.Block) {
