@@ -157,7 +157,28 @@ double CalculatePositionSize(double size, string sizeType, double leverage = 1.0
       }
    }
    
-   return NormalizeLotSize(lotSize);
+   // Normalize first to get a valid lot size for margin calc
+   lotSize = NormalizeLotSize(lotSize);
+   
+   // Check margin requirements
+   double marginRequired = 0.0;
+   double freeMargin = AccountInfoDouble(ACCOUNT_MARGIN_FREE);
+   double price = SymbolInfoDouble(Symbol(), SYMBOL_ASK);
+   
+   if(lotSize > 0 && OrderCalcMargin(ORDER_TYPE_BUY, Symbol(), lotSize, price, marginRequired)) {
+      if(marginRequired > freeMargin) {
+         // Scale down lot size to fit free margin (with 5% buffer)
+         double safeFactor = 0.95;
+         if(marginRequired > 0) {
+            lotSize = lotSize * (freeMargin / marginRequired) * safeFactor;
+            Print("Reduced lot size due to margin limits. New lot: ", lotSize);
+            // Re-normalize
+            lotSize = NormalizeLotSize(lotSize);
+         }
+      }
+   }
+   
+   return lotSize;
 }
 
 //+------------------------------------------------------------------+
