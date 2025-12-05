@@ -31,6 +31,7 @@ interface BlocklyWorkspaceProps {
   onStepChange?: (stepIndex: number) => void;
   showAIPanelFromParent?: boolean;
   onAIPanelChange?: (show: boolean) => void;
+  leverage?: number;
 }
 
 export const BlocklyWorkspace = ({
@@ -38,7 +39,8 @@ export const BlocklyWorkspace = ({
   onTourComplete: onTourCompleteProp,
   onStepChange,
   showAIPanelFromParent,
-  onAIPanelChange
+  onAIPanelChange,
+  leverage = 1
 }: BlocklyWorkspaceProps = {}) => {
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
@@ -409,10 +411,10 @@ export const BlocklyWorkspace = ({
   // Auto-generate MQL code when Code panel opens or workspace changes
   useEffect(() => {
     if (showCode && workspaceRef.current) {
-      const code = generateCode(workspaceRef.current, 'mql');
+      const code = generateCode(workspaceRef.current, 'mql', leverage);
       setGeneratedMqlCode(code);
     }
-  }, [showCode, blockCount]);
+  }, [showCode, blockCount, leverage]);
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(generatedMqlCode);

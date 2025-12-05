@@ -137,7 +137,7 @@ export const strategyTemplates: StrategyTemplate[] = [
           <block type="control_if">
             <value name="CONDITION">
               <block type="environment_new_candle_open">
-                <field name="TIMEFRAME">1h</field>
+                <field name="TIMEFRAME">60</field>
               </block>
             </value>
             <statement name="DO">
@@ -148,7 +148,7 @@ export const strategyTemplates: StrategyTemplate[] = [
                       <block type="operator_less">
                         <value name="LEFT">
                           <block type="environment_prev_candle_open">
-                            <field name="TIMEFRAME">1h</field>
+                            <field name="TIMEFRAME">60</field>
                           </block>
                         </value>
                         <value name="RIGHT">
@@ -164,7 +164,7 @@ export const strategyTemplates: StrategyTemplate[] = [
                       <block type="operator_greater">
                         <value name="LEFT">
                           <block type="environment_prev_ticker_close">
-                            <field name="TIMEFRAME">1h</field>
+                            <field name="TIMEFRAME">60</field>
                           </block>
                         </value>
                         <value name="RIGHT">
@@ -203,7 +203,7 @@ export const strategyTemplates: StrategyTemplate[] = [
                           <block type="operator_greater">
                             <value name="LEFT">
                               <block type="environment_prev_candle_open">
-                                <field name="TIMEFRAME">1h</field>
+                                <field name="TIMEFRAME">60</field>
                               </block>
                             </value>
                             <value name="RIGHT">
@@ -219,7 +219,7 @@ export const strategyTemplates: StrategyTemplate[] = [
                           <block type="operator_less">
                             <value name="LEFT">
                               <block type="environment_prev_ticker_close">
-                                <field name="TIMEFRAME">1h</field>
+                                <field name="TIMEFRAME">60</field>
                               </block>
                             </value>
                             <value name="RIGHT">
@@ -388,7 +388,7 @@ export const strategyTemplates: StrategyTemplate[] = [
           <block type="control_if">
             <value name="CONDITION">
               <block type="environment_new_candle_open">
-                <field name="TIMEFRAME">1h</field>
+                <field name="TIMEFRAME">60</field>
               </block>
             </value>
             <statement name="DO">
@@ -671,7 +671,7 @@ export const strategyTemplates: StrategyTemplate[] = [
           <block type="control_if">
             <value name="CONDITION">
               <block type="environment_new_candle_open">
-                <field name="TIMEFRAME">1h</field>
+                <field name="TIMEFRAME">60</field>
               </block>
             </value>
             <statement name="DO">
