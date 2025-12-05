@@ -26,21 +26,7 @@ Blockly.Blocks["trade_order"] = {
                 "SIZE_TYPE"
             );
 
-        this.appendDummyInput()
-            .appendField("Leverage")
-            .appendField(
-                new Blockly.FieldDropdown([
-                    ["1x", "1"],
-                    ["2x", "2"],
-                    ["3x", "3"],
-                    ["5x", "5"],
-                    ["10x", "10"],
-                    ["20x", "20"],
-                    ["50x", "50"],
-                    ["100x", "100"],
-                ]),
-                "LEVERAGE",
-            );
+
         this.appendDummyInput()
             .appendField("Order type:")
             .appendField(

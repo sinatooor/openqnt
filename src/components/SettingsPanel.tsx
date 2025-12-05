@@ -21,9 +21,11 @@ import { Wand2 } from "lucide-react";
 interface SettingsPanelProps {
   onStartTour?: () => void;
   onToggleAI?: () => void;
+  leverage?: string;
+  onLeverageChange?: (value: string) => void;
 }
 
-export const SettingsPanel = ({ onStartTour, onToggleAI }: SettingsPanelProps) => {
+export const SettingsPanel = ({ onStartTour, onToggleAI, leverage = "1", onLeverageChange }: SettingsPanelProps) => {
   const [mode, setMode] = useState<"backtest" | "live">("live");
   const [tradingSymbol, setTradingSymbol] = useState("BTC/USDT");
   const [broker, setBroker] = useState("td");
@@ -268,6 +270,27 @@ export const SettingsPanel = ({ onStartTour, onToggleAI }: SettingsPanelProps) =
                 onChange={(e) => setCapitalAllocation(e.target.value)}
                 className="bg-secondary"
                 placeholder="10000"
+              />
+            </div>
+            <div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block cursor-help">
+                    Account Leverage (x)
+                  </label>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Your account leverage (e.g. 25, 50, 100)</p>
+                </TooltipContent>
+              </Tooltip>
+              <Input
+                id="leverage"
+                type="number"
+                value={leverage}
+                onChange={(e) => onLeverageChange?.(e.target.value)}
+                className="bg-secondary"
+                placeholder="1"
+                min="1"
               />
             </div>
           </CollapsibleContent>

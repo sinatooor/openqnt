@@ -2,6 +2,12 @@ import * as Blockly from 'blockly';
 
 export const mqlGenerator = new Blockly.Generator('MQL5') as any;
 
+// Override workspaceToCode to accept leverage
+mqlGenerator.workspaceToCode = function (workspace: Blockly.Workspace, leverage: number = 1) {
+    mqlGenerator.leverage_ = leverage;
+    return Object.getPrototypeOf(this).workspaceToCode.call(this, workspace);
+};
+
 // Order of operation ENUMs
 mqlGenerator.ORDER_ATOMIC = 0;           // 0 "" ...
 mqlGenerator.ORDER_NEW = 1.1;            // new
@@ -115,6 +121,43 @@ double NormalizeLotSize(double lotSize) {
    if(lotSize > maxLot) lotSize = maxLot;
    
    return lotSize;
+}
+
+// Helper to calculate position size based on type
+double CalculatePositionSize(double size, string sizeType, double leverage = 1.0) {
+   double lotSize = 0.0;
+   
+   if(sizeType == "lots") {
+      lotSize = size;
+   }
+   else if(sizeType == "usd" || sizeType == "percent") {
+      double price = SymbolInfoDouble(Symbol(), SYMBOL_ASK);
+      double contractSize = SymbolInfoDouble(Symbol(), SYMBOL_TRADE_CONTRACT_SIZE);
+      
+      if(contractSize > 0 && price > 0) {
+         double targetUsd = 0.0;
+         
+         if(sizeType == "usd") {
+            targetUsd = size;
+         }
+         else {
+            double equity = AccountInfoDouble(ACCOUNT_EQUITY);
+            targetUsd = equity * (size / 100.0);
+         }
+         
+         // Apply leverage
+         targetUsd = targetUsd * leverage;
+         
+         // Value of one lot in USD/Quote Currency
+         double valueOfOneLot = contractSize * price;
+         
+         if(valueOfOneLot > 0) {
+            lotSize = targetUsd / valueOfOneLot;
+         }
+      }
+   }
+   
+   return NormalizeLotSize(lotSize);
 }
 
 //+------------------------------------------------------------------+
@@ -503,18 +546,21 @@ mqlGenerator.forBlock['environment_new_candle_open'] = function (block: Blockly.
 mqlGenerator.forBlock['trade_order'] = function (block: Blockly.Block) {
     const direction = block.getFieldValue('DIRECTION'); // 'long' or 'short'
     const size = block.getFieldValue('SIZE') || '0.1';
+    const sizeType = block.getFieldValue('SIZE_TYPE') || 'lots';
 
     // MQL5 uses CTrade
-    const action = direction === 'long' ? 'Buy' : 'Sell';
     const tradeId = block.getFieldValue('TRADE_ID') || 'trade1';
 
-    return `if(PositionsTotal() == 0) {
-    double lotSize = NormalizeLotSize(${size});
-    if(!trade.${action}(lotSize, Symbol(), 0, 0, 0, "${tradeId}")) {
-        Print("Trade ${action} failed. Return Code: ", trade.ResultRetcode(), ", Desc: ", trade.ResultRetcodeDescription());
+    const code = `if(PositionsTotal() == 0) {
+    double lotSize = CalculatePositionSize(${size}, "${sizeType}", ${mqlGenerator.leverage_ || 1.0});
+    if(lotSize > 0) {
+        if(!trade.${direction === 'long' ? 'Buy' : 'Sell'}(lotSize, Symbol(), 0, 0, 0, "${tradeId}")) {
+            Print("Trade ${direction} failed. Return Code: ", trade.ResultRetcode(), ", Desc: ", trade.ResultRetcodeDescription());
+        }
     }
 }
 `;
+    return code;
 };
 
 mqlGenerator.forBlock['trade_take_profit'] = function (block: Blockly.Block) {
