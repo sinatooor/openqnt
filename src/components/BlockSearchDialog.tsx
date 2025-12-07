@@ -6,7 +6,7 @@ import {
     CommandInput,
     CommandItem,
     CommandList,
-} from "@/components/ui/command";
+} from "@/components/ui";
 import {
     environmentBlocksToolbox,
     operatorBlocksToolbox,
@@ -50,7 +50,7 @@ export const BlockSearchDialog = ({
                             'ta_sma': 'Simple Moving Average (SMA)',
                             'ta_ema': 'Exponential Moving Average (EMA)',
                             'ta_smma': 'Smoothed Moving Average (SMMA)',
-                            'ta_lwma': 'Linear Weighted Moving Average (LWMA)',
+                            'ta_lwma': 'Linear Weighted Moving Average (LW)',
                             'dema': 'Double Exponential Moving Average (DEMA)',
                             'tema': 'Triple Exponential Moving Average (TEMA)',
                             'frama': 'Fractal Adaptive Moving Average (FRAMA)',

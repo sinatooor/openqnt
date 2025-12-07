@@ -1975,7 +1975,9 @@ REMEMBER: If you're not sure if a block exists, CHECK THE LIST ABOVE. If it's no
       systemPrompt += `\n\nThe user has shared a specific Blockly block with you. Here is the XML structure:\n\n${blockXml}\n\nPlease focus on this block when generating or modifying the strategy. Analyze what this block does and incorporate it or provide context about it in your response.`;
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // === FIRST PASS: Generate Strategy ===
+    console.log("=== PASS 1: Generating strategy ===");
+    const firstResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -1995,46 +1997,128 @@ REMEMBER: If you're not sure if a block exists, CHECK THE LIST ABOVE. If it's no
       }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
+    if (!firstResponse.ok) {
+      const errorText = await firstResponse.text();
+      console.error("AI gateway error (Pass 1):", firstResponse.status, errorText);
 
-      if (response.status === 429) {
+      if (firstResponse.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      if (response.status === 402) {
+      if (firstResponse.status === 402) {
         return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits to continue." }), {
           status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      throw new Error(`AI gateway error: ${response.status}`);
+      throw new Error(`AI gateway error: ${firstResponse.status}`);
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    const firstData = await firstResponse.json();
+    const firstContent = firstData.choices?.[0]?.message?.content;
 
-    if (!content) {
-      throw new Error("No content in AI response");
+    if (!firstContent) {
+      throw new Error("No content in AI response (Pass 1)");
     }
 
-    // Validate response isn't just whitespace
-    if (!content.trim()) {
-      throw new Error("AI returned empty response");
+    if (!firstContent.trim()) {
+      throw new Error("AI returned empty response (Pass 1)");
+    }
+
+    // Extract XML from first pass
+    let firstXml = firstContent.trim();
+    const firstXmlMatch = firstXml.match(/<xml[^>]*>[\s\S]*<\/xml>/i);
+    if (firstXmlMatch) {
+      firstXml = firstXmlMatch[0];
+    }
+
+    const firstBlockCount = (firstXml.match(/<block /g) || []).length;
+    console.log(`Pass 1 complete: ${firstBlockCount} blocks, ${firstXml.length} chars`);
+
+    // === SECOND PASS: Validate and Fix Strategy ===
+    console.log("=== PASS 2: Validating and fixing strategy ===");
+
+    const validationPrompt = `You are a Blockly XML validator and fixer for trading strategies.
+
+VALIDATION CHECKLIST:
+1. BLOCK TYPES - Only these block types are valid:
+   - Control: control_if, control_if_else, control_repeat, control_wait, control_forever, control_repeat_until, control_wait_until, control_stop
+   - Environment: environment_price, environment_spread, environment_prev_candle_open, environment_prev_ticker_close, environment_is_market_open, environment_time, environment_day_of_week, environment_new_candle_open
+   - Operators: operator_equals, operator_greater, operator_less, operator_greater_equals, operator_less_equals, operator_add, operator_subtract, operator_multiply, operator_divide, operator_and, operator_or, operator_not, operator_not_equals, operator_advanced_math
+   - Technical Analysis: ac, ad, ta_adx, adxWilder, alligator, ama, ao, ta_atr, bearsPower, ta_bb, bullsPower, bwmfi, ta_cci, chaikin, dema, deMarker, envelopes, force, fractals, gator, ichimoku, ta_ma, ta_macd, mfi, momentum, obv, osma, rvi, parabolicSar, ta_rsi, stddev, stochastic, tema, trix, vidya, volumes, wpr
+   - Trade: trade_open, trade_close, trade_stop_loss, trade_take_profit, trade_entry_price, trade_is_open, trade_profit, trade_modify_sl, trade_modify_tp
+   - Math: math_number
+
+2. XML STRUCTURE - Verify:
+   - All <block> tags have matching </block>
+   - All <value> tags have matching </value>
+   - All <field> tags have matching </field>
+   - Proper nesting (no overlapping tags)
+   - First block has x="50" y="50" positioning
+
+3. TRADE_IDs - Must contain only: letters, numbers, underscores, hyphens (NO special characters like (){}[]/#!)
+
+4. RISK MANAGEMENT - Stop Loss and Take Profit should use:
+   - trade_entry_price block as base
+   - ATR-based offsets for volatility adjustment
+   - Pattern: operator_subtract(trade_entry_price, ATR * multiplier) for SL
+   - Pattern: operator_add(trade_entry_price, ATR * multiplier * RR) for TP
+
+5. VALUE INPUTS - All numeric inputs must use: <shadow type="math_number"><field name="NUM">value</field></shadow>
+
+INSTRUCTIONS:
+- If you find ANY errors, FIX THEM and return the corrected XML
+- If the XML is correct, return it unchanged
+- Return ONLY the XML wrapped in <xml></xml> tags
+- NO explanations, NO comments, ONLY the XML`;
+
+    const secondResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: validationPrompt },
+          { role: "user", content: `Validate and fix this Blockly XML strategy:\n\n${firstXml}` },
+        ],
+      }),
+    });
+
+    if (!secondResponse.ok) {
+      const errorText = await secondResponse.text();
+      console.error("AI gateway error (Pass 2):", secondResponse.status, errorText);
+
+      // If validation pass fails, return the first pass result
+      console.log("Validation pass failed, returning first pass result");
+      return new Response(JSON.stringify({ xml: firstXml }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const secondData = await secondResponse.json();
+    const secondContent = secondData.choices?.[0]?.message?.content;
+
+    if (!secondContent || !secondContent.trim()) {
+      console.log("Validation pass returned empty, returning first pass result");
+      return new Response(JSON.stringify({ xml: firstXml }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Validate response size (max 1MB)
-    if (content.length > 1024 * 1024) {
+    if (secondContent.length > 1024 * 1024) {
       throw new Error("AI response is too large");
     }
 
-    // Extract XML content from response (in case AI added explanation text)
-    let xmlContent = content.trim();
+    // Extract XML content from validated response
+    let xmlContent = secondContent.trim();
     const xmlMatch = xmlContent.match(/<xml[^>]*>[\s\S]*<\/xml>/i);
 
     if (xmlMatch) {
@@ -2043,7 +2127,7 @@ REMEMBER: If you're not sure if a block exists, CHECK THE LIST ABOVE. If it's no
 
     // Count blocks for logging
     const generatedBlockCount = (xmlContent.match(/<block /g) || []).length;
-    console.log(`Generated XML validated: ${generatedBlockCount} blocks, ${xmlContent.length} chars`);
+    console.log(`Pass 2 complete: ${generatedBlockCount} blocks, ${xmlContent.length} chars`);
     console.log("XML preview:", xmlContent.substring(0, 200) + "...");
 
     return new Response(JSON.stringify({ xml: xmlContent }), {
