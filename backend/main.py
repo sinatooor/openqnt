@@ -53,6 +53,27 @@ class MqlResponse(BaseModel):
     analysis: dict
 
 
+class BacktestRequest(BaseModel):
+    workspaceXml: str
+    symbol: str = "EURUSD"
+    startDate: str = "2024-01-01"
+    endDate: str = "2024-03-31"
+    initialBalance: float = 100000.0
+    tradeSize: int = 100000
+
+
+class BacktestResponse(BaseModel):
+    success: bool
+    symbol: str
+    start_date: str
+    end_date: str
+    initial_balance: float
+    final_balance: float
+    metrics: dict
+    trades: list
+    equity_curve: list
+
+
 # ============================================================
 # PROMPTS (copied from Supabase Edge Functions)
 # ============================================================
@@ -245,7 +266,7 @@ async def root():
     return {
         "status": "ok",
         "service": "Strategy Generator (DeepSeek)",
-        "endpoints": ["/generate-strategy", "/generate-mql"]
+        "endpoints": ["/generate-strategy", "/generate-mql", "/backtest"]
     }
 
 
@@ -348,6 +369,61 @@ Generate the complete MQL5 code."""
     return MqlResponse(
         mqlCode=code,
         analysis={"errors": [], "warnings": []}
+    )
+
+
+@app.post("/backtest", response_model=BacktestResponse)
+async def run_backtest_endpoint(request: BacktestRequest):
+    """
+    Run backtest on a Blockly strategy using NautilusTrader.
+    
+    1. Converts Blockly XML to NautilusTrader Strategy code via LLM
+    2. Runs backtest with synthetic data
+    3. Returns metrics, trades, and equity curve
+    """
+    print(f"=== Running backtest for {request.symbol} ===")
+    print(f"Period: {request.startDate} to {request.endDate}")
+    
+    # Import backtest runner (lazy import to avoid startup issues)
+    from backtest_runner import run_backtest
+    from strategy_converter import convert_xml_to_strategy, get_fallback_strategy
+    
+    try:
+        # Convert XML to strategy code
+        print("Converting XML to NautilusTrader strategy...")
+        strategy_code = await convert_xml_to_strategy(
+            xml=request.workspaceXml,
+            strategy_name="BlocklyStrategy",
+            instrument_id=f"{request.symbol}.SIM"
+        )
+        print(f"Strategy code generated: {len(strategy_code)} chars")
+    except Exception as e:
+        print(f"Strategy conversion failed: {e}, using fallback")
+        strategy_code = get_fallback_strategy()
+    
+    # Run backtest
+    print("Running backtest simulation...")
+    result = run_backtest(
+        strategy_code=strategy_code,
+        symbol=request.symbol,
+        start_date=request.startDate,
+        end_date=request.endDate,
+        initial_balance=request.initialBalance,
+        trade_size=request.tradeSize
+    )
+    
+    print(f"Backtest complete: {result['metrics']['total_trades']} trades")
+    
+    return BacktestResponse(
+        success=result['success'],
+        symbol=result['symbol'],
+        start_date=result['start_date'],
+        end_date=result['end_date'],
+        initial_balance=result['initial_balance'],
+        final_balance=result['final_balance'],
+        metrics=result['metrics'],
+        trades=result['trades'],
+        equity_curve=result['equity_curve']
     )
 
 
