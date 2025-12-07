@@ -137,16 +137,16 @@ serve(async (req) => {
       );
     }
 
-    // Load MQL4 syntax reference
-    let mql4Syntax = '';
+    // Load MQL5 syntax reference
+    let mql5Syntax = '';
     try {
-      const syntaxResponse = await fetch(new URL('/mql4_syntax.json', req.url).toString());
+      const syntaxResponse = await fetch(new URL('/mql5_syntax.json', req.url).toString());
       if (syntaxResponse.ok) {
         const syntaxData = await syntaxResponse.json();
-        mql4Syntax = JSON.stringify(syntaxData, null, 2);
+        mql5Syntax = JSON.stringify(syntaxData, null, 2);
       }
     } catch (error) {
-      console.warn('Could not load MQL4 syntax file:', error);
+      console.warn('Could not load MQL5 syntax file:', error);
     }
 
     // Extract detailed block structure from workspace XML
@@ -184,22 +184,22 @@ serve(async (req) => {
     // ============================================================
     console.log('=== STEP 1: Generating MQL code ===');
 
-    const systemPrompt = `You are an expert MQL4 programmer specializing in creating production-quality MetaTrader 4 Expert Advisors.
+    const systemPrompt = `You are an expert MQL5 programmer specializing in creating production-quality MetaTrader 5 Expert Advisors.
 
-Your task is to analyze a trading strategy represented as visual blocks (in XML format) and generate complete, compilable MQL4 Expert Advisor code.
+Your task is to analyze a trading strategy represented as visual blocks (in XML format) and generate complete, compilable MQL5 Expert Advisor code.
 
-${mql4Syntax ? `MQL4 SYNTAX REFERENCE:\n${mql4Syntax}\n\n` : ''}
+${mql5Syntax ? `MQL5 SYNTAX REFERENCE:\n${mql5Syntax}\n\n` : ''}
 
 REQUIREMENTS:
-1. Generate complete, compilable MQL4 code for MetaTrader 4
-2. Use proper MQL4 built-in functions:
+1. Generate complete, compilable MQL5 code for MetaTrader 5
+2. Use proper MQL5 built-in functions:
    - OrderSend() for placing trades
    - OrderClose() for closing positions
    - OrderSelect() for selecting orders
    - Technical indicators: iRSI(), iMA(), iMACD(), iStochastic(), iBands(), iATR(), etc.
    - Price data: Open[], High[], Low[], Close[], Volume[]
 3. Include proper error handling with GetLastError()
-4. Follow MQL4 best practices and coding standards
+4. Follow MQL5 best practices and coding standards
 5. Include #property directives at the top
 6. Implement OnInit(), OnDeinit(), and OnTick() functions
 7. Add clear comments explaining the strategy logic
@@ -220,15 +220,17 @@ BLOCK TYPE MEANINGS:
 - trade_take_profit: Set take profit
 - operator_*: Arithmetic and comparison operations
 - math_number: Numeric values
+- ta_highest: Highest high value over a period
+- ta_lowest: Lowest low value over a period
 
 IMPORTANT:
-- Return ONLY the MQL4 code without markdown formatting or explanations
-- Ensure all indicator calls use correct MQL4 function signatures
+- Return ONLY the MQL5 code without markdown formatting or explanations
+- Ensure all indicator calls use correct MQL5 function signatures
 - Include proper Symbol() and Period() in indicator calls
 - Handle trade execution errors properly
 - Use proper lot sizing (0.01, 0.1, 1.0, etc.)`;
 
-    const userPrompt = `Generate a complete MQL4 Expert Advisor for the strategy: "${strategyName || 'Trading Strategy'}"
+    const userPrompt = `Generate a complete MQL5 Expert Advisor for the strategy: "${strategyName || 'Trading Strategy'}"
 
 WORKSPACE BLOCKS:
 ${blockStructure}
@@ -238,7 +240,7 @@ FULL XML STRUCTURE:
 ${workspaceXml}
 \`\`\`
 
-Generate the complete MQL4 Expert Advisor code that implements this trading strategy.`;
+Generate the complete MQL5 Expert Advisor code that implements this trading strategy.`;
 
     const firstResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -295,7 +297,7 @@ Generate the complete MQL4 Expert Advisor code that implements this trading stra
     // Clean up markdown formatting
     generatedCode = generatedCode.trim();
     if (generatedCode.startsWith('```')) {
-      generatedCode = generatedCode.replace(/^```(?:mql4|mql)?\n/, '').replace(/\n```$/, '');
+      generatedCode = generatedCode.replace(/^```(?:mql5|mql)?\n/, '').replace(/\n```$/, '');
     }
 
     console.log('Step 1 complete: Generated', generatedCode.length, 'characters');
@@ -324,9 +326,9 @@ Generate the complete MQL4 Expert Advisor code that implements this trading stra
     // ============================================================
     console.log('=== STEP 3: LLM fix pass ===');
 
-    const fixPrompt = `You are an expert MQL4 code reviewer and fixer.
+    const fixPrompt = `You are an expert MQL5 code reviewer and fixer.
 
-Review the following MQL4 Expert Advisor code and fix any issues found.
+Review the following MQL5 Expert Advisor code and fix any issues found.
 
 ISSUES DETECTED BY STATIC ANALYSIS:
 ${analysisResult.errors.length > 0 ? 'ERRORS (must fix):\n' + analysisResult.errors.map(e => '- ' + e).join('\n') : 'No critical errors found.'}
@@ -336,7 +338,7 @@ ${analysisResult.warnings.length > 0 ? 'WARNINGS (should fix):\n' + analysisResu
 REQUIREMENTS FOR THE FIX:
 1. Fix ALL errors listed above
 2. Address ALL warnings listed above
-3. Ensure the code is complete and compilable
+3. Ensure the code is complete and compilable for MQL5
 4. Keep all existing logic intact
 5. Add any missing required functions (OnInit, OnTick, OnDeinit)
 6. Ensure proper error handling with GetLastError()
@@ -346,12 +348,12 @@ REQUIREMENTS FOR THE FIX:
 10. Ensure balanced braces and parentheses
 
 IMPORTANT:
-- Return ONLY the fixed MQL4 code
+- Return ONLY the fixed MQL5 code
 - No markdown formatting
 - No explanations
 - Keep all original functionality`;
 
-    const fixUserPrompt = `Fix this MQL4 Expert Advisor code:
+    const fixUserPrompt = `Fix this MQL5 Expert Advisor code:
 
 ${generatedCode}
 
@@ -383,7 +385,7 @@ Return the complete fixed code.`;
       if (fixedCode && fixedCode.trim()) {
         finalCode = fixedCode.trim();
         if (finalCode.startsWith('```')) {
-          finalCode = finalCode.replace(/^```(?:mql4|mql)?\n/, '').replace(/\n```$/, '');
+          finalCode = finalCode.replace(/^```(?:mql5|mql)?\n/, '').replace(/\n```$/, '');
         }
         console.log('Step 3 complete: Fixed code is', finalCode.length, 'characters');
       } else {

@@ -3,17 +3,20 @@ import * as Blockly from 'blockly';
 import { createGearSettingsButton } from '@/lib/indicatorUtils';
 import { getDefaultParams } from '@/lib/indicatorConfigs';
 
-Blockly.Blocks['ta_adx'] = {
+Blockly.Blocks['ta_highest'] = {
     init: function () {
         this.appendDummyInput()
-            .appendField("ADX")
-            .appendField(new Blockly.FieldTextInput("ADX"), "NAME")
-            .appendField("TF:").appendField(new Blockly.FieldDropdown(TIMEFRAME_OPTIONS), "PERIOD").appendField(createGearSettingsButton('adx'));
+            .appendField("Highest High");
+        this.appendDummyInput()
+            .appendField("TF:")
+            .appendField(new Blockly.FieldDropdown(TIMEFRAME_OPTIONS), "PERIOD")
+            .appendField(createGearSettingsButton('ta_highest'));
+        this.setInputsInline(true);
         this.setOutput(true, "TAValue");
         this.setStyle('ta_blocks');
-        this.setTooltip("Average Directional Index - trend strength");
-        this.indicatorName = 'adx';
-        this.indicatorParams = getDefaultParams('adx');
+        this.setTooltip("Returns the highest high value over the specified number of bars");
+        this.indicatorName = 'ta_highest';
+        this.indicatorParams = getDefaultParams('ta_highest');
         this.setFieldValue('60', 'PERIOD');
     },
     mutationToDom: function () {
@@ -32,8 +35,5 @@ Blockly.Blocks['ta_adx'] = {
                 this.indicatorParams[attr.name] = parseFloat(attr.value) || 0;
             }
         });
-        if (this.indicatorParams["period"]) {
-            this.setFieldValue(String(this.indicatorParams["period"]), "PERIOD");
-        }
     }
 };

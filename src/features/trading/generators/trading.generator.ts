@@ -7,12 +7,12 @@ javascriptGenerator.forBlock['trade_order'] = function (block: Blockly.Block) {
     const tradeId = block.getFieldValue('TRADE_ID');
     const size = block.getFieldValue('SIZE') || '100';
     const sizeType = block.getFieldValue('SIZE_TYPE');
-    const leverage = block.getFieldValue('LEVERAGE');
+
     const orderType = block.getFieldValue('ORDER_TYPE');
     const limitPrice = orderType === 'limit'
         ? javascriptGenerator.valueToCode(block, 'LIMIT_PRICE', Order.NONE) || '0'
         : 'null';
-    const code = `placeOrder("${tradeId}", "${direction}", ${size}, "${sizeType}", ${leverage}, "${orderType}", ${limitPrice});\n`;
+    const code = `placeOrder("${tradeId}", "${direction}", ${size}, "${sizeType}", "${orderType}", ${limitPrice});\n`;
     return code;
 };
 

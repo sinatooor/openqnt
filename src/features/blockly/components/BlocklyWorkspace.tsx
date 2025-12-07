@@ -2,36 +2,28 @@ import { useEffect, useRef, useState } from "react";
 import * as Blockly from "blockly";
 import { environmentBlocksToolbox, operatorBlocksToolbox, controlBlocksToolbox, tradeBlocksToolbox, taBlocksToolbox, myBlocksToolbox } from "@/config/blockly/toolbox";
 import { generateCode } from "@/config/blockly/generator";
-import { Button, Tooltip, TooltipContent, TooltipTrigger, Separator, Badge, Card, CardContent, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui";
+import { Button } from "@/components/ui/button";
 import "@/styles/blockly-custom.css";
-import { Code2, Copy, Check, Download, Play, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, Undo2, Redo2, Blocks, Wand2, FileCode, BarChart3, TrendingUp, BookOpen, Search, Pencil, RefreshCw } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Code2, Copy, Check, Download, Upload, ZoomIn, ZoomOut, Maximize2, Undo2, Redo2, Wand2, FileCode, BarChart3, BookOpen, Search, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import { BacktestingPanel } from "@/features/backtest";
-import { StrategyTemplatesDialog, FloatingChartModal, GuidedTour, DevLogPanel, LogEntry, BlockSearchDialog, IndicatorSettingsModal } from "@/components";
-import { AIChatPanel } from "@/features/ai";
+import { BacktestingPanel } from "@/features/backtest/components/BacktestingPanel";
+import { StrategyTemplatesDialog } from "@/components/StrategyTemplatesDialog";
+import { FloatingChartModal } from "@/components/FloatingChartModal";
+import { AIChatPanel } from "@/features/ai/components/AIChatPanel";
+import { GuidedTour } from "@/components/GuidedTour";
+import { DevLogPanel, LogEntry } from "@/components/DevLogPanel";
+import { BlockSearchDialog } from "@/components/BlockSearchDialog";
 
 import { StrategyTemplate } from "@/features/templates/strategyTemplates";
-import { cn } from "@/lib";
+import { cn } from "@/lib/utils";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { fetchMarketData } from "@/services/marketData";
 import { BacktestResult, runBacktest } from "@/features/backtest/logic/engine";
-
-// Utility imports
-import { beautifyCode, getCodeStatistics, renderCodeWithLineNumbers } from "@/features/blockly/utils";
-
-// Hook imports
-import { 
-  useBlocklyState, 
-  usePanelVisibility, 
-  useTourState, 
-  useModalState,
-  useWorkspaceHandlers,
-  useCodeHandlers,
-  useZoomHandlers,
-  useBacktestHandlers
-} from "@/features/blockly/hooks";
-
-// Component imports
-import { WorkspaceToolbar } from "@/features/blockly/components";
+import { IndicatorSettingsModal } from "@/components/IndicatorSettingsModal";
 
 interface BlocklyWorkspaceProps {
   runTour?: boolean;
@@ -39,6 +31,7 @@ interface BlocklyWorkspaceProps {
   onStepChange?: (stepIndex: number) => void;
   showAIPanelFromParent?: boolean;
   onAIPanelChange?: (show: boolean) => void;
+  leverage?: number;
 }
 
 export const BlocklyWorkspace = ({
@@ -46,92 +39,71 @@ export const BlocklyWorkspace = ({
   onTourComplete: onTourCompleteProp,
   onStepChange,
   showAIPanelFromParent,
-  onAIPanelChange
+  onAIPanelChange,
+  leverage = 1
 }: BlocklyWorkspaceProps = {}) => {
-  // Custom hooks for state management
-  const blocklyState = useBlocklyState();
-  const panels = usePanelVisibility({ showAIPanelFromParent, onAIPanelChange });
-  const tour = useTourState({ runTour: runTourProp, onTourComplete: onTourCompleteProp });
-  const modals = useModalState();
+  const blocklyDiv = useRef<HTMLDivElement>(null);
+  const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
+  const [generatedMqlCode, setGeneratedMqlCode] = useState<string>("");
+  const [showCode, setShowCode] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [blockCount, setBlockCount] = useState(0);
+  const [zoomLevel, setZoomLevel] = useState(100);
+  const [isEmpty, setIsEmpty] = useState(true);
+  const [showLineNumbers, setShowLineNumbers] = useState(true);
+  const [beautified, setBeautified] = useState(true);
+  const [backtestResult, setBacktestResult] = useState<BacktestResult | null>(null);
+  const [isBacktesting, setIsBacktesting] = useState(false);
+  const [showBacktest, setShowBacktest] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showFloatingChart, setShowFloatingChart] = useState(false);
+  const [showAIPanel, setShowAIPanel] = useState(false);
+  const [pendingXml, setPendingXml] = useState<string | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [runTour, setRunTour] = useState(runTourProp || false);
+  const [isDraggingBlock, setIsDraggingBlock] = useState(false);
+  const [draggedBlockData, setDraggedBlockData] = useState<{ xml: string; name: string } | null>(null);
+  const aiPanelRef = useRef<HTMLDivElement>(null);
+  const [showDevLogs, setShowDevLogs] = useState(() => {
+    return localStorage.getItem('showDevLogs') === 'true';
+  });
+  const [devLogs, setDevLogs] = useState<LogEntry[]>([]);
+  const [showSearch, setShowSearch] = useState(false);
+  const [strategyName, setStrategyName] = useState("Untitled Strategy");
+  const [isEditingName, setIsEditingName] = useState(false);
 
-  // Destructure for convenience
-  const {
-    blocklyDiv,
-    workspaceRef,
-    aiPanelRef,
-    generatedCode,
-    setGeneratedCode,
-    generatedMqlCode,
-    setGeneratedMqlCode,
-    blockCount,
-    setBlockCount,
-    isEmpty,
-    setIsEmpty,
-    zoomLevel,
-    setZoomLevel,
-    showLineNumbers,
-    setShowLineNumbers,
-    beautified,
-    setBeautified,
-    copied,
-    setCopied,
-    isBacktesting,
-    setIsBacktesting,
-    strategyName,
-    setStrategyName,
-    isEditingName,
-    setIsEditingName,
-    isDraggingBlock,
-    setIsDraggingBlock,
-    draggedBlockData,
-    setDraggedBlockData,
-    devLogs,
-    setDevLogs,
-    pendingXml,
-    setPendingXml,
-  } = blocklyState;
+  // Advanced Logic Modal State
+  const [showAdvancedLogic, setShowAdvancedLogic] = useState(false);
+  const [currentLogicBlockId, setCurrentLogicBlockId] = useState<string | null>(null);
+  const [currentLogicXml, setCurrentLogicXml] = useState<string>("");
+  const [currentIndicatorType, setCurrentIndicatorType] = useState<string>("");
 
-  const {
-    showCode,
-    setShowCode,
-    showBacktest,
-    setShowBacktest,
-    showTemplates,
-    setShowTemplates,
-    showFloatingChart,
-    setShowFloatingChart,
-    showAIPanel,
-    setShowAIPanel,
-    showConfirmDialog,
-    setShowConfirmDialog,
-    showDevLogs,
-    setShowDevLogs,
-    showSearch,
-    setShowSearch,
-    showAdvancedLogic,
-    setShowAdvancedLogic,
-    showIndicatorSettings,
-    setShowIndicatorSettings,
-  } = panels;
+  // Indicator Settings Modal State
+  const [showIndicatorSettings, setShowIndicatorSettings] = useState(false);
+  const [currentIndicatorBlockId, setCurrentIndicatorBlockId] = useState<string | null>(null);
+  const [currentIndicatorName, setCurrentIndicatorName] = useState<string>("");
+  const [currentIndicatorParams, setCurrentIndicatorParams] = useState<Record<string, number>>({});
 
-  const { runTour, handleTourComplete, handleStartTour } = tour;
+  // Sync with prop changes
+  useEffect(() => {
+    if (runTourProp !== undefined) {
+      setRunTour(runTourProp);
+    }
+  }, [runTourProp]);
 
-  const {
-    currentLogicBlockId,
-    setCurrentLogicBlockId,
-    currentLogicXml,
-    setCurrentLogicXml,
-    currentIndicatorType,
-    setCurrentIndicatorType,
-    currentIndicatorBlockId,
-    setCurrentIndicatorBlockId,
-    currentIndicatorName,
-    setCurrentIndicatorName,
-    currentIndicatorParams,
-    setCurrentIndicatorParams,
-    backtestResult,
-    setBacktestResult,
-  } = modals;
+  // Sync AI panel with parent
+  useEffect(() => {
+    if (showAIPanelFromParent !== undefined) {
+      setShowAIPanel(showAIPanelFromParent);
+    }
+  }, [showAIPanelFromParent]);
+
+  // Notify parent when AI panel changes locally
+  useEffect(() => {
+    if (onAIPanelChange) {
+      onAIPanelChange(showAIPanel);
+    }
+  }, [showAIPanel, onAIPanelChange]);
 
   // Dev logs keyboard shortcut
   useEffect(() => {
@@ -152,27 +124,19 @@ export const BlocklyWorkspace = ({
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [showDevLogs, setShowDevLogs, setShowSearch]);
+  }, [showDevLogs]);
 
-  // Handler hooks
-  const workspaceHandlers = useWorkspaceHandlers({ workspaceRef });
-  const codeHandlers = useCodeHandlers({ generatedCode, setCopied });
-  const zoomHandlers = useZoomHandlers({ workspaceRef, setZoomLevel });
-  const backtestHandlers = useBacktestHandlers({
-    workspaceRef,
-    isEmpty,
-    generatedCode,
-    setIsBacktesting,
-    setShowBacktest,
-    setBacktestResult,
-  });
-
-  // Destructure handlers
-  const { handleSaveWorkspace, handleLoadWorkspace, handleLoadTemplate, handleUndo, handleRedo, handleCenterWorkspace } = workspaceHandlers;
-  const { handleCopyCode, handleExportCode, handleRunStrategy } = codeHandlers;
-  const { handleZoom } = zoomHandlers;
-  const { handlePreviewBacktest, handleCloseBacktest } = backtestHandlers;
-
+  const handleTourComplete = () => {
+    setRunTour(false);
+    if (onTourCompleteProp) {
+      onTourCompleteProp();
+    } else {
+      localStorage.setItem("hasSeenGuidedTour", "true");
+    }
+  };
+  const handleStartTour = () => {
+    setRunTour(true);
+  };
   useEffect(() => {
     if (!blocklyDiv.current) return;
 
@@ -447,12 +411,155 @@ export const BlocklyWorkspace = ({
   // Auto-generate MQL code when Code panel opens or workspace changes
   useEffect(() => {
     if (showCode && workspaceRef.current) {
-      const code = generateCode(workspaceRef.current, 'mql');
+      const code = generateCode(workspaceRef.current, 'mql', leverage);
       setGeneratedMqlCode(code);
     }
-  }, [showCode, blockCount]);
+  }, [showCode, blockCount, leverage]);
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(generatedMqlCode);
+    setCopied(true);
+    toast.success("Code copied to clipboard!");
+    setTimeout(() => setCopied(false), 2000);
+  };
 
 
+
+  const handleSaveWorkspace = () => {
+    if (!workspaceRef.current) return;
+    const xml = Blockly.Xml.workspaceToDom(workspaceRef.current);
+    const xmlText = Blockly.Xml.domToText(xml);
+    const blob = new Blob([xmlText], {
+      type: "application/xml"
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "trading-strategy-blocks.xml";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("Workspace saved successfully!");
+  };
+  const handleLoadWorkspace = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".xml";
+    input.onchange = e => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file || !workspaceRef.current) return;
+      const reader = new FileReader();
+      reader.onload = event => {
+        try {
+          const xmlText = event.target?.result as string;
+          const xml = Blockly.utils.xml.textToDom(xmlText);
+          workspaceRef.current?.clear();
+          Blockly.Xml.domToWorkspace(xml, workspaceRef.current!);
+          toast.success("Workspace loaded successfully!");
+        } catch (error) {
+          toast.error("Failed to load workspace. Invalid file format.");
+          console.error(error);
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
+  const handleLoadTemplate = (template: StrategyTemplate) => {
+    if (!workspaceRef.current) return;
+    try {
+      const xml = Blockly.utils.xml.textToDom(template.workspace);
+      workspaceRef.current.clear();
+      Blockly.Xml.domToWorkspace(xml, workspaceRef.current);
+      toast.success(`${template.name} template loaded successfully!`, {
+        description: template.description,
+        duration: 4000
+      });
+    } catch (error) {
+      toast.error("Failed to load template.");
+      console.error(error);
+    }
+  };
+  const handleZoom = (direction: "in" | "out" | "reset" | number) => {
+    if (!workspaceRef.current) return;
+    const workspace = workspaceRef.current;
+    const currentZoom = workspace.scale;
+    if (typeof direction === "number") {
+      workspace.setScale(direction / 100);
+    } else if (direction === "in") {
+      workspace.setScale(currentZoom * 1.2);
+    } else if (direction === "out") {
+      workspace.setScale(currentZoom / 1.2);
+    } else if (direction === "reset") {
+      workspace.setScale(1.0);
+      workspace.scrollCenter();
+    }
+    const newZoom = workspace.scale;
+    setZoomLevel(Math.round(newZoom * 100));
+  };
+  const handleCenterWorkspace = () => {
+    if (!workspaceRef.current) return;
+    workspaceRef.current.scrollCenter();
+    toast.success("Workspace centered");
+  };
+  const handleUndo = () => {
+    if (!workspaceRef.current) return;
+    workspaceRef.current.undo(false);
+  };
+  const handleRedo = () => {
+    if (!workspaceRef.current) return;
+    workspaceRef.current.undo(true);
+  };
+  const handlePreviewBacktest = async () => {
+    // Validate workspace has blocks
+    if (!workspaceRef.current || isEmpty) {
+      toast.error("Add blocks to your workspace first to run a backtest.");
+      return;
+    }
+    if (!generatedMqlCode || generatedMqlCode.includes('Add blocks to your workspace')) {
+      toast.error("No strategy code generated. Add blocks to create a strategy.");
+      return;
+    }
+
+    // Start backtesting
+    setIsBacktesting(true);
+    setShowBacktest(true);
+    const loadingToast = toast.loading("Running backtest simulation...", {
+      description: "Fetching real market data and analyzing your strategy"
+    });
+    try {
+      // Fetch real market data
+      const historicalData = await fetchMarketData({
+        symbol: "AAPL",
+        interval: "daily",
+        outputsize: "full"
+      });
+
+      // Run backtest with real data (convert MQL to JS for simulation)
+      const result = await runBacktest(generatedMqlCode, "AAPL", 90, historicalData);
+      setBacktestResult(result);
+
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
+
+      // Show success toast with key metrics and visual feedback
+      const isProfit = result.metrics.totalReturn >= 0;
+      toast.success(isProfit ? "🎉 Backtest completed successfully!" : "Backtest completed", {
+        description: `${isProfit ? "📈" : "📉"} Return: ${result.metrics.totalReturn.toFixed(2)}% | Win Rate: ${result.metrics.winRate.toFixed(1)}% | ${result.metrics.totalTrades} trades`,
+        duration: 5000
+      });
+    } catch (error) {
+      console.error("Backtest error:", error);
+      toast.dismiss(loadingToast);
+      toast.error("Backtest failed", {
+        description: "Failed to run backtest simulation. Check your strategy blocks."
+      });
+      setShowBacktest(false);
+    } finally {
+      setIsBacktesting(false);
+    }
+  };
   const handleBlocksGenerated = (xml: string, isEdit: boolean = false) => {
     if (!workspaceRef.current) return;
     const hasBlocks = workspaceRef.current.getAllBlocks(false).length > 0;
@@ -569,6 +676,84 @@ export const BlocklyWorkspace = ({
     setPendingXml(null);
     setShowConfirmDialog(false);
   };
+  const handleCloseBacktest = () => {
+    setShowBacktest(false);
+    setBacktestResult(null);
+  };
+  const beautifyCode = (code: string): string => {
+    if (!code) return code;
+    let result = "";
+    let indent = 0;
+    const lines = code.split("\n");
+    for (let line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+
+      // Check if line starts with closing brace to decrease indent BEFORE adding line
+      if (trimmed.startsWith("}") || trimmed.startsWith("];") || trimmed.startsWith(");")) {
+        indent = Math.max(0, indent - 1);
+      }
+
+      // Add indentation
+      result += "    ".repeat(indent) + trimmed + "\n"; // Use 4 spaces for better readability
+
+      // Check if line ends with opening brace to increase indent AFTER adding line
+      // Also handle case statements
+      if (trimmed.endsWith("{") || trimmed.endsWith("(") || trimmed.endsWith("[") || trimmed.endsWith(":") && !trimmed.includes("default:")) {
+        indent++;
+      }
+
+      // Special handling for 'default:' to align with cases but indent content
+      if (trimmed === "default:") {
+        // Usually case/default are at same level as switch, content indented
+        // But simple logic: if it ends in :, indent next line
+        indent++;
+      }
+    }
+    return result;
+  };
+  const getCodeStatistics = () => {
+    if (!generatedMqlCode) return {
+      lines: 0,
+      chars: 0,
+      complexity: 0
+    };
+    const lines = generatedMqlCode.split("\n").filter(line => line.trim()).length;
+    const chars = generatedMqlCode.length;
+
+    // Simple complexity estimation based on control structures
+    const ifCount = (generatedMqlCode.match(/if\s*\(/g) || []).length;
+    const loopCount = (generatedMqlCode.match(/while\s*\(|for\s*\(/g) || []).length;
+    const complexity = ifCount + loopCount * 2 + Math.floor(blockCount / 5);
+    return {
+      lines,
+      chars,
+      complexity
+    };
+  };
+  const renderCodeWithLineNumbers = (code: string) => {
+    if (!code) {
+      return <div className="text-muted-foreground italic">
+          // No blocks yet
+        <br />
+          // Drag blocks from the toolbox to start building your strategy
+      </div>;
+    }
+    const displayCode = beautified ? beautifyCode(code) : code;
+    const lines = displayCode.split("\n");
+    return <div className="flex font-mono text-sm">
+      {showLineNumbers && <div className="select-none pr-4 text-[#858585] text-right border-r border-[#404040] min-w-[3rem]">
+        {lines.map((_, i) => <div key={i} className="leading-6">
+          {i + 1}
+        </div>)}
+      </div>}
+      <div className="flex-1 pl-4">
+        {lines.map((line, i) => <div key={i} className="leading-6">
+          <code className="syntax-highlight whitespace-pre">{highlightSyntax(line)}</code>
+        </div>)}
+      </div>
+    </div>;
+  };
 
   const handleLog = (log: LogEntry) => {
     setDevLogs(prev => {
@@ -641,28 +826,255 @@ export const BlocklyWorkspace = ({
     toast.success(`Added ${type.replace(/_/g, ' ')} block`);
   };
 
+  const highlightSyntax = (line: string) => {
+    if (!line.trim()) return " ";
 
+    // Simple syntax highlighting for MQL5
+    const keywords = [
+      "if", "else", "while", "for", "do", "break", "continue", "return", "switch", "case", "default",
+      "void", "int", "double", "bool", "string", "datetime", "ulong", "uint", "char", "short", "long", "float",
+      "class", "struct", "enum", "input", "const", "static", "virtual", "override", "public", "private", "protected",
+      "true", "false", "new", "delete", "operator", "this", "input", "sinput"
+    ];
+    const parts: JSX.Element[] = [];
+    let remaining = line;
+    let key = 0;
+
+    // Handle comments
+    if (line.trim().startsWith("//")) {
+      return <span className="syntax-comment">{line}</span>;
+    }
+
+    // Simple tokenization
+    const tokens = remaining.split(/(\s+|[{}();,\[\]])/);
+    tokens.forEach(token => {
+      if (keywords.includes(token)) {
+        parts.push(<span key={key++} className="syntax-keyword">
+          {token}
+        </span>);
+      } else if (token.match(/^['"].*['"]$/)) {
+        parts.push(<span key={key++} className="syntax-string">
+          {token}
+        </span>);
+      } else if (token.match(/^\d+(\.\d+)?$/)) {
+        parts.push(<span key={key++} className="syntax-number">
+          {token}
+        </span>);
+      } else if (token.match(/^[{}();,\[\]]$/)) {
+        parts.push(<span key={key++} className="syntax-punctuation">
+          {token}
+        </span>);
+      } else if (token.match(/^[A-Z][a-zA-Z0-9_]*$/) && !keywords.includes(token)) {
+        // Capitalized words are likely types or classes
+        parts.push(<span key={key++} className="syntax-type">
+          {token}
+        </span>);
+      } else if (token.match(/^[a-zA-Z_][a-zA-Z0-9_]*(?=\()/) || (remaining.includes(token + '(') && !keywords.includes(token))) {
+        // Words followed by ( are likely functions - this is a rough heuristic
+        parts.push(<span key={key++} className="syntax-function">
+          {token}
+        </span>);
+      } else if (token.match(/^[+\-*/%=&|<>!^]+$/)) {
+        parts.push(<span key={key++} className="syntax-operator">
+          {token}
+        </span>);
+      } else if (token.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
+        // Variables/Identifiers - default color
+        parts.push(<span key={key++} className="syntax-variable">
+          {token}
+        </span>);
+      } else {
+        parts.push(<span key={key++}>{token}</span>);
+      }
+    });
+    return <>{parts}</>;
+  };
   return <div className="flex-1 h-full relative flex flex-col">
     {/* Action Bar */}
-    <WorkspaceToolbar
-      strategyName={strategyName}
-      isEditingName={isEditingName}
-      onStrategyNameChange={setStrategyName}
-      onEditingNameChange={setIsEditingName}
-      onSaveWorkspace={handleSaveWorkspace}
-      onLoadWorkspace={handleLoadWorkspace}
-      onShowTemplates={() => setShowTemplates(true)}
-      onShowSearch={() => setShowSearch(true)}
-      showFloatingChart={showFloatingChart}
-      onToggleFloatingChart={() => setShowFloatingChart(!showFloatingChart)}
-      onUndo={handleUndo}
-      onRedo={handleRedo}
-      zoomLevel={zoomLevel}
-      onZoom={handleZoom}
-      onCenterWorkspace={handleCenterWorkspace}
-      showCode={showCode}
-      onToggleCode={() => setShowCode(!showCode)}
-    />
+    <div className="h-14 bg-card border-b border-border flex items-center justify-between px-4 gap-3">
+      <div className="flex items-center gap-3">
+        {isEditingName ? (
+          <input
+            type="text"
+            value={strategyName}
+            onChange={(e) => setStrategyName(e.target.value)}
+            onBlur={() => setIsEditingName(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') setIsEditingName(false);
+            }}
+            autoFocus
+            className="h-8 px-2 py-1 text-lg font-semibold bg-transparent border-b-2 border-primary focus:outline-none w-[200px]"
+          />
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div
+                className="flex items-center gap-2 px-2 py-1 rounded-md cursor-pointer hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200 group"
+                onClick={() => setIsEditingName(true)}
+              >
+                <h2 className="font-semibold text-foreground text-lg max-w-[200px] truncate">
+                  {strategyName}
+                </h2>
+                <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>Rename</TooltipContent>
+          </Tooltip>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2">
+        {/* File Operations Group */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={handleSaveWorkspace} className="save-workspace-trigger hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
+              <Download className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Save workspace as XML file</p>
+            <p className="text-xs text-muted-foreground mt-1">Ctrl+S</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={handleLoadWorkspace} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
+              <Upload className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Load workspace from XML file</p>
+            <p className="text-xs text-muted-foreground mt-1">Ctrl+O</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={() => setShowTemplates(true)} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
+              <BookOpen className="w-4 h-4 mr-2" />
+              Templates
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Load pre-built strategy templates</p>
+            <p className="text-xs text-muted-foreground mt-1">Learn from examples</p>
+          </TooltipContent>
+        </Tooltip>
+      </div>
+
+      {/* Search Bar */}
+      <div className="flex-1 max-w-xl mx-4">
+        <Button
+          variant="outline"
+          className="w-full justify-start text-muted-foreground bg-muted/50 hover:bg-muted relative h-9 hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200"
+          onClick={() => setShowSearch(true)}
+        >
+          <Search className="w-4 h-4 mr-2" />
+          Search for blocks...
+          <kbd className="pointer-events-none absolute right-2 top-[50%] translate-y-[-50%] inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+            <span className="text-xs">⌘</span>F
+          </kbd>
+        </Button>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={() => setShowFloatingChart(!showFloatingChart)} className="transition-all duration-200 shadow-indigo hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)]">
+              <BarChart3 className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Open floating live chart</p>
+            <p className="text-xs text-muted-foreground mt-1">Drag to reposition</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Separator orientation="vertical" className="h-6" />
+
+        {/* Workspace Controls */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={handleUndo} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
+              <Undo2 className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Undo</p>
+            <p className="text-xs text-muted-foreground mt-1">Ctrl+Z</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={handleRedo} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
+              <Redo2 className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Redo</p>
+            <p className="text-xs text-muted-foreground mt-1">Ctrl+Y</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Separator orientation="vertical" className="h-6" />
+
+        {/* Zoom Controls */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={() => handleZoom("out")} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
+              <ZoomOut className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Zoom out</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Badge variant="secondary" className="px-2 min-w-[60px] justify-center mx-1">
+          {zoomLevel}%
+        </Badge>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={() => handleZoom("in")} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
+              <ZoomIn className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Zoom in</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={handleCenterWorkspace} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
+              <Maximize2 className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Center workspace</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Separator orientation="vertical" className="h-6" />
+
+        {/* View Group */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={() => setShowCode(!showCode)} className="transition-all duration-200 hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)]">
+              <Code2 className="w-4 h-4 mr-2" />
+              {showCode ? "Hide" : "Code"}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Toggle code view</p>
+            <p className="text-xs text-muted-foreground mt-1">View generated strategy code</p>
+          </TooltipContent>
+        </Tooltip>
+      </div>
+    </div>
 
     {/* Main Content Area */}
     <div className="flex-1 flex min-h-0 relative">
@@ -687,13 +1099,21 @@ export const BlocklyWorkspace = ({
       </div>
 
       {/* Code View Panel */}
-      {showCode && <div className="w-[500px] border-l border-border bg-card flex flex-col animate-in slide-in-from-right duration-300">
-        <div className="h-12 border-b border-border flex items-center justify-between px-4 bg-muted/30">
+      {showCode && <div className="w-[500px] border-l border-[#3e3e42] bg-[#1e1e1e] flex flex-col animate-in slide-in-from-right duration-300">
+        <div className="h-12 border-b border-[#3e3e42] flex items-center justify-between px-4 bg-[#252526]">
           <div className="flex items-center gap-2">
             <FileCode className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium">MQL4 Expert Advisor</span>
+            <span className="text-sm font-medium">MQL5 Export</span>
           </div>
           <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setBeautified(!beautified)}>
+                  <Wand2 className={`w-3 h-3 ${beautified ? "text-primary" : ""}`} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Format Code</TooltipContent>
+            </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowLineNumbers(!showLineNumbers)}>
@@ -710,30 +1130,21 @@ export const BlocklyWorkspace = ({
               </TooltipTrigger>
               <TooltipContent>Copy to clipboard</TooltipContent>
             </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleExportCode}>
-                  <Download className="w-3 h-3" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Download .mq4 file</TooltipContent>
-            </Tooltip>
+
           </div>
         </div>
-        <div className="flex-1 overflow-auto custom-scrollbar relative bg-muted/20">
-          <pre className="p-4 text-sm font-mono leading-relaxed">
-            <code className="text-foreground">
-              {generatedMqlCode || '// Add blocks to your workspace to generate MQL4 code'}
-            </code>
-          </pre>
+        <div className="flex-1 overflow-auto custom-scrollbar relative bg-[#1e1e1e] text-gray-300">
+          <div className="min-h-full p-4">
+            {renderCodeWithLineNumbers(generatedMqlCode)}
+          </div>
         </div>
-        <div className="h-10 border-t border-border flex items-center justify-between px-4 bg-muted/30 text-xs text-muted-foreground">
+        <div className="h-10 border-t border-[#3e3e42] flex items-center justify-between px-4 bg-[#252526] text-xs text-gray-400">
           <div className="flex gap-3">
-            <span>{getCodeStatistics(generatedCode, blockCount).lines} lines</span>
-            <span>{getCodeStatistics(generatedCode, blockCount).chars} chars</span>
+            <span>{getCodeStatistics().lines} lines</span>
+            <span>{getCodeStatistics().chars} chars</span>
           </div>
           <div>
-            Complexity: {getCodeStatistics(generatedCode, blockCount).complexity}
+            Complexity: {getCodeStatistics().complexity}
           </div>
         </div>
       </div>}

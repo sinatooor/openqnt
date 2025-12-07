@@ -16,7 +16,7 @@ Blockly.Blocks["trade_take_profit"] = {
             .setCheck("Number");
         this.appendDummyInput()
             .appendField("for trade ID")
-            .appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
+            .appendField(new Blockly.FieldTextInput("Trade ID"), "TRADE_ID");
         this.setInputsInline(true);
         this.setPreviousStatement(true, "TradeAction");
         this.setNextStatement(true, "TradeAction");
