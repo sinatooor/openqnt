@@ -29,3 +29,6 @@ docs/*
 *.sln
 *.sw?
 prompts.docsbackend/.env
+backend/.env
+backend/venv/
+backend/__pycache__/
