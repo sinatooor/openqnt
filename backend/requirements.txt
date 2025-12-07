@@ -6,3 +6,4 @@ pydantic==2.10.3
 nautilus_trader>=1.200.0
 pandas>=2.0.0
 numpy>=1.26.0
+trading-ig>=0.0.22

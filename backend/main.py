@@ -74,6 +74,25 @@ class BacktestResponse(BaseModel):
     equity_curve: list
 
 
+class IGLoginRequest(BaseModel):
+    username: Optional[str] = None
+    password: Optional[str] = None
+
+
+class IGPositionRequest(BaseModel):
+    epic: str
+    direction: str  # "BUY" or "SELL"
+    size: float = 0.5
+    stop_distance: Optional[float] = None
+    limit_distance: Optional[float] = None
+
+
+class IGSymbolRequest(BaseModel):
+    symbol: str  # e.g., "EURUSD"
+    direction: str  # "BUY" or "SELL"
+    size: float = 0.5
+
+
 # ============================================================
 # PROMPTS (copied from Supabase Edge Functions)
 # ============================================================
@@ -266,7 +285,15 @@ async def root():
     return {
         "status": "ok",
         "service": "Strategy Generator (DeepSeek)",
-        "endpoints": ["/generate-strategy", "/generate-mql", "/backtest"]
+        "endpoints": [
+            "/generate-strategy",
+            "/generate-mql",
+            "/backtest",
+            "/ig/login",
+            "/ig/positions",
+            "/ig/position",
+            "/ig/trade"
+        ]
     }
 
 
@@ -425,6 +452,138 @@ async def run_backtest_endpoint(request: BacktestRequest):
         trades=result['trades'],
         equity_curve=result['equity_curve']
     )
+
+
+# ============================================================
+# IG Trading API Endpoints
+# ============================================================
+
+# Global IG client instance (lazy initialized)
+_ig_client = None
+
+
+def get_ig_client():
+    """Get or create IG client instance."""
+    global _ig_client
+    if _ig_client is None:
+        from ig_client import IGClient
+        _ig_client = IGClient(use_demo=True)
+    return _ig_client
+
+
+@app.post("/ig/login")
+async def ig_login(request: IGLoginRequest = None):
+    """
+    Authenticate with IG Trading API.
+    Uses credentials from .env if not provided in request.
+    """
+    print("=== IG Login ===")
+    client = get_ig_client()
+    
+    # Override credentials if provided
+    if request and request.username:
+        client.username = request.username
+    if request and request.password:
+        client.password = request.password
+    
+    result = await client.login()
+    
+    if result.get("success"):
+        print(f"Logged in to IG account: {result.get('account_id')}")
+    else:
+        print(f"Login failed: {result.get('error')}")
+    
+    return result
+
+
+@app.get("/ig/positions")
+async def ig_get_positions():
+    """Get all open positions from IG account."""
+    client = get_ig_client()
+    
+    if not client.is_authenticated:
+        return {"success": False, "error": "Not authenticated. Call /ig/login first."}
+    
+    return await client.get_positions()
+
+
+@app.post("/ig/position")
+async def ig_create_position(request: IGPositionRequest):
+    """
+    Open a new position on IG.
+    
+    Epic examples:
+    - CS.D.EURUSD.CFD.IP (EUR/USD)
+    - CS.D.GBPUSD.CFD.IP (GBP/USD)
+    """
+    print(f"=== IG Create Position: {request.direction} {request.size} {request.epic} ===")
+    client = get_ig_client()
+    
+    if not client.is_authenticated:
+        return {"success": False, "error": "Not authenticated. Call /ig/login first."}
+    
+    result = await client.create_position(
+        epic=request.epic,
+        direction=request.direction,
+        size=request.size,
+        stop_distance=request.stop_distance,
+        limit_distance=request.limit_distance
+    )
+    
+    return result
+
+
+@app.post("/ig/trade")
+async def ig_trade_by_symbol(request: IGSymbolRequest):
+    """
+    Trade using symbol name instead of EPIC.
+    
+    Symbols: EURUSD, GBPUSD, USDJPY, AUDUSD, XAUUSD, BTCUSD
+    """
+    from ig_client import get_epic_for_symbol
+    
+    print(f"=== IG Trade: {request.direction} {request.size} {request.symbol} ===")
+    
+    epic = get_epic_for_symbol(request.symbol)
+    if not epic:
+        return {
+            "success": False,
+            "error": f"Unknown symbol: {request.symbol}. Use: EURUSD, GBPUSD, USDJPY, AUDUSD, XAUUSD, BTCUSD"
+        }
+    
+    client = get_ig_client()
+    
+    if not client.is_authenticated:
+        return {"success": False, "error": "Not authenticated. Call /ig/login first."}
+    
+    return await client.create_position(
+        epic=epic,
+        direction=request.direction,
+        size=request.size
+    )
+
+
+@app.delete("/ig/position/{deal_id}")
+async def ig_close_position(deal_id: str):
+    """Close an existing position by deal ID."""
+    print(f"=== IG Close Position: {deal_id} ===")
+    client = get_ig_client()
+    
+    if not client.is_authenticated:
+        return {"success": False, "error": "Not authenticated. Call /ig/login first."}
+    
+    return await client.close_position(deal_id)
+
+
+@app.get("/ig/search/{term}")
+async def ig_search_markets(term: str):
+    """Search for markets by name or symbol."""
+    client = get_ig_client()
+    
+    if not client.is_authenticated:
+        return {"success": False, "error": "Not authenticated. Call /ig/login first."}
+    
+    return await client.search_markets(term)
 
 
 if __name__ == "__main__":
