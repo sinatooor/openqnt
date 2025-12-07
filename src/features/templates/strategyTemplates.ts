@@ -2,133 +2,18 @@ export interface StrategyTemplate {
   id: string;
   name: string;
   description: string;
-  difficulty: "beginner" | "intermediate" | "advanced";
+  difficulty: "simple" | "intermediate" | "advanced";
   category: "trend" | "reversal" | "breakout" | "scalping" | "momentum";
   workspace: string; // XML representation of the Blockly workspace
 }
 
 export const strategyTemplates: StrategyTemplate[] = [
   {
-    id: "simple-ma-crossover",
-    name: "Simple MA Crossover",
-    description:
-      "Buy when fast MA crosses above slow MA, sell when it crosses below. Classic golden cross strategy with 50/200 SMA.",
-    difficulty: "beginner",
-    category: "trend",
-    workspace: `<xml xmlns="https://developers.google.com/blockly/xml">
-      <block type="control_forever" x="50" y="50">
-        <statement name="DO">
-          <block type="control_if">
-            <value name="CONDITION">
-              <block type="operator_greater">
-                <value name="LEFT">
-                  <block type="ta_sma">
-                    <mutation period="5" ma_period="50" shift="0" applied_price="0"></mutation>
-                    <field name="NAME">Fast SMA</field>
-                  </block>
-                </value>
-                <value name="RIGHT">
-                  <block type="ta_sma">
-                    <mutation period="5" ma_period="200" shift="0" applied_price="0"></mutation>
-                    <field name="NAME">Slow SMA</field>
-                  </block>
-                </value>
-              </block>
-            </value>
-            <statement name="DO">
-              <block type="trade_order">
-                <field name="TRADE_ID">ma_crossover_trade</field>
-                <field name="DIRECTION">long</field>
-                <value name="SIZE">
-                  <shadow type="math_number">
-                    <field name="NUM">2</field>
-                  </shadow>
-                </value>
-                <field name="SIZE_TYPE">percent</field>
-                <field name="LEVERAGE">1</field>
-                <field name="ORDER_TYPE">market</field>
-                <next>
-                  <block type="trade_stop_loss">
-                    <field name="CLOSE_TYPE">full</field>
-                    <field name="TRADE_ID">ma_crossover_trade</field>
-                    <value name="PRICE">
-                      <block type="operator_subtract">
-                        <value name="LEFT">
-                          <block type="trade_entry_price">
-                            <field name="TRADE_ID">ma_crossover_trade</field>
-                          </block>
-                        </value>
-                        <value name="RIGHT">
-                          <block type="operator_multiply">
-                            <value name="LEFT">
-                              <block type="ta_atr">
-                                <mutation period="5" ma_period="14"></mutation>
-                                <field name="NAME">ATR</field>
-                              </block>
-                            </value>
-                            <value name="RIGHT">
-                              <shadow type="math_number">
-                                <field name="NUM">2</field>
-                              </shadow>
-                            </value>
-                          </block>
-                        </value>
-                      </block>
-                    </value>
-                    <next>
-                      <block type="trade_take_profit">
-                        <field name="CLOSE_TYPE">full</field>
-                        <field name="TRADE_ID">ma_crossover_trade</field>
-                        <value name="PRICE">
-                          <block type="operator_add">
-                            <value name="LEFT">
-                              <block type="trade_entry_price">
-                                <field name="TRADE_ID">ma_crossover_trade</field>
-                              </block>
-                            </value>
-                            <value name="RIGHT">
-                              <block type="operator_multiply">
-                                <value name="LEFT">
-                                  <block type="operator_multiply">
-                                    <value name="LEFT">
-                                      <block type="ta_atr">
-                                        <mutation period="5" ma_period="14"></mutation>
-                                        <field name="NAME">ATR</field>
-                                      </block>
-                                    </value>
-                                    <value name="RIGHT">
-                                      <shadow type="math_number">
-                                        <field name="NUM">2</field>
-                                      </shadow>
-                                    </value>
-                                  </block>
-                                </value>
-                                <value name="RIGHT">
-                                  <shadow type="math_number">
-                                    <field name="NUM">3</field>
-                                  </shadow>
-                                </value>
-                              </block>
-                            </value>
-                          </block>
-                        </value>
-                      </block>
-                    </next>
-                  </block>
-                </next>
-              </block>
-            </statement>
-          </block>
-        </statement>
-      </block>
-    </xml>`,
-  },
-  {
     id: "rsi-oversold-reversal",
     name: "RSI Oversold Reversal",
     description:
       "Buy when RSI drops below 30 (oversold), sell when it rises above 70 (overbought). Standard 14-period RSI mean reversion strategy.",
-    difficulty: "beginner",
+    difficulty: "simple",
     category: "reversal",
     workspace: `<xml xmlns="https://developers.google.com/blockly/xml">
       <block type="control_forever" x="50" y="50">
@@ -138,7 +23,8 @@ export const strategyTemplates: StrategyTemplate[] = [
               <block type="operator_less">
                 <value name="LEFT">
                   <block type="ta_rsi">
-                    <mutation period="5" ma_period="14" applied_price="0"></mutation>
+                    <field name="PERIOD">15</field>
+                    <mutation ma_period="14" applied_price="0"></mutation>
                     <field name="NAME">RSI</field>
                   </block>
                 </value>
@@ -155,10 +41,9 @@ export const strategyTemplates: StrategyTemplate[] = [
                 <field name="DIRECTION">long</field>
                 <value name="SIZE">
                   <shadow type="math_number">
-                    <field name="NUM">3</field>
+                    <field name="NUM">0.1</field>
                   </shadow>
                 </value>
-                <field name="SIZE_TYPE">percent</field>
                 <field name="LEVERAGE">1</field>
                 <field name="ORDER_TYPE">market</field>
                 <next>
@@ -176,7 +61,8 @@ export const strategyTemplates: StrategyTemplate[] = [
                           <block type="operator_multiply">
                             <value name="LEFT">
                               <block type="ta_atr">
-                                <mutation period="5" ma_period="14"></mutation>
+                                <field name="PERIOD">15</field>
+                                <mutation ma_period="14"></mutation>
                                 <field name="NAME">ATR</field>
                               </block>
                             </value>
@@ -206,7 +92,8 @@ export const strategyTemplates: StrategyTemplate[] = [
                                   <block type="operator_multiply">
                                     <value name="LEFT">
                                       <block type="ta_atr">
-                                        <mutation period="5" ma_period="14"></mutation>
+                                        <field name="PERIOD">15</field>
+                                        <mutation ma_period="14"></mutation>
                                         <field name="NAME">ATR</field>
                                       </block>
                                     </value>
@@ -238,6 +125,142 @@ export const strategyTemplates: StrategyTemplate[] = [
     </xml>`,
   },
   {
+    id: "simple-ma-crossover",
+    name: "Simple MA Crossover",
+    description:
+      "A simple Moving Average crossover strategy. Uses SMA(12) with Shift(6). Enters on bar open if price crosses the MA. Reverses on opposite signal.",
+    difficulty: "intermediate",
+    category: "trend",
+    workspace: `<xml xmlns="https://developers.google.com/blockly/xml">
+      <block type="control_forever" x="50" y="50">
+        <statement name="DO">
+          <block type="control_if">
+            <value name="CONDITION">
+              <block type="environment_new_candle_open">
+                <field name="TIMEFRAME">60</field>
+              </block>
+            </value>
+            <statement name="DO">
+              <block type="control_if">
+                <value name="CONDITION">
+                  <block type="operator_and">
+                    <value name="LEFT">
+                      <block type="operator_less">
+                        <value name="LEFT">
+                          <block type="environment_prev_candle_open">
+                            <field name="TIMEFRAME">60</field>
+                          </block>
+                        </value>
+                        <value name="RIGHT">
+                          <block type="ta_sma">
+                            <field name="PERIOD">60</field>
+                            <mutation ma_period="12" shift="6" applied_price="0"></mutation>
+                            <field name="NAME">MA</field>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                    <value name="RIGHT">
+                      <block type="operator_greater">
+                        <value name="LEFT">
+                          <block type="environment_prev_ticker_close">
+                            <field name="TIMEFRAME">60</field>
+                          </block>
+                        </value>
+                        <value name="RIGHT">
+                          <block type="ta_sma">
+                            <field name="PERIOD">60</field>
+                            <mutation ma_period="12" shift="6" applied_price="0"></mutation>
+                            <field name="NAME">MA</field>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+                <statement name="DO">
+                  <block type="trade_close_all">
+                    <next>
+                      <block type="trade_order">
+                        <field name="TRADE_ID">ma_buy</field>
+                        <field name="DIRECTION">long</field>
+                        <value name="SIZE">
+                          <shadow type="math_number">
+                            <field name="NUM">0.1</field>
+                          </shadow>
+                        </value>
+                        <field name="LEVERAGE">1</field>
+                        <field name="ORDER_TYPE">market</field>
+                      </block>
+                    </next>
+                  </block>
+                </statement>
+                <next>
+                  <block type="control_if">
+                    <value name="CONDITION">
+                      <block type="operator_and">
+                        <value name="LEFT">
+                          <block type="operator_greater">
+                            <value name="LEFT">
+                              <block type="environment_prev_candle_open">
+                                <field name="TIMEFRAME">60</field>
+                              </block>
+                            </value>
+                            <value name="RIGHT">
+                              <block type="ta_sma">
+                                <field name="PERIOD">60</field>
+                                <mutation ma_period="12" shift="6" applied_price="0"></mutation>
+                                <field name="NAME">MA</field>
+                              </block>
+                            </value>
+                          </block>
+                        </value>
+                        <value name="RIGHT">
+                          <block type="operator_less">
+                            <value name="LEFT">
+                              <block type="environment_prev_ticker_close">
+                                <field name="TIMEFRAME">60</field>
+                              </block>
+                            </value>
+                            <value name="RIGHT">
+                              <block type="ta_sma">
+                                <field name="PERIOD">60</field>
+                                <mutation ma_period="12" shift="6" applied_price="0"></mutation>
+                                <field name="NAME">MA</field>
+                              </block>
+                            </value>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                    <statement name="DO">
+                      <block type="trade_close_all">
+                        <next>
+                          <block type="trade_order">
+                            <field name="TRADE_ID">ma_sell</field>
+                            <field name="DIRECTION">short</field>
+                            <value name="SIZE">
+                              <shadow type="math_number">
+                                <field name="NUM">0.1</field>
+                              </shadow>
+                            </value>
+                            <field name="LEVERAGE">1</field>
+                            <field name="ORDER_TYPE">market</field>
+                          </block>
+                        </next>
+                      </block>
+                    </statement>
+                  </block>
+                </next>
+              </block>
+            </statement>
+          </block>
+        </statement>
+      </block>
+    </xml>`,
+  },
+
+  {
     id: "bollinger-breakout",
     name: "Bollinger Band Breakout",
     description:
@@ -255,7 +278,8 @@ export const strategyTemplates: StrategyTemplate[] = [
                 </value>
                 <value name="RIGHT">
                   <block type="ta_bb">
-                    <mutation period="5" ma_period="20" deviation="2" shift="0" applied_price="0"></mutation>
+                    <field name="PERIOD">30</field>
+                    <mutation ma_period="20" deviation="2" shift="0" applied_price="0"></mutation>
                     <field name="NAME">BB</field>
                     <field name="COMPONENT">upper</field>
                   </block>
@@ -268,10 +292,9 @@ export const strategyTemplates: StrategyTemplate[] = [
                 <field name="DIRECTION">long</field>
                 <value name="SIZE">
                   <shadow type="math_number">
-                    <field name="NUM">100</field>
+                    <field name="NUM">0.1</field>
                   </shadow>
                 </value>
-                <field name="SIZE_TYPE">value</field>
                 <field name="LEVERAGE">1</field>
                 <field name="ORDER_TYPE">market</field>
                 <next>
@@ -289,7 +312,8 @@ export const strategyTemplates: StrategyTemplate[] = [
                           <block type="operator_multiply">
                             <value name="LEFT">
                               <block type="ta_atr">
-                                <mutation period="5" ma_period="14"></mutation>
+                                <field name="PERIOD">30</field>
+                                <mutation ma_period="14"></mutation>
                                 <field name="NAME">ATR</field>
                               </block>
                             </value>
@@ -319,7 +343,8 @@ export const strategyTemplates: StrategyTemplate[] = [
                                   <block type="operator_multiply">
                                     <value name="LEFT">
                                       <block type="ta_atr">
-                                        <mutation period="5" ma_period="14"></mutation>
+                                        <field name="PERIOD">30</field>
+                                        <mutation ma_period="14"></mutation>
                                         <field name="NAME">ATR</field>
                                       </block>
                                     </value>
@@ -362,88 +387,69 @@ export const strategyTemplates: StrategyTemplate[] = [
         <statement name="DO">
           <block type="control_if">
             <value name="CONDITION">
-              <block type="operator_and">
-                <value name="LEFT">
-                  <block type="operator_greater">
-                    <value name="LEFT">
-                      <block type="macd_value">
-                        <mutation period="5" fastema="12" slowema="26" signalsma="9" applied_price="0"></mutation>
-                        <field name="NAME">MACD</field>
-                        <field name="COMPONENT">line</field>
-                      </block>
-                    </value>
-                    <value name="RIGHT">
-                      <block type="macd_value">
-                        <mutation period="5" fastema="12" slowema="26" signalsma="9" applied_price="0"></mutation>
-                        <field name="NAME">MACD</field>
-                        <field name="COMPONENT">signal</field>
-                      </block>
-                    </value>
-                  </block>
-                </value>
-                <value name="RIGHT">
-                  <block type="operator_greater">
-                    <value name="LEFT">
-                      <block type="ta_adx">
-                        <mutation period="5" ma_period="14"></mutation>
-                        <field name="NAME">ADX</field>
-                      </block>
-                    </value>
-                    <value name="RIGHT">
-                      <shadow type="math_number">
-                        <field name="NUM">25</field>
-                      </shadow>
-                    </value>
-                  </block>
-                </value>
+              <block type="environment_new_candle_open">
+                <field name="TIMEFRAME">60</field>
               </block>
             </value>
             <statement name="DO">
-              <block type="trade_order">
-                <field name="TRADE_ID">macd_momentum_trade</field>
-                <field name="DIRECTION">long</field>
-                <value name="SIZE">
-                  <shadow type="math_number">
-                    <field name="NUM">0.6</field>
-                  </shadow>
-                </value>
-                <field name="SIZE_TYPE">percent</field>
-                <field name="LEVERAGE">1</field>
-                <field name="ORDER_TYPE">market</field>
-                <next>
-                  <block type="trade_stop_loss">
-                    <field name="CLOSE_TYPE">full</field>
-                    <field name="TRADE_ID">macd_momentum_trade</field>
-                    <value name="PRICE">
-                      <block type="operator_subtract">
+              <block type="control_if">
+                <value name="CONDITION">
+                  <block type="operator_and">
+                    <value name="LEFT">
+                      <block type="operator_greater">
                         <value name="LEFT">
-                          <block type="trade_entry_price">
-                            <field name="TRADE_ID">macd_momentum_trade</field>
+                          <block type="macd_value">
+                            <field name="PERIOD">60</field>
+                            <mutation fastema="12" slowema="26" signalsma="9" applied_price="0"></mutation>
+                            <field name="NAME">MACD</field>
+                            <field name="COMPONENT">line</field>
                           </block>
                         </value>
-                         <value name="RIGHT">
-                          <block type="operator_multiply">
-                            <value name="LEFT">
-                              <block type="ta_atr">
-                                <mutation period="5" ma_period="14"></mutation>
-                                <field name="NAME">ATR</field>
-                              </block>
-                            </value>
-                            <value name="RIGHT">
-                              <shadow type="math_number">
-                                <field name="NUM">2</field>
-                              </shadow>
-                            </value>
+                        <value name="RIGHT">
+                          <block type="macd_value">
+                            <field name="PERIOD">60</field>
+                            <mutation fastema="12" slowema="26" signalsma="9" applied_price="0"></mutation>
+                            <field name="NAME">MACD</field>
+                            <field name="COMPONENT">signal</field>
                           </block>
                         </value>
                       </block>
                     </value>
+                    <value name="RIGHT">
+                      <block type="operator_greater">
+                        <value name="LEFT">
+                          <block type="ta_adx">
+                            <field name="PERIOD">60</field>
+                            <mutation ma_period="14"></mutation>
+                            <field name="NAME">ADX</field>
+                          </block>
+                        </value>
+                        <value name="RIGHT">
+                          <shadow type="math_number">
+                            <field name="NUM">25</field>
+                          </shadow>
+                        </value>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+                <statement name="DO">
+                  <block type="trade_order">
+                    <field name="TRADE_ID">macd_momentum_trade</field>
+                    <field name="DIRECTION">long</field>
+                    <value name="SIZE">
+                      <shadow type="math_number">
+                        <field name="NUM">0.1</field>
+                      </shadow>
+                    </value>
+                    <field name="LEVERAGE">1</field>
+                    <field name="ORDER_TYPE">market</field>
                     <next>
-                      <block type="trade_take_profit">
+                      <block type="trade_stop_loss">
                         <field name="CLOSE_TYPE">full</field>
                         <field name="TRADE_ID">macd_momentum_trade</field>
                         <value name="PRICE">
-                          <block type="operator_add">
+                          <block type="operator_subtract">
                             <value name="LEFT">
                               <block type="trade_entry_price">
                                 <field name="TRADE_ID">macd_momentum_trade</field>
@@ -452,33 +458,65 @@ export const strategyTemplates: StrategyTemplate[] = [
                              <value name="RIGHT">
                               <block type="operator_multiply">
                                 <value name="LEFT">
-                                  <block type="operator_multiply">
-                                    <value name="LEFT">
-                                      <block type="ta_atr">
-                                        <mutation period="5" ma_period="14"></mutation>
-                                        <field name="NAME">ATR</field>
-                                      </block>
-                                    </value>
-                                    <value name="RIGHT">
-                                      <shadow type="math_number">
-                                        <field name="NUM">2</field>
-                                      </shadow>
-                                    </value>
+                                  <block type="ta_atr">
+                                    <field name="PERIOD">60</field>
+                                    <mutation ma_period="14"></mutation>
+                                    <field name="NAME">ATR</field>
                                   </block>
                                 </value>
                                 <value name="RIGHT">
                                   <shadow type="math_number">
-                                    <field name="NUM">3</field>
+                                    <field name="NUM">2</field>
                                   </shadow>
                                 </value>
                               </block>
                             </value>
                           </block>
                         </value>
+                        <next>
+                          <block type="trade_take_profit">
+                            <field name="CLOSE_TYPE">full</field>
+                            <field name="TRADE_ID">macd_momentum_trade</field>
+                            <value name="PRICE">
+                              <block type="operator_add">
+                                <value name="LEFT">
+                                  <block type="trade_entry_price">
+                                    <field name="TRADE_ID">macd_momentum_trade</field>
+                                  </block>
+                                </value>
+                                 <value name="RIGHT">
+                                  <block type="operator_multiply">
+                                    <value name="LEFT">
+                                      <block type="operator_multiply">
+                                        <value name="LEFT">
+                                          <block type="ta_atr">
+                                            <field name="PERIOD">60</field>
+                                            <mutation ma_period="14"></mutation>
+                                            <field name="NAME">ATR</field>
+                                          </block>
+                                        </value>
+                                        <value name="RIGHT">
+                                          <shadow type="math_number">
+                                            <field name="NUM">2</field>
+                                          </shadow>
+                                        </value>
+                                      </block>
+                                    </value>
+                                    <value name="RIGHT">
+                                      <shadow type="math_number">
+                                        <field name="NUM">3</field>
+                                      </shadow>
+                                    </value>
+                                  </block>
+                                </value>
+                              </block>
+                            </value>
+                          </block>
+                        </next>
                       </block>
                     </next>
                   </block>
-                </next>
+                </statement>
               </block>
             </statement>
           </block>
@@ -496,85 +534,58 @@ export const strategyTemplates: StrategyTemplate[] = [
     workspace: `<xml xmlns="https://developers.google.com/blockly/xml">
       <block type="control_forever" x="50" y="50">
         <statement name="DO">
-          <block type="control_if">
-            <value name="CONDITION">
-              <block type="operator_and">
-                <value name="LEFT">
-                  <block type="operator_less">
+              <block type="control_if">
+                <value name="CONDITION">
+                  <block type="operator_and">
                     <value name="LEFT">
-                      <block type="environment_price"></block>
-                    </value>
-                    <value name="RIGHT">
-                      <block type="ta_vwap">
-                        <mutation period="5"></mutation>
-                        <field name="NAME">VWAP</field>
-                      </block>
-                    </value>
-                  </block>
-                </value>
-                <value name="RIGHT">
-                  <block type="operator_less">
-                    <value name="LEFT">
-                      <block type="ta_rsi">
-                        <mutation period="5" ma_period="9" applied_price="0"></mutation>
-                        <field name="NAME">RSI</field>
-                      </block>
-                    </value>
-                    <value name="RIGHT">
-                      <shadow type="math_number">
-                        <field name="NUM">40</field>
-                      </shadow>
-                    </value>
-                  </block>
-                </value>
-              </block>
-            </value>
-            <statement name="DO">
-              <block type="trade_order">
-                <field name="TRADE_ID">vwap_scalping_trade</field>
-                <field name="DIRECTION">long</field>
-                <value name="SIZE">
-                  <shadow type="math_number">
-                    <field name="NUM">50</field>
-                  </shadow>
-                </value>
-                <field name="SIZE_TYPE">value</field>
-                <field name="LEVERAGE">1</field>
-                <field name="ORDER_TYPE">market</field>
-                <next>
-                  <block type="trade_stop_loss">
-                    <field name="CLOSE_TYPE">full</field>
-                    <field name="TRADE_ID">vwap_scalping_trade</field>
-                    <value name="PRICE">
-                      <block type="operator_subtract">
+                      <block type="operator_less">
                         <value name="LEFT">
-                          <block type="trade_entry_price">
-                            <field name="TRADE_ID">vwap_scalping_trade</field>
+                          <block type="environment_price"></block>
+                        </value>
+                        <value name="RIGHT">
+                          <block type="ta_vwap">
+                            <field name="PERIOD">60</field>
+                            <mutation></mutation>
+                            <field name="NAME">VWAP</field>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                    <value name="RIGHT">
+                      <block type="operator_less">
+                        <value name="LEFT">
+                          <block type="ta_rsi">
+                            <field name="PERIOD">60</field>
+                            <mutation ma_period="9" applied_price="0"></mutation>
+                            <field name="NAME">RSI</field>
                           </block>
                         </value>
                         <value name="RIGHT">
-                          <block type="operator_multiply">
-                            <value name="LEFT">
-                              <block type="ta_atr">
-                                <mutation period="5" ma_period="14"></mutation>
-                                <field name="NAME">ATR</field>
-                              </block>
-                            </value>
-                            <value name="RIGHT">
-                              <shadow type="math_number">
-                                <field name="NUM">1</field>
-                              </shadow>
-                            </value>
-                          </block>
+                          <shadow type="math_number">
+                            <field name="NUM">40</field>
+                          </shadow>
                         </value>
                       </block>
                     </value>
+                  </block>
+                </value>
+                <statement name="DO">
+                  <block type="trade_order">
+                    <field name="TRADE_ID">vwap_scalping_trade</field>
+                    <field name="DIRECTION">long</field>
+                    <value name="SIZE">
+                      <shadow type="math_number">
+                        <field name="NUM">0.1</field>
+                      </shadow>
+                    </value>
+                    <field name="LEVERAGE">1</field>
+                    <field name="ORDER_TYPE">market</field>
                     <next>
-                      <block type="trade_take_profit">
+                      <block type="trade_stop_loss">
                         <field name="CLOSE_TYPE">full</field>
                         <field name="TRADE_ID">vwap_scalping_trade</field>
                         <value name="PRICE">
-                          <block type="operator_add">
+                          <block type="operator_subtract">
                             <value name="LEFT">
                               <block type="trade_entry_price">
                                 <field name="TRADE_ID">vwap_scalping_trade</field>
@@ -583,36 +594,66 @@ export const strategyTemplates: StrategyTemplate[] = [
                             <value name="RIGHT">
                               <block type="operator_multiply">
                                 <value name="LEFT">
-                                  <block type="operator_multiply">
-                                    <value name="LEFT">
-                                      <block type="ta_atr">
-                                        <mutation period="5" ma_period="14"></mutation>
-                                        <field name="NAME">ATR</field>
-                                      </block>
-                                    </value>
-                                    <value name="RIGHT">
-                                      <shadow type="math_number">
-                                        <field name="NUM">1</field>
-                                      </shadow>
-                                    </value>
+                                  <block type="ta_atr">
+                                    <field name="PERIOD">60</field>
+                                    <mutation ma_period="14"></mutation>
+                                    <field name="NAME">ATR</field>
                                   </block>
                                 </value>
                                 <value name="RIGHT">
                                   <shadow type="math_number">
-                                    <field name="NUM">2</field>
+                                    <field name="NUM">1</field>
                                   </shadow>
                                 </value>
                               </block>
                             </value>
                           </block>
                         </value>
+                        <next>
+                          <block type="trade_take_profit">
+                            <field name="CLOSE_TYPE">full</field>
+                            <field name="TRADE_ID">vwap_scalping_trade</field>
+                            <value name="PRICE">
+                              <block type="operator_add">
+                                <value name="LEFT">
+                                  <block type="trade_entry_price">
+                                    <field name="TRADE_ID">vwap_scalping_trade</field>
+                                  </block>
+                                </value>
+                                <value name="RIGHT">
+                                  <block type="operator_multiply">
+                                    <value name="LEFT">
+                                      <block type="operator_multiply">
+                                        <value name="LEFT">
+                                          <block type="ta_atr">
+                                            <field name="PERIOD">60</field>
+                                            <mutation ma_period="14"></mutation>
+                                            <field name="NAME">ATR</field>
+                                          </block>
+                                        </value>
+                                        <value name="RIGHT">
+                                          <shadow type="math_number">
+                                            <field name="NUM">1</field>
+                                          </shadow>
+                                        </value>
+                                      </block>
+                                    </value>
+                                    <value name="RIGHT">
+                                      <shadow type="math_number">
+                                        <field name="NUM">2</field>
+                                      </shadow>
+                                    </value>
+                                  </block>
+                                </value>
+                              </block>
+                            </value>
+                          </block>
+                        </next>
                       </block>
                     </next>
                   </block>
-                </next>
+                </statement>
               </block>
-            </statement>
-          </block>
         </statement>
       </block>
     </xml>`,
@@ -629,87 +670,69 @@ export const strategyTemplates: StrategyTemplate[] = [
         <statement name="DO">
           <block type="control_if">
             <value name="CONDITION">
-              <block type="operator_and">
-                <value name="LEFT">
-                  <block type="operator_greater">
-                    <value name="LEFT">
-                      <block type="ta_ema">
-                        <mutation period="5" ma_period="8" shift="0" applied_price="0"></mutation>
-                        <field name="NAME">Fast EMA</field>
-                      </block>
-                    </value>
-                    <value name="RIGHT">
-                      <block type="ta_ema">
-                        <mutation period="5" ma_period="21" shift="0" applied_price="0"></mutation>
-                        <field name="NAME">Medium EMA</field>
-                      </block>
-                    </value>
-                  </block>
-                </value>
-                <value name="RIGHT">
-                  <block type="operator_greater">
-                    <value name="LEFT">
-                      <block type="ta_ema">
-                        <mutation period="5" ma_period="21" shift="0" applied_price="0"></mutation>
-                        <field name="NAME">Medium EMA</field>
-                      </block>
-                    </value>
-                    <value name="RIGHT">
-                      <block type="ta_ema">
-                        <mutation period="5" ma_period="55" shift="0" applied_price="0"></mutation>
-                        <field name="NAME">Slow EMA</field>
-                      </block>
-                    </value>
-                  </block>
-                </value>
+              <block type="environment_new_candle_open">
+                <field name="TIMEFRAME">60</field>
               </block>
             </value>
             <statement name="DO">
-              <block type="trade_order">
-                <field name="TRADE_ID">triple_ema_trade</field>
-                <field name="DIRECTION">long</field>
-                <value name="SIZE">
-                  <shadow type="math_number">
-                    <field name="NUM">4</field>
-                  </shadow>
-                </value>
-                <field name="SIZE_TYPE">percent</field>
-                <field name="LEVERAGE">1</field>
-                <field name="ORDER_TYPE">market</field>
-                <next>
-                  <block type="trade_stop_loss">
-                    <field name="CLOSE_TYPE">full</field>
-                    <field name="TRADE_ID">triple_ema_trade</field>
-                    <value name="PRICE">
-                      <block type="operator_subtract">
+              <block type="control_if">
+                <value name="CONDITION">
+                  <block type="operator_and">
+                    <value name="LEFT">
+                      <block type="operator_greater">
                         <value name="LEFT">
-                          <block type="trade_entry_price">
-                            <field name="TRADE_ID">triple_ema_trade</field>
+                          <block type="ta_ema">
+                            <field name="PERIOD">60</field>
+                            <mutation ma_period="8" shift="0" applied_price="0"></mutation>
+                            <field name="NAME">Fast EMA</field>
                           </block>
                         </value>
                         <value name="RIGHT">
-                          <block type="operator_multiply">
-                            <value name="LEFT">
-                              <block type="ta_atr">
-                                <mutation period="5" ma_period="14"></mutation>
-                                <field name="NAME">ATR</field>
-                              </block>
-                            </value>
-                            <value name="RIGHT">
-                              <shadow type="math_number">
-                                <field name="NUM">2</field>
-                              </shadow>
-                            </value>
+                          <block type="ta_ema">
+                            <field name="PERIOD">60</field>
+                            <mutation ma_period="21" shift="0" applied_price="0"></mutation>
+                            <field name="NAME">Medium EMA</field>
                           </block>
                         </value>
                       </block>
                     </value>
+                    <value name="RIGHT">
+                      <block type="operator_greater">
+                        <value name="LEFT">
+                          <block type="ta_ema">
+                            <field name="PERIOD">60</field>
+                            <mutation ma_period="21" shift="0" applied_price="0"></mutation>
+                            <field name="NAME">Medium EMA</field>
+                          </block>
+                        </value>
+                        <value name="RIGHT">
+                          <block type="ta_ema">
+                            <field name="PERIOD">60</field>
+                            <mutation ma_period="55" shift="0" applied_price="0"></mutation>
+                            <field name="NAME">Slow EMA</field>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+                <statement name="DO">
+                  <block type="trade_order">
+                    <field name="TRADE_ID">triple_ema_trade</field>
+                    <field name="DIRECTION">long</field>
+                    <value name="SIZE">
+                      <shadow type="math_number">
+                        <field name="NUM">0.1</field>
+                      </shadow>
+                    </value>
+                    <field name="LEVERAGE">1</field>
+                    <field name="ORDER_TYPE">market</field>
                     <next>
-                      <block type="trade_take_profit">
+                      <block type="trade_stop_loss">
                         <field name="CLOSE_TYPE">full</field>
                         <field name="TRADE_ID">triple_ema_trade</field>
                         <value name="PRICE">
-                          <block type="operator_add">
+                          <block type="operator_subtract">
                             <value name="LEFT">
                               <block type="trade_entry_price">
                                 <field name="TRADE_ID">triple_ema_trade</field>
@@ -718,33 +741,65 @@ export const strategyTemplates: StrategyTemplate[] = [
                             <value name="RIGHT">
                               <block type="operator_multiply">
                                 <value name="LEFT">
-                                  <block type="operator_multiply">
-                                    <value name="LEFT">
-                                      <block type="ta_atr">
-                                        <mutation period="5" ma_period="14"></mutation>
-                                        <field name="NAME">ATR</field>
-                                      </block>
-                                    </value>
-                                    <value name="RIGHT">
-                                      <shadow type="math_number">
-                                        <field name="NUM">2</field>
-                                      </shadow>
-                                    </value>
+                                  <block type="ta_atr">
+                                    <field name="PERIOD">60</field>
+                                    <mutation ma_period="14"></mutation>
+                                    <field name="NAME">ATR</field>
                                   </block>
                                 </value>
                                 <value name="RIGHT">
                                   <shadow type="math_number">
-                                    <field name="NUM">3</field>
+                                    <field name="NUM">2</field>
                                   </shadow>
                                 </value>
                               </block>
                             </value>
                           </block>
                         </value>
+                        <next>
+                          <block type="trade_take_profit">
+                            <field name="CLOSE_TYPE">full</field>
+                            <field name="TRADE_ID">triple_ema_trade</field>
+                            <value name="PRICE">
+                              <block type="operator_add">
+                                <value name="LEFT">
+                                  <block type="trade_entry_price">
+                                    <field name="TRADE_ID">triple_ema_trade</field>
+                                  </block>
+                                </value>
+                                <value name="RIGHT">
+                                  <block type="operator_multiply">
+                                    <value name="LEFT">
+                                      <block type="operator_multiply">
+                                        <value name="LEFT">
+                                          <block type="ta_atr">
+                                            <field name="PERIOD">60</field>
+                                            <mutation ma_period="14"></mutation>
+                                            <field name="NAME">ATR</field>
+                                          </block>
+                                        </value>
+                                        <value name="RIGHT">
+                                          <shadow type="math_number">
+                                            <field name="NUM">2</field>
+                                          </shadow>
+                                        </value>
+                                      </block>
+                                    </value>
+                                    <value name="RIGHT">
+                                      <shadow type="math_number">
+                                        <field name="NUM">3</field>
+                                      </shadow>
+                                    </value>
+                                  </block>
+                                </value>
+                              </block>
+                            </value>
+                          </block>
+                        </next>
                       </block>
                     </next>
                   </block>
-                </next>
+                </statement>
               </block>
             </statement>
           </block>

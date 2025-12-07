@@ -1,7 +1,9 @@
 import * as Blockly from 'blockly';
 
+import { TIMEFRAME_OPTIONS } from '../../indicators/blocks/timeframes';
+
 Blockly.Blocks['environment_price'] = {
-  init: function() {
+  init: function () {
     this.appendDummyInput()
       .appendField("Price");
     this.setOutput(true, "EnvironmentValue");
@@ -12,7 +14,7 @@ Blockly.Blocks['environment_price'] = {
 };
 
 Blockly.Blocks['environment_spread'] = {
-  init: function() {
+  init: function () {
     this.appendDummyInput()
       .appendField("Spread");
     this.setOutput(true, "EnvironmentValue");
@@ -23,17 +25,10 @@ Blockly.Blocks['environment_spread'] = {
 };
 
 Blockly.Blocks['environment_prev_candle_open'] = {
-  init: function() {
+  init: function () {
     this.appendDummyInput()
       .appendField("Prev. candle open")
-      .appendField(new Blockly.FieldDropdown([
-        ["1m", "1m"],
-        ["5m", "5m"],
-        ["15m", "15m"],
-        ["1h", "1h"],
-        ["4h", "4h"],
-        ["1d", "1d"]
-      ]), "TIMEFRAME");
+      .appendField(new Blockly.FieldDropdown(TIMEFRAME_OPTIONS), "TIMEFRAME");
     this.setOutput(true, "EnvironmentValue");
     this.setStyle('environment_blocks');
     this.setTooltip("Previous candle open price");
@@ -42,17 +37,10 @@ Blockly.Blocks['environment_prev_candle_open'] = {
 };
 
 Blockly.Blocks['environment_prev_ticker_close'] = {
-  init: function() {
+  init: function () {
     this.appendDummyInput()
       .appendField("Prev. ticker close")
-      .appendField(new Blockly.FieldDropdown([
-        ["1m", "1m"],
-        ["5m", "5m"],
-        ["15m", "15m"],
-        ["1h", "1h"],
-        ["4h", "4h"],
-        ["1d", "1d"]
-      ]), "TIMEFRAME");
+      .appendField(new Blockly.FieldDropdown(TIMEFRAME_OPTIONS), "TIMEFRAME");
     this.setOutput(true, "EnvironmentValue");
     this.setStyle('environment_blocks');
     this.setTooltip("Previous ticker close price");
@@ -61,7 +49,7 @@ Blockly.Blocks['environment_prev_ticker_close'] = {
 };
 
 Blockly.Blocks['environment_is_market_open'] = {
-  init: function() {
+  init: function () {
     this.appendDummyInput()
       .appendField("Is market open?");
     this.setOutput(true, "Boolean");
@@ -72,7 +60,7 @@ Blockly.Blocks['environment_is_market_open'] = {
 };
 
 Blockly.Blocks['environment_time'] = {
-  init: function() {
+  init: function () {
     this.appendDummyInput()
       .appendField("Time");
     this.setOutput(true, "EnvironmentValue");
@@ -83,7 +71,7 @@ Blockly.Blocks['environment_time'] = {
 };
 
 Blockly.Blocks['environment_day_of_week'] = {
-  init: function() {
+  init: function () {
     this.appendDummyInput()
       .appendField("Day of week");
     this.setOutput(true, "EnvironmentValue");
@@ -94,17 +82,10 @@ Blockly.Blocks['environment_day_of_week'] = {
 };
 
 Blockly.Blocks['environment_new_candle_open'] = {
-  init: function() {
+  init: function () {
     this.appendDummyInput()
       .appendField("New candle open")
-      .appendField(new Blockly.FieldDropdown([
-        ["1m", "1m"],
-        ["5m", "5m"],
-        ["15m", "15m"],
-        ["1h", "1h"],
-        ["4h", "4h"],
-        ["1d", "1d"]
-      ]), "TIMEFRAME");
+      .appendField(new Blockly.FieldDropdown(TIMEFRAME_OPTIONS), "TIMEFRAME");
     this.setOutput(true, "Boolean");
     this.setStyle('environment_blocks');
     this.setTooltip("Check if a new candle just opened");

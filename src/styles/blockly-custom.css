@@ -12,8 +12,8 @@
 }
 
 /* Editable field text - even smaller */
-.blocklyEditableText > text,
-.blocklyNonEditableText > text {
+.blocklyEditableText>text,
+.blocklyNonEditableText>text {
   font-weight: 500 !important;
   font-size: 10px !important;
 }
@@ -34,7 +34,7 @@
 }
 
 /* Remove extra padding from blocks */
-.blocklyBlockCanvas > g {
+.blocklyBlockCanvas>g {
   padding: 0 !important;
   margin: 0 !important;
 }
@@ -145,8 +145,8 @@ g[data-statement-gap] {
 }
 
 /* Editable field text - even smaller */
-.blocklyEditableText > text,
-.blocklyNonEditableText > text {
+.blocklyEditableText>text,
+.blocklyNonEditableText>text {
   font-weight: 500 !important;
   font-size: 10px !important;
 }
@@ -167,7 +167,7 @@ g[data-statement-gap] {
 }
 
 /* Remove extra padding from blocks */
-.blocklyBlockCanvas > g {
+.blocklyBlockCanvas>g {
   padding: 0 !important;
   margin: 0 !important;
 }
@@ -332,13 +332,13 @@ g[data-statement-gap] {
 }
 
 /* Hide SVG text when editing - Blockly should handle this, but ensure it's hidden */
-.blocklyEditableText.blocklyTextSelected > text {
+.blocklyEditableText.blocklyTextSelected>text {
   opacity: 0 !important;
   pointer-events: none !important;
 }
 
 /* Ensure no duplicate text rendering */
-.blocklyEditableText > text {
+.blocklyEditableText>text {
   pointer-events: none !important;
 }
 
@@ -347,8 +347,7 @@ g[data-statement-gap] {
    ------------------------------------------------------------------ */
 
 /* Target the zoom control group */
-.blocklyZoom > image {
-  /* This might not work directly as they are SVG images positioned by JS.
+/* This might not work directly as they are SVG images positioned by JS.
      However, we can try to target the second image (zoom out) and move it down if possible,
      but usually Blockly calculates positions.
      Alternatively, we can hide them and rely on our custom controls, 
@@ -367,17 +366,6 @@ g[data-statement-gap] {
      If they have classes, we can try to translate them?
      SVG transforms in CSS might work.
   */
-}
-
-/* Hack to increase spacing if they have classes or order */
-/* Note: Blockly standard classes might not be stable or present on all versions. */
-/* Assuming standard Blockly structure */
-
-.blocklyZoom > image:nth-child(2) {
-  /* Zoom Out button usually comes second or third depending on reset */
-  /* This is tricky without JS. */
-  /* Let's try to add margin if they were HTML, but for SVG we need transform. */
-}
 
 /* 
    Since modifying SVG layout via CSS is flaky, and the user specifically asked for it "inside the blockly workspace",
@@ -395,10 +383,60 @@ g[data-statement-gap] {
    Let's try:
 */
 
-.blocklyZoom > image:nth-of-type(2) {
-  transform: translateY(10px); /* Push the second button down */
+.blocklyZoom>image:nth-of-type(2) {
+  transform: translateY(10px);
+  /* Push the second button down */
 }
 
-.blocklyZoom > image:nth-of-type(3) {
-  transform: translateY(20px); /* Push the third button (reset) down further */
+.blocklyZoom>image:nth-of-type(3) {
+  transform: translateY(20px);
+  /* Push the third button (reset) down further */
+}
+
+/* Syntax Highlighting */
+.syntax-keyword {
+  color: #c586c0;
+  /* Purple */
+  font-weight: bold;
+}
+
+.syntax-string {
+  color: #ce9178;
+  /* Orange-ish */
+}
+
+.syntax-number {
+  color: #b5cea8;
+  /* Light Green */
+}
+
+.syntax-comment {
+  color: #6a9955;
+  /* Green */
+  font-style: italic;
+}
+
+.syntax-type {
+  color: #4ec9b0;
+  /* Teal */
+}
+
+.syntax-punctuation {
+  color: #d4d4d4;
+  /* Light Gray */
+}
+
+.syntax-function {
+  color: #dcdcaa;
+  /* Yellow */
+}
+
+.syntax-operator {
+  color: #d4d4d4;
+  /* Light Gray */
+}
+
+.syntax-variable {
+  color: #9cdcfe;
+  /* Light Blue */
 }

@@ -9,9 +9,9 @@ import '../../features/trading/generators';
 
 
 // Export function to generate code from workspace
-export function generateCode(workspace: Blockly.WorkspaceSvg, language: 'javascript' | 'mql' = 'javascript'): string {
+export function generateCode(workspace: Blockly.WorkspaceSvg, language: 'javascript' | 'mql' = 'javascript', leverage: number = 1): string {
   if (language === 'mql') {
-    return mqlGenerator.workspaceToCode(workspace);
+    return mqlGenerator.workspaceToCode(workspace, leverage);
   }
   return javascriptGenerator.workspaceToCode(workspace);
 }
