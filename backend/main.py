@@ -41,6 +41,7 @@ class StrategyRequest(BaseModel):
 
 class StrategyResponse(BaseModel):
     xml: str
+    ai_fixed: bool = False  # True if programmatic fix was applied
 
 
 class MqlRequest(BaseModel):
@@ -217,6 +218,144 @@ INSTRUCTIONS:
 - NO explanations, NO comments, ONLY the XML"""
 
 
+PARAMETER_FIX_PROMPT = """You are analyzing a Blockly XML trading strategy for INDICATOR PARAMETER issues.
+
+YOUR TASK: Find comparison blocks (operator_greater, operator_less, operator_greater_equals, operator_less_equals) 
+that compare TWO indicators of the SAME TYPE with IDENTICAL settings.
+
+For example: SMA vs SMA where both have ma_period="14" - this is WRONG for a crossover strategy.
+
+HOW TO FIX:
+1. Identify the FIRST indicator in each comparison → Make it "Fast" with SHORTER period
+2. Identify the SECOND indicator → Make it "Slow" with LONGER period
+
+STANDARD CROSSOVER PERIODS:
+- SMA: Fast ma_period="10", Slow ma_period="20"
+- EMA: Fast ma_period="12", Slow ma_period="26"  
+- RSI: Fast ma_period="7", Slow ma_period="14"
+
+ALSO UPDATE THE NAME FIELD:
+- First indicator: NAME="Fast SMA" (or Fast EMA, etc.)
+- Second indicator: NAME="Slow SMA" (or Slow EMA, etc.)
+
+Return ONLY the corrected XML wrapped in <xml></xml> tags. NO explanations."""
+
+
+def check_crossover_valid(xml: str) -> tuple[bool, list[str]]:
+    """
+    Check if comparison blocks have different indicator settings.
+    
+    Returns:
+        (is_valid, list of issues found)
+    """
+    issues = []
+    
+    # Find all ta_sma, ta_ema, ta_rsi blocks and their ma_period values
+    indicator_pattern = r'<block type="(ta_sma|ta_ema|ta_rsi)"[^>]*>.*?<mutation ma_period="(\d+)"'
+    
+    # Find comparison blocks
+    comparison_pattern = r'<block type="(operator_greater|operator_less|operator_greater_equals|operator_less_equals)"[^>]*>(.*?)</block>'
+    
+    import re
+    comparisons = re.findall(comparison_pattern, xml, re.DOTALL)
+    
+    for op_type, content in comparisons:
+        # Find indicators in LEFT and RIGHT values
+        left_match = re.search(r'<value name="LEFT">(.*?)</value>', content, re.DOTALL)
+        right_match = re.search(r'<value name="RIGHT">(.*?)</value>', content, re.DOTALL)
+        
+        if left_match and right_match:
+            left_content = left_match.group(1)
+            right_content = right_match.group(1)
+            
+            # Check if both are same indicator type
+            left_indicator = re.search(r'<block type="(ta_sma|ta_ema|ta_rsi)"', left_content)
+            right_indicator = re.search(r'<block type="(ta_sma|ta_ema|ta_rsi)"', right_content)
+            
+            if left_indicator and right_indicator:
+                if left_indicator.group(1) == right_indicator.group(1):
+                    # Same indicator type - check if periods are identical
+                    left_period = re.search(r'ma_period="(\d+)"', left_content)
+                    right_period = re.search(r'ma_period="(\d+)"', right_content)
+                    
+                    if left_period and right_period:
+                        if left_period.group(1) == right_period.group(1):
+                            issues.append(f"Identical {left_indicator.group(1)} indicators with ma_period={left_period.group(1)}")
+    
+    return (len(issues) == 0, issues)
+
+
+def fix_crossover_indicators(xml: str) -> tuple[str, bool]:
+    """
+    Programmatically fix identical indicators in comparison blocks.
+    
+    Returns:
+        (fixed_xml, was_fixed)
+    """
+    import re
+    
+    # Default periods for fast/slow
+    FAST_SLOW_PERIODS = {
+        'ta_sma': ('10', '20'),
+        'ta_ema': ('12', '26'),
+        'ta_rsi': ('7', '14'),
+    }
+    
+    was_fixed = False
+    fixed_xml = xml
+    
+    # Find comparison blocks
+    comparison_pattern = r'(<block type="(?:operator_greater|operator_less|operator_greater_equals|operator_less_equals)"[^>]*>)(.*?)(</block>)'
+    
+    def fix_comparison(match):
+        nonlocal was_fixed
+        opening_tag = match.group(1)
+        content = match.group(2)
+        closing_tag = match.group(3)
+        
+        # Find LEFT and RIGHT values
+        left_match = re.search(r'(<value name="LEFT">)(.*?)(</value>)', content, re.DOTALL)
+        right_match = re.search(r'(<value name="RIGHT">)(.*?)(</value>)', content, re.DOTALL)
+        
+        if not left_match or not right_match:
+            return match.group(0)
+        
+        left_content = left_match.group(2)
+        right_content = right_match.group(2)
+        
+        # Check if both are same indicator type with same period
+        for indicator_type, (fast_period, slow_period) in FAST_SLOW_PERIODS.items():
+            left_indicator = re.search(rf'<block type="{indicator_type}"', left_content)
+            right_indicator = re.search(rf'<block type="{indicator_type}"', right_content)
+            
+            if left_indicator and right_indicator:
+                left_period = re.search(r'ma_period="(\d+)"', left_content)
+                right_period = re.search(r'ma_period="(\d+)"', right_content)
+                
+                if left_period and right_period and left_period.group(1) == right_period.group(1):
+                    # Fix: update LEFT to fast, RIGHT to slow
+                    indicator_name = indicator_type.replace('ta_', '').upper()
+                    
+                    # Update LEFT (Fast)
+                    new_left = re.sub(r'ma_period="\d+"', f'ma_period="{fast_period}"', left_content)
+                    new_left = re.sub(r'<field name="NAME">[^<]*</field>', f'<field name="NAME">Fast {indicator_name}</field>', new_left)
+                    
+                    # Update RIGHT (Slow)
+                    new_right = re.sub(r'ma_period="\d+"', f'ma_period="{slow_period}"', right_content)
+                    new_right = re.sub(r'<field name="NAME">[^<]*</field>', f'<field name="NAME">Slow {indicator_name}</field>', new_right)
+                    
+                    # Rebuild content
+                    new_content = content.replace(left_content, new_left).replace(right_content, new_right)
+                    was_fixed = True
+                    return opening_tag + new_content + closing_tag
+        
+        return match.group(0)
+    
+    fixed_xml = re.sub(comparison_pattern, fix_comparison, xml, flags=re.DOTALL)
+    
+    return (fixed_xml, was_fixed)
+
+
 # ============================================================
 # DeepSeek API Helper
 # ============================================================
@@ -301,8 +440,14 @@ async def root():
 async def generate_strategy(request: StrategyRequest):
     """
     Generate Blockly XML strategy using DeepSeek API.
-    Uses 2-pass pipeline: Generate -> Validate & Fix
+    Uses 4-pass pipeline:
+    1. Generate strategy
+    2. Validate & fix structure
+    3. LLM parameter differentiation
+    4. Programmatic fallback for identical indicators
     """
+    ai_fixed = False
+    
     print("=== PASS 1: Generating strategy ===")
     
     # Build user prompt
@@ -322,7 +467,7 @@ async def generate_strategy(request: StrategyRequest):
     block_count = len(re.findall(r'<block ', first_xml))
     print(f"Pass 1 complete: {block_count} blocks, {len(first_xml)} chars")
     
-    # Second pass: Validate and fix
+    # Second pass: Validate and fix structure
     print("=== PASS 2: Validating and fixing strategy ===")
     
     second_messages = [
@@ -332,16 +477,57 @@ async def generate_strategy(request: StrategyRequest):
     
     try:
         second_response = await call_deepseek(second_messages, temperature=0.2)
-        final_xml = extract_xml(second_response)
-        
-        if final_xml:
-            final_block_count = len(re.findall(r'<block ', final_xml))
-            print(f"Pass 2 complete: {final_block_count} blocks, {len(final_xml)} chars")
-            return StrategyResponse(xml=final_xml)
+        validated_xml = extract_xml(second_response)
+        if validated_xml:
+            block_count = len(re.findall(r'<block ', validated_xml))
+            print(f"Pass 2 complete: {block_count} blocks, {len(validated_xml)} chars")
+        else:
+            validated_xml = first_xml
     except Exception as e:
-        print(f"Pass 2 failed: {e}, returning Pass 1 result")
+        print(f"Pass 2 failed: {e}, continuing with Pass 1 result")
+        validated_xml = first_xml
     
-    return StrategyResponse(xml=first_xml)
+    # Check for identical crossover indicators
+    is_valid, issues = check_crossover_valid(validated_xml)
+    
+    if not is_valid:
+        print(f"=== PASS 3: Fixing indicator parameters (issues: {issues}) ===")
+        
+        # Third pass: LLM parameter differentiation
+        third_messages = [
+            {"role": "system", "content": PARAMETER_FIX_PROMPT},
+            {"role": "user", "content": f"Fix the indicator parameters in this strategy:\n\n{validated_xml}"}
+        ]
+        
+        try:
+            third_response = await call_deepseek(third_messages, temperature=0.1)
+            param_fixed_xml = extract_xml(third_response)
+            
+            if param_fixed_xml:
+                # Verify LLM actually fixed it
+                still_valid, remaining_issues = check_crossover_valid(param_fixed_xml)
+                
+                if still_valid:
+                    block_count = len(re.findall(r'<block ', param_fixed_xml))
+                    print(f"Pass 3 complete (LLM fixed): {block_count} blocks")
+                    return StrategyResponse(xml=param_fixed_xml, ai_fixed=False)
+                else:
+                    print(f"Pass 3 failed to fix: {remaining_issues}, using fallback")
+        except Exception as e:
+            print(f"Pass 3 failed: {e}, using fallback")
+        
+        # Fourth pass: Programmatic fallback
+        print("=== PASS 4: Programmatic fallback ===")
+        fixed_xml, was_fixed = fix_crossover_indicators(validated_xml)
+        
+        if was_fixed:
+            print(f"Pass 4 complete: Programmatically fixed identical indicators")
+            ai_fixed = True
+            return StrategyResponse(xml=fixed_xml, ai_fixed=True)
+        else:
+            print("Pass 4: No fixes needed or could not fix")
+    
+    return StrategyResponse(xml=validated_xml, ai_fixed=ai_fixed)
 
 
 @app.post("/generate-mql", response_model=MqlResponse)
