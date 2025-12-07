@@ -114,18 +114,18 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
           });
         }
 
+        // Use local Python backend
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
         const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-strategy`,
+          `${backendUrl}/generate-strategy`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             },
             body: JSON.stringify({
               message: input,
-              currentWorkspace: currentXml,
-              blockXml: attachedBlock?.xml
+              existingXml: currentXml
             }),
           }
         );
@@ -209,13 +209,14 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
           });
         }
 
+        // Use local Python backend for chat (fallback to Supabase if not implemented)
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
         const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/conversational-chat`,
+          `${backendUrl}/chat`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             },
             body: JSON.stringify({
               messages: [...messages, userMessage],

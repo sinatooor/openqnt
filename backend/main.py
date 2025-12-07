@@ -427,6 +427,7 @@ async def root():
         "endpoints": [
             "/generate-strategy",
             "/generate-mql",
+            "/chat",
             "/backtest",
             "/ig/login",
             "/ig/positions",
@@ -528,6 +529,55 @@ async def generate_strategy(request: StrategyRequest):
             print("Pass 4: No fixes needed or could not fix")
     
     return StrategyResponse(xml=validated_xml, ai_fixed=ai_fixed)
+
+
+class ChatRequest(BaseModel):
+    messages: list
+    blockXml: Optional[str] = None
+    currentWorkspace: Optional[str] = None
+
+
+class ChatResponse(BaseModel):
+    response: str
+
+
+@app.post("/chat", response_model=ChatResponse)
+async def chat(request: ChatRequest):
+    """
+    Conversational chat about trading strategies.
+    """
+    print("=== Chat endpoint ===")
+    
+    # Build system prompt for trading assistant
+    system_prompt = """You are a helpful trading strategy assistant. You can:
+1. Explain trading concepts (RSI, MACD, moving averages, etc.)
+2. Suggest strategy improvements
+3. Answer questions about trading and technical analysis
+
+Be concise and helpful. Use markdown formatting for better readability."""
+    
+    # Convert messages to format expected by DeepSeek
+    formatted_messages = [{"role": "system", "content": system_prompt}]
+    
+    for msg in request.messages:
+        formatted_messages.append({
+            "role": msg.get("role", "user"),
+            "content": msg.get("content", "")
+        })
+    
+    # Add workspace context if available
+    if request.currentWorkspace:
+        block_count = request.currentWorkspace.count("<block ")
+        context = f"\n\n[Context: User has {block_count} blocks in their workspace]"
+        if formatted_messages:
+            formatted_messages[-1]["content"] += context
+    
+    try:
+        response = await call_deepseek(formatted_messages, temperature=0.7)
+        return ChatResponse(response=response)
+    except Exception as e:
+        print(f"Chat error: {e}")
+        return ChatResponse(response=f"Sorry, I encountered an error: {str(e)}")
 
 
 @app.post("/generate-mql", response_model=MqlResponse)
