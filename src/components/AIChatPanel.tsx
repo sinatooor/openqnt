@@ -40,7 +40,7 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
         setDraggedBlockXml(blockData);
       }
     };
-    
+
     window.addEventListener('addBlockToChat', handleAddBlock);
     return () => window.removeEventListener('addBlockToChat', handleAddBlock);
   }, []);
@@ -65,7 +65,7 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
-    
+
     const blockData = e.dataTransfer.getData('blockly/xml');
     if (blockData) {
       try {
@@ -84,8 +84,8 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
-    const userMessage: Message = { 
-      role: "user", 
+    const userMessage: Message = {
+      role: "user",
       content: input,
       blockXml: draggedBlockXml?.xml,
       blockName: draggedBlockXml?.name
@@ -103,7 +103,7 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
         // Generate mode - create blocks
         const currentXml = getCurrentWorkspaceXml();
         const blockCount = currentXml ? (currentXml.match(/<block /g) || []).length : 0;
-        
+
         // Log request
         if (onLog) {
           onLog({
@@ -116,19 +116,19 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
             timestamp: Date.now()
           });
         }
-        
+
+        // Use local Python backend
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
         const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-strategy`,
+          `${backendUrl}/generate-strategy`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
               message: input,
-              currentWorkspace: currentXml,
-              blockXml: attachedBlock?.xml
+              existingXml: currentXml
             }),
           }
         );
@@ -147,7 +147,7 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
         }
 
         const data = await response.json();
-        
+
         if (onLog) {
           onLog({
             type: 'response',
@@ -157,11 +157,11 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
             timestamp: Date.now()
           });
         }
-        
+
         const isEdit = currentXml !== null;
         const assistantMessage: Message = {
           role: "assistant",
-          content: isEdit 
+          content: isEdit
             ? "Strategy updated successfully! Replacing workspace..."
             : "Strategy blocks generated successfully! Adding to workspace...",
         };
@@ -190,7 +190,7 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
         // Conversational mode - Get workspace for context
         const currentXml = getCurrentWorkspaceXml();
         const blockCount = currentXml ? (currentXml.match(/<block /g) || []).length : 0;
-        
+
         // Log request
         if (onLog) {
           onLog({
@@ -203,16 +203,17 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
             timestamp: Date.now()
           });
         }
-        
+
+        // Use local Python backend for chat
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
         const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/conversational-chat`,
+          `${backendUrl}/chat`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
               messages: [...messages, userMessage],
               blockXml: attachedBlock?.xml,
               currentWorkspace: currentXml
@@ -234,7 +235,7 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
         }
 
         const data = await response.json();
-        
+
         if (onLog) {
           onLog({
             type: 'response',
@@ -244,7 +245,7 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
             timestamp: Date.now()
           });
         }
-        
+
         const assistantMessage: Message = {
           role: "assistant",
           content: data.response,
@@ -261,12 +262,11 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
           timestamp: Date.now()
         });
       }
-      
+
       const errorMessage: Message = {
         role: "assistant",
-        content: `Sorry, I encountered an error: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`,
+        content: `Sorry, I encountered an error: ${error instanceof Error ? error.message : "Unknown error"
+          }`,
       };
       setMessages((prev) => [...prev, errorMessage]);
 
@@ -316,7 +316,7 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
         </div>
       </div>
 
-      <ScrollArea 
+      <ScrollArea
         className={`flex-1 p-4 transition-colors ${isDragOver ? 'bg-pink-500/10 border-2 border-pink-500 border-dashed' : ''}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -354,23 +354,22 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-lg p-3 ${
-                    msg.role === "user"
+                  className={`max-w-[80%] rounded-lg p-3 ${msg.role === "user"
                       ? "bg-pink-500/20 text-foreground"
                       : "bg-muted text-foreground"
-                  }`}
+                    }`}
                 >
                   {msg.role === "assistant" ? (
                     <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
                       <ReactMarkdown
                         components={{
-                          p: ({children}) => <p className="mb-2 last:mb-0">{children}</p>,
-                          ul: ({children}) => <ul className="list-disc ml-4 mb-2">{children}</ul>,
-                          ol: ({children}) => <ol className="list-decimal ml-4 mb-2">{children}</ol>,
-                          li: ({children}) => <li className="mb-1">{children}</li>,
-                          strong: ({children}) => <strong className="font-semibold">{children}</strong>,
-                          em: ({children}) => <em className="italic">{children}</em>,
-                          code: ({children}) => <code className="bg-background/50 px-1 py-0.5 rounded text-xs">{children}</code>,
+                          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                          ul: ({ children }) => <ul className="list-disc ml-4 mb-2">{children}</ul>,
+                          ol: ({ children }) => <ol className="list-decimal ml-4 mb-2">{children}</ol>,
+                          li: ({ children }) => <li className="mb-1">{children}</li>,
+                          strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                          em: ({ children }) => <em className="italic">{children}</em>,
+                          code: ({ children }) => <code className="bg-background/50 px-1 py-0.5 rounded text-xs">{children}</code>,
                         }}
                       >
                         {msg.content}
@@ -411,14 +410,14 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
             <span>AI can see your workspace ({workspaceBlockCount} blocks)</span>
           </div>
         )}
-        
+
         {draggedBlockXml && (
           <div className="mb-2 p-2 bg-pink-500/10 border border-pink-500/20 rounded flex items-center gap-2">
             <Blocks className="w-4 h-4 text-pink-500" />
             <span className="text-xs flex-1">Block attached: {draggedBlockXml.name}</span>
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="h-6 w-6"
               onClick={() => setDraggedBlockXml(null)}
             >

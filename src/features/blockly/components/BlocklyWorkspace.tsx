@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Code2, Copy, Check, Download, Upload, ZoomIn, ZoomOut, Maximize2, Undo2, Redo2, Wand2, FileCode, BarChart3, BookOpen, Search, Pencil } from "lucide-react";
+import { Code2, Copy, Check, Download, Upload, ZoomIn, ZoomOut, Maximize2, Undo2, Redo2, Wand2, FileCode, BarChart3, BookOpen, Search, Pencil, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { BacktestingPanel } from "@/features/backtest/components/BacktestingPanel";
 import { StrategyTemplatesDialog } from "@/components/StrategyTemplatesDialog";
@@ -24,6 +24,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { fetchMarketData } from "@/services/marketData";
 import { BacktestResult, runBacktest } from "@/features/backtest/logic/engine";
 import { IndicatorSettingsModal } from "@/components/IndicatorSettingsModal";
+import { IGTradingPanel } from "@/components/IGTradingPanel";
 
 interface BlocklyWorkspaceProps {
   runTour?: boolean;
@@ -60,6 +61,7 @@ export const BlocklyWorkspace = ({
   const [showTemplates, setShowTemplates] = useState(false);
   const [showFloatingChart, setShowFloatingChart] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
+  const [showIGPanel, setShowIGPanel] = useState(false);
   const [pendingXml, setPendingXml] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [runTour, setRunTour] = useState(runTourProp || false);
@@ -1086,6 +1088,27 @@ export const BlocklyWorkspace = ({
             <p className="text-xs text-muted-foreground mt-1">View generated strategy code</p>
           </TooltipContent>
         </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={showIGPanel ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowIGPanel(!showIGPanel)}
+              className={cn(
+                "transition-all duration-200",
+                showIGPanel ? "bg-green-600 hover:bg-green-700" : "hover:shadow-[0_0_0_2px_rgba(34,197,94,0.5)]"
+              )}
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              {showIGPanel ? "Hide" : "Trade"}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Live Trading (IG)</p>
+            <p className="text-xs text-muted-foreground mt-1">Connect to IG for live trading</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
     </div>
 
@@ -1222,6 +1245,11 @@ export const BlocklyWorkspace = ({
           />
         </div>
       </div>}
+
+      {/* IG Trading Panel */}
+      {showIGPanel && (
+        <IGTradingPanel onClose={() => setShowIGPanel(false)} />
+      )}
     </div>
 
     {/* Strategy Templates Dialog */}
