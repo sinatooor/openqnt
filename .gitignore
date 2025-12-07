@@ -28,4 +28,4 @@ docs/*
 *.njsproj
 *.sln
 *.sw?
-prompts.docs
+prompts.docsbackend/.env
