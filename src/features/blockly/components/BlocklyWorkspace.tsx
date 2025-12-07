@@ -45,6 +45,8 @@ export const BlocklyWorkspace = ({
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
   const [generatedMqlCode, setGeneratedMqlCode] = useState<string>("");
+  const [currentXmlCode, setCurrentXmlCode] = useState<string>("");
+  const [codeTab, setCodeTab] = useState<"mql" | "xml">("mql");
   const [showCode, setShowCode] = useState(false);
   const [copied, setCopied] = useState(false);
   const [blockCount, setBlockCount] = useState(0);
@@ -413,13 +415,24 @@ export const BlocklyWorkspace = ({
     if (showCode && workspaceRef.current) {
       const code = generateCode(workspaceRef.current, 'mql', leverage);
       setGeneratedMqlCode(code);
+
+      // Also generate XML
+      const xml = Blockly.Xml.workspaceToDom(workspaceRef.current);
+      const xmlText = Blockly.Xml.domToText(xml);
+      // Format XML for readability
+      const formattedXml = xmlText
+        .replace(/></g, '>\n<')
+        .replace(/(<[^/][^>]*>)/g, '  $1')
+        .replace(/(<\/[^>]+>)/g, '$1\n');
+      setCurrentXmlCode(formattedXml);
     }
   }, [showCode, blockCount, leverage]);
 
   const handleCopyCode = () => {
-    navigator.clipboard.writeText(generatedMqlCode);
+    const codeToCopy = codeTab === "xml" ? currentXmlCode : generatedMqlCode;
+    navigator.clipboard.writeText(codeToCopy);
     setCopied(true);
-    toast.success("Code copied to clipboard!");
+    toast.success(`${codeTab.toUpperCase()} code copied to clipboard!`);
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -1101,27 +1114,52 @@ export const BlocklyWorkspace = ({
       {/* Code View Panel */}
       {showCode && <div className="w-[500px] border-l border-[#3e3e42] bg-[#1e1e1e] flex flex-col animate-in slide-in-from-right duration-300">
         <div className="h-12 border-b border-[#3e3e42] flex items-center justify-between px-4 bg-[#252526]">
-          <div className="flex items-center gap-2">
-            <FileCode className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium">MQL5 Export</span>
+          <div className="flex items-center gap-1">
+            {/* Tab Buttons */}
+            <button
+              onClick={() => setCodeTab("mql")}
+              className={cn(
+                "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                codeTab === "mql"
+                  ? "bg-primary/20 text-primary"
+                  : "text-gray-400 hover:text-gray-200 hover:bg-[#3e3e42]"
+              )}
+            >
+              MQL5
+            </button>
+            <button
+              onClick={() => setCodeTab("xml")}
+              className={cn(
+                "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                codeTab === "xml"
+                  ? "bg-emerald-500/20 text-emerald-400"
+                  : "text-gray-400 hover:text-gray-200 hover:bg-[#3e3e42]"
+              )}
+            >
+              XML
+            </button>
           </div>
           <div className="flex items-center gap-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setBeautified(!beautified)}>
-                  <Wand2 className={`w-3 h-3 ${beautified ? "text-primary" : ""}`} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Format Code</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowLineNumbers(!showLineNumbers)}>
-                  <span className="text-xs font-mono">#</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Toggle line numbers</TooltipContent>
-            </Tooltip>
+            {codeTab === "mql" && (
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setBeautified(!beautified)}>
+                      <Wand2 className={`w-3 h-3 ${beautified ? "text-primary" : ""}`} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Format Code</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowLineNumbers(!showLineNumbers)}>
+                      <span className="text-xs font-mono">#</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Toggle line numbers</TooltipContent>
+                </Tooltip>
+              </>
+            )}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCopyCode}>
@@ -1130,21 +1168,35 @@ export const BlocklyWorkspace = ({
               </TooltipTrigger>
               <TooltipContent>Copy to clipboard</TooltipContent>
             </Tooltip>
-
           </div>
         </div>
         <div className="flex-1 overflow-auto custom-scrollbar relative bg-[#1e1e1e] text-gray-300">
           <div className="min-h-full p-4">
-            {renderCodeWithLineNumbers(generatedMqlCode)}
+            {codeTab === "mql" ? (
+              renderCodeWithLineNumbers(generatedMqlCode)
+            ) : (
+              <pre className="font-mono text-sm text-emerald-300 whitespace-pre-wrap break-all">
+                {currentXmlCode || "<!-- No blocks in workspace -->"}
+              </pre>
+            )}
           </div>
         </div>
         <div className="h-10 border-t border-[#3e3e42] flex items-center justify-between px-4 bg-[#252526] text-xs text-gray-400">
           <div className="flex gap-3">
-            <span>{getCodeStatistics().lines} lines</span>
-            <span>{getCodeStatistics().chars} chars</span>
+            {codeTab === "mql" ? (
+              <>
+                <span>{getCodeStatistics().lines} lines</span>
+                <span>{getCodeStatistics().chars} chars</span>
+              </>
+            ) : (
+              <>
+                <span>{currentXmlCode.split('\n').length} lines</span>
+                <span>{currentXmlCode.length} chars</span>
+              </>
+            )}
           </div>
           <div>
-            Complexity: {getCodeStatistics().complexity}
+            {codeTab === "mql" ? `Complexity: ${getCodeStatistics().complexity}` : "Live Preview"}
           </div>
         </div>
       </div>}
