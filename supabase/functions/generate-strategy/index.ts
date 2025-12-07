@@ -58,6 +58,14 @@ CRITICAL RULES:
 14. Use ta_highest and ta_lowest blocks for finding highest/lowest values over a period.
 15. For Donchian and Keltner blocks, the 'shift' attribute in mutation MUST be a positive integer (>= 1). NEVER use 0.
 16. For ALL indicator blocks (including VidYa, AMA, etc.), you MUST explicitly set the 'PERIOD' field to the requested timeframe (in minutes). DO NOT rely on defaults.
+17. CROSSOVER STRATEGIES: When comparing two indicators of the SAME type (e.g., SMA vs SMA, EMA vs EMA):
+    - ALWAYS use DIFFERENT settings in the <mutation> element (ma_period, shift, etc.)
+    - For moving average crossovers: use Fast (shorter period) vs Slow (longer period)
+    - Standard patterns: Fast SMA (ma_period="10") vs Slow SMA (ma_period="20")
+    - Standard patterns: Fast EMA (ma_period="12") vs Slow EMA (ma_period="26")
+    - Set the NAME field to reflect the difference: "Fast SMA" vs "Slow SMA"
+    - NEVER compare two identical indicators - this makes NO logical sense for trading
+
 
 === TEMPLATE REFERENCE (Use these as starting points) ===
 
@@ -295,6 +303,111 @@ XML:
                     </next>
                   </block>
                 </statement>
+              </block>
+            </next>
+          </block>
+        </statement>
+      </block>
+    </statement>
+  </block>
+</xml>
+
+TEMPLATE 2B: SMA vs SMA Crossover (Golden Cross)
+Description: Classic dual moving average crossover. Buy when Fast SMA (10) crosses above Slow SMA (20). This demonstrates using TWO indicators of the same type with DIFFERENT parameters.
+XML:
+<xml xmlns="https://developers.google.com/blockly/xml">
+  <block type="control_forever" x="50" y="50">
+    <statement name="DO">
+      <block type="control_if">
+        <value name="CONDITION">
+          <block type="operator_greater">
+            <value name="LEFT">
+              <block type="ta_sma">
+                <field name="PERIOD">60</field>
+                <mutation ma_period="10" shift="0" applied_price="0"></mutation>
+                <field name="NAME">Fast SMA</field>
+              </block>
+            </value>
+            <value name="RIGHT">
+              <block type="ta_sma">
+                <field name="PERIOD">60</field>
+                <mutation ma_period="20" shift="0" applied_price="0"></mutation>
+                <field name="NAME">Slow SMA</field>
+              </block>
+            </value>
+          </block>
+        </value>
+        <statement name="DO">
+          <block type="trade_order">
+            <field name="TRADE_ID">sma_crossover_buy</field>
+            <field name="DIRECTION">long</field>
+            <value name="SIZE">
+              <shadow type="math_number">
+                <field name="NUM">0.1</field>
+              </shadow>
+            </value>
+            <field name="LEVERAGE">1</field>
+            <field name="ORDER_TYPE">market</field>
+            <next>
+              <block type="trade_stop_loss">
+                <field name="CLOSE_TYPE">full</field>
+                <field name="TRADE_ID">sma_crossover_buy</field>
+                <value name="PRICE">
+                  <block type="operator_subtract">
+                    <value name="LEFT">
+                      <block type="trade_entry_price">
+                        <field name="TRADE_ID">sma_crossover_buy</field>
+                      </block>
+                    </value>
+                    <value name="RIGHT">
+                      <block type="operator_multiply">
+                        <value name="LEFT">
+                          <block type="ta_atr">
+                            <field name="PERIOD">60</field>
+                            <mutation ma_period="14"></mutation>
+                            <field name="NAME">ATR</field>
+                          </block>
+                        </value>
+                        <value name="RIGHT">
+                          <shadow type="math_number">
+                            <field name="NUM">2</field>
+                          </shadow>
+                        </value>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+                <next>
+                  <block type="trade_take_profit">
+                    <field name="CLOSE_TYPE">full</field>
+                    <field name="TRADE_ID">sma_crossover_buy</field>
+                    <value name="PRICE">
+                      <block type="operator_add">
+                        <value name="LEFT">
+                          <block type="trade_entry_price">
+                            <field name="TRADE_ID">sma_crossover_buy</field>
+                          </block>
+                        </value>
+                        <value name="RIGHT">
+                          <block type="operator_multiply">
+                            <value name="LEFT">
+                              <block type="ta_atr">
+                                <field name="PERIOD">60</field>
+                                <mutation ma_period="14"></mutation>
+                                <field name="NAME">ATR</field>
+                              </block>
+                            </value>
+                            <value name="RIGHT">
+                              <shadow type="math_number">
+                                <field name="NUM">4</field>
+                              </shadow>
+                            </value>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                  </block>
+                </next>
               </block>
             </next>
           </block>
@@ -2785,6 +2898,16 @@ VALIDATION CHECKLIST:
    - Pattern: operator_add(trade_entry_price, ATR * multiplier * RR) for TP
 
 5. VALUE INPUTS - All numeric inputs must use: <shadow type="math_number"><field name="NUM">value</field></shadow>
+
+6. CROSSOVER LOGIC - When two indicators of the SAME type are compared (inside operator_greater, operator_less, etc.):
+   - Check the <mutation> attributes (ma_period, shift, applied_price, etc.)
+   - If BOTH indicators have IDENTICAL mutation attributes, this is an ERROR - FIX IT
+   - Standard crossover patterns to use:
+     * SMA crossover: Fast SMA (ma_period="10") vs Slow SMA (ma_period="20")
+     * EMA crossover: Fast EMA (ma_period="12") vs Slow EMA (ma_period="26")
+     * RSI dual: Fast RSI (ma_period="7") vs Slow RSI (ma_period="14")
+   - Update the NAME field to reflect the difference: "Fast SMA" vs "Slow SMA"
+   - Two identical indicators compared makes NO trading sense and must be fixed
 
 INSTRUCTIONS:
 - If you find ANY errors, FIX THEM and return the corrected XML
