@@ -33,6 +33,7 @@ interface BlocklyWorkspaceProps {
   showAIPanelFromParent?: boolean;
   onAIPanelChange?: (show: boolean) => void;
   leverage?: number;
+  onXmlChange?: (xml: string | null) => void;
 }
 
 export const BlocklyWorkspace = ({
@@ -41,7 +42,8 @@ export const BlocklyWorkspace = ({
   onStepChange,
   showAIPanelFromParent,
   onAIPanelChange,
-  leverage = 1
+  leverage = 1,
+  onXmlChange
 }: BlocklyWorkspaceProps = {}) => {
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
@@ -370,6 +372,15 @@ export const BlocklyWorkspace = ({
         const currentZoom = workspace.scale;
         setZoomLevel(Math.round(currentZoom * 100));
       }
+
+      // Generate XML for parent component
+      if (allBlocks.length > 0) {
+        const xml = Blockly.Xml.workspaceToDom(workspace);
+        const xmlText = Blockly.Xml.domToText(xml);
+        onXmlChange?.(xmlText);
+      } else {
+        onXmlChange?.(null);
+      }
     });
 
     // Register global handler for opening advanced logic
@@ -427,6 +438,7 @@ export const BlocklyWorkspace = ({
         .replace(/(<[^/][^>]*>)/g, '  $1')
         .replace(/(<\/[^>]+>)/g, '$1\n');
       setCurrentXmlCode(formattedXml);
+      onXmlChange?.(formattedXml);
     }
   }, [showCode, blockCount, leverage]);
 
@@ -1109,32 +1121,6 @@ export const BlocklyWorkspace = ({
           <TooltipContent>
             <p>Toggle code view</p>
             <p className="text-xs text-muted-foreground mt-1">View generated strategy code</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant={showBacktest ? "default" : "outline"}
-              size="sm"
-              onClick={handlePreviewBacktest}
-              disabled={isBacktesting || isEmpty}
-              className={cn(
-                "transition-all duration-200",
-                showBacktest ? "bg-purple-600 hover:bg-purple-700" : "hover:shadow-[0_0_0_2px_rgba(147,51,234,0.5)]"
-              )}
-            >
-              {isBacktesting ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <HistoryIcon className="w-4 h-4 mr-2" />
-              )}
-              {isBacktesting ? "Testing..." : "Backtest"}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Run backtest</p>
-            <p className="text-xs text-muted-foreground mt-1">Test your strategy on historical data</p>
           </TooltipContent>
         </Tooltip>
 
