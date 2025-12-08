@@ -1,73 +1,124 @@
-# Welcome to your Lovable project
+# Project Prometheus (PPM)
 
-## Project info
+**Project Prometheus** is an advanced AI-powered algorithmic trading platform that democratizes strategy creation. It combines a visual drag-and-drop interface (Blockly) with a powerful Generative AI engine (DeepSeek + RAG) to allow users to create, backtest, and deploy trading strategies using natural language or visual blocks.
 
-**URL**: https://lovable.dev/projects/78f98923-9204-4be5-89a6-e93afa916bd9
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Frontend](https://img.shields.io/badge/frontend-React%20%7C%20Vite-61DAFB)
+![Backend](https://img.shields.io/badge/backend-FastAPI%20%7C%20Python-3776AB)
 
-## How can I edit this code?
+## 🚀 Key Features
 
-There are several ways of editing your application.
+*   **🤖 AI Strategy Generation**: Describe your strategy in plain English (e.g., *"Buy EURUSD when RSI < 30 and price is above SMA 200"*). The system uses **RAG (Retrieval Augmented Generation)** and **DeepSeek-V3** to construct a valid visual strategy.
+*   **🧩 Visual Builder**: Powered by Google Blockly. Modify AI-generated strategies or build from scratch using typed, validating blocks for Indicators, Logic, and Trade Actions.
+*   **📉 Robust Backtesting**:
+    *   Integrated Python `backtesting.py` engine.
+    *   Supports historical data fetching via `yfinance`.
+    *   Detailed metrics: CAGR, Sharpe, Sortino, Drawdown, and Win Rate.
+*   **⚡ Live Trading**: Direct integration with **IG Markets API** for real-time execution.
+*   **🛡️ Auto-Validation**: Strategies are strictly validated for logic errors (e.g., comparing Price vs Oscillator) and Risk Management rules (e.g., SL < Entry < TP).
 
-**Use Lovable**
+## 🛠️ Technology Stack
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/78f98923-9204-4be5-89a6-e93afa916bd9) and start prompting.
+### Frontend
+*   **Framework**: React 18 + Vite
+*   **Language**: TypeScript
+*   **UI Components**: ShadCn UI + Tailwind CSS
+*   **Visual Engine**: Google Blockly (Custom blocks for Trading)
 
-Changes made via Lovable will be committed automatically to this repo.
+### Backend
+*   **Server**: Python FastAPI
+*   **AI Model**: DeepSeek Chat (`deepseek-chat`)
+*   **Data/Analysis**: `pandas`, `numpy`, `yfinance`, `backtesting`.
 
-**Use your preferred IDE**
+## 📦 Installation & Setup
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Prerequisites
+*   Node.js v18+
+*   Python 3.10+
+*   Git
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+### 1. Clone the Repository
+```bash
+git clone git@github.com:sinatooor/project-prometheus.git
+cd project-prometheus
 ```
 
-**Edit a file directly in GitHub**
+### 2. Frontend Setup
+```bash
+# Install dependencies
+npm install
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+# Start development server
+npm run dev
+```
+Access the UI at `http://localhost:8080`.
 
-**Use GitHub Codespaces**
+### 3. Backend Setup
+```bash
+cd backend
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-## What technologies are used for this project?
+# Install dependencies
+pip install -r requirements.txt
 
-This project is built with:
+# Configure Environment
+cp .env.example .env
+# Edit .env and add your DEEPSEEK_API_KEY
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### 4. Running the Backend
+```bash
+# High-performance server
+uvicorn main:app --reload --port 8000
+```
+Swagger Docs available at `http://localhost:8000/docs`.
 
-## How can I deploy this project?
+## 🧪 Testing Suite
 
-Simply open [Lovable](https://lovable.dev/projects/78f98923-9204-4be5-89a6-e93afa916bd9) and click on Share -> Publish.
+PPM includes a comprehensive testing framework to ensure stability and accuracy.
 
-## Can I connect a custom domain to my Lovable project?
+| Test Suite | Command | Description |
+| :--- | :--- | :--- |
+| **E2E Test** | `python tests/e2e_test.py` | valid full flow: AI Gen -> XML -> Backtest -> Result. |
+| **Stress Test** | `python tests/stress_test.py` | Runs a continuous loop of 20 distinct scenarios to verify stability. |
+| **Benchmark** | `python tests/benchmark_test.py` | Validates backtest logic against "Ground Truth" market data (e.g., Buy & Hold). |
 
-Yes, you can!
+## 🏗️ Architecture
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```mermaid
+graph TD
+    User[User / Trader] -->|Prompts| UI[React Frontend]
+    UI -->|Visual Blocks| Blockly[Blockly Workspace]
+    
+    UI -->|JSON/XML| API[FastAPI Backend]
+    
+    subgraph "AI Engine"
+        API -->|Context| RAG[RAG System]
+        RAG -->|Enriched Prompt| LLM[DeepSeek-V3]
+        LLM -->|XML Strategy| API
+    end
+    
+    subgraph "Execution Engine"
+        API -->|Strategy Code| Converter[XML->Python Compiler]
+        Converter -->|Py Class| Backtest[backtesting.py]
+        Backtest -->|Results| API
+    end
+    
+    subgraph "Live Market"
+        API -->|Orders| IG[IG Markets API]
+        IG -->|Prices| API
+    end
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## 🤝 Contributing
+1.  Fork the Project
+2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4.  Push to the Branch (`git push origin feature/AmazingFeature`)
+5.  Open a Pull Request
+
+## 📄 License
+Distributed under the MIT License. See `LICENSE` for more information.
