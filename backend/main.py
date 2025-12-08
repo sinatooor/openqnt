@@ -81,6 +81,11 @@ RULES:
 4. Common indicator params: period (14), timeframe (60 = 1 hour)
 5. If user mentions "cross above" = operator_greater, "cross below" = operator_less
 6. sl_pips/tp_pips are optional, omit if not specified
+7. CRITICAL GRAMMAR RULE: NEVER compare two identical indicators (same type AND same params).
+   - WRONG: SMA(period=14) > SMA(period=14) - makes no sense
+   - CORRECT: SMA(period=10) > SMA(period=20) - Fast vs Slow
+   - For crossovers, use different periods: Fast (shorter) vs Slow (longer)
+   - Default Fast/Slow: SMA(10/20), EMA(12/26), RSI(7/14)
 
 OUTPUT: Valid JSON only, no markdown."""
 

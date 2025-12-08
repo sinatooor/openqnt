@@ -1,150 +1,60 @@
   <xml xmlns="https://developers.google.com/blockly/xml">
-  <block type="control_forever" id="MV9xbeG9@.qI]{oi=8,b" x="50" y="50">
-  <statement name="DO">
-  <block type="control_if_else" id="5?$):p*2#AC79fKNUG4[">
-  <value name="CONDITION">
-  <block type="operator_greater" id="usJW%Z:D@Z[p:o3RR6gB">
+  <block type="operator_and" id="vDeanMK31paUBGRA-*A#" x="150" y="-30">
   <value name="LEFT">
-  <block type="ta_sma" id="9]L[.aN5:i@W*ic$]W%x">
-  <mutation ma_period="14" shift="0" applied_price="0">
+  <block type="operator_less" id="[;5L+H44tBA|5/GJxLvB">
+  <value name="LEFT">
+  <block type="ta_sma" id="oJ0(7P70(@t.5X/Oh^Y7">
+  <mutation period="5" ma_period="14">
 </mutation>
 
-  <field name="NAME">Fast SMA</field>
+  <field name="NAME">SMA</field>
 
-  <field name="PERIOD">60</field>
+  <field name="PERIOD">5</field>
 
 </block>
 
 </value>
 
   <value name="RIGHT">
-  <block type="ta_sma" id=")9lT9.DsUI1vTzrYLgRu">
-  <mutation ma_period="14" shift="0" applied_price="0">
+  <block type="ta_sma" id="+Z.]|$9*umiX)W]!FFXn">
+  <mutation period="5" ma_period="14">
 </mutation>
 
-  <field name="NAME">Slow SMA</field>
+  <field name="NAME">SMA</field>
 
-  <field name="PERIOD">60</field>
-
-</block>
-
-</value>
+  <field name="PERIOD">5</field>
 
 </block>
 
 </value>
-
-  <statement name="DO">
-  <block type="trade_order" id="OZ(D)gC3lsYAFx%a.4Ez">
-  <field name="TRADE_ID">sma_crossover_long</field>
-
-  <field name="DIRECTION">long</field>
-
-  <field name="SIZE">100</field>
-
-  <field name="SIZE_TYPE">percent</field>
-
-  <field name="ORDER_TYPE">market</field>
-
-  <next>
-  <block type="trade_stop_loss" id="@)~n(O!jh#.h!1J/~6/*">
-  <field name="CLOSE_TYPE">full</field>
-
-  <field name="TRADE_ID">sma_crossover_long</field>
-
-  <value name="PRICE">
-  <block type="operator_subtract" id="qa.4z:O5d1BnC=($A5}x">
-  <value name="LEFT">
-  <block type="trade_entry_price" id="=rPOYtaKeJXX9lE_6c$:">
-  <field name="TRADE_ID">sma_crossover_long</field>
 
 </block>
 
 </value>
 
   <value name="RIGHT">
-  <block type="operator_multiply" id=".:4*2@v8Jx7$3/wl`U7l">
+  <block type="operator_greater" id="*,bfc19Ot=(*g?M2{Gyl">
   <value name="LEFT">
-  <block type="ta_atr" id="4+wmmb`Bm$N4BHQf)ux:">
-  <mutation ma_period="14">
+  <block type="ta_sma" id="AjSXEI=rT)_t2q7T-0cQ">
+  <mutation period="5" ma_period="14">
 </mutation>
 
-  <field name="NAME">ATR</field>
+  <field name="NAME">SMA</field>
 
-  <field name="PERIOD">60</field>
-
-</block>
-
-</value>
-
-  <value name="RIGHT">
-  <shadow type="math_number" id="8!p(T}_v;z]z%*9VjP;o">
-  <field name="NUM">2.5</field>
-
-</shadow>
-
-</value>
-
-</block>
-
-</value>
-
-</block>
-
-</value>
-
-  <next>
-  <block type="trade_take_profit" id="RTp;-V:_.-Ac8^Ril(54">
-  <field name="CLOSE_TYPE">full</field>
-
-  <field name="TRADE_ID">sma_crossover_long</field>
-
-  <value name="PRICE">
-  <block type="operator_add" id="_t}{5WY[rM;@@T%Co]za">
-  <value name="LEFT">
-  <block type="trade_entry_price" id="^Xc+[b(}{1udsg7oy}A/">
-  <field name="TRADE_ID">sma_crossover_long</field>
+  <field name="PERIOD">5</field>
 
 </block>
 
 </value>
 
   <value name="RIGHT">
-  <block type="operator_multiply" id="Cn1+qxh}BHP(v?LJ=OYk">
-  <value name="LEFT">
-  <block type="operator_multiply" id="`[9cj5k%(#Aaj*/GZ:fH">
-  <value name="LEFT">
-  <block type="ta_atr" id="u}?%x|(-SdGCzUT_H[Jn">
-  <mutation ma_period="14">
+  <block type="ta_sma" id="P56S2LS5ShFw{(CCB].D">
+  <mutation period="5" ma_period="14">
 </mutation>
 
-  <field name="NAME">ATR</field>
+  <field name="NAME">SMA</field>
 
-  <field name="PERIOD">60</field>
-
-</block>
-
-</value>
-
-  <value name="RIGHT">
-  <shadow type="math_number" id="8z/$~`DsSx,uG#t:R2TZ">
-  <field name="NUM">2.5</field>
-
-</shadow>
-
-</value>
-
-</block>
-
-</value>
-
-  <value name="RIGHT">
-  <shadow type="math_number" id="N[Rf]M[}nsZm7%bq%:/m">
-  <field name="NUM">3</field>
-
-</shadow>
-
-</value>
+  <field name="PERIOD">5</field>
 
 </block>
 
@@ -153,192 +63,6 @@
 </block>
 
 </value>
-
-</block>
-
-</next>
-
-</block>
-
-</next>
-
-</block>
-
-</statement>
-
-  <statement name="ELSE">
-  <block type="control_if_else" id="hdJm@sNo?#n8O?L@,;Hz">
-  <value name="CONDITION">
-  <block type="operator_less" id="5LeTb{wkDwS$$6?)J7[:">
-  <value name="LEFT">
-  <block type="ta_sma" id="aq~L=|@*up~HQwQnD[o$">
-  <mutation ma_period="14" shift="0" applied_price="0">
-</mutation>
-
-  <field name="NAME">Fast SMA</field>
-
-  <field name="PERIOD">60</field>
-
-</block>
-
-</value>
-
-  <value name="RIGHT">
-  <block type="ta_sma" id="p)])YENt062_k|?^_(uk">
-  <mutation ma_period="14" shift="0" applied_price="0">
-</mutation>
-
-  <field name="NAME">Slow SMA</field>
-
-  <field name="PERIOD">60</field>
-
-</block>
-
-</value>
-
-</block>
-
-</value>
-
-  <statement name="DO">
-  <block type="trade_order" id="StI2bqnvYv(SVzt1~4Vd">
-  <field name="TRADE_ID">sma_crossover_short</field>
-
-  <field name="DIRECTION">short</field>
-
-  <field name="SIZE">100</field>
-
-  <field name="SIZE_TYPE">percent</field>
-
-  <field name="ORDER_TYPE">market</field>
-
-  <next>
-  <block type="trade_stop_loss" id="enKNjGUR%~Tfzwhspe7v">
-  <field name="CLOSE_TYPE">full</field>
-
-  <field name="TRADE_ID">sma_crossover_short</field>
-
-  <value name="PRICE">
-  <block type="operator_add" id="z:=E|cf(fL~?OLhZZXu5">
-  <value name="LEFT">
-  <block type="trade_entry_price" id="o_{AURa*b(!I$_gN?[Tl">
-  <field name="TRADE_ID">sma_crossover_short</field>
-
-</block>
-
-</value>
-
-  <value name="RIGHT">
-  <block type="operator_multiply" id="%!tj7xGtspY[lC{A/WbO">
-  <value name="LEFT">
-  <block type="ta_atr" id="Pa5k=f`0|*4d@@aSvzZ$">
-  <mutation ma_period="14">
-</mutation>
-
-  <field name="NAME">ATR</field>
-
-  <field name="PERIOD">60</field>
-
-</block>
-
-</value>
-
-  <value name="RIGHT">
-  <shadow type="math_number" id="|9#TKK2saGEpl;jhUYq#">
-  <field name="NUM">2.5</field>
-
-</shadow>
-
-</value>
-
-</block>
-
-</value>
-
-</block>
-
-</value>
-
-  <next>
-  <block type="trade_take_profit" id="*Snt%Cp39HUGudnV2X?n">
-  <field name="CLOSE_TYPE">full</field>
-
-  <field name="TRADE_ID">sma_crossover_short</field>
-
-  <value name="PRICE">
-  <block type="operator_subtract" id="c3*j:CSWP-EpkK2FD_22">
-  <value name="LEFT">
-  <block type="trade_entry_price" id="coR_$`,_o!hXWCwA/C@9">
-  <field name="TRADE_ID">sma_crossover_short</field>
-
-</block>
-
-</value>
-
-  <value name="RIGHT">
-  <block type="operator_multiply" id="5Z937u6R#GTIRH(!.Qb!">
-  <value name="LEFT">
-  <block type="operator_multiply" id="c^UPq;otyW:YYgI30s/|">
-  <value name="LEFT">
-  <block type="ta_atr" id="~PNEo/rT7W:y%gEw=eLm">
-  <mutation ma_period="14">
-</mutation>
-
-  <field name="NAME">ATR</field>
-
-  <field name="PERIOD">60</field>
-
-</block>
-
-</value>
-
-  <value name="RIGHT">
-  <shadow type="math_number" id="vQt85IiV,!s*f|x~Z,Lj">
-  <field name="NUM">2.5</field>
-
-</shadow>
-
-</value>
-
-</block>
-
-</value>
-
-  <value name="RIGHT">
-  <shadow type="math_number" id="ob]E^ppWQ-OCb[nY}/!b">
-  <field name="NUM">3</field>
-
-</shadow>
-
-</value>
-
-</block>
-
-</value>
-
-</block>
-
-</value>
-
-</block>
-
-</next>
-
-</block>
-
-</next>
-
-</block>
-
-</statement>
-
-</block>
-
-</statement>
-
-</block>
-
-</statement>
 
 </block>
 
