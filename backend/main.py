@@ -34,6 +34,14 @@ from llm_logger import (
 load_dotenv()
 
 # ============================================================
+# DeepSeek Model Configuration
+# ============================================================
+# Comment/uncomment to switch between models:
+
+DEEPSEEK_MODEL = "deepseek-chat"           # Fast, cheaper - good for code generation
+# DEEPSEEK_MODEL = "deepseek-reasoner"     # Reasoning model - better for complex logic
+
+# ============================================================
 # RAG + GCG Prompts
 # ============================================================
 
@@ -602,7 +610,7 @@ async def call_deepseek(
                     "Content-Type": "application/json"
                 },
                 json={
-                    "model": "deepseek-chat",
+                    "model": DEEPSEEK_MODEL,
                     "messages": messages,
                     "temperature": temperature,
                     "max_tokens": max_tokens
@@ -613,7 +621,7 @@ async def call_deepseek(
 
             if response.status_code != 200:
                 log_llm_call(
-                    model="deepseek-chat",
+                    model=DEEPSEEK_MODEL,
                     endpoint=DEEPSEEK_API_URL,
                     messages=messages,
                     response="",
@@ -636,7 +644,7 @@ async def call_deepseek(
             
             # Log successful call
             log_llm_call(
-                model="deepseek-chat",
+                model=DEEPSEEK_MODEL,
                 endpoint=DEEPSEEK_API_URL,
                 messages=messages,
                 response=content,
@@ -652,7 +660,7 @@ async def call_deepseek(
     except Exception as e:
         duration_ms = (time.time() - start_time) * 1000
         log_llm_call(
-            model="deepseek-chat",
+            model=DEEPSEEK_MODEL,
             endpoint=DEEPSEEK_API_URL,
             messages=messages,
             response="",

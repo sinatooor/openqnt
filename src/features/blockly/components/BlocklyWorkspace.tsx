@@ -584,9 +584,9 @@ export const BlocklyWorkspace = ({
         // Let's stick to calling the backend for all engines, just passing the engine param.
       }
 
-      // Create AbortController for timeout (2 minutes for LLM-based backtests)
+      // Create AbortController for timeout (10 minutes for LLM-based backtests)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000);
+      const timeoutId = setTimeout(() => controller.abort(), 600000);
 
       const response = await fetch(`${backendUrl}/backtest`, {
         method: 'POST',
