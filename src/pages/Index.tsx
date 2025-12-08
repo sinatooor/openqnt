@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { BlocklyWorkspace } from "@/features/blockly";
 import { SettingsPanel } from "@/components";
 import { Button } from "@/components/ui/button";
@@ -9,12 +9,12 @@ const Index = () => {
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [showSettingsPanel, setShowSettingsPanel] = useState(true);
   const [leverage, setLeverage] = useState("1");
+  const [currentXml, setCurrentXml] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if user has seen the tour before
     const hasSeenTour = localStorage.getItem("hasSeenGuidedTour");
     if (!hasSeenTour) {
-      // Show tour after a brief delay to let the UI load
       setTimeout(() => {
         setRunTour(true);
       }, 1000);
@@ -35,7 +35,6 @@ const Index = () => {
   };
 
   const handleStepChange = (stepIndex: number) => {
-    // Automatically open AI panel when moving to step 2 (index 1)
     if (stepIndex === 1) {
       setShowAIPanel(true);
     }
@@ -43,7 +42,7 @@ const Index = () => {
 
   return (
     <div className="flex h-screen w-full bg-background text-foreground overflow-hidden">
-      {/* Center Panel - Blockly Workspace (flexible, includes backtesting panel when shown) */}
+      {/* Center Panel - Blockly Workspace */}
       <BlocklyWorkspace
         runTour={runTour}
         onTourComplete={handleTourComplete}
@@ -51,6 +50,7 @@ const Index = () => {
         showAIPanelFromParent={showAIPanel}
         onAIPanelChange={setShowAIPanel}
         leverage={parseFloat(leverage) || 1}
+        onXmlChange={setCurrentXml}
       />
 
       {/* Right Panel - Settings (toggleable) */}
@@ -62,6 +62,7 @@ const Index = () => {
             onClose={() => setShowSettingsPanel(false)}
             leverage={leverage}
             onLeverageChange={setLeverage}
+            getWorkspaceXml={() => currentXml}
           />
         ) : (
           <div className="flex flex-col items-center border-l border-border bg-card px-2 py-4 gap-2">
@@ -83,4 +84,3 @@ const Index = () => {
 };
 
 export default Index;
-

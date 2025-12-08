@@ -1,8 +1,17 @@
 import { useState } from "react";
-import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Input, Label, Tooltip, TooltipContent, TooltipTrigger, Separator, Badge, Collapsible, CollapsibleContent, CollapsibleTrigger, Card, CardContent } from "@/components/ui";
-import { X, TrendingUp, History, Network, Zap, AlertCircle, CheckCircle2, ChevronDown, Shield, DollarSign } from "lucide-react";
+import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Input, Label, Tooltip, TooltipContent, TooltipTrigger, Separator, Badge, Card, CardContent } from "@/components/ui";
+import { X, TrendingUp, History, Zap, AlertCircle, CheckCircle2, Play, Square, Loader2, BarChart3, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { TourTriggerButton } from "./GuidedTour";
 import { Wand2 } from "lucide-react";
+import { toast } from "sonner";
+
+interface BacktestResult {
+  totalReturn: number;
+  winRate: number;
+  totalTrades: number;
+  maxDrawdown: number;
+  finalBalance: number;
+}
 
 interface SettingsPanelProps {
   onStartTour?: () => void;
@@ -10,356 +19,356 @@ interface SettingsPanelProps {
   onClose?: () => void;
   leverage?: string;
   onLeverageChange?: (value: string) => void;
+  getWorkspaceXml?: () => string | null;
 }
 
-export const SettingsPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1", onLeverageChange }: SettingsPanelProps) => {
-  const [mode, setMode] = useState<"backtest" | "live">("live");
-  const [tradingSymbol, setTradingSymbol] = useState("BTC/USDT");
-  const [broker, setBroker] = useState("td");
+export const SettingsPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1", onLeverageChange, getWorkspaceXml }: SettingsPanelProps) => {
+  const [mode, setMode] = useState<"backtest" | "live">("backtest");
+  const [tradingSymbol, setTradingSymbol] = useState("EURUSD");
   const [isConnected, setIsConnected] = useState(false);
-  const [tradingOpen, setTradingOpen] = useState(true);
-  const [executionOpen, setExecutionOpen] = useState(true);
-  const [capitalOpen, setCapitalOpen] = useState(true);
-  const [riskOpen, setRiskOpen] = useState(true);
   const [capitalAllocation, setCapitalAllocation] = useState("10000");
-  const [dailyLossLimit, setDailyLossLimit] = useState("500");
-  const [maxDrawdown, setMaxDrawdown] = useState("10");
+
+  // Backtest state
+  const [isBacktesting, setIsBacktesting] = useState(false);
+  const [backtestResult, setBacktestResult] = useState<BacktestResult | null>(null);
+  const [startDate, setStartDate] = useState("2024-01-01");
+  const [endDate, setEndDate] = useState("2024-03-31");
+
+  // Live state
+  const [isStrategyRunning, setIsStrategyRunning] = useState(false);
+  const [isStartingStrategy, setIsStartingStrategy] = useState(false);
+  const [strategyStatus, setStrategyStatus] = useState<any>(null);
+
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+
+  const handleRunBacktest = async () => {
+    if (!getWorkspaceXml) {
+      toast.error("No workspace connected");
+      return;
+    }
+    const xml = getWorkspaceXml();
+    if (!xml) {
+      toast.error("Add blocks to workspace first");
+      return;
+    }
+
+    setIsBacktesting(true);
+    setBacktestResult(null);
+
+    try {
+      const response = await fetch(`${backendUrl}/backtest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspaceXml: xml,
+          symbol: tradingSymbol,
+          startDate,
+          endDate,
+          initialBalance: parseFloat(capitalAllocation),
+          tradeSize: parseFloat(capitalAllocation)
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setBacktestResult({
+          totalReturn: ((data.final_balance - data.initial_balance) / data.initial_balance) * 100,
+          winRate: data.metrics.win_rate,
+          totalTrades: data.metrics.total_trades,
+          maxDrawdown: data.metrics.max_drawdown,
+          finalBalance: data.final_balance
+        });
+        toast.success("Backtest completed!");
+      } else {
+        toast.error("Backtest failed", { description: data.error });
+      }
+    } catch (error) {
+      toast.error("Backend not reachable");
+    } finally {
+      setIsBacktesting(false);
+    }
+  };
+
+  const handleStartStrategy = async () => {
+    if (!getWorkspaceXml) {
+      toast.error("No workspace connected");
+      return;
+    }
+    const xml = getWorkspaceXml();
+    if (!xml) {
+      toast.error("Add blocks to workspace first");
+      return;
+    }
+
+    setIsStartingStrategy(true);
+    try {
+      const response = await fetch(`${backendUrl}/strategy/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workspaceXml: xml,
+          symbol: tradingSymbol,
+          tradeSize: parseFloat(capitalAllocation) / 100000,
+          pollInterval: 60
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setIsStrategyRunning(true);
+        setStrategyStatus(data.status);
+        toast.success("Strategy launched!", { description: `Running on ${tradingSymbol}` });
+      } else {
+        toast.error("Failed to start", { description: data.error });
+      }
+    } catch (e) {
+      toast.error("Backend not reachable");
+    } finally {
+      setIsStartingStrategy(false);
+    }
+  };
+
+  const handleStopStrategy = async () => {
+    try {
+      const response = await fetch(`${backendUrl}/strategy/stop`, { method: "POST" });
+      const data = await response.json();
+      if (data.success) {
+        setIsStrategyRunning(false);
+        setStrategyStatus(null);
+        toast.success("Strategy stopped");
+      }
+    } catch (e) {
+      toast.error("Error stopping strategy");
+    }
+  };
 
   return (
-    <div className="w-80 bg-card border-r border-border flex flex-col overflow-hidden animate-fade-in">
+    <div className="w-80 bg-card border-l border-border flex flex-col overflow-hidden animate-fade-in">
       {/* Header */}
       <div className="px-3 py-2 border-b border-border">
         <div className="flex items-center justify-between mb-3 gap-2">
-          <h2 className="font-semibold text-foreground text-sm">Settings</h2>
+          <h2 className="font-semibold text-foreground text-sm">Strategy</h2>
           <div className="flex items-center gap-1">
             {onToggleAI && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                    onClick={onToggleAI}
-                    variant="outline"
-                    size="icon"
-                    className="ai-panel-trigger hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200 h-7 w-7"
-                    title="Toggle AI Assistant"
-                  >
+                  <Button onClick={onToggleAI} variant="outline" size="icon" className="h-7 w-7">
                     <Wand2 className="w-4 h-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
-                  <p>Toggle AI Assistant</p>
-                </TooltipContent>
+                <TooltipContent><p>AI Assistant</p></TooltipContent>
               </Tooltip>
             )}
             {onStartTour && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <TourTriggerButton onClick={onStartTour} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200 h-7 w-7" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Start Guided Tour</p>
-                </TooltipContent>
-              </Tooltip>
+              <TourTriggerButton onClick={onStartTour} className="h-7 w-7" />
             )}
             {onClose && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={onClose}
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive"
-                    title="Close Settings"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Close Settings</p>
-                </TooltipContent>
-              </Tooltip>
+              <Button onClick={onClose} variant="ghost" size="icon" className="h-7 w-7 hover:bg-destructive/10">
+                <X className="w-4 h-4" />
+              </Button>
             )}
           </div>
         </div>
 
         {/* Mode Selector */}
         <div className="flex gap-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant={mode === "backtest" ? "secondary" : "ghost"}
-                size="sm"
-                onClick={() => setMode("backtest")}
-                className="flex-1 transition-all duration-200"
-              >
-                <History className="w-4 h-4 mr-2" />
-                Backtest
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Test strategy on historical data</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant={mode === "live" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setMode("live")}
-                className="flex-1 transition-all duration-200"
-              >
-                <Zap className="w-4 h-4 mr-2" />
-                Live
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Execute strategy in real-time</p>
-            </TooltipContent>
-          </Tooltip>
+          <Button
+            variant={mode === "backtest" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setMode("backtest")}
+            className="flex-1"
+          >
+            <History className="w-4 h-4 mr-2" />
+            Backtest
+          </Button>
+          <Button
+            variant={mode === "live" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setMode("live")}
+            className="flex-1"
+          >
+            <Zap className="w-4 h-4 mr-2" />
+            Live
+          </Button>
         </div>
       </div>
 
-      {/* Summary Card */}
-      <Card className="m-4 bg-secondary/50 border-border">
-        <CardContent className="p-4 space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Mode:</span>
-            <Badge variant={mode === "live" ? "default" : "secondary"} className="capitalize">
-              {mode === "live" ? <Zap className="w-3 h-3 mr-1" /> : <History className="w-3 h-3 mr-1" />}
-              {mode}
-            </Badge>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Symbol:</span>
-            <span className="font-medium text-foreground">{tradingSymbol}</span>
-          </div>
-          <Separator className="my-2" />
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Status:</span>
-            <div className="flex items-center gap-2">
-              {isConnected ? (
-                <>
-                  <CheckCircle2 className="w-4 h-4 text-green-500" />
-                  <span className="text-green-500 font-medium">Connected</span>
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="w-4 h-4 text-yellow-500" />
-                  <span className="text-yellow-500 font-medium">Not Connected</span>
-                </>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Content based on mode */}
+      <div className="flex-1 overflow-auto p-4 space-y-4">
+        {/* Common: Symbol Selection */}
+        <div>
+          <label className="text-sm font-medium text-muted-foreground mb-2 block">Symbol</label>
+          <Select value={tradingSymbol} onValueChange={setTradingSymbol}>
+            <SelectTrigger className="bg-secondary">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="EURUSD">EUR/USD</SelectItem>
+              <SelectItem value="GBPUSD">GBP/USD</SelectItem>
+              <SelectItem value="USDJPY">USD/JPY</SelectItem>
+              <SelectItem value="BTCUSD">BTC/USD</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-      {/* Collapsible Settings */}
-      <div className="flex-1 overflow-auto px-4 pb-4 space-y-4">
-        {/* Trading Settings */}
-        <Collapsible open={tradingOpen} onOpenChange={setTradingOpen}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full group">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-primary" />
-              <span className="font-medium text-foreground">Trading</span>
-            </div>
-            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${tradingOpen ? 'rotate-180' : ''}`} />
-          </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-4 mt-4 animate-accordion-down">
-            <div>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <label className="text-sm font-medium text-muted-foreground mb-2 block cursor-help">
-                    Trading Symbol
-                  </label>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Select the financial instrument to trade</p>
-                </TooltipContent>
-              </Tooltip>
-              <Select value={tradingSymbol} onValueChange={setTradingSymbol}>
-                <SelectTrigger className="bg-secondary">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="BTC/USDT">BTC/USDT</SelectItem>
-                  <SelectItem value="ETH/USDT">ETH/USDT</SelectItem>
-                  <SelectItem value="BNB/USDT">BNB/USDT</SelectItem>
-                  <SelectItem value="SOL/USDT">SOL/USDT</SelectItem>
-                  <SelectItem value="XRP/USDT">XRP/USDT</SelectItem>
-                  <SelectItem value="ADA/USDT">ADA/USDT</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
+        <div>
+          <label className="text-sm font-medium text-muted-foreground mb-2 block">Capital ($)</label>
+          <Input
+            type="number"
+            value={capitalAllocation}
+            onChange={(e) => setCapitalAllocation(e.target.value)}
+            className="bg-secondary"
+          />
+        </div>
 
-        {/* Execution Settings */}
-        <Collapsible open={executionOpen} onOpenChange={setExecutionOpen}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full group">
-            <div className="flex items-center gap-2">
-              <Network className="w-4 h-4 text-primary" />
-              <span className="font-medium text-foreground">Execution</span>
-            </div>
-            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${executionOpen ? 'rotate-180' : ''}`} />
-          </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-4 mt-4 animate-accordion-down">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <label className="text-sm font-medium text-muted-foreground cursor-help">
-                      Broker
-                    </label>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Select your brokerage platform</p>
-                  </TooltipContent>
-                </Tooltip>
-                {isConnected && (
-                  <Badge variant="outline" className="text-xs">
-                    <CheckCircle2 className="w-3 h-3 mr-1" />
-                    Connected
-                  </Badge>
-                )}
+        {mode === "backtest" ? (
+          <>
+            {/* Backtest Settings */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Start Date</label>
+                <Input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="bg-secondary text-xs"
+                />
               </div>
-              <Select value={broker} onValueChange={setBroker}>
-                <SelectTrigger className="bg-secondary">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="td">TD Ameritrade</SelectItem>
-                  <SelectItem value="ib">Interactive Brokers</SelectItem>
-                  <SelectItem value="alpaca">Alpaca</SelectItem>
-                  <SelectItem value="robinhood">Robinhood</SelectItem>
-                </SelectContent>
-              </Select>
-              {!isConnected && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full mt-2"
-                  onClick={() => setIsConnected(true)}
-                >
-                  Connect to Broker
-                </Button>
-              )}
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">End Date</label>
+                <Input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="bg-secondary text-xs"
+                />
+              </div>
             </div>
-          </CollapsibleContent>
-        </Collapsible>
 
-        {/* Capital Allocation */}
-        <Collapsible open={capitalOpen} onOpenChange={setCapitalOpen}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full group">
-            <div className="flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-primary" />
-              <span className="font-medium text-foreground">Capital Allocation</span>
-            </div>
-            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${capitalOpen ? 'rotate-180' : ''}`} />
-          </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-4 mt-4 animate-accordion-down">
-            <div>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <label className="text-sm font-medium text-muted-foreground mb-2 block cursor-help">
-                    Strategy Capital ($)
-                  </label>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Total capital allocated to this strategy</p>
-                </TooltipContent>
-              </Tooltip>
-              <Input
-                id="capitalAllocation"
-                type="number"
-                value={capitalAllocation}
-                onChange={(e) => setCapitalAllocation(e.target.value)}
-                className="bg-secondary"
-                placeholder="10000"
-              />
-            </div>
-            <div>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <label className="text-sm font-medium text-muted-foreground mb-2 block cursor-help">
-                    Account Leverage (x)
-                  </label>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Your account leverage (e.g. 25, 50, 100)</p>
-                </TooltipContent>
-              </Tooltip>
-              <Input
-                id="leverage"
-                type="number"
-                value={leverage}
-                onChange={(e) => onLeverageChange?.(e.target.value)}
-                className="bg-secondary"
-                placeholder="1"
-                min="1"
-              />
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
+            {/* Backtest Results */}
+            {backtestResult && (
+              <Card className="bg-secondary/50">
+                <CardContent className="p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Results</span>
+                    <Badge variant={backtestResult.totalReturn >= 0 ? "default" : "destructive"}>
+                      {backtestResult.totalReturn >= 0 ? <ArrowUpRight className="w-3 h-3 mr-1" /> : <ArrowDownRight className="w-3 h-3 mr-1" />}
+                      {backtestResult.totalReturn.toFixed(2)}%
+                    </Badge>
+                  </div>
+                  <Separator />
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-muted-foreground">Win Rate</span>
+                      <p className="font-medium">{backtestResult.winRate.toFixed(1)}%</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Trades</span>
+                      <p className="font-medium">{backtestResult.totalTrades}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Max Drawdown</span>
+                      <p className="font-medium text-red-400">{backtestResult.maxDrawdown.toFixed(2)}%</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Final Balance</span>
+                      <p className="font-medium">${backtestResult.finalBalance.toFixed(0)}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        ) : (
+          <>
+            {/* Live Mode */}
+            <Card className="bg-secondary/50">
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Status</span>
+                  {isStrategyRunning ? (
+                    <Badge className="bg-green-500 animate-pulse">
+                      <Play className="w-3 h-3 mr-1" />
+                      Running
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline">
+                      <AlertCircle className="w-3 h-3 mr-1" />
+                      Stopped
+                    </Badge>
+                  )}
+                </div>
 
-        {/* Risk Protection */}
-        <Collapsible open={riskOpen} onOpenChange={setRiskOpen}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full group">
-            <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-primary" />
-              <span className="font-medium text-foreground">Risk Protection</span>
-            </div>
-            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${riskOpen ? 'rotate-180' : ''}`} />
-          </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-4 mt-4 animate-accordion-down">
-            <div>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <label className="text-sm font-medium text-muted-foreground mb-2 block cursor-help">
-                    Daily Loss Limit ($)
-                  </label>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Maximum loss allowed per day</p>
-                </TooltipContent>
-              </Tooltip>
-              <Input
-                id="dailyLossLimit"
-                type="number"
-                value={dailyLossLimit}
-                onChange={(e) => setDailyLossLimit(e.target.value)}
-                className="bg-secondary"
-                placeholder="500"
-              />
-            </div>
-            <div>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <label className="text-sm font-medium text-muted-foreground mb-2 block cursor-help">
-                    Max Drawdown (%)
-                  </label>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Maximum portfolio drawdown allowed</p>
-                </TooltipContent>
-              </Tooltip>
-              <Input
-                id="maxDrawdown"
-                type="number"
-                value={maxDrawdown}
-                onChange={(e) => setMaxDrawdown(e.target.value)}
-                className="bg-secondary"
-                placeholder="10"
-              />
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
+                {isStrategyRunning && strategyStatus && (
+                  <div className="mt-3 space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Position</span>
+                      <span>{strategyStatus.current_position || 'None'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Last Signal</span>
+                      <span>{strategyStatus.last_signal || 'None'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Trades</span>
+                      <span>{strategyStatus.trade_count || 0}</span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
 
-      {/* Launch Button */}
+      {/* Action Button */}
       <div className="p-4 border-t border-border">
-        <Button className="w-full bg-destructive hover:bg-destructive/90 text-destructive-foreground font-semibold py-6 text-base transition-all duration-200 hover:scale-[1.02]">
-          Launch Strategy
-        </Button>
+        {mode === "backtest" ? (
+          <Button
+            onClick={handleRunBacktest}
+            disabled={isBacktesting}
+            className="w-full bg-purple-600 hover:bg-purple-700 font-semibold py-5"
+          >
+            {isBacktesting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Running Backtest...
+              </>
+            ) : (
+              <>
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Run Backtest
+              </>
+            )}
+          </Button>
+        ) : isStrategyRunning ? (
+          <Button
+            onClick={handleStopStrategy}
+            variant="destructive"
+            className="w-full font-semibold py-5"
+          >
+            <Square className="w-4 h-4 mr-2" />
+            Stop Strategy
+          </Button>
+        ) : (
+          <Button
+            onClick={handleStartStrategy}
+            disabled={isStartingStrategy}
+            className="w-full bg-green-600 hover:bg-green-700 font-semibold py-5"
+          >
+            {isStartingStrategy ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Launching...
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4 mr-2" />
+                Launch Strategy
+              </>
+            )}
+          </Button>
+        )}
       </div>
     </div>
   );
