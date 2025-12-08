@@ -1038,32 +1038,6 @@ export const BlocklyWorkspace = ({
         {/* Zoom Controls */}
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={() => handleZoom("out")} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
-              <ZoomOut className="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Zoom out</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Badge variant="secondary" className="px-2 min-w-[60px] justify-center mx-1">
-          {zoomLevel}%
-        </Badge>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={() => handleZoom("in")} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
-              <ZoomIn className="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Zoom in</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
             <Button variant="outline" size="sm" onClick={handleCenterWorkspace} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
               <Maximize2 className="w-4 h-4" />
             </Button>
