@@ -128,6 +128,7 @@ DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions"
 class StrategyRequest(BaseModel):
     message: str
     existingXml: Optional[str] = None
+    blockXml: Optional[str] = None  # Added for context from attached blocks
     use_rag: bool = False
     ai_model: str = "deepseek"
 
@@ -154,12 +155,14 @@ class BacktestRequest(BaseModel):
     endDate: str = "2024-03-31"
     initialBalance: float = 100000.0
     tradeSize: int = 100000
-    engine: str = "backtesting.py"
+    engine: str = "backtesting.py"  # "backtesting.py", "simple", "nautilus", "ai_simulation", "frontend"
     optimize: bool = False
     opt_metric: str = "Return [%]"
     opt_method: str = "grid"
     ai_model: str = "deepseek"
     use_llm: bool = True
+    data_source: str = "alphavantage"  # "local" (database), "alphavantage", or "yfinance"
+    interval: str = "1d"  # "1d" (daily) or "1h" (hourly)
 
 
 class BacktestResponse(BaseModel):
@@ -926,6 +929,7 @@ async def root():
             "/generate-mql",
             "/chat",
             "/backtest",
+            "/symbols",
             "/ig/login",
             "/ig/positions",
             "/ig/position",
@@ -933,6 +937,46 @@ async def root():
             "/logs"
         ]
     }
+
+
+@app.get("/symbols")
+async def get_symbols():
+    """Get list of available symbols from the local database."""
+    try:
+        from backtest_service import get_available_symbols, LOCAL_DB_AVAILABLE
+        
+        if not LOCAL_DB_AVAILABLE:
+            return {
+                "success": False,
+                "error": "Local database not available",
+                "symbols": []
+            }
+        
+        symbols = get_available_symbols()
+        
+        # Group by asset type
+        grouped = {
+            "stocks": [s for s in symbols if s["asset_type"] == "stock"],
+            "forex": [s for s in symbols if s["asset_type"] == "forex"],
+            "indices": [s for s in symbols if s["asset_type"] == "index"],
+            "commodities": [s for s in symbols if s["asset_type"] == "commodity"],
+            "crypto": [s for s in symbols if s["asset_type"] == "crypto"],
+            "futures": [s for s in symbols if s["asset_type"] == "futures"],
+            "etf": [s for s in symbols if s["asset_type"] == "etf"],
+        }
+        
+        return {
+            "success": True,
+            "total": len(symbols),
+            "symbols": symbols,
+            "grouped": grouped
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "symbols": []
+        }
 
 
 @app.get("/logs")
@@ -1141,6 +1185,15 @@ async def generate_strategy_rag(request: StrategyRequest):
         )
         print(f"RAG Generation failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/strategy/legacy", response_model=StrategyResponse)
+async def generate_strategy_legacy(request: StrategyRequest):
+    """
+    Legacy endpoint for strategy generation (matches frontend call).
+    Routes to standard generate_strategy which handles legacy logic based on request params.
+    """
+    return await generate_strategy(request)
 
 
 
@@ -1367,9 +1420,16 @@ async def run_backtest_endpoint(request: BacktestRequest):
     Run backtest on a Blockly strategy using backtesting.py.
     
     1. Converts Blockly XML to Python strategy code
-    2. Fetches historical data from yfinance
+    2. Fetches historical data from local database, Alpha Vantage, or yfinance
     3. Runs backtest with backtesting.py engine
     4. Returns metrics, trades, and equity curve
+    
+    Engine types:
+    - "simple": Uses local database, DeepSeek for XML→Python conversion and verification
+    - "backtesting.py": Standard backtest with Alpha Vantage/yfinance data
+    - "nautilus": NautilusTrader engine (if available)
+    - "ai_simulation": Uses AI for market simulation
+    - "frontend": Simple frontend-based evaluation
     """
     try:
         print(f"=== Running backtest for {request.symbol} ===")
@@ -1379,7 +1439,16 @@ async def run_backtest_endpoint(request: BacktestRequest):
         # Import new backtest service
         from backtest_service import run_backtest_pipeline
         
-        # Map date range to yfinance period
+        # For "simple" engine, force local database and enable DeepSeek verification
+        data_source = request.data_source
+        use_llm = request.use_llm
+        
+        if request.engine == "simple":
+            data_source = "local"
+            use_llm = True  # Use DeepSeek for XML→Python conversion and verification
+            print(f"Simple engine: Using local database with DeepSeek verification")
+        
+        # Map date range to yfinance period (used as fallback)
         from datetime import datetime
         try:
             start = datetime.strptime(request.startDate, "%Y-%m-%d")
@@ -1401,7 +1470,7 @@ async def run_backtest_endpoint(request: BacktestRequest):
         except:
             period = "1y"
         
-        # Map symbol for yfinance
+        # Map symbol for yfinance (fallback only)
         symbol_map = {
             "EURUSD": "EURUSD=X",
             "GBPUSD": "GBPUSD=X",
@@ -1428,14 +1497,17 @@ async def run_backtest_endpoint(request: BacktestRequest):
             xml=request.workspaceXml,
             symbol=yf_symbol,
             period=period,
-            interval="1d",
+            interval=request.interval,
             cash=request.initialBalance,
-            use_llm=request.use_llm,  # Use LLM if requested
+            use_llm=False if request.engine == "frontend" else use_llm,
             engine=request.engine,
             call_deepseek=llm_func,
             optimize=request.optimize,
             opt_metric=request.opt_metric,
-            opt_method=request.opt_method
+            opt_method=request.opt_method,
+            data_source=data_source,
+            start_date=request.startDate if data_source == "local" else None,
+            end_date=request.endDate if data_source == "local" else None
         )
         
         if not result.get("success"):

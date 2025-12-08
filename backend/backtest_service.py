@@ -3,7 +3,7 @@ Backtest Service - Real backtesting using backtesting.py and NautilusTrader
 
 Pipeline:
 1. Convert Blockly XML → Python Strategy class (using DeepSeek)
-2. Fetch historical data (yfinance)
+2. Fetch historical data (local database, yfinance, or alphavantage)
 3. Execute backtest (backtesting.py OR NautilusTrader)
 4. Return results
 """
@@ -166,17 +166,333 @@ class GeneratedStrategy(Strategy):
 ```
 """
 
+import requests
+import time
+
+# Alpha Vantage API Key
+ALPHAVANTAGE_API_KEY = "SUZH5IUPJXR7GCPZ"
+
+# Local Database imports
+try:
+    from database.connection import session_scope
+    from database.models import Asset, DailyPrice, HourlyPrice
+    LOCAL_DB_AVAILABLE = True
+except ImportError:
+    LOCAL_DB_AVAILABLE = False
+    print("Local database not available")
+
+
+def fetch_local_db_data(
+    symbol: str = "AAPL",
+    start_date: str = None,
+    end_date: str = None,
+    interval: str = "1d"
+) -> pd.DataFrame:
+    """
+    Fetch historical OHLCV data from local SQLite database.
+    
+    Args:
+        symbol: Trading symbol (e.g., "AAPL", "EURUSD=X", "GC=F")
+        start_date: Start date string (YYYY-MM-DD)
+        end_date: End date string (YYYY-MM-DD)
+        interval: "1d" for daily or "1h" for hourly data
+    
+    Returns:
+        DataFrame with Open, High, Low, Close, Volume columns (indexed by Date)
+    """
+    if not LOCAL_DB_AVAILABLE:
+        raise ValueError("Local database is not available")
+    
+    with session_scope() as session:
+        # Find the asset
+        asset = session.query(Asset).filter_by(symbol=symbol).first()
+        
+        if not asset:
+            # Try alternative symbol formats
+            alt_symbols = [
+                symbol,
+                symbol.replace("=X", ""),  # EURUSD=X -> EURUSD
+                symbol.replace("=F", ""),  # GC=F -> GC
+                f"{symbol}=X",             # EURUSD -> EURUSD=X
+            ]
+            for alt in alt_symbols:
+                asset = session.query(Asset).filter_by(symbol=alt).first()
+                if asset:
+                    break
+        
+        if not asset:
+            raise ValueError(f"Symbol {symbol} not found in local database")
+        
+        # Query price data based on interval
+        if interval == "1h":
+            query = session.query(HourlyPrice).filter_by(asset_id=asset.id)
+            date_col = HourlyPrice.datetime
+        else:
+            query = session.query(DailyPrice).filter_by(asset_id=asset.id)
+            date_col = DailyPrice.date
+        
+        # Apply date filters
+        if start_date:
+            start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+            if interval == "1h":
+                query = query.filter(HourlyPrice.datetime >= start_dt)
+            else:
+                query = query.filter(DailyPrice.date >= start_dt.date())
+        
+        if end_date:
+            end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+            if interval == "1h":
+                query = query.filter(HourlyPrice.datetime <= end_dt)
+            else:
+                query = query.filter(DailyPrice.date <= end_dt.date())
+        
+        # Order by date and fetch
+        query = query.order_by(date_col.asc())
+        prices = query.all()
+        
+        if not prices:
+            raise ValueError(f"No price data found for {symbol} in the specified date range")
+        
+        # Convert to DataFrame
+        records = []
+        for p in prices:
+            if interval == "1h":
+                records.append({
+                    "Date": p.datetime,
+                    "Open": float(p.open),
+                    "High": float(p.high),
+                    "Low": float(p.low),
+                    "Close": float(p.close),
+                    "Volume": int(p.volume) if p.volume else 0
+                })
+            else:
+                records.append({
+                    "Date": datetime.combine(p.date, datetime.min.time()),
+                    "Open": float(p.open),
+                    "High": float(p.high),
+                    "Low": float(p.low),
+                    "Close": float(p.close),
+                    "Volume": int(p.volume) if p.volume else 0
+                })
+        
+        df = pd.DataFrame(records)
+        df["Date"] = pd.to_datetime(df["Date"])
+        df.set_index("Date", inplace=True)
+        df.sort_index(inplace=True)
+        
+        print(f"Fetched {len(df)} bars for {symbol} from local database ({interval})")
+        return df
+
+
+def get_available_symbols() -> List[Dict[str, Any]]:
+    """
+    Get list of symbols available in the local database.
+    
+    Returns:
+        List of dicts with symbol info: {symbol, name, asset_type, exchange, record_count}
+    """
+    if not LOCAL_DB_AVAILABLE:
+        return []
+    
+    with session_scope() as session:
+        assets = session.query(Asset).filter_by(is_active=True).all()
+        
+        result = []
+        for asset in assets:
+            # Count daily prices
+            daily_count = session.query(DailyPrice).filter_by(asset_id=asset.id).count()
+            hourly_count = session.query(HourlyPrice).filter_by(asset_id=asset.id).count()
+            
+            exchange = asset.metadata_info.exchange if asset.metadata_info else "UNKNOWN"
+            
+            result.append({
+                "symbol": asset.symbol,
+                "name": asset.name or asset.symbol,
+                "asset_type": asset.asset_type,
+                "exchange": exchange,
+                "daily_records": daily_count,
+                "hourly_records": hourly_count
+            })
+        
+        return result
+
+
+def fetch_alphavantage_data(
+    symbol: str = "AAPL",
+    period: str = "1y",
+    interval: str = "1d",
+    api_key: str = None
+) -> pd.DataFrame:
+    """
+    Fetch historical OHLCV data using Alpha Vantage API.
+    
+    Args:
+        symbol: Stock/ETF symbol (e.g., "AAPL", "SPY", "MSFT")
+        period: Time period (e.g., "1y", "2y", "5y", "max")
+        interval: Bar interval ("1d" for daily, "1min", "5min", "15min", "30min", "60min")
+        api_key: Alpha Vantage API key (uses default if not provided)
+    
+    Returns:
+        DataFrame with Open, High, Low, Close, Volume columns
+    """
+    if api_key is None:
+        api_key = ALPHAVANTAGE_API_KEY
+    
+    base_url = "https://www.alphavantage.co/query"
+    
+    try:
+        # Determine if we need daily or intraday data
+        if interval in ["1min", "5min", "15min", "30min", "60min"]:
+            # Intraday data
+            params = {
+                "function": "TIME_SERIES_INTRADAY",
+                "symbol": symbol,
+                "interval": interval,
+                "apikey": api_key,
+                "outputsize": "full",  # Get all available data
+                "datatype": "json"
+            }
+            time_series_key = f"Time Series ({interval})"
+        else:
+            # Daily data
+            params = {
+                "function": "TIME_SERIES_DAILY",
+                "symbol": symbol,
+                "apikey": api_key,
+                "outputsize": "full",  # Get 20+ years of data
+                "datatype": "json"
+            }
+            time_series_key = "Time Series (Daily)"
+        
+        print(f"Fetching data from Alpha Vantage for {symbol}...")
+        response = requests.get(base_url, params=params)
+        response.raise_for_status()
+        
+        data = response.json()
+        
+        # Check for API error messages
+        if "Error Message" in data:
+            raise ValueError(f"Alpha Vantage API error: {data['Error Message']}")
+        
+        if "Note" in data:
+            # Rate limit warning
+            print(f"Alpha Vantage rate limit: {data['Note']}")
+            raise ValueError("Alpha Vantage API rate limit reached. Please wait and try again.")
+        
+        if "Information" in data:
+            print(f"Alpha Vantage info: {data['Information']}")
+        
+        if time_series_key not in data:
+            raise ValueError(f"No time series data found. Response keys: {list(data.keys())}")
+        
+        # Parse the time series data
+        time_series = data[time_series_key]
+        
+        # Convert to DataFrame
+        records = []
+        for date_str, values in time_series.items():
+            records.append({
+                "Date": date_str,
+                "Open": float(values["1. open"]),
+                "High": float(values["2. high"]),
+                "Low": float(values["3. low"]),
+                "Close": float(values["4. close"]),
+                "Volume": int(values["5. volume"])
+            })
+        
+        df = pd.DataFrame(records)
+        df["Date"] = pd.to_datetime(df["Date"])
+        df.set_index("Date", inplace=True)
+        df.sort_index(inplace=True)  # Sort chronologically (oldest first)
+        
+        # Filter by period
+        if period != "max":
+            period_map = {
+                "1mo": 30,
+                "3mo": 90,
+                "6mo": 180,
+                "1y": 365,
+                "2y": 730,
+                "5y": 1825,
+                "10y": 3650
+            }
+            days = period_map.get(period, 365)
+            cutoff_date = datetime.now() - timedelta(days=days)
+            df = df[df.index >= cutoff_date]
+        
+        if df.empty:
+            raise ValueError(f"No data found for {symbol} in the specified period")
+        
+        print(f"Fetched {len(df)} bars for {symbol} from Alpha Vantage ({period}, {interval})")
+        return df
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Network error fetching Alpha Vantage data: {e}")
+        raise
+    except Exception as e:
+        print(f"Error fetching Alpha Vantage data: {e}")
+        raise
+
 
 def fetch_historical_data(
     symbol: str = "AAPL",
     period: str = "1y",
-    interval: str = "1d"
+    interval: str = "1d",
+    data_source: str = "alphavantage",  # "local", "alphavantage", or "yfinance"
+    start_date: str = None,
+    end_date: str = None
 ) -> pd.DataFrame:
     """
-    Fetch historical OHLCV data using yfinance.
+    Fetch historical OHLCV data from local database, Alpha Vantage, or yfinance.
+    
+    Args:
+        symbol: Stock/ETF symbol
+        period: Time period (for external APIs)
+        interval: Bar interval ("1d" or "1h")
+        data_source: "local" (database), "alphavantage", or "yfinance"
+        start_date: Start date for local data (YYYY-MM-DD)
+        end_date: End date for local data (YYYY-MM-DD)
+    
+    Returns:
+        DataFrame with Open, High, Low, Close, Volume columns
     """
+    # Use local database if specified
+    if data_source == "local":
+        try:
+            return fetch_local_db_data(symbol, start_date, end_date, interval)
+        except Exception as e:
+            print(f"Local database failed: {e}")
+            print("Falling back to yfinance...")
+            data_source = "yfinance"
+    
+    # Try Alpha Vantage first (default)
+    if data_source == "alphavantage":
+        try:
+            return fetch_alphavantage_data(symbol, period, interval)
+        except Exception as e:
+            print(f"Alpha Vantage failed: {e}")
+            print("Falling back to yfinance...")
+    
+    # Fallback to yfinance
     try:
-        ticker = yf.Ticker(symbol)
+        # Map common forex/crypto symbols to Yahoo Finance format
+        symbol_map = {
+            "EURUSD": "EURUSD=X",
+            "GBPUSD": "GBPUSD=X",
+            "USDJPY": "USDJPY=X",
+            "AUDUSD": "AUDUSD=X",
+            "USDCAD": "USDCAD=X",
+            "USDCHF": "USDCHF=X",
+            "NZDUSD": "NZDUSD=X",
+            "BTCUSD": "BTC-USD",
+            "ETHUSD": "ETH-USD",
+            "SOLUSD": "SOL-USD",
+            "XAUUSD": "GC=F"
+        }
+        yf_symbol = symbol_map.get(symbol, symbol)
+        print(f"Fetching data for {symbol} (mapped to {yf_symbol}) via yfinance...")
+        
+        ticker = yf.Ticker(yf_symbol)
         df = ticker.history(period=period, interval=interval)
         
         if df.empty:
@@ -185,7 +501,7 @@ def fetch_historical_data(
         # Ensure column names match backtesting.py expectations
         df = df[['Open', 'High', 'Low', 'Close', 'Volume']]
         
-        print(f"Fetched {len(df)} bars for {symbol} ({period}, {interval})")
+        print(f"Fetched {len(df)} bars for {symbol} ({period}, {interval}) via yfinance")
         return df
         
     except Exception as e:
@@ -196,15 +512,18 @@ def fetch_historical_data(
 def parse_xml_simple(xml: str) -> Dict[str, Any]:
     """
     Enhanced XML parser to extract strategy components.
-    Supports: SMA, EMA, RSI, MACD, Bollinger Bands, Stochastic, ATR
+    Supports: SMA, EMA, RSI, MACD, Bollinger Bands, Stochastic, ATR, VWAP
     """
     result = {
         "indicators": [],
         "conditions": [],
         "entry_direction": "long",
+        "has_short_entry": False,
         "sl_pips": None,
         "tp_pips": None,
-        "trade_size": 0.1
+        "trade_size": 0.1,
+        "atr_sl_mult": None,
+        "atr_tp_mult": None
     }
     
     # Extract SMA blocks (mutation and field based)
@@ -237,17 +556,29 @@ def parse_xml_simple(xml: str) -> Dict[str, Any]:
         if {"type": "RSI", "period": int(period)} not in result["indicators"]:
             result["indicators"].append({"type": "RSI", "period": int(period)})
     
-    # Extract MACD blocks
-    if '<block type="ta_macd"' in xml:
-        fast = re.search(r'fast_period="(\d+)"', xml)
-        slow = re.search(r'slow_period="(\d+)"', xml) 
-        signal = re.search(r'signal_period="(\d+)"', xml)
+    # Extract MACD blocks - support both ta_macd and macd_value block types
+    macd_added = False
+    if '<block type="ta_macd"' in xml or '<block type="macd_value"' in xml:
+        # Try fastema/slowema/signalsma format first (macd_value blocks)
+        fast = re.search(r'fastema="(\d+)"', xml)
+        slow = re.search(r'slowema="(\d+)"', xml) 
+        signal = re.search(r'signalsma="(\d+)"', xml)
+        
+        # Fallback to fast_period/slow_period/signal_period format
+        if not fast:
+            fast = re.search(r'fast_period="(\d+)"', xml)
+        if not slow:
+            slow = re.search(r'slow_period="(\d+)"', xml)
+        if not signal:
+            signal = re.search(r'signal_period="(\d+)"', xml)
+        
         result["indicators"].append({
             "type": "MACD",
             "fast": int(fast.group(1)) if fast else 12,
             "slow": int(slow.group(1)) if slow else 26,
             "signal": int(signal.group(1)) if signal else 9
         })
+        macd_added = True
     
     # Extract Bollinger Bands
     if '<block type="ta_bollinger"' in xml:
@@ -269,17 +600,28 @@ def parse_xml_simple(xml: str) -> Dict[str, Any]:
             "d_period": int(d.group(1)) if d else 3
         })
     
-    # Extract ATR
+    # Extract ATR - support both atr_period and ma_period in mutation
     if '<block type="ta_atr"' in xml:
-        period = re.search(r'atr_period="(\d+)"', xml)
+        period = re.search(r'<block type="ta_atr"[^>]*>.*?<mutation[^>]*ma_period="(\d+)"', xml, re.DOTALL)
+        if not period:
+            period = re.search(r'atr_period="(\d+)"', xml)
         result["indicators"].append({
             "type": "ATR",
             "period": int(period.group(1)) if period else 14
         })
     
-    # Extract trade direction
+    # Extract VWAP
+    if '<block type="ta_vwap"' in xml:
+        result["indicators"].append({"type": "VWAP"})
+    
+    # Extract trade direction - check for both long and short entries
+    if 'direction">long' in xml.lower() or 'direction\\">long' in xml:
+        result["entry_direction"] = "long"
     if 'direction">short' in xml.lower() or 'direction\\">short' in xml:
-        result["entry_direction"] = "short"
+        result["has_short_entry"] = True
+        # If only short is present, set direction to short
+        if 'direction">long' not in xml.lower():
+            result["entry_direction"] = "short"
     
     # Check for comparison operators
     if "operator_greater" in xml:
@@ -297,12 +639,24 @@ def parse_xml_simple(xml: str) -> Dict[str, Any]:
     if tp_match:
         result["tp_pips"] = int(tp_match.group(1))
     
+    # Check for ATR-based SL/TP (look for ta_atr inside trade_stop_loss/trade_take_profit blocks)
+    if '<block type="trade_stop_loss"' in xml and '<block type="ta_atr"' in xml:
+        # Look for multiplier value near ATR in stop loss context
+        atr_mult_match = re.search(r'operator_multiply.*?<field name="NUM">(\d+(?:\.\d+)?)</field>', xml, re.DOTALL)
+        if atr_mult_match:
+            result["atr_sl_mult"] = float(atr_mult_match.group(1))
+    
+    if '<block type="trade_take_profit"' in xml and '<block type="ta_atr"' in xml:
+        # TP is usually SL * risk_reward_ratio (e.g., 2 * 3 = 6)
+        result["atr_tp_mult"] = (result.get("atr_sl_mult", 2) or 2) * 3  # Default 3:1 RR
+    
     # Extract trade size
     size_match = re.search(r'<field name="SIZE">([\d.]+)</field>', xml)
     if size_match:
         result["trade_size"] = float(size_match.group(1))
     
     print(f"Parsed indicators: {[i['type'] for i in result['indicators']]}")
+    print(f"Has both long and short entries: {result['has_short_entry']}")
     return result
 
 
@@ -401,12 +755,43 @@ def StochK(high, low, close, period=14):
         k[i] = 100 * (close[i] - ll) / (hh - ll + 1e-10)
     return k
 
+def ATR(high, low, close, period=14):
+    """Average True Range"""
+    high = np.asarray(high, dtype=float)
+    low = np.asarray(low, dtype=float)
+    close = np.asarray(close, dtype=float)
+    tr = np.zeros_like(close)
+    tr[0] = high[0] - low[0]
+    for i in range(1, len(close)):
+        hl = high[i] - low[i]
+        hc = abs(high[i] - close[i-1])
+        lc = abs(low[i] - close[i-1])
+        tr[i] = max(hl, hc, lc)
+    atr = np.zeros_like(tr)
+    atr[:period] = np.mean(tr[:period])
+    alpha = 2 / (period + 1)
+    for i in range(period, len(tr)):
+        atr[i] = alpha * tr[i] + (1 - alpha) * atr[i-1]
+    return atr
+
+def VWAP(high, low, close, volume):
+    """Volume-Weighted Average Price"""
+    typical_price = (high + low + close) / 3
+    return np.cumsum(typical_price * volume) / np.cumsum(volume)
+
 '''
+    
+    # Categorize indicators
+    atr_indicators = [i for i in indicators if i["type"] == "ATR"]
+    vwap_indicators = [i for i in indicators if i["type"] == "VWAP"]
     
     # Determine strategy type based on indicators
     strategy_type = "default"
     
-    if macd_indicators and rsi_indicators:
+    # New: Multi-indicator trend strategy (EMA + SMA + RSI + MACD + optional VWAP/ATR)
+    if (ema_indicators and sma_indicators and rsi_indicators and macd_indicators):
+        strategy_type = "multi_indicator_trend"
+    elif macd_indicators and rsi_indicators:
         strategy_type = "macd_rsi"
     elif macd_indicators:
         strategy_type = "macd"
@@ -427,8 +812,92 @@ def StochK(high, low, close, period=14):
     
     print(f"Strategy type: {strategy_type}")
     
+    # Get ATR and VWAP info for SL/TP
+    atr_period = atr_indicators[0].get('period', 14) if atr_indicators else 14
+    has_vwap = len(vwap_indicators) > 0
+    has_short = parsed.get("has_short_entry", False)
+    atr_sl_mult = parsed.get("atr_sl_mult", 2.0) or 2.0
+    atr_tp_mult = parsed.get("atr_tp_mult", 6.0) or 6.0
+    
     # Generate specific strategy
-    if strategy_type == "macd_rsi":
+    if strategy_type == "multi_indicator_trend":
+        # Multi-indicator trend strategy: EMA + SMA + RSI + MACD (+ optional VWAP/ATR)
+        ema = ema_indicators[0]
+        sma = sma_indicators[0]
+        rsi = rsi_indicators[0]
+        macd = macd_indicators[0]
+        
+        # Determine if we should use VWAP condition
+        vwap_condition_long = "and price > self.vwap[-1]" if has_vwap else ""
+        vwap_condition_short = "and price < self.vwap[-1]" if has_vwap else ""
+        vwap_init = f"self.vwap = self.I(VWAP, self.data.High, self.data.Low, self.data.Close, self.data.Volume)" if has_vwap else ""
+        
+        code += f'''
+class GeneratedStrategy(Strategy):
+    """
+    Multi-indicator trend-following strategy.
+    Long: EMA > SMA, RSI > 50, MACD Line > MACD Signal{", Price > VWAP" if has_vwap else ""}
+    Short: EMA < SMA, RSI < 50, MACD Line < MACD Signal{", Price < VWAP" if has_vwap else ""}
+    SL: ATR * {atr_sl_mult}, TP: ATR * {atr_tp_mult}
+    """
+    
+    def init(self):
+        # Trend indicators
+        self.ema = self.I(EMA, self.data.Close, {ema.get('period', 20)})
+        self.sma = self.I(SMA, self.data.Close, {sma.get('period', 50)})
+        
+        # Momentum
+        self.rsi = self.I(RSI, self.data.Close, {rsi.get('period', 14)})
+        
+        # MACD
+        self.macd_line = self.I(MACD_line, self.data.Close, {macd.get('fast', 12)}, {macd.get('slow', 26)})
+        self.macd_sig = self.I(MACD_signal, self.data.Close, {macd.get('fast', 12)}, {macd.get('slow', 26)}, {macd.get('signal', 9)})
+        
+        # ATR for SL/TP
+        self.atr = self.I(ATR, self.data.High, self.data.Low, self.data.Close, {atr_period})
+        
+        # VWAP (if volume available)
+        {vwap_init if vwap_init else "pass  # No VWAP"}
+    
+    def next(self):
+        price = self.data.Close[-1]
+        atr = self.atr[-1]
+        
+        # Skip if not enough data
+        if len(self.data.Close) < {max(sma.get('period', 50), 50)}:
+            return
+        
+        # Long entry conditions
+        long_trend = self.ema[-1] > self.sma[-1]
+        long_momentum = self.rsi[-1] > 50
+        long_macd = self.macd_line[-1] > self.macd_sig[-1]
+        long_signal = long_trend and long_momentum and long_macd {"and price > self.vwap[-1]" if has_vwap else ""}
+        
+        # Short entry conditions
+        short_trend = self.ema[-1] < self.sma[-1]
+        short_momentum = self.rsi[-1] < 50
+        short_macd = self.macd_line[-1] < self.macd_sig[-1]
+        short_signal = short_trend and short_momentum and short_macd {"and price < self.vwap[-1]" if has_vwap else ""}
+        
+        # Trade execution
+        if long_signal:
+            if self.position.is_short:
+                self.position.close()
+            if not self.position.is_long:
+                sl = price - (atr * {atr_sl_mult})
+                tp = price + (atr * {atr_tp_mult})
+                self.buy(sl=sl, tp=tp)
+        
+        elif short_signal:
+            if self.position.is_long:
+                self.position.close()
+            if not self.position.is_short:
+                sl = price + (atr * {atr_sl_mult})
+                tp = price - (atr * {atr_tp_mult})
+                self.sell(sl=sl, tp=tp)
+'''
+
+    elif strategy_type == "macd_rsi":
         macd = macd_indicators[0]
         rsi = rsi_indicators[0]
         code += f'''
@@ -1135,14 +1604,35 @@ async def run_backtest_pipeline(
     engine: str = "backtesting.py",
     optimize: bool = False,
     opt_metric: str = "Return [%]",
-    opt_method: str = "grid"
+    opt_method: str = "grid",
+    data_source: str = "alphavantage",  # "local", "alphavantage", or "yfinance"
+    start_date: str = None,
+    end_date: str = None,
+    verify_with_llm: bool = False  # Verify generated code with DeepSeek
 ) -> Dict[str, Any]:
     """
     Complete backtest pipeline.
+    
+    Args:
+        xml: Blockly XML strategy
+        symbol: Trading symbol (e.g., "AAPL", "SPY")
+        period: Historical data period ("1y", "2y", etc.)
+        interval: Bar interval ("1d", "1h", etc.)
+        cash: Starting capital
+        use_llm: Whether to use LLM for code generation
+        call_deepseek: DeepSeek API callable
+        engine: Backtest engine ("backtesting.py", "nautilus", "ai_simulation", "simple")
+        optimize: Whether to run optimization
+        opt_metric: Metric to optimize
+        opt_method: Optimization method
+        data_source: Data provider ("local", "alphavantage", or "yfinance")
+        start_date: Start date for local data (YYYY-MM-DD)
+        end_date: End date for local data (YYYY-MM-DD)
+        verify_with_llm: Send XML + Python to DeepSeek for verification before running
     """
     try:
         print(f"=== Starting Backtest Pipeline ({engine}) ===")
-        print(f"Symbol: {symbol}, Period: {period}, Interval: {interval}, Optimize: {optimize}")
+        print(f"Symbol: {symbol}, Period: {period}, Interval: {interval}, Optimize: {optimize}, Data Source: {data_source}")
         
         # Handle AI Simulation Engine
         if engine == "ai_simulation":
@@ -1213,9 +1703,56 @@ async def run_backtest_pipeline(
         
         print(f"Generated strategy code:\n{strategy_code[:500]}...")
         
+        # Step 1.5: Verify generated code with DeepSeek (optional)
+        if verify_with_llm and call_deepseek:
+            print("Verifying generated Python code with DeepSeek...")
+            verify_prompt = f"""You are a trading strategy code reviewer.
+
+I have an XML strategy and a generated Python backtesting strategy. Please verify the Python code is correct and matches the XML intent.
+
+XML STRATEGY:
+{xml}
+
+GENERATED PYTHON CODE:
+{strategy_code}
+
+INSTRUCTIONS:
+1. Check if the Python code correctly implements the XML strategy logic
+2. Verify indicator periods match
+3. Verify buy/sell conditions are correct
+4. Fix any bugs or issues you find
+
+If the code is correct, return it unchanged.
+If there are issues, return the CORRECTED code.
+
+Return ONLY the Python code (no markdown, no explanation).
+The code must be a valid backtesting.py Strategy class."""
+
+            verify_messages = [
+                {{"role": "system", "content": verify_prompt}},
+                {{"role": "user", "content": "Verify and return the corrected code."}}
+            ]
+            verified_code = await call_deepseek(verify_messages, temperature=0.1)
+            
+            # Clean code
+            if verified_code.startswith("```"):
+                verified_code = verified_code.split("\n", 1)[1]
+            if verified_code.endswith("```"):
+                verified_code = verified_code.rsplit("\n", 1)[0]
+            if verified_code.startswith("python"):
+                verified_code = verified_code[6:].strip()
+            
+            strategy_code = verified_code
+            print("Code verified/corrected by DeepSeek")
+        
         # Step 2: Fetch historical data
-        print(f"Fetching data for {symbol}...")
-        data = fetch_historical_data(symbol, period, interval)
+        print(f"Fetching data for {symbol} using {data_source}...")
+        data = fetch_historical_data(
+            symbol, period, interval, 
+            data_source=data_source,
+            start_date=start_date,
+            end_date=end_date
+        )
         
         # Step 3: Run backtest OR Optimization
         if optimize:
