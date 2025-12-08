@@ -10,7 +10,7 @@ from typing import Optional, Dict, Any, List, Callable
 import pandas as pd
 
 from ig_client import IGClient, get_epic_for_symbol
-from xml_evaluator import BlocklyXMLEvaluator
+from xml_evaluator import BlocklyXMLEvaluator, LLMVerifiedEvaluator, verify_xml_to_python_with_llm
 
 
 class StrategyRunner:
@@ -22,6 +22,7 @@ class StrategyRunner:
     - Evaluates buy/sell conditions from parsed Blockly XML
     - Executes trades automatically via IG API
     - Tracks open positions and P&L
+    - Uses LLM to verify XML-to-Python translation
     """
     
     def __init__(
@@ -31,7 +32,8 @@ class StrategyRunner:
         symbol: str = "EURUSD",
         trade_size: float = 0.5,
         poll_interval: int = 60,  # seconds
-        lookback_bars: int = 100
+        lookback_bars: int = 100,
+        evaluator: BlocklyXMLEvaluator = None
     ):
         self.ig_client = ig_client
         self.symbol = symbol
@@ -40,8 +42,11 @@ class StrategyRunner:
         self.poll_interval = poll_interval
         self.lookback_bars = lookback_bars
         
-        # Parse strategy
-        self.evaluator = BlocklyXMLEvaluator(xml_strategy)
+        # Use provided evaluator or create new one
+        if evaluator:
+            self.evaluator = evaluator
+        else:
+            self.evaluator = BlocklyXMLEvaluator(xml_strategy)
         
         # State
         self.is_running = False
@@ -50,6 +55,7 @@ class StrategyRunner:
         self.trades: List[Dict] = []
         self.last_signal: Optional[str] = None
         self.last_price: Optional[float] = None
+        self.verification_result: Optional[Dict] = None
         
         # Callbacks
         self.on_trade: Optional[Callable] = None
@@ -230,7 +236,7 @@ class StrategyRunner:
     
     def get_status(self) -> Dict[str, Any]:
         """Get current status of the runner."""
-        return {
+        status = {
             'is_running': self.is_running,
             'symbol': self.symbol,
             'epic': self.epic,
@@ -240,6 +246,9 @@ class StrategyRunner:
             'trade_count': len(self.trades),
             'recent_trades': self.trades[-5:] if self.trades else []
         }
+        if self.verification_result:
+            status['llm_verified'] = self.verification_result.get('verified', False)
+        return status
 
 
 # Global runner instance
@@ -254,7 +263,14 @@ async def start_strategy_runner(
     trade_size: float = 0.5,
     poll_interval: int = 60
 ) -> Dict[str, Any]:
-    """Start a strategy runner (global singleton)."""
+    """
+    Start a strategy runner with LLM verification.
+    
+    1. Parse the XML to extract conditions
+    2. Generate Python logic representation
+    3. Send to LLM for verification
+    4. Use verified logic for trading
+    """
     global _active_runner, _runner_task
     
     # Stop existing runner
@@ -263,14 +279,34 @@ async def start_strategy_runner(
         if _runner_task:
             _runner_task.cancel()
     
-    # Create new runner
+    print("=== Starting Strategy with LLM Verification ===")
+    
+    # Create evaluator and run LLM verification
+    evaluator = LLMVerifiedEvaluator(xml_strategy)
+    
+    # Generate Python logic and verify with LLM
+    python_logic = evaluator.to_python_logic()
+    print(f"Generated Python logic:\n{python_logic[:500]}...")
+    
+    verification_result = await evaluator.verify()
+    
+    if verification_result.get('verified'):
+        print("✓ LLM Verification PASSED - Strategy logic confirmed correct")
+    elif verification_result.get('skipped'):
+        print("⚠ LLM Verification SKIPPED - " + verification_result.get('message', ''))
+    else:
+        print("⚠ LLM made CORRECTIONS to the strategy logic")
+    
+    # Create runner with verified evaluator
     _active_runner = StrategyRunner(
         ig_client=ig_client,
         xml_strategy=xml_strategy,
         symbol=symbol,
         trade_size=trade_size,
-        poll_interval=poll_interval
+        poll_interval=poll_interval,
+        evaluator=evaluator
     )
+    _active_runner.verification_result = verification_result
     
     # Start in background
     _runner_task = asyncio.create_task(_active_runner.start())
@@ -278,6 +314,11 @@ async def start_strategy_runner(
     return {
         'success': True,
         'message': f'Strategy runner started for {symbol}',
+        'verification': {
+            'verified': verification_result.get('verified', False),
+            'skipped': verification_result.get('skipped', False),
+            'python_logic': python_logic
+        },
         'status': _active_runner.get_status()
     }
 
