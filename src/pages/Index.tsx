@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { BlocklyWorkspace } from "@/features/blockly";
 import { SettingsPanel } from "@/components";
 import { Button } from "@/components/ui/button";
-import { Settings, PanelRightClose } from "lucide-react";
+import { Settings } from "lucide-react";
 
 const Index = () => {
   const [runTour, setRunTour] = useState(false);
@@ -56,32 +56,24 @@ const Index = () => {
       {/* Right Panel - Settings (toggleable) */}
       <div className="hidden md:flex">
         {showSettingsPanel ? (
-          <div className="relative">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-2 z-10 h-7 w-7"
-              onClick={() => setShowSettingsPanel(false)}
-              title="Hide Settings Panel"
-            >
-              <PanelRightClose className="w-4 h-4" />
-            </Button>
-            <SettingsPanel
-              onStartTour={handleStartTour}
-              onToggleAI={handleToggleAI}
-              leverage={leverage}
-              onLeverageChange={setLeverage}
-            />
-          </div>
+          <SettingsPanel
+            onStartTour={handleStartTour}
+            onToggleAI={handleToggleAI}
+            onClose={() => setShowSettingsPanel(false)}
+            leverage={leverage}
+            onLeverageChange={setLeverage}
+          />
         ) : (
-          <div className="flex items-center border-l border-border bg-card p-2">
+          <div className="flex flex-col items-center border-l border-border bg-card px-2 py-4 gap-2">
             <Button
               variant="ghost"
-              size="icon"
+              size="sm"
               onClick={() => setShowSettingsPanel(true)}
               title="Show Settings Panel"
+              className="flex flex-col items-center gap-1 h-auto py-2"
             >
               <Settings className="w-5 h-5" />
+              <span className="text-xs">Settings</span>
             </Button>
           </div>
         )}

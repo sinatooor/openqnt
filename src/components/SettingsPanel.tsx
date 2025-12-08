@@ -7,11 +7,12 @@ import { Wand2 } from "lucide-react";
 interface SettingsPanelProps {
   onStartTour?: () => void;
   onToggleAI?: () => void;
+  onClose?: () => void;
   leverage?: string;
   onLeverageChange?: (value: string) => void;
 }
 
-export const SettingsPanel = ({ onStartTour, onToggleAI, leverage = "1", onLeverageChange }: SettingsPanelProps) => {
+export const SettingsPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1", onLeverageChange }: SettingsPanelProps) => {
   const [mode, setMode] = useState<"backtest" | "live">("live");
   const [tradingSymbol, setTradingSymbol] = useState("BTC/USDT");
   const [broker, setBroker] = useState("td");
@@ -38,7 +39,7 @@ export const SettingsPanel = ({ onStartTour, onToggleAI, leverage = "1", onLever
                     onClick={onToggleAI}
                     variant="outline"
                     size="icon"
-                    className="ai-panel-trigger hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200"
+                    className="ai-panel-trigger hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200 h-7 w-7"
                     title="Toggle AI Assistant"
                   >
                     <Wand2 className="w-4 h-4" />
@@ -52,10 +53,28 @@ export const SettingsPanel = ({ onStartTour, onToggleAI, leverage = "1", onLever
             {onStartTour && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TourTriggerButton onClick={onStartTour} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200" />
+                  <TourTriggerButton onClick={onStartTour} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200 h-7 w-7" />
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Start Guided Tour</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {onClose && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={onClose}
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive"
+                    title="Close Settings"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Close Settings</p>
                 </TooltipContent>
               </Tooltip>
             )}
