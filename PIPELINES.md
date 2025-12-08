@@ -8,7 +8,11 @@ This document describes all major pipelines in the PPM trading strategy applicat
 
 **Purpose:** Convert natural language → Blockly XML visual strategy
 
-### Flow Diagram
+**User Controls:**
+- **⚡ DeepSeek Only Toggle**: OFF (default) = Gemini + DeepSeek | ON = Pure DeepSeek with full block catalog
+- **🛡️ Validation Toggle**: ON (default) = Validate with DeepSeek Reasoning | OFF = Skip validation
+
+### Flow Diagram (Gemini + DeepSeek Mode - Default)
 ```
 User Input (natural language)
         ↓
@@ -18,7 +22,7 @@ User Input (natural language)
         ↓ (uses Lovable/Gemini API)
 Pass 1: Generate initial XML
         ↓
-[Backend: POST /validate-strategy]
+[Backend: POST /validate-strategy] (if validation enabled)
         ↓
 Pass 2: DeepSeek REASONING validates & polishes
         ↓
@@ -31,22 +35,45 @@ Return validated XML to frontend
 [Frontend: Load blocks into Blockly workspace]
 ```
 
+### Flow Diagram (Pure DeepSeek Mode)
+```
+User Input (natural language)
+        ↓
+[Frontend: AIChatPanel.tsx]
+        ↓
+[Backend: POST /generate-strategy]
+        ↓
+DeepSeek with FULL SYSTEM_PROMPT (block catalog + templates)
+        ↓
+Pass 1-4: Generate, validate, fix (all in backend)
+        ↓
+[Backend: POST /validate-strategy] (if validation enabled)
+        ↓
+Return XML to frontend
+        ↓
+[Frontend: Load blocks into Blockly workspace]
+```
+
 ### Step-by-Step
 
 | Step | Location | Action |
 |------|----------|--------|
 | 1 | `AIChatPanel.tsx` | User types strategy description |
-| 2 | `AIChatPanel.tsx` | Calls Supabase `generate-strategy` edge function |
-| 3 | Supabase Function | Gemini/Lovable LLM generates Blockly XML |
-| 4 | `AIChatPanel.tsx` | Calls backend `/validate-strategy` with XML |
+| 2a | `AIChatPanel.tsx` | **If Gemini mode**: Calls Supabase `generate-strategy` edge function |
+| 2b | `AIChatPanel.tsx` | **If DeepSeek mode**: Calls backend `/generate-strategy` |
+| 3a | Supabase Function | Gemini/Lovable LLM generates Blockly XML |
+| 3b | `main.py` | DeepSeek generates XML with full block catalog |
+| 4 | `AIChatPanel.tsx` | **If validation ON**: Calls backend `/validate-strategy` with XML |
 | 5 | `main.py` | DeepSeek Reasoning model validates and fixes XML |
 | 6 | `main.py` | Programmatic fix swaps operators if indicators wrong order |
 | 7 | `AIChatPanel.tsx` | Receives validated XML, calls `onBlocksGenerated(xml)` |
 | 8 | Blockly | Renders visual blocks |
 
 ### Key Files
-- `src/features/ai/components/AIChatPanel.tsx` (frontend trigger)
-- `supabase/functions/generate-strategy/index.ts` (LLM call + validation)
+- `src/features/ai/components/AIChatPanel.tsx` (frontend trigger + toggles)
+- `supabase/functions/generate-strategy/index.ts` (Gemini LLM call)
+- `backend/main.py` → `/generate-strategy` (DeepSeek generation)
+- `backend/main.py` → `/validate-strategy` (DeepSeek Reasoning validation)
 
 ---
 
@@ -259,11 +286,13 @@ Return deal confirmation
 
 ## Summary: API → LLM Mapping
 
-| Pipeline | LLM Used | Endpoint |
-|----------|----------|----------|
-| Strategy Generation | **Supabase (Gemini/Lovable)** | Supabase Edge Function |
-| MQL5 Generation | **DeepSeek** | `/generate-mql` |
-| Chat Q&A | **DeepSeek** | `/chat` |
-| XML Verification | **DeepSeek** | (internal) |
-| Backtest | None (rule-based) | `/backtest` |
-| Live Trading | DeepSeek (verification only) | `/strategy/start` |
+| Pipeline | LLM Used | Endpoint | Notes |
+|----------|----------|----------|-------|
+| Strategy Generation (Gemini mode) | **Supabase (Gemini/Lovable)** + DeepSeek Reasoning | Supabase Edge Function + `/validate-strategy` | Default mode |
+| Strategy Generation (DeepSeek mode) | **DeepSeek** + DeepSeek Reasoning | `/generate-strategy` + `/validate-strategy` | Toggle enabled |
+| Validation (optional) | **DeepSeek Reasoning** | `/validate-strategy` | Can be disabled via toggle |
+| MQL5 Generation | **DeepSeek** | `/generate-mql` | |
+| Chat Q&A | **DeepSeek** | `/chat` | |
+| XML Verification | **DeepSeek** | (internal) | Used in live strategy |
+| Backtest | None (rule-based) | `/backtest` | |
+| Live Trading | DeepSeek (verification only) | `/strategy/start` | |
