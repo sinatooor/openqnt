@@ -584,9 +584,14 @@ export const BlocklyWorkspace = ({
         // Let's stick to calling the backend for all engines, just passing the engine param.
       }
 
+      // Create AbortController for timeout (2 minutes for LLM-based backtests)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000);
+
       const response = await fetch(`${backendUrl}/backtest`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           workspaceXml: workspaceXml,
           symbol: 'EURUSD',
@@ -597,6 +602,8 @@ export const BlocklyWorkspace = ({
           engine: engine
         })
       });
+
+      clearTimeout(timeoutId);
 
       const data = await response.json();
       toast.dismiss(loadingToast);
@@ -648,11 +655,21 @@ export const BlocklyWorkspace = ({
         });
         setShowBacktest(false);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Backtest error:", error);
       toast.dismiss(loadingToast);
+      
+      let errorMessage = "Backend not running? Start with: cd backend && uvicorn main:app --port 8000";
+      if (error.name === 'AbortError') {
+        errorMessage = "Request timed out. The backtest is taking too long - try with a shorter date range.";
+      } else if (error.message?.includes('Failed to fetch')) {
+        errorMessage = "Cannot connect to backend. Make sure the server is running on port 8000.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast.error("Backtest failed", {
-        description: "Backend not running? Start with: cd backend && uvicorn main:app --port 8000"
+        description: errorMessage
       });
       setShowBacktest(false);
     } finally {

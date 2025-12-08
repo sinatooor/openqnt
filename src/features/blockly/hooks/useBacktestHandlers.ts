@@ -62,9 +62,14 @@ export const useBacktestHandlers = ({
         // Backend execution
         const xml = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(workspaceRef.current));
 
+        // Create AbortController for timeout (2 minutes for LLM-based backtests)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 120000);
+
         const response = await fetch('http://localhost:8000/backtest', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
           body: JSON.stringify({
             workspaceXml: xml,
             symbol: 'EURUSD', // Default for now
@@ -74,6 +79,8 @@ export const useBacktestHandlers = ({
             engine: engine // Pass engine preference
           })
         });
+
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
           const err = await response.json();
@@ -114,8 +121,18 @@ export const useBacktestHandlers = ({
     } catch (error: any) {
       console.error("Backtest error:", error);
       toast.dismiss(loadingToast);
+      
+      let errorMessage = "Failed to run backtest simulation.";
+      if (error.name === 'AbortError') {
+        errorMessage = "Request timed out. The backtest is taking too long.";
+      } else if (error.message?.includes('Failed to fetch')) {
+        errorMessage = "Cannot connect to backend. Make sure the server is running.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast.error("Backtest failed", {
-        description: error.message || "Failed to run backtest simulation.",
+        description: errorMessage,
       });
       // Don't hide panel on error so user can see what happened
     } finally {
