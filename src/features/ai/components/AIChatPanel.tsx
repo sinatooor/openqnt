@@ -136,6 +136,28 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
           throw new Error(error.message || "Failed to generate strategy");
         }
 
+        // Pass 2: Validate with DeepSeek Reasoning
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+        let validatedXml = data.xml;
+        let aiFixed = false;
+
+        try {
+          const validateResponse = await fetch(`${backendUrl}/validate-strategy`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ xml: data.xml })
+          });
+
+          if (validateResponse.ok) {
+            const validateData = await validateResponse.json();
+            validatedXml = validateData.xml;
+            aiFixed = validateData.ai_fixed;
+            console.log("DeepSeek Reasoning validation complete");
+          }
+        } catch (e) {
+          console.log("Validation fallback - using original XML");
+        }
+
         if (onLog) {
           onLog({
             type: 'response',
@@ -156,10 +178,10 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
         setMessages((prev) => [...prev, assistantMessage]);
 
         try {
-          onBlocksGenerated(data.xml, isEdit);
+          onBlocksGenerated(validatedXml, isEdit);
 
           // Check if AI had to auto-fix indicator parameters
-          if (data.ai_fixed) {
+          if (aiFixed) {
             toast({
               title: "⚠️ AI Parameter Issue Detected",
               description: "Identical indicators were automatically corrected to use Fast/Slow periods.",
