@@ -4,6 +4,10 @@ import { X, TrendingUp, History, Zap, AlertCircle, CheckCircle2, Play, Square, L
 import { TourTriggerButton } from "./GuidedTour";
 import { Wand2 } from "lucide-react";
 import { toast } from "sonner";
+import { runBacktestTS } from "@/features/backtest/logic/engine";
+import type { OHLCVBar } from "@/features/backtest/logic/indicators";
+import { generateCode } from "@/config/blockly/generator";
+import { supabase } from "@/integrations/supabase/client";
 
 interface BacktestResult {
   totalReturn: number;
@@ -54,7 +58,7 @@ export const SettingsPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1"
   const [tradingSymbol, setTradingSymbol] = useState("EURUSD");
   const [isConnected, setIsConnected] = useState(false);
   const [capitalAllocation, setCapitalAllocation] = useState("10000");
-  const [engine, setEngine] = useState<"frontend" | "backtesting.py" | "nautilus" | "ai_simulation">("frontend");
+  const [engine, setEngine] = useState<"frontend" | "frontend-ts" | "backtesting.py" | "nautilus" | "ai_simulation">("frontend");
 
   // Optimization state
   const [isOptimization, setIsOptimization] = useState(false);
@@ -90,6 +94,70 @@ export const SettingsPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1"
     setBacktestResult(null);
 
     try {
+      // Optional: Run Gemini verification via Supabase Edge Function (Lovable gateway)
+      // This verifies the strategy before sending to backend
+      if (engine !== "frontend-ts" && engine !== "frontend") {
+        try {
+          toast.info("Verifying strategy with Gemini...");
+          const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-backtest', {
+            body: {
+              type: 'parse',
+              parsed: { xml: xml.substring(0, 2000) }, // Send truncated XML for parse check
+              xml_snippet: xml.substring(0, 1000)
+            }
+          });
+
+          if (verifyError) {
+            console.warn("[VERIFY] Gemini verification failed:", verifyError);
+          } else if (verifyData && !verifyData.valid) {
+            console.warn("[VERIFY] Gemini found issues:", verifyData.issues);
+            toast.warning("Strategy may have issues", {
+              description: verifyData.issues?.join(", ") || "Check console for details"
+            });
+          } else {
+            console.log("[VERIFY] Gemini verification passed");
+          }
+        } catch (verifyErr) {
+          console.warn("[VERIFY] Verification step skipped:", verifyErr);
+        }
+      }
+
+      // Handle frontend-ts engine locally in browser
+      if (engine === "frontend-ts") {
+        // Fetch historical data from backend
+        const dataResponse = await fetch(`${backendUrl}/market-data?symbol=${tradingSymbol}&start_date=${startDate}&end_date=${endDate}`);
+        if (!dataResponse.ok) {
+          throw new Error("Failed to fetch market data");
+        }
+        const marketData = await dataResponse.json();
+
+        // Convert to OHLCV format
+        const ohlcvData: OHLCVBar[] = marketData.data.map((bar: any) => ({
+          open: bar.open,
+          high: bar.high,
+          low: bar.low,
+          close: bar.close,
+          volume: bar.volume || 0,
+        }));
+
+        // Run the TypeScript backtest engine
+        const result = await runBacktestTS(xml, ohlcvData, parseFloat(capitalAllocation));
+
+        setBacktestResult({
+          totalReturn: result.metrics.totalReturn,
+          winRate: result.metrics.winRate,
+          totalTrades: result.metrics.totalTrades,
+          maxDrawdown: result.metrics.maxDrawdown,
+          finalBalance: parseFloat(capitalAllocation) * (1 + result.metrics.totalReturn / 100),
+          sharpeRatio: result.metrics.sharpeRatio,
+          profitFactor: result.metrics.profitFactor,
+        });
+
+        toast.success("Backtest completed!", {
+          description: `Return: ${result.metrics.totalReturn.toFixed(1)}% with ${result.metrics.totalTrades} trades`
+        });
+        return;
+      }
       // Create AbortController for timeout (10 minutes for LLM-based backtests)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 600000);
@@ -126,7 +194,7 @@ export const SettingsPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1"
         const totalReturn = ((data.final_balance - data.initial_balance) / data.initial_balance) * 100;
         const totalTrades = data.metrics.total_trades;
         const winRate = data.metrics.win_rate;
-        
+
         setBacktestResult({
           totalReturn,
           winRate,
@@ -160,7 +228,7 @@ export const SettingsPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1"
           bestParams: data.best_params,
           bestMetricValue: data.best_metric_value
         });
-        
+
         // Show contextual toast messages based on results
         if (totalTrades === 0) {
           toast.warning("No trades executed", {
@@ -395,6 +463,7 @@ export const SettingsPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1"
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="frontend">Simple (Fast)</SelectItem>
+                  <SelectItem value="frontend-ts">TechnicalIndicators (Browser)</SelectItem>
                   <SelectItem value="backtesting.py">Python (AI-Generated)</SelectItem>
                   <SelectItem value="nautilus">NautilusTrader (Institutional)</SelectItem>
                   <SelectItem value="ai_simulation">AI Simulation (LLM)</SelectItem>
@@ -419,7 +488,7 @@ export const SettingsPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1"
             )}
 
             {/* Optimization Settings */}
-            {(engine === "frontend" || engine === "backtesting.py" || engine === "nautilus") && (
+            {(engine === "frontend" || engine === "frontend-ts" || engine === "backtesting.py" || engine === "nautilus") && (
               <div className="space-y-2 border-t border-border pt-2 mt-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-medium text-muted-foreground">Optimization</label>

@@ -33,6 +33,15 @@ except ImportError:
     AST_PARSER_AVAILABLE = False
     print("Warning: AST parser not available, using regex-based parser")
 
+# Import verification module
+try:
+    from verification import verify_parsed_strategy, verify_generated_code, run_verification_pipeline
+    VERIFICATION_AVAILABLE = True
+except ImportError:
+    VERIFICATION_AVAILABLE = False
+    print("Warning: Verification module not available")
+
+
 
 def sanitize_for_json(obj):
     """
@@ -104,7 +113,7 @@ RULES:
 2. Use `self.I()` wrapper for ALL indicators
 3. Map blocks:
    - ta_sma → SMA (from backtesting.test import SMA)
-   - ta_ema → EMA (from backtesting.test import EMA)  
+   - ta_ema → EMA (use the custom EMA function defined below - DO NOT import from backtesting.test)
    - ta_rsi → Use talib or manual RSI calculation
    - operator_greater → >
    - operator_less → <
@@ -2699,6 +2708,7 @@ async def run_backtest_pipeline(
     cash: float = 10000,
     use_llm: bool = False,
     call_deepseek=None,
+    call_gemini=None,  # For parse verification
     engine: str = "backtesting.py",
     optimize: bool = False,
     opt_metric: str = "Return [%]",
@@ -2706,7 +2716,7 @@ async def run_backtest_pipeline(
     data_source: str = "alphavantage",  # "local", "alphavantage", or "yfinance"
     start_date: str = None,
     end_date: str = None,
-    verify_with_llm: bool = False,  # Verify generated code with DeepSeek
+    verify_with_llm: bool = False,  # Enable LLM verification (Gemini + DeepSeek)
     precompiled_code: str = None,
     code_language: str = "python",
     strategy_id: str = None,
@@ -2829,6 +2839,21 @@ async def run_backtest_pipeline(
             elif not strategy_code:
                 parsed = parse_xml_simple(xml)
             
+            # Step 1.3: Gemini Parse Verification (if enabled)
+            if verify_with_llm and VERIFICATION_AVAILABLE and call_gemini and not strategy_code:
+                print("[VERIFY STEP 1] Running Gemini parse verification...")
+                parse_valid, parse_result = await verify_parsed_strategy(
+                    parsed=parsed,
+                    xml_snippet=xml[:1000],
+                    call_gemini=call_gemini
+                )
+                if not parse_valid:
+                    print(f"[VERIFY] Parse issues found: {parse_result.get('issues', [])}")
+                    # If fixed_parsed is provided, use it
+                    if parse_result.get("fixed_parsed"):
+                        print("[VERIFY] Using Gemini-corrected parsed structure")
+                        parsed = parse_result["fixed_parsed"]
+            
             if not strategy_code:
                 strategy_code = generate_strategy_code_simple(parsed)
             code_lang = "python"
@@ -2854,131 +2879,21 @@ async def run_backtest_pipeline(
         
         print(f"Generated strategy code:\n{strategy_code[:500]}...")
         
-        # Step 1.5: Verify generated code with DeepSeek (optional)
-        if verify_with_llm and call_deepseek:
-            print("Verifying generated Python code with DeepSeek...")
-            
-            # Include example conversion for DeepSeek to understand the pattern
-            example_xml = '''<block type="ta_rsi"><field name="PERIOD">14</field></block>
-<block type="operator_less"><value name="A">RSI</value><value name="B">30</value></block>
-<block type="trade_order"><field name="DIRECTION">long</field></block>'''
-            
-            example_python = '''class GeneratedStrategy(Strategy):
-    rsi_period = 14
-    oversold = 30
-    
-    def init(self):
-        self.rsi = self.I(RSI, self.data.Close, self.rsi_period)
-    
-    def next(self):
-        if self.rsi[-1] < self.oversold and not self.position:
-            self.buy()'''
-            
-            # The full indicator library available in backtesting code
-            indicator_library = '''
-# AVAILABLE INDICATOR FUNCTIONS (already defined in the code):
-# - EMA(values, n) - Exponential Moving Average
-# - RSI(arr, period=14) - Relative Strength Index (returns 0-100)
-# - MACD_line(values, fast=12, slow=26) - MACD line
-# - MACD_signal(values, fast=12, slow=26, signal=9) - MACD signal line
-# - BollingerUpper(values, period=20, std_dev=2.0) - Upper Bollinger Band
-# - BollingerLower(values, period=20, std_dev=2.0) - Lower Bollinger Band
-# - StochK(high, low, close, period=14) - Stochastic %K
-# - ATR(high, low, close, period=14) - Average True Range
-# - VWAP(high, low, close, volume) - Volume Weighted Average Price
-# - CCI(high, low, close, period=20) - Commodity Channel Index
-# - WilliamsR(high, low, close, period=14) - Williams %R
-# - ADX(high, low, close, period=14) - Average Directional Index
-# - PlusDI(high, low, close, period=14) - Plus Directional Indicator
-# - MinusDI(high, low, close, period=14) - Minus Directional Indicator
-# - DonchianUpper(high, period=20) - Donchian Channel Upper
-# - DonchianLower(low, period=20) - Donchian Channel Lower
-# - KeltnerUpper(high, low, close, period=20, multiplier=2.0) - Keltner Upper
-# - KeltnerLower(high, low, close, period=20, multiplier=2.0) - Keltner Lower
-# - ParabolicSAR(high, low, close, step=0.02, maximum=0.2) - Parabolic SAR
-# - SuperTrend(high, low, close, period=10, multiplier=3.0) - SuperTrend
-# - MFI(high, low, close, volume, period=14) - Money Flow Index
-# - OBV(close, volume) - On Balance Volume
-# - Momentum(close, period=14) - Momentum
-# - Highest(values, period=20) - Highest value over period
-# - Lowest(values, period=20) - Lowest value over period
+        # Step 1.5: Verify generated code with DeepSeek (using verification module)
+        if verify_with_llm and VERIFICATION_AVAILABLE and call_deepseek:
+            print("[VERIFY STEP 2] Running DeepSeek code verification...")
+            code_valid, code_result, fixed_code = await verify_generated_code(
+                code=strategy_code,
+                call_deepseek=call_deepseek
+            )
+            if not code_valid:
+                print(f"[VERIFY] Code issues found: {code_result.get('issues', [])}")
+                if fixed_code:
+                    print("[VERIFY] Applying DeepSeek-corrected code")
+                    strategy_code = fixed_code
+            else:
+                print("[VERIFY] Code verification passed")
 
-# IMPORTS ALREADY AVAILABLE:
-# from backtesting import Strategy
-# from backtesting.lib import crossover
-# from backtesting.test import SMA
-# import numpy as np
-
-# DATA AVAILABLE IN STRATEGY:
-# self.data.Open, self.data.High, self.data.Low, self.data.Close, self.data.Volume
-
-# KEY METHODS:
-# self.I(indicator_func, *args) - Wrap indicator for backtesting
-# self.buy(sl=stop_loss_price, tp=take_profit_price) - Open long position
-# self.sell(sl=stop_loss_price, tp=take_profit_price) - Open short position
-# self.position - Current position (falsy if no position)
-# self.position.close() - Close current position
-# crossover(series1, series2) - Returns True when series1 crosses above series2
-'''
-            
-            verify_prompt = f"""You are a trading strategy code expert. Your job is to verify and FIX Python backtesting code.
-
-=== EXAMPLE CONVERSION ===
-INPUT XML:
-{example_xml}
-
-CORRECT OUTPUT PYTHON:
-{example_python}
-
-=== INDICATOR LIBRARY REFERENCE ===
-{indicator_library}
-
-=== YOUR TASK ===
-I have an XML strategy and generated Python code. Please verify and FIX the code to work correctly.
-
-XML STRATEGY:
-{xml}
-
-GENERATED PYTHON CODE:
-{strategy_code}
-
-=== VERIFICATION CHECKLIST ===
-1. Does the Python code correctly implement ALL conditions from the XML?
-2. Are indicator periods correct (check <field name="PERIOD"> and <mutation ma_period="">)?
-3. Are comparison operators correct (operator_less → <, operator_greater → >)?
-4. For RSI strategies: Is buy triggered when RSI < oversold, sell when RSI > overbought?
-5. For SMA/EMA crossover: Is crossover() used correctly?
-6. Is ATR-based stop loss calculated as: entry_price - (ATR * multiplier)?
-7. Is ATR-based take profit calculated as: entry_price + (ATR * multiplier)?
-8. Does the code check "not self.position" before opening new trades?
-
-=== COMMON BUGS TO FIX ===
-- Wrong: self.rsi < 30 → Correct: self.rsi[-1] < 30 (use [-1] for current value)
-- Wrong: if self.position: self.buy() → Correct: if not self.position: self.buy()
-- Wrong: sl = atr * 1.5 → Correct: sl = price - (atr * 1.5) for long positions
-- Missing: np.isnan(atr) check before using ATR values
-
-=== OUTPUT ===
-Return ONLY the corrected Python code. No markdown, no explanation.
-The code must be a complete, runnable backtesting.py Strategy class.
-Start with "from backtesting import Strategy" and include the class definition."""
-
-            verify_messages = [
-                {"role": "system", "content": verify_prompt},
-                {"role": "user", "content": "Analyze the XML and Python code above. Return the FIXED Python code that correctly implements the strategy."}
-            ]
-            verified_code = await call_deepseek(verify_messages, temperature=0.1)
-            
-            # Clean code
-            if verified_code.startswith("```"):
-                verified_code = verified_code.split("\n", 1)[1]
-            if verified_code.endswith("```"):
-                verified_code = verified_code.rsplit("\n", 1)[0]
-            if verified_code.startswith("python"):
-                verified_code = verified_code[6:].strip()
-            
-            strategy_code = verified_code
-            print("Code verified/corrected by DeepSeek")
         
         # Step 2: Fetch historical data
         print(f"Fetching data for {symbol} using {data_source}...")

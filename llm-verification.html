@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Verification Pipeline - PPM</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0f0f1a;
+            --bg-card: #1a1a2e;
+            --accent: #8b5cf6;
+            --accent-light: #a78bfa;
+            --text-primary: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #2d2d44;
+            --success: #22c55e;
+            --warning: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        section {
+            margin-bottom: 40px;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            color: var(--accent-light);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h2::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: var(--accent);
+            border-radius: 2px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        td a {
+            color: var(--accent-light);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        td a:hover {
+            color: var(--accent);
+            text-decoration: underline;
+        }
+
+        .mermaid-container {
+            background: #1e1e2e;
+            border-radius: 12px;
+            padding: 30px;
+            display: flex;
+            justify-content: center;
+            overflow-x: auto;
+        }
+
+        .steps-list {
+            list-style: none;
+            counter-reset: step;
+        }
+
+        .steps-list li {
+            position: relative;
+            padding-left: 50px;
+            margin-bottom: 16px;
+            counter-increment: step;
+        }
+
+        .steps-list li::before {
+            content: counter(step);
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 32px;
+            height: 32px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .steps-list li strong {
+            color: var(--accent-light);
+        }
+
+        .code-block {
+            background: #0d0d14;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px 20px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+        }
+
+        .code-block code {
+            color: var(--success);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .badge-frontend {
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--accent-light);
+        }
+
+        .badge-backend {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--success);
+        }
+
+        footer {
+            text-align: center;
+            color: var(--text-muted);
+            padding-top: 40px;
+            border-top: 1px solid var(--border);
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>LLM Verification Pipeline</h1>
+            <p class="subtitle">Two-level verification using Gemini (Lovable) and DeepSeek</p>
+        </header>
+
+        <section>
+            <h2>New Files</h2>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>File</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><a href="#">verify-backtest/index.ts</a></td>
+                            <td><span class="badge badge-frontend">Frontend</span></td>
+                            <td>Supabase edge function using Lovable/Gemini gateway</td>
+                        </tr>
+                        <tr>
+                            <td><a href="#">verification.py</a></td>
+                            <td><span class="badge badge-backend">Backend</span></td>
+                            <td>Python backend verification module</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section>
+            <h2>Pipeline Flow</h2>
+            <div class="card mermaid-container">
+                <pre class="mermaid">
+flowchart TD
+    A["🖱️ User clicks Backtest"] --> B{"Frontend Engine?"}
+    B -->|Yes| C["🌐 Run locally in browser"]
+    B -->|No| D["☁️ Supabase: verify-backtest"]
+    D --> E{"Gemini Valid?"}
+    E -->|Issues| F["⚠️ Show warning toast"]
+    E -->|OK| G["🔙 Backend /backtest"]
+    G --> H["🔍 Gemini Parse Check"]
+    H --> I["🔧 DeepSeek Code Check"]
+    I --> J["✅ Execute Backtest"]
+    
+    style A fill:#8b5cf6,color:#fff
+    style C fill:#22c55e,color:#fff
+    style D fill:#3b82f6,color:#fff
+    style F fill:#f59e0b,color:#000
+    style J fill:#22c55e,color:#fff
+                </pre>
+            </div>
+        </section>
+
+        <section>
+            <h2>Usage</h2>
+            <div class="card">
+                <p style="color: var(--text-muted); margin-bottom: 20px;">
+                    When you run a backtest with Python, Nautilus, or AI Simulation engine:
+                </p>
+                <ol class="steps-list">
+                    <li><strong>Frontend</strong> calls <code>supabase.functions.invoke('verify-backtest')</code> with
+                        XML</li>
+                    <li><strong>Gemini</strong> (via Lovable) validates the strategy structure</li>
+                    <li>If issues found → <strong>toast warning</strong> appears</li>
+                    <li><strong>Backend</strong> runs additional verification with Gemini + DeepSeek</li>
+                    <li>Backtest executes with <strong>verified code</strong></li>
+                </ol>
+            </div>
+        </section>
+
+        <section>
+            <h2>Deploy Edge Function</h2>
+            <div class="card">
+                <div class="code-block">
+                    <code>cd /Users/sina/project-fire/PPM</code><br>
+                    <code>supabase functions deploy verify-backtest</code>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- AI STRATEGY GENERATION -->
+        <!-- ========================================== -->
+        <section>
+            <h2>AI Strategy Generation</h2>
+            <div class="card mermaid-container">
+                <pre class="mermaid">
+flowchart LR
+    subgraph Legacy["Legacy Mode (Gemini)"]
+        A1[User Prompt] --> B1[Supabase Edge]
+        B1 --> C1[Lovable Gateway]
+        C1 --> D1[Gemini]
+        D1 --> E1[Blockly XML]
+    end
+    
+    subgraph Default["Default Mode (DeepSeek)"]
+        A2[User Prompt] --> B2[Backend API]
+        B2 --> C2[DeepSeek Chat]
+        C2 --> D2[DeepSeek Reasoning]
+        D2 --> E2[Validated XML]
+    end
+    
+    style D1 fill:#8b5cf6,color:#fff
+    style C2 fill:#22c55e,color:#fff
+                </pre>
+            </div>
+            <div class="card">
+                <h3 style="color: var(--text-primary); margin: 10px 0 10px;">Legacy Mode (Gemini)</h3>
+                <ul style="color: var(--text-muted); margin-left: 20px; margin-bottom: 20px;">
+                    <li><strong>File:</strong> <code>supabase/functions/generate-strategy/index.ts</code></li>
+                    <li><strong>Prompt:</strong> 2770-line <code>FULL_SYSTEM_PROMPT.txt</code></li>
+                    <li><strong>Model:</strong> <code>google/gemini-3-pro</code> via Lovable</li>
+                </ul>
+
+                <h3 style="color: var(--text-primary); margin: 20px 0 10px;">Default Mode (DeepSeek)</h3>
+                <ul style="color: var(--text-muted); margin-left: 20px;">
+                    <li><strong>File:</strong> <code>backend/main.py</code> → <code>generate_strategy()</code></li>
+                    <li><strong>Prompt:</strong> <code>GCG_PLANNER_PROMPT</code> + <code>SYSTEM_PROMPT</code></li>
+                    <li><strong>Model:</strong> <code>deepseek-chat</code> + <code>deepseek-reasoner</code></li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- MQL CODE GENERATION -->
+        <!-- ========================================== -->
+        <section>
+            <h2>MQL Code Generation</h2>
+            <div class="card mermaid-container">
+                <pre class="mermaid">
+flowchart LR
+    A[Blockly Blocks] --> B[JavaScript Generators]
+    B --> C{Block Type}
+    C --> D[Indicator Block]
+    C --> E[Trade Block]
+    C --> F[Logic Block]
+    D --> G["iRSI(), iSMA()"]
+    E --> H["OrderSend()"]
+    F --> I["if/else"]
+    G --> J[MQL4 Code]
+    H --> J
+    I --> J
+    
+    style A fill:#8b5cf6,color:#fff
+    style J fill:#22c55e,color:#fff
+                </pre>
+            </div>
+            <div class="card">
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Component</th>
+                            <th>File</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>MQL Generator</td>
+                            <td><code>src/config/blockly/generator.ts</code></td>
+                        </tr>
+                        <tr>
+                            <td>Indicator Generators</td>
+                            <td><code>src/features/indicators/generators/</code></td>
+                        </tr>
+                        <tr>
+                            <td>Trade Generators</td>
+                            <td><code>src/features/trading/generators/</code></td>
+                        </tr>
+                        <tr>
+                            <td>Supabase Function</td>
+                            <td><code>supabase/functions/generate-mql-code/index.ts</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p style="color: var(--text-muted); margin-top: 15px;">
+                    <strong>Note:</strong> MQL generators map Blockly blocks to MQL4 syntax
+                    (e.g., <code>iRSI()</code>, <code>OrderSend()</code>).
+                </p>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- BACKTESTING ENGINES -->
+        <!-- ========================================== -->
+        <section>
+            <h2>Backtesting Engines</h2>
+            <div class="card mermaid-container" style="overflow-x: auto;">
+                <pre class="mermaid">
+flowchart TD
+    START[Blockly XML Strategy] --> SELECT{Select Engine}
+    
+    %% ===== SIMPLE FRONTEND =====
+    SELECT --> SIMPLE[Simple Frontend]
+    SIMPLE --> S1[Pattern Match]
+    S1 --> S2{Strategy Type}
+    S2 --> S3[SMA Crossover]
+    S2 --> S4[RSI Oversold]
+    S2 --> S5[MACD Signal]
+    S3 --> S6[Mock Trades]
+    S4 --> S6
+    S5 --> S6
+    S6 --> RESULT1[Static Metrics]
+    
+    %% ===== TECHNICAL INDICATORS =====
+    SELECT --> TECH[TechnicalIndicators Browser]
+    TECH --> T1[generateCode]
+    T1 --> T2[JavaScript Code]
+    T2 --> T3[fetch /market-data]
+    T3 --> T4[OHLCV Bars]
+    T4 --> T5[createIndicatorContext]
+    T5 --> T6[SMA/EMA/RSI/MACD]
+    T6 --> T7[executeStrategy]
+    T7 --> T8{Signal}
+    T8 -->|buy| T9[Open Long]
+    T8 -->|sell| T10[Close]
+    T8 -->|hold| T11[Wait]
+    T9 --> RESULT2[Metrics]
+    T10 --> RESULT2
+    T11 --> RESULT2
+    
+    %% ===== PYTHON BACKTESTING.PY =====
+    SELECT --> PYTHON[Python backtesting.py]
+    PYTHON --> P1[parse_xml_simple]
+    P1 --> P2[Extract Indicators]
+    P2 --> P3[generate_strategy_code_simple]
+    P3 --> P4[Python Strategy Class]
+    P4 --> P5{LLM Verify?}
+    P5 -->|Yes| P6[Gemini + DeepSeek]
+    P5 -->|No| P7[fetch_historical_data]
+    P6 --> P7
+    P7 --> P8[(Local DB)]
+    P7 --> P9[Alpha Vantage]
+    P7 --> P10[yfinance]
+    P8 --> P11["Backtest.run()"]
+    P9 --> P11
+    P10 --> P11
+    P11 --> RESULT3[Sharpe/Drawdown/Trades]
+    
+    %% ===== NAUTILUS TRADER =====
+    SELECT --> NAUT[NautilusTrader]
+    NAUT --> N1[DeepSeek LLM]
+    N1 --> N2[XML_TO_NAUTILUS_PROMPT]
+    N2 --> N3[Nautilus Strategy Code]
+    N3 --> N4[NautilusTrader Engine]
+    N4 --> N5[Event-Driven Backtest]
+    N5 --> RESULT4[Institutional Metrics]
+    
+    %% ===== AI SIMULATION =====
+    SELECT --> AI[AI Simulation]
+    AI --> A1{Model}
+    A1 --> A2[DeepSeek]
+    A1 --> A3[Gemini]
+    A2 --> A4[Simulate Trades]
+    A3 --> A4
+    A4 --> A5[Generate Results]
+    A5 --> RESULT5[LLM Metrics]
+    
+    %% Styling
+    style START fill:#8b5cf6,color:#fff
+    style SELECT fill:#1e1b4b,color:#fff
+    
+    style SIMPLE fill:#64748b,color:#fff
+    style RESULT1 fill:#64748b,color:#fff
+    
+    style TECH fill:#8b5cf6,color:#fff
+    style RESULT2 fill:#8b5cf6,color:#fff
+    
+    style PYTHON fill:#22c55e,color:#fff
+    style P11 fill:#22c55e,color:#fff
+    style RESULT3 fill:#22c55e,color:#fff
+    
+    style NAUT fill:#3b82f6,color:#fff
+    style N4 fill:#3b82f6,color:#fff
+    style RESULT4 fill:#3b82f6,color:#fff
+    
+    style AI fill:#f59e0b,color:#000
+    style A4 fill:#f59e0b,color:#000
+    style RESULT5 fill:#f59e0b,color:#000
+                </pre>
+            </div>
+
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Engine</th>
+                            <th>Location</th>
+                            <th>Key Files</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong style="color: #64748b;">Simple</strong></td>
+                            <td>Browser</td>
+                            <td><code>engine.ts</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong style="color: #8b5cf6;">TechnicalIndicators</strong></td>
+                            <td>Browser</td>
+                            <td><code>engine.ts</code>, <code>indicators.ts</code>, <code>runtime.ts</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong style="color: #22c55e;">Python</strong></td>
+                            <td>Backend</td>
+                            <td><code>backtest_service.py</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong style="color: #3b82f6;">NautilusTrader</strong></td>
+                            <td>Backend</td>
+                            <td><code>backtest_service.py</code> (requires Rust)</td>
+                        </tr>
+                        <tr>
+                            <td><strong style="color: #f59e0b;">AI Simulation</strong></td>
+                            <td>Backend</td>
+                            <td><code>backtest_service.py</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- DATA SOURCES -->
+        <!-- ========================================== -->
+        <section>
+            <h2>Data Sources</h2>
+            <div class="card">
+                <p style="color: var(--text-muted); margin-bottom: 15px;">
+                    Priority order for fetching historical OHLCV data:
+                </p>
+                <ol style="color: var(--text-muted); margin-left: 20px;">
+                    <li><strong>Local Database</strong> (SQLite/PostgreSQL) - if available</li>
+                    <li><strong>Alpha Vantage API</strong> - primary external source</li>
+                    <li><strong>yfinance</strong> - fallback (Yahoo Finance)</li>
+                </ol>
+                <p style="color: var(--text-muted); margin-top: 15px;">
+                    <strong>Endpoint:</strong> <code>GET /market-data?symbol=AAPL&start_date=2024-01-01</code>
+                </p>
+            </div>
+        </section>
+
+        <footer>
+            <p>Project Prometheus (PPM) • Pipeline Documentation</p>
+        </footer>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'dark',
+            flowchart: {
+                curve: 'basis',
+                padding: 20
+            },
+            themeVariables: {
+                primaryColor: '#8b5cf6',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#6d28d9',
+                lineColor: '#64748b',
+                secondaryColor: '#1e1b4b',
+                tertiaryColor: '#1a1a2e'
+            }
+        });
+    </script>
+</body>
+
+</html>
