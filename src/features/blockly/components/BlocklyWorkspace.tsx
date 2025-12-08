@@ -1222,7 +1222,10 @@ export const BlocklyWorkspace = ({
 
       {/* IG Trading Panel */}
       {showIGPanel && (
-        <IGTradingPanel onClose={() => setShowIGPanel(false)} />
+        <IGTradingPanel
+          onClose={() => setShowIGPanel(false)}
+          getWorkspaceXml={() => currentXmlCode || null}
+        />
       )}
     </div>
 

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Link2, Power, TrendingUp, TrendingDown, AlertCircle, CheckCircle2, X } from "lucide-react";
+import { Loader2, Link2, Power, TrendingUp, TrendingDown, AlertCircle, CheckCircle2, X, Play, Square } from "lucide-react";
 import { toast } from "sonner";
 
 interface Position {
@@ -18,9 +18,10 @@ interface Position {
 
 interface IGTradingPanelProps {
     onClose?: () => void;
+    getWorkspaceXml?: () => string | null;
 }
 
-export const IGTradingPanel = ({ onClose }: IGTradingPanelProps) => {
+export const IGTradingPanel = ({ onClose, getWorkspaceXml }: IGTradingPanelProps) => {
     const [isConnected, setIsConnected] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);
     const [positions, setPositions] = useState<Position[]>([]);
@@ -36,6 +37,11 @@ export const IGTradingPanel = ({ onClose }: IGTradingPanelProps) => {
     const [direction, setDirection] = useState<"BUY" | "SELL">("BUY");
     const [size, setSize] = useState("0.5");
     const [isTrading, setIsTrading] = useState(false);
+
+    // Strategy runner
+    const [isStrategyRunning, setIsStrategyRunning] = useState(false);
+    const [isStartingStrategy, setIsStartingStrategy] = useState(false);
+    const [strategyStatus, setStrategyStatus] = useState<any>(null);
 
     const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
@@ -156,6 +162,80 @@ export const IGTradingPanel = ({ onClose }: IGTradingPanelProps) => {
             return () => clearInterval(interval);
         }
     }, [isConnected]);
+
+    // Poll strategy status
+    useEffect(() => {
+        if (isStrategyRunning) {
+            const interval = setInterval(async () => {
+                try {
+                    const response = await fetch(`${backendUrl}/strategy/status`);
+                    const data = await response.json();
+                    if (data.success && data.status) {
+                        setStrategyStatus(data.status);
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch strategy status", e);
+                }
+            }, 5000);
+            return () => clearInterval(interval);
+        }
+    }, [isStrategyRunning]);
+
+    const handleStartStrategy = async () => {
+        if (!getWorkspaceXml) {
+            toast.error("No workspace XML getter provided");
+            return;
+        }
+        const xml = getWorkspaceXml();
+        if (!xml) {
+            toast.error("Add blocks to workspace first");
+            return;
+        }
+
+        setIsStartingStrategy(true);
+        try {
+            const response = await fetch(`${backendUrl}/strategy/start`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    workspaceXml: xml,
+                    symbol,
+                    tradeSize: parseFloat(size),
+                    pollInterval: 60
+                }),
+            });
+            const data = await response.json();
+            if (data.success) {
+                setIsStrategyRunning(true);
+                setStrategyStatus(data.status);
+                toast.success("Strategy started!", {
+                    description: `Running on ${symbol}`
+                });
+            } else {
+                toast.error("Failed to start", { description: data.error });
+            }
+        } catch (e) {
+            toast.error("Error starting strategy");
+        } finally {
+            setIsStartingStrategy(false);
+        }
+    };
+
+    const handleStopStrategy = async () => {
+        try {
+            const response = await fetch(`${backendUrl}/strategy/stop`, {
+                method: "POST",
+            });
+            const data = await response.json();
+            if (data.success) {
+                setIsStrategyRunning(false);
+                setStrategyStatus(null);
+                toast.success("Strategy stopped");
+            }
+        } catch (e) {
+            toast.error("Error stopping strategy");
+        }
+    };
 
     return (
         <Card className="w-[400px] border-l border-border bg-card flex flex-col animate-in slide-in-from-right duration-300 shadow-2xl">
@@ -319,7 +399,62 @@ export const IGTradingPanel = ({ onClose }: IGTradingPanelProps) => {
                             </Button>
                         </div>
 
-                        {/* Positions */}
+                        {/* Strategy Runner Section */}
+                        <div className="space-y-3 pt-3 border-t border-border">
+                            <Label className="text-xs font-medium">Auto-Trade Strategy</Label>
+
+                            {isStrategyRunning ? (
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <Badge className="bg-purple-500 animate-pulse">
+                                            <Play className="w-3 h-3 mr-1" />
+                                            Running
+                                        </Badge>
+                                        <span className="text-xs text-muted-foreground">
+                                            {strategyStatus?.symbol || symbol}
+                                        </span>
+                                    </div>
+
+                                    {strategyStatus && (
+                                        <div className="text-xs space-y-1 bg-muted p-2 rounded">
+                                            <div>Position: {strategyStatus.current_position || 'None'}</div>
+                                            <div>Last Signal: {strategyStatus.last_signal || 'None'}</div>
+                                            <div>Trades: {strategyStatus.trade_count || 0}</div>
+                                            {strategyStatus.last_price && (
+                                                <div>Last Price: {strategyStatus.last_price.toFixed(5)}</div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    <Button
+                                        onClick={handleStopStrategy}
+                                        variant="destructive"
+                                        className="w-full"
+                                    >
+                                        <Square className="w-4 h-4 mr-2" />
+                                        Stop Strategy
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    <p className="text-xs text-muted-foreground">
+                                        Run your Blockly strategy automatically
+                                    </p>
+                                    <Button
+                                        onClick={handleStartStrategy}
+                                        disabled={isStartingStrategy}
+                                        className="w-full bg-purple-600 hover:bg-purple-700"
+                                    >
+                                        {isStartingStrategy ? (
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        ) : (
+                                            <Play className="w-4 h-4 mr-2" />
+                                        )}
+                                        Run Strategy
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
                                 <Label className="text-xs font-medium">Open Positions</Label>

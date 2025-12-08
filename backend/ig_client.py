@@ -271,6 +271,81 @@ class IGClient:
                     "details": response.text
                 }
     
+    async def get_historical_prices(
+        self,
+        epic: str,
+        resolution: str = "HOUR",
+        num_points: int = 500,
+        start_date: str = None,
+        end_date: str = None
+    ) -> Dict[str, Any]:
+        """
+        Get historical price data.
+        
+        Args:
+            epic: Market identifier (e.g., "CS.D.EURUSD.CFD.IP")
+            resolution: SECOND, MINUTE, MINUTE_2, MINUTE_3, MINUTE_5, MINUTE_10,
+                       MINUTE_15, MINUTE_30, HOUR, HOUR_2, HOUR_3, HOUR_4, DAY, WEEK, MONTH
+            num_points: Number of data points to return (max 500)
+            start_date: Start date in format "YYYY-MM-DDTHH:MM:SS" (optional)
+            end_date: End date in format "YYYY-MM-DDTHH:MM:SS" (optional)
+        
+        Returns:
+            Dict with OHLCV price data
+        """
+        if not self.is_authenticated:
+            return {"success": False, "error": "Not authenticated"}
+        
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            # Use date range if provided, otherwise use num_points
+            if start_date and end_date:
+                url = f"{self.base_url}/prices/{epic}"
+                params = {
+                    "resolution": resolution,
+                    "from": start_date,
+                    "to": end_date,
+                    "pageSize": 0  # Return all data
+                }
+            else:
+                url = f"{self.base_url}/prices/{epic}/{resolution}/{num_points}"
+                params = {}
+            
+            response = await client.get(
+                url,
+                headers=self._get_headers(version=3),
+                params=params if params else None
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                prices = data.get("prices", [])
+                
+                # Convert to standard OHLCV format
+                ohlcv = []
+                for p in prices:
+                    ohlcv.append({
+                        "timestamp": p.get("snapshotTime") or p.get("snapshotTimeUTC"),
+                        "open": float(p.get("openPrice", {}).get("mid", 0)) if isinstance(p.get("openPrice"), dict) else float(p.get("openPrice", {}).get("ask", 0)),
+                        "high": float(p.get("highPrice", {}).get("mid", 0)) if isinstance(p.get("highPrice"), dict) else float(p.get("highPrice", {}).get("ask", 0)),
+                        "low": float(p.get("lowPrice", {}).get("mid", 0)) if isinstance(p.get("lowPrice"), dict) else float(p.get("lowPrice", {}).get("ask", 0)),
+                        "close": float(p.get("closePrice", {}).get("mid", 0)) if isinstance(p.get("closePrice"), dict) else float(p.get("closePrice", {}).get("ask", 0)),
+                        "volume": int(p.get("lastTradedVolume", 0))
+                    })
+                
+                return {
+                    "success": True,
+                    "epic": epic,
+                    "resolution": resolution,
+                    "count": len(ohlcv),
+                    "prices": ohlcv
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": f"Failed to get prices: {response.status_code}",
+                    "details": response.text
+                }
+    
     async def search_markets(self, search_term: str) -> Dict[str, Any]:
         """Search for markets by name or symbol."""
         if not self.is_authenticated:

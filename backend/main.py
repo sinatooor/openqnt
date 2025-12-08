@@ -639,22 +639,46 @@ Generate the complete MQL5 code."""
 @app.post("/backtest", response_model=BacktestResponse)
 async def run_backtest_endpoint(request: BacktestRequest):
     """
-    Run backtest on a Blockly strategy using NautilusTrader.
+    Run backtest on a Blockly strategy.
     
-    1. Converts Blockly XML to NautilusTrader Strategy code via LLM
-    2. Runs backtest with synthetic data
-    3. Returns metrics, trades, and equity curve
+    1. Converts Blockly XML to strategy code via LLM
+    2. Tries to fetch real data from IG if authenticated
+    3. Falls back to synthetic data if IG not available
+    4. Returns metrics, trades, and equity curve
     """
     print(f"=== Running backtest for {request.symbol} ===")
     print(f"Period: {request.startDate} to {request.endDate}")
     
     # Import backtest runner (lazy import to avoid startup issues)
-    from backtest_runner import run_backtest
+    from backtest_runner import run_backtest, fetch_real_data_from_ig
     from strategy_converter import convert_xml_to_strategy, get_fallback_strategy
+    
+    # Try to get real data from IG if client is authenticated
+    historical_data = None
+    data_source = "synthetic"
+    
+    client = get_ig_client()
+    if client.is_authenticated:
+        try:
+            print("Fetching real data from IG...")
+            historical_data = await fetch_real_data_from_ig(
+                ig_client=client,
+                symbol=request.symbol,
+                start_date=request.startDate,
+                end_date=request.endDate,
+                resolution="HOUR"
+            )
+            data_source = "IG API"
+            print(f"Fetched {len(historical_data)} bars from IG")
+        except Exception as e:
+            print(f"Failed to fetch IG data: {e}, using synthetic")
+            historical_data = None
+    else:
+        print("IG not authenticated, using synthetic data")
     
     try:
         # Convert XML to strategy code
-        print("Converting XML to NautilusTrader strategy...")
+        print("Converting XML to strategy code...")
         strategy_code = await convert_xml_to_strategy(
             xml=request.workspaceXml,
             strategy_name="BlocklyStrategy",
@@ -666,17 +690,21 @@ async def run_backtest_endpoint(request: BacktestRequest):
         strategy_code = get_fallback_strategy()
     
     # Run backtest
-    print("Running backtest simulation...")
+    print(f"Running backtest simulation (data source: {data_source})...")
     result = run_backtest(
         strategy_code=strategy_code,
         symbol=request.symbol,
         start_date=request.startDate,
         end_date=request.endDate,
         initial_balance=request.initialBalance,
-        trade_size=request.tradeSize
+        trade_size=request.tradeSize,
+        historical_data=historical_data
     )
     
     print(f"Backtest complete: {result['metrics']['total_trades']} trades")
+    
+    # Add data source to result
+    result['data_source'] = data_source
     
     return BacktestResponse(
         success=result['success'],
@@ -824,6 +852,59 @@ async def ig_search_markets(term: str):
         return {"success": False, "error": "Not authenticated. Call /ig/login first."}
     
     return await client.search_markets(term)
+
+
+# ============================================================
+# Live Strategy Runner Endpoints
+# ============================================================
+
+class StrategyStartRequest(BaseModel):
+    workspaceXml: str
+    symbol: str = "EURUSD"
+    tradeSize: float = 0.5
+    pollInterval: int = 60
+
+
+@app.post("/strategy/start")
+async def start_strategy(request: StrategyStartRequest):
+    """
+    Start running a Blockly strategy against live market data.
+    
+    The strategy will poll IG for prices and execute trades automatically.
+    """
+    print(f"=== Starting Strategy Runner for {request.symbol} ===")
+    
+    client = get_ig_client()
+    if not client.is_authenticated:
+        return {"success": False, "error": "Not authenticated. Call /ig/login first."}
+    
+    from strategy_runner import start_strategy_runner
+    
+    result = await start_strategy_runner(
+        ig_client=client,
+        xml_strategy=request.workspaceXml,
+        symbol=request.symbol,
+        trade_size=request.tradeSize,
+        poll_interval=request.pollInterval
+    )
+    
+    return result
+
+
+@app.post("/strategy/stop")
+async def stop_strategy():
+    """Stop the currently running strategy."""
+    print("=== Stopping Strategy Runner ===")
+    
+    from strategy_runner import stop_strategy_runner
+    return stop_strategy_runner()
+
+
+@app.get("/strategy/status")
+async def get_strategy_status():
+    """Get the status of the currently running strategy."""
+    from strategy_runner import get_runner_status
+    return get_runner_status()
 
 
 if __name__ == "__main__":

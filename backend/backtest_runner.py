@@ -30,6 +30,50 @@ except ImportError:
     pass
 
 from sample_data import generate_ohlcv_data
+from ig_client import IGClient, get_epic_for_symbol
+
+
+async def fetch_real_data_from_ig(
+    ig_client: IGClient,
+    symbol: str,
+    start_date: str,
+    end_date: str,
+    resolution: str = "HOUR"
+) -> pd.DataFrame:
+    """
+    Fetch real historical data from IG API.
+    
+    Returns pandas DataFrame with OHLCV data.
+    """
+    epic = get_epic_for_symbol(symbol)
+    if not epic:
+        raise ValueError(f"Unknown symbol: {symbol}. Use one of {list(get_epic_for_symbol.__globals__.get('MARKET_EPICS', {}).keys())}")
+    
+    # Format dates for IG API
+    start_dt = f"{start_date}T00:00:00"
+    end_dt = f"{end_date}T23:59:59"
+    
+    result = await ig_client.get_historical_prices(
+        epic=epic,
+        resolution=resolution,
+        start_date=start_dt,
+        end_date=end_dt
+    )
+    
+    if not result.get("success"):
+        raise Exception(f"Failed to fetch data: {result.get('error')}")
+    
+    prices = result.get("prices", [])
+    if not prices:
+        raise Exception("No price data returned from IG")
+    
+    # Convert to DataFrame
+    df = pd.DataFrame(prices)
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df['symbol'] = symbol
+    
+    print(f"Fetched {len(df)} bars from IG for {symbol}")
+    return df
 
 
 def run_backtest_simple(
@@ -38,7 +82,8 @@ def run_backtest_simple(
     start_date: str = "2024-01-01",
     end_date: str = "2024-03-31",
     initial_balance: float = 100000.0,
-    trade_size: int = 100000
+    trade_size: int = 100000,
+    historical_data: pd.DataFrame = None
 ) -> dict:
     """
     Run a simplified backtest without full NautilusTrader engine.
@@ -52,14 +97,20 @@ def run_backtest_simple(
         end_date: Backtest end date
         initial_balance: Starting account balance
         trade_size: Trade size in units
+        historical_data: Optional pre-fetched historical data (uses synthetic if None)
     
     Returns:
         Dict with backtest results
     """
     print(f"Running simplified backtest for {symbol}")
     
-    # Generate sample data
-    data = generate_ohlcv_data(symbol, start_date, end_date, timeframe_minutes=60)
+    # Use provided historical data or generate synthetic
+    if historical_data is not None:
+        data = historical_data.copy()
+        print(f"Using real historical data: {len(data)} bars")
+    else:
+        data = generate_ohlcv_data(symbol, start_date, end_date, timeframe_minutes=60)
+        print(f"Using synthetic data: {len(data)} bars")
     
     # Simple SMA crossover simulation
     data['sma_fast'] = data['close'].rolling(window=10).mean()
@@ -256,12 +307,16 @@ def run_backtest(
     end_date: str = "2024-03-31",
     initial_balance: float = 100000.0,
     trade_size: int = 100000,
-    use_nautilus: bool = False
+    use_nautilus: bool = False,
+    historical_data: pd.DataFrame = None
 ) -> dict:
     """
     Main entry point for running backtests.
     
     Tries NautilusTrader first, falls back to simplified simulation.
+    
+    Args:
+        historical_data: Optional DataFrame with real OHLCV data from IG
     """
     if use_nautilus and NAUTILUS_AVAILABLE:
         result = run_backtest_nautilus(
@@ -281,7 +336,8 @@ def run_backtest(
         start_date=start_date,
         end_date=end_date,
         initial_balance=initial_balance,
-        trade_size=trade_size
+        trade_size=trade_size,
+        historical_data=historical_data
     )
 
 
