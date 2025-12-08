@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Button, Input, ScrollArea, Card } from "@/components/ui";
-import { Loader2, Send, Sparkles, MessageSquare, Code, Blocks, X, Eye } from "lucide-react";
+import { Button, Input, ScrollArea, Card, Switch, Label } from "@/components/ui";
+import { Loader2, Send, Sparkles, MessageSquare, Code, Blocks, X, Eye, Zap, Shield } from "lucide-react";
 import { useToast } from "@/hooks";
 import ReactMarkdown from "react-markdown";
 import { LogEntry } from "@/components";
@@ -28,6 +28,8 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
   const [draggedBlockXml, setDraggedBlockXml] = useState<{ xml: string; name: string } | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [workspaceBlockCount, setWorkspaceBlockCount] = useState(0);
+  const [pureDeepSeek, setPureDeepSeek] = useState(false);
+  const [validationEnabled, setValidationEnabled] = useState(true);
   const { toast } = useToast();
 
   // Listen for block drop events from workspace
@@ -101,6 +103,7 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
         // Generate mode - create blocks
         const currentXml = getCurrentWorkspaceXml();
         const blockCount = currentXml ? (currentXml.match(/<block /g) || []).length : 0;
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
         // Log request
         if (onLog) {
@@ -115,47 +118,77 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
           });
         }
 
-        // Use Supabase Edge Function for strategy generation
-        const { data, error } = await supabase.functions.invoke('generate-strategy', {
-          body: {
-            message: input,
-            currentWorkspace: currentXml,
-            blockXml: attachedBlock?.xml || null
-          }
-        });
-
-        if (error) {
-          if (onLog) {
-            onLog({
-              type: 'error',
-              mode: 'generate',
-              error: error.message || 'Failed to generate strategy',
-              timestamp: Date.now()
-            });
-          }
-          throw new Error(error.message || "Failed to generate strategy");
-        }
-
-        // Pass 2: Validate with DeepSeek Reasoning
-        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-        let validatedXml = data.xml;
+        let generatedXml: string;
         let aiFixed = false;
 
-        try {
-          const validateResponse = await fetch(`${backendUrl}/validate-strategy`, {
+        if (pureDeepSeek) {
+          // Pure DeepSeek mode - use backend directly with full block catalog
+          const response = await fetch(`${backendUrl}/generate-strategy`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ xml: data.xml })
+            body: JSON.stringify({
+              message: input,
+              existingXml: currentXml,
+              blockXml: attachedBlock?.xml || null
+            })
           });
 
-          if (validateResponse.ok) {
-            const validateData = await validateResponse.json();
-            validatedXml = validateData.xml;
-            aiFixed = validateData.ai_fixed;
-            console.log("DeepSeek Reasoning validation complete");
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || "Failed to generate strategy");
           }
-        } catch (e) {
-          console.log("Validation fallback - using original XML");
+
+          const data = await response.json();
+          generatedXml = data.xml;
+          aiFixed = data.ai_fixed;
+          console.log("Pure DeepSeek generation complete");
+        } else {
+          // Gemini + DeepSeek mode - use Supabase Edge Function
+          const { data, error } = await supabase.functions.invoke('generate-strategy', {
+            body: {
+              message: input,
+              currentWorkspace: currentXml,
+              blockXml: attachedBlock?.xml || null
+            }
+          });
+
+          if (error) {
+            if (onLog) {
+              onLog({
+                type: 'error',
+                mode: 'generate',
+                error: error.message || 'Failed to generate strategy',
+                timestamp: Date.now()
+              });
+            }
+            throw new Error(error.message || "Failed to generate strategy");
+          }
+
+          generatedXml = data.xml;
+        }
+
+        // Pass 2: Validate with DeepSeek Reasoning (if enabled)
+        let validatedXml = generatedXml;
+
+        if (validationEnabled) {
+          try {
+            const validateResponse = await fetch(`${backendUrl}/validate-strategy`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ xml: generatedXml })
+            });
+
+            if (validateResponse.ok) {
+              const validateData = await validateResponse.json();
+              validatedXml = validateData.xml;
+              aiFixed = validateData.ai_fixed || aiFixed;
+              console.log("DeepSeek Reasoning validation complete");
+            }
+          } catch (e) {
+            console.log("Validation fallback - using original XML");
+          }
+        } else {
+          console.log("Validation disabled - using generated XML directly");
         }
 
         if (onLog) {
@@ -312,7 +345,7 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
           <Sparkles className="w-5 h-5 text-pink-500" />
           <h3 className="font-semibold text-foreground">AI Strategy Generator</h3>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 mb-3">
           <Button
             onClick={() => setIsGenerateMode(true)}
             variant={isGenerateMode ? "default" : "outline"}
@@ -332,6 +365,36 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
             Chat Only
           </Button>
         </div>
+
+        {/* LLM Mode and Validation Toggles */}
+        {isGenerateMode && (
+          <div className="flex items-center gap-4 text-xs">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="pure-deepseek"
+                checked={pureDeepSeek}
+                onCheckedChange={setPureDeepSeek}
+                className="data-[state=checked]:bg-yellow-500"
+              />
+              <Label htmlFor="pure-deepseek" className="flex items-center gap-1 cursor-pointer text-muted-foreground">
+                <Zap className="w-3 h-3" />
+                {pureDeepSeek ? "DeepSeek Only" : "Gemini + DeepSeek"}
+              </Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="validation"
+                checked={validationEnabled}
+                onCheckedChange={setValidationEnabled}
+                className="data-[state=checked]:bg-green-500"
+              />
+              <Label htmlFor="validation" className="flex items-center gap-1 cursor-pointer text-muted-foreground">
+                <Shield className="w-3 h-3" />
+                Validation
+              </Label>
+            </div>
+          </div>
+        )}
       </div>
 
       <ScrollArea
