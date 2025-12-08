@@ -18,13 +18,15 @@ User Input (natural language)
         ↓ (uses Lovable/Gemini API)
 Pass 1: Generate initial XML
         ↓
-Pass 2: Validate XML structure
+[Backend: POST /validate-strategy]
         ↓
-Pass 3: Fix identical indicators (if crossover)
+Pass 2: DeepSeek REASONING validates & polishes
         ↓
-Pass 4: Programmatic fallback fixes
+Pass 3: Check for identical indicators
         ↓
-Return XML to frontend
+Pass 4: Programmatic fallback (swap operators if needed)
+        ↓
+Return validated XML to frontend
         ↓
 [Frontend: Load blocks into Blockly workspace]
 ```
@@ -33,13 +35,14 @@ Return XML to frontend
 
 | Step | Location | Action |
 |------|----------|--------|
-| 1 | `AIChatPanel.tsx` | User types strategy description (e.g., "SMA crossover strategy") |
-| 2 | `AIChatPanel.tsx` | Calls `supabase.functions.invoke('generate-strategy')` |
-| 3 | `supabase/functions/generate-strategy/index.ts` | Sends prompt to Lovable/Gemini LLM |
-| 4 | Supabase Function | LLM returns Blockly XML with strategy blocks |
-| 5 | Supabase Function | Validates XML structure, fixes issues |
-| 6 | `AIChatPanel.tsx` | Receives XML, calls `onBlocksGenerated(xml)` |
-| 7 | `BlocklyWorkspace.tsx` | Parses XML and renders visual blocks |
+| 1 | `AIChatPanel.tsx` | User types strategy description |
+| 2 | `AIChatPanel.tsx` | Calls Supabase `generate-strategy` edge function |
+| 3 | Supabase Function | Gemini/Lovable LLM generates Blockly XML |
+| 4 | `AIChatPanel.tsx` | Calls backend `/validate-strategy` with XML |
+| 5 | `main.py` | DeepSeek Reasoning model validates and fixes XML |
+| 6 | `main.py` | Programmatic fix swaps operators if indicators wrong order |
+| 7 | `AIChatPanel.tsx` | Receives validated XML, calls `onBlocksGenerated(xml)` |
+| 8 | Blockly | Renders visual blocks |
 
 ### Key Files
 - `src/features/ai/components/AIChatPanel.tsx` (frontend trigger)
