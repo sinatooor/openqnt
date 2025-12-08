@@ -86,6 +86,19 @@ RULES:
    - CORRECT: SMA(period=10) > SMA(period=20) - Fast vs Slow
    - For crossovers, use different periods: Fast (shorter) vs Slow (longer)
    - Default Fast/Slow: SMA(10/20), EMA(12/26), RSI(7/14)
+8. CRITICAL GRAMMAR RULE: SCALE COMPATIBILITY
+   - NEVER compare Price (SMA, EMA, BB, Price) with Oscillators (RSI, Stoch, 0-100).
+   - WRONG: Price > RSI (e.g. 1.0500 > 30) - impossible
+   - WRONG: SMA > Stoch
+   - CORRECT: RSI > 30 (Oscillator vs Level)
+   - CORRECT: Price > SMA (Price vs Price)
+   - CORRECT: SMA(10) > SMA(20) (Price vs Price)
+
+9. CRITICAL GRAMMAR RULE: TYPE SAFETY
+   - Comparison operators (<, >, =) need NUMBERS on both sides.
+   - WRONG: (RSI > 30) > 50 (Boolean > Number)
+   - WRONG: (SMA > EMA) AND (RSI) (Boolean AND Number)
+   - CORRECT: (RSI > 30) AND (SMA > EMA) (Boolean AND Boolean)
 
 OUTPUT: Valid JSON only, no markdown."""
 

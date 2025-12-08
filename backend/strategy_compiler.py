@@ -68,6 +68,25 @@ class StrategyCompiler:
         'ta_williams_r', 'ta_sar', 'ta_keltner', 'ta_obv', 'ta_mfi'
     }
 
+    # Scale definitions for compatibility checking
+    SCALES = {
+        'PRICE': {
+            'ta_sma', 'ta_ema', 'ta_bb', 'ta_keltner', 'ta_lwma', 'ta_smma', 
+            'dema', 'tema', 'ta_sar', 'ta_supertrend', 
+            'environment_price', 'environment_open', 'environment_high', 
+            'environment_low', 'environment_close', 'trade_entry_price'
+        },
+        'OSCILLATOR_0_100': {
+            'ta_rsi', 'ta_stochastic', 'ta_mfi', 'ta_adx', 'ta_willr'
+        },
+        'OSCILLATOR_CENTERED': {
+            'macd_value', 'ta_cci', 'momentum', 'ta_macd'
+        },
+        'VOLATILITY': {
+            'ta_atr', 'stddev'
+        }
+    }
+
     def __init__(self):
         self.id_counter = 0
         self.validation_errors = []
@@ -93,10 +112,10 @@ class StrategyCompiler:
                 right = condition.get("right")
                 
                 # Get variable definitions
-                left_var = next((v for v in variables if v.get("id") == left), None) if isinstance(left, str) else None
-                right_var = next((v for v in variables if v.get("id") == right), None) if isinstance(right, str) else None
+                left_var = self._resolve_variable(left, variables)
+                right_var = self._resolve_variable(right, variables)
                 
-                # Rule: Cannot compare two identical indicators
+                # Rule 1: Cannot compare two identical indicators
                 if left_var and right_var:
                     if self._are_identical_indicators(left_var, right_var):
                         errors.append(
@@ -104,8 +123,53 @@ class StrategyCompiler:
                             f"({left_var.get('type')} with same parameters). "
                             f"Use different periods (e.g., Fast vs Slow)."
                         )
+                
+                # Rule 2: Scale Compatibility (Price vs Oscillator)
+                if left_var and right_var:
+                    scale1 = self._get_scale(left_var)
+                    scale2 = self._get_scale(right_var)
+                    
+                    # If both have known scales and they differ, it's likely an error
+                    # Exception: Price vs generic number (scale None) is allowed
+                    if scale1 and scale2 and scale1 != scale2:
+                        # Allow Price vs None (constants)
+                        errors.append(
+                            f"Condition {i+1}: Incompatible scales. "
+                            f"Comparing {scale1} ({left_var.get('type')}) with "
+                            f"{scale2} ({right_var.get('type')}). "
+                            f"Example: Don't compare Price with RSI."
+                        )
+                    
+                    # Check for Price vs Constant > 200 (likely wrong for RSI) or < 5 (likely wrong for Price)
+                    # This is heuristic, maybe skip for now to avoid false positives
         
         return errors
+
+    def _resolve_variable(self, var_id_or_type: Any, variables: List[Dict]) -> Optional[Dict]:
+        """Resolve a variable ID or direct type string to a variable definition."""
+        if not isinstance(var_id_or_type, str):
+            return None
+            
+        # Try finding by ID
+        var = next((v for v in variables if v.get("id") == var_id_or_type), None)
+        if var:
+            return var
+            
+        # Try treating as direct type
+        if var_id_or_type in self.INDICATOR_TYPES or var_id_or_type.startswith('environment_'):
+            return {"type": var_id_or_type, "params": {}}
+            
+        return None
+
+    def _get_scale(self, var: Dict) -> Optional[str]:
+        """Determine the scale of a variable (Price, Oscillator, etc.)."""
+        b_type = var.get("type", "")
+        
+        for scale, types in self.SCALES.items():
+            if b_type in types:
+                return scale
+        
+        return None
 
     def _are_identical_indicators(self, var1: Dict, var2: Dict) -> bool:
         """Check if two variable definitions represent identical indicators."""
