@@ -90,9 +90,14 @@ export const SettingsPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1"
     setBacktestResult(null);
 
     try {
+      // Create AbortController for timeout (10 minutes for LLM-based backtests)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 600000);
+
       const response = await fetch(`${backendUrl}/backtest`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           workspaceXml: xml,
           symbol: tradingSymbol,
@@ -108,6 +113,8 @@ export const SettingsPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1"
         })
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: response.statusText }));
         throw new Error(errorData.detail || `HTTP ${response.status}`);
@@ -116,10 +123,14 @@ export const SettingsPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1"
       const data = await response.json();
 
       if (data.success) {
+        const totalReturn = ((data.final_balance - data.initial_balance) / data.initial_balance) * 100;
+        const totalTrades = data.metrics.total_trades;
+        const winRate = data.metrics.win_rate;
+        
         setBacktestResult({
-          totalReturn: ((data.final_balance - data.initial_balance) / data.initial_balance) * 100,
-          winRate: data.metrics.win_rate,
-          totalTrades: data.metrics.total_trades,
+          totalReturn,
+          winRate,
+          totalTrades,
           maxDrawdown: data.metrics.max_drawdown,
           finalBalance: data.final_balance || (data.initial_balance * (1 + (data.metrics.total_return / 100))),
           // Map advanced metrics
@@ -149,7 +160,27 @@ export const SettingsPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1"
           bestParams: data.best_params,
           bestMetricValue: data.best_metric_value
         });
-        toast.success("Backtest completed!");
+        
+        // Show contextual toast messages based on results
+        if (totalTrades === 0) {
+          toast.warning("No trades executed", {
+            description: "Your entry conditions were never met during this period. Try adjusting thresholds or date range."
+          });
+        } else if (winRate === 0 && totalReturn < 0) {
+          toast.info("Strategy executed but all trades hit stop loss", {
+            description: `${totalTrades} trade(s) were stopped out. Consider widening your stop loss (e.g., 2× ATR instead of 1.5×) or using a trend filter.`
+          });
+        } else if (totalReturn < -10) {
+          toast.warning("Backtest completed with significant losses", {
+            description: `Return: ${totalReturn.toFixed(1)}%. Review your risk management settings.`
+          });
+        } else if (totalReturn > 0) {
+          toast.success("Backtest completed!", {
+            description: `Return: ${totalReturn.toFixed(1)}% with ${totalTrades} trades (${winRate.toFixed(0)}% win rate)`
+          });
+        } else {
+          toast.success("Backtest completed!")
+        }
       } else {
         toast.error("Backtest failed", { description: data.error });
       }

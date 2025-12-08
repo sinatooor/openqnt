@@ -24,7 +24,7 @@ interface BacktestingPanelProps {
   isLoading: boolean;
   symbol?: string;
   onClose?: () => void;
-  onRunBacktest?: (engine: 'frontend' | 'backtesting.py' | 'nautilus') => void;
+  onRunBacktest?: (engine: 'frontend' | 'frontend-ts' | 'backtesting.py' | 'nautilus') => void;
 }
 
 export const BacktestingPanel = ({
@@ -36,7 +36,7 @@ export const BacktestingPanel = ({
 }: BacktestingPanelProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [interval, setInterval] = useState('1D');
-  const [engine, setEngine] = useState<'frontend' | 'backtesting.py' | 'nautilus'>('frontend');
+  const [engine, setEngine] = useState<'frontend' | 'frontend-ts' | 'backtesting.py' | 'nautilus'>('frontend');
 
   const togglePanel = () => {
     if (!isExpanded && onClose) {
@@ -46,7 +46,7 @@ export const BacktestingPanel = ({
     }
   };
 
-  const handleEngineChange = (newEngine: 'frontend' | 'backtesting.py' | 'nautilus') => {
+  const handleEngineChange = (newEngine: 'frontend' | 'frontend-ts' | 'backtesting.py' | 'nautilus') => {
     setEngine(newEngine);
     if (onRunBacktest) {
       onRunBacktest(newEngine);
@@ -98,6 +98,14 @@ export const BacktestingPanel = ({
                 onClick={() => handleEngineChange('frontend')}
               >
                 Simple
+              </Button>
+              <Button
+                variant={engine === 'frontend-ts' ? 'default' : 'ghost'}
+                size="sm"
+                className="flex-1 h-7 text-xs"
+                onClick={() => handleEngineChange('frontend-ts')}
+              >
+                TS Engine
               </Button>
               <Button
                 variant={engine === 'backtesting.py' ? 'default' : 'ghost'}

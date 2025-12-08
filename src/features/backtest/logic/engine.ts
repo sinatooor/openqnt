@@ -1,6 +1,8 @@
 import { CandlestickData, Time } from 'lightweight-charts';
 import { generateMockData } from '@/lib/marketData';
 import { TradeMarker } from '@/components/TradingViewChart';
+import { createIndicatorContext, OHLCVBar } from './indicators';
+import { executeStrategy } from './runtime';
 
 export interface BacktestResult {
   trades: TradeMarker[];
@@ -301,3 +303,119 @@ function calculateStdDev(values: number[]): number {
   const variance = values.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / values.length;
   return Math.sqrt(variance);
 }
+
+/**
+ * Enhanced TypeScript backtest engine using `technicalindicators`.
+ * Executes generated JS code via a sandboxed runtime.
+ */
+export async function runBacktestTS(
+  generatedCode: string,
+  historicalData: OHLCVBar[],
+  initialCapital = 10000,
+): Promise<BacktestResult> {
+  const trades: TradeMarker[] = [];
+  let capital = initialCapital;
+  let equity = initialCapital;
+  let maxEquity = initialCapital;
+  let maxDrawdown = 0;
+
+  interface TSPosition {
+    type: 'long' | 'short' | null;
+    entryPrice: number;
+    entryTime: Time;
+    size: number;
+  }
+
+  let position: TSPosition = { type: null, entryPrice: 0, entryTime: 0 as Time, size: 0 };
+
+  const returns: number[] = [];
+  let totalProfit = 0;
+  let totalLoss = 0;
+  let winningTrades = 0;
+  let losingTrades = 0;
+
+  // Need at least a few bars for indicators to warm up
+  const warmupPeriod = 30;
+
+  for (let i = warmupPeriod; i < historicalData.length; i++) {
+    const bars = historicalData.slice(0, i + 1);
+    const ctx = createIndicatorContext(bars);
+    const action = executeStrategy(generatedCode, ctx);
+    const candle = historicalData[i];
+
+    // Open long
+    if (action === 'buy' && position.type === null) {
+      position = {
+        type: 'long',
+        entryPrice: candle.close,
+        entryTime: i as unknown as Time,
+        size: capital * 0.95,
+      };
+      trades.push({ time: i as unknown as Time, type: 'buy', price: candle.close });
+    }
+    // Close long
+    else if (action === 'sell' && position.type === 'long') {
+      const profit = (candle.close - position.entryPrice) * (position.size / position.entryPrice);
+      capital += profit;
+      equity = capital;
+
+      if (profit > 0) {
+        totalProfit += profit;
+        winningTrades++;
+      } else {
+        totalLoss += Math.abs(profit);
+        losingTrades++;
+      }
+
+      const returnPct = (profit / position.size) * 100;
+      returns.push(returnPct);
+
+      trades.push({ time: i as unknown as Time, type: 'sell', price: candle.close, profit });
+      position = { type: null, entryPrice: 0, entryTime: 0 as Time, size: 0 };
+    }
+
+    // Track drawdown
+    if (equity > maxEquity) maxEquity = equity;
+    const drawdown = ((maxEquity - equity) / maxEquity) * 100;
+    if (drawdown > maxDrawdown) maxDrawdown = drawdown;
+  }
+
+  // Metrics
+  const totalReturn = ((capital - initialCapital) / initialCapital) * 100;
+  const totalTrades = winningTrades + losingTrades;
+  const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
+  const averageWin = winningTrades > 0 ? totalProfit / winningTrades : 0;
+  const averageLoss = losingTrades > 0 ? totalLoss / losingTrades : 0;
+  const profitFactor = totalLoss > 0 ? totalProfit / totalLoss : totalProfit > 0 ? Infinity : 0;
+
+  const avgReturn = returns.length > 0 ? returns.reduce((a, b) => a + b, 0) / returns.length : 0;
+  const stdDev = calculateStdDev(returns);
+  const sharpeRatio = stdDev > 0 ? (avgReturn / stdDev) * Math.sqrt(252) : 0;
+
+  // Convert historicalData to CandlestickData
+  const chartData: CandlestickData[] = historicalData.map((bar, idx) => ({
+    time: idx as unknown as Time,
+    open: bar.open,
+    high: bar.high,
+    low: bar.low,
+    close: bar.close,
+  }));
+
+  return {
+    trades,
+    metrics: {
+      totalReturn,
+      winRate,
+      maxDrawdown,
+      sharpeRatio,
+      totalTrades,
+      winningTrades,
+      losingTrades,
+      averageWin,
+      averageLoss,
+      profitFactor,
+    },
+    chartData,
+  };
+}
+

@@ -4,7 +4,7 @@
 
 import { toast } from "sonner";
 import { fetchMarketData } from "@/services/marketData";
-import { BacktestResult, runBacktest } from "@/features/backtest/logic/engine";
+import { BacktestResult, runBacktest, runBacktestTS } from "@/features/backtest/logic/engine";
 import * as Blockly from "blockly";
 
 interface UseBacktestHandlersProps {
@@ -24,7 +24,7 @@ export const useBacktestHandlers = ({
   setShowBacktest,
   setBacktestResult,
 }: UseBacktestHandlersProps) => {
-  const handlePreviewBacktest = async (engine: 'frontend' | 'backtesting.py' | 'nautilus' = 'frontend') => {
+  const handlePreviewBacktest = async (engine: 'frontend' | 'frontend-ts' | 'backtesting.py' | 'nautilus' = 'frontend') => {
     // Validate workspace has blocks
     if (!workspaceRef.current || isEmpty) {
       toast.error("Add blocks to your workspace first to run a backtest.");
@@ -35,7 +35,7 @@ export const useBacktestHandlers = ({
     setIsBacktesting(true);
     setShowBacktest(true);
     const loadingToast = toast.loading(`Running backtest (${engine})...`, {
-      description: engine === 'frontend' ? "Simulating in browser..." : "Running on server...",
+      description: engine === 'frontend' || engine === 'frontend-ts' ? "Simulating in browser..." : "Running on server...",
     });
 
     try {
@@ -57,6 +57,32 @@ export const useBacktestHandlers = ({
           90,
           historicalData
         );
+        setBacktestResult(result);
+      } else if (engine === 'frontend-ts') {
+        // TypeScript-based backtest engine with technicalindicators library
+        if (!generatedCode) {
+          throw new Error("No strategy code generated");
+        }
+        
+        // Fetch real market data
+        const historicalData = await fetchMarketData({
+          symbol: "AAPL",
+          interval: "daily",
+          outputsize: "full",
+        });
+
+        // Convert to OHLCV format expected by runBacktestTS
+        const ohlcvData = historicalData.map((bar: any) => ({
+          time: bar.time,
+          open: bar.open,
+          high: bar.high,
+          low: bar.low,
+          close: bar.close,
+          volume: bar.volume || 0,
+        }));
+
+        // Run TS backtest with technicalindicators library
+        const result = runBacktestTS(generatedCode, ohlcvData, 10000);
         setBacktestResult(result);
       } else {
         // Backend execution
