@@ -1,0 +1,629 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  BLOCKLY BLOCK CATALOG
+  All available blocks for trading strategy creation
+  Total: 84 unique block types
+-->
+
+<blocks_catalog>
+
+  <!-- ========================================== -->
+  <!-- CONTROL BLOCKS (6 blocks)                  -->
+  <!-- ========================================== -->
+
+  <!-- control_forever: Main loop wrapper -->
+  <block type="control_forever" id="example-forever" x="50" y="50">
+    <statement name="DO">
+      <!-- nested blocks go here -->
+    </statement>
+  </block>
+
+  <!-- control_if: Conditional execution -->
+  <block type="control_if" id="example-if">
+    <value name="CONDITION">
+      <!-- condition block -->
+    </value>
+    <statement name="DO">
+      <!-- blocks to execute if true -->
+    </statement>
+  </block>
+
+  <!-- control_if_else: Conditional with else -->
+  <block type="control_if_else" id="example-if-else">
+    <value name="CONDITION">
+      <!-- condition block -->
+    </value>
+    <statement name="DO">
+      <!-- blocks to execute if true -->
+    </statement>
+    <statement name="ELSE">
+      <!-- blocks to execute if false -->
+    </statement>
+  </block>
+
+  <!-- control_repeat: Repeat N times -->
+  <block type="control_repeat" id="example-repeat">
+    <field name="TIMES">10</field>
+    <statement name="DO">
+      <!-- blocks to repeat -->
+    </statement>
+  </block>
+
+  <!-- control_repeat_until: Repeat until condition -->
+  <block type="control_repeat_until" id="example-repeat-until">
+    <value name="CONDITION">
+      <!-- stop condition -->
+    </value>
+    <statement name="DO">
+      <!-- blocks to repeat -->
+    </statement>
+  </block>
+
+  <!-- control_stop: Stop execution -->
+  <block type="control_stop" id="example-stop">
+    <field name="TYPE">all</field>
+  </block>
+
+
+  <!-- ========================================== -->
+  <!-- ENVIRONMENT BLOCKS (8 blocks)              -->
+  <!-- ========================================== -->
+
+  <!-- environment_price: Current price -->
+  <block type="environment_price" id="example-price">
+    <field name="TYPE">close</field> <!-- close|open|high|low -->
+  </block>
+
+  <!-- environment_spread: Current spread -->
+  <block type="environment_spread" id="example-spread">
+  </block>
+
+  <!-- environment_prev_candle_open: Previous candle open -->
+  <block type="environment_prev_candle_open" id="example-prev-open">
+    <field name="TIMEFRAME">60</field>
+    <field name="SHIFT">1</field>
+  </block>
+
+  <!-- environment_prev_ticker_close: Previous candle close -->
+  <block type="environment_prev_ticker_close" id="example-prev-close">
+    <field name="TIMEFRAME">60</field>
+    <field name="SHIFT">1</field>
+  </block>
+
+  <!-- environment_is_market_open: Check if market open -->
+  <block type="environment_is_market_open" id="example-market-open">
+  </block>
+
+  <!-- environment_time: Current time -->
+  <block type="environment_time" id="example-time">
+    <field name="COMPONENT">hour</field> <!-- hour|minute|second -->
+  </block>
+
+  <!-- environment_day_of_week: Day of week -->
+  <block type="environment_day_of_week" id="example-day">
+  </block>
+
+  <!-- environment_new_candle_open: New candle event -->
+  <block type="environment_new_candle_open" id="example-new-candle">
+    <field name="TIMEFRAME">60</field> <!-- minutes: 1,5,15,30,60,240,1440 -->
+  </block>
+
+
+  <!-- ========================================== -->
+  <!-- COMPARISON OPERATORS (8 blocks)            -->
+  <!-- ========================================== -->
+
+  <!-- operator_equals: A == B -->
+  <block type="operator_equals" id="example-equals">
+    <value name="LEFT"><!-- value A --></value>
+    <value name="RIGHT"><!-- value B --></value>
+  </block>
+
+  <!-- operator_not_equals: A != B -->
+  <block type="operator_not_equals" id="example-not-equals">
+    <value name="LEFT"><!-- value A --></value>
+    <value name="RIGHT"><!-- value B --></value>
+  </block>
+
+  <!-- operator_greater: A > B -->
+  <block type="operator_greater" id="example-greater">
+    <value name="LEFT"><!-- value A --></value>
+    <value name="RIGHT"><!-- value B --></value>
+  </block>
+
+  <!-- operator_less: A < B -->
+  <block type="operator_less" id="example-less">
+    <value name="LEFT"><!-- value A --></value>
+    <value name="RIGHT"><!-- value B --></value>
+  </block>
+
+  <!-- operator_greater_equals: A >= B -->
+  <block type="operator_greater_equals" id="example-gte">
+    <value name="LEFT"><!-- value A --></value>
+    <value name="RIGHT"><!-- value B --></value>
+  </block>
+
+  <!-- operator_less_equals: A <= B -->
+  <block type="operator_less_equals" id="example-lte">
+    <value name="LEFT"><!-- value A --></value>
+    <value name="RIGHT"><!-- value B --></value>
+  </block>
+
+  <!-- operator_and: A AND B -->
+  <block type="operator_and" id="example-and">
+    <value name="LEFT"><!-- condition A --></value>
+    <value name="RIGHT"><!-- condition B --></value>
+  </block>
+
+  <!-- operator_or: A OR B -->
+  <block type="operator_or" id="example-or">
+    <value name="LEFT"><!-- condition A --></value>
+    <value name="RIGHT"><!-- condition B --></value>
+  </block>
+
+  <!-- operator_not: NOT A -->
+  <block type="operator_not" id="example-not">
+    <value name="VALUE"><!-- condition --></value>
+  </block>
+
+
+  <!-- ========================================== -->
+  <!-- MATH OPERATORS (5 blocks)                  -->
+  <!-- ========================================== -->
+
+  <!-- operator_add: A + B -->
+  <block type="operator_add" id="example-add">
+    <value name="LEFT"><!-- value A --></value>
+    <value name="RIGHT"><!-- value B --></value>
+  </block>
+
+  <!-- operator_subtract: A - B -->
+  <block type="operator_subtract" id="example-subtract">
+    <value name="LEFT"><!-- value A --></value>
+    <value name="RIGHT"><!-- value B --></value>
+  </block>
+
+  <!-- operator_multiply: A * B -->
+  <block type="operator_multiply" id="example-multiply">
+    <value name="LEFT"><!-- value A --></value>
+    <value name="RIGHT"><!-- value B --></value>
+  </block>
+
+  <!-- operator_divide: A / B -->
+  <block type="operator_divide" id="example-divide">
+    <value name="LEFT"><!-- value A --></value>
+    <value name="RIGHT"><!-- value B --></value>
+  </block>
+
+  <!-- operator_advanced_math: sqrt, abs, sin, cos, etc -->
+  <block type="operator_advanced_math" id="example-math">
+    <field name="FUNCTION">sqrt</field> <!-- sqrt|abs|sin|cos|tan|log|exp|floor|ceil|round -->
+    <value name="VALUE"><!-- input --></value>
+  </block>
+
+  <!-- math_number: Literal number -->
+  <shadow type="math_number" id="example-number">
+    <field name="NUM">14</field>
+  </shadow>
+
+
+  <!-- ========================================== -->
+  <!-- TECHNICAL INDICATORS (40+ blocks)          -->
+  <!-- ========================================== -->
+
+  <!-- === Moving Averages === -->
+
+  <!-- ta_sma: Simple Moving Average -->
+  <block type="ta_sma" id="example-sma">
+    <mutation ma_period="14" shift="0" applied_price="0"></mutation>
+    <field name="NAME">SMA</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- ta_ema: Exponential Moving Average -->
+  <block type="ta_ema" id="example-ema">
+    <mutation ma_period="14" shift="0" applied_price="0"></mutation>
+    <field name="NAME">EMA</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- ta_lwma: Linear Weighted Moving Average -->
+  <block type="ta_lwma" id="example-lwma">
+    <mutation ma_period="14" shift="0" applied_price="0"></mutation>
+    <field name="NAME">LWMA</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- ta_smma: Smoothed Moving Average -->
+  <block type="ta_smma" id="example-smma">
+    <mutation ma_period="14" shift="0" applied_price="0"></mutation>
+    <field name="NAME">SMMA</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- dema: Double EMA -->
+  <block type="dema" id="example-dema">
+    <mutation ma_period="14" shift="0" applied_price="0"></mutation>
+    <field name="NAME">DEMA</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- tema: Triple EMA -->
+  <block type="tema" id="example-tema">
+    <mutation ma_period="14" shift="0" applied_price="0"></mutation>
+    <field name="NAME">TEMA</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- frama: Fractal Adaptive Moving Average -->
+  <block type="frama" id="example-frama">
+    <mutation ma_period="14" shift="0" applied_price="0"></mutation>
+    <field name="NAME">FRAMA</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- ama: Adaptive Moving Average -->
+  <block type="ama" id="example-ama">
+    <mutation ma_period="14" fast_ema="2" slow_ema="30" shift="0" applied_price="0"></mutation>
+    <field name="NAME">AMA</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- vidya: Variable Index Dynamic Average -->
+  <block type="vidya" id="example-vidya">
+    <mutation cmo_period="9" ema_period="12" shift="0" applied_price="0"></mutation>
+    <field name="NAME">VidYa</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+
+  <!-- === Oscillators === -->
+
+  <!-- ta_rsi: Relative Strength Index -->
+  <block type="ta_rsi" id="example-rsi">
+    <mutation ma_period="14" applied_price="0"></mutation>
+    <field name="NAME">RSI</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- ta_stochastic: Stochastic Oscillator -->
+  <block type="ta_stochastic" id="example-stoch">
+    <mutation k_period="14" d_period="3" slowing="3" ma_method="0" price_field="0"></mutation>
+    <field name="NAME">Stochastic</field>
+    <field name="PERIOD">60</field>
+    <field name="COMPONENT">main</field> <!-- main|signal -->
+  </block>
+
+  <!-- ta_cci: Commodity Channel Index -->
+  <block type="ta_cci" id="example-cci">
+    <mutation ma_period="14" applied_price="0"></mutation>
+    <field name="NAME">CCI</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- ta_williams_r: Williams %R -->
+  <block type="ta_williams_r" id="example-williams">
+    <mutation ma_period="14"></mutation>
+    <field name="NAME">Williams %R</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- momentum: Momentum Indicator -->
+  <block type="momentum" id="example-momentum">
+    <mutation ma_period="14" applied_price="0"></mutation>
+    <field name="NAME">Momentum</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- rvi: Relative Vigor Index -->
+  <block type="rvi" id="example-rvi">
+    <mutation ma_period="10"></mutation>
+    <field name="NAME">RVI</field>
+    <field name="PERIOD">60</field>
+    <field name="COMPONENT">main</field> <!-- main|signal -->
+  </block>
+
+  <!-- demarker: DeMarker -->
+  <block type="demarker" id="example-demarker">
+    <mutation ma_period="14"></mutation>
+    <field name="NAME">DeMarker</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+
+  <!-- === Trend Indicators === -->
+
+  <!-- ta_macd: MACD -->
+  <block type="macd_value" id="example-macd">
+    <mutation fastEMA="12" slowEMA="26" signalSMA="9" applied_price="0"></mutation>
+    <field name="NAME">MACD</field>
+    <field name="PERIOD">60</field>
+    <field name="COMPONENT">line</field> <!-- line|signal|histogram -->
+  </block>
+
+  <!-- ta_adx: Average Directional Index -->
+  <block type="ta_adx" id="example-adx">
+    <mutation ma_period="14"></mutation>
+    <field name="NAME">ADX</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- adxWilder: ADX Wilder -->
+  <block type="adxWilder" id="example-adx-wilder">
+    <mutation ma_period="14"></mutation>
+    <field name="NAME">ADX Wilder</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- ta_dmi: Directional Movement Index -->
+  <block type="ta_dmi" id="example-dmi">
+    <mutation ma_period="14"></mutation>
+    <field name="NAME">DMI</field>
+    <field name="PERIOD">60</field>
+    <field name="COMPONENT">plus_di</field> <!-- plus_di|minus_di|adx -->
+  </block>
+
+  <!-- ta_sar: Parabolic SAR -->
+  <block type="ta_sar" id="example-sar">
+    <mutation step="0.02" maximum="0.2"></mutation>
+    <field name="NAME">SAR</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- ta_supertrend: SuperTrend -->
+  <block type="ta_supertrend" id="example-supertrend">
+    <mutation ma_period="10" multiplier="3"></mutation>
+    <field name="NAME">SuperTrend</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- trix: Triple Exponential Average Rate of Change -->
+  <block type="trix" id="example-trix">
+    <mutation ma_period="14" applied_price="0"></mutation>
+    <field name="NAME">TRIX</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+
+  <!-- === Volatility Indicators === -->
+
+  <!-- ta_atr: Average True Range -->
+  <block type="ta_atr" id="example-atr">
+    <mutation ma_period="14"></mutation>
+    <field name="NAME">ATR</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- ta_bb: Bollinger Bands -->
+  <block type="ta_bb" id="example-bb">
+    <mutation ma_period="20" deviation="2" shift="0" applied_price="0"></mutation>
+    <field name="NAME">BB</field>
+    <field name="PERIOD">60</field>
+    <field name="COMPONENT">upper</field> <!-- upper|middle|lower -->
+  </block>
+
+  <!-- ta_keltner: Keltner Channel -->
+  <block type="ta_keltner" id="example-keltner">
+    <mutation ma_period="20" atr_period="10" multiplier="2" shift="1"></mutation>
+    <field name="NAME">Keltner</field>
+    <field name="PERIOD">60</field>
+    <field name="COMPONENT">upper</field> <!-- upper|middle|lower -->
+  </block>
+
+  <!-- donchian: Donchian Channel -->
+  <block type="donchian" id="example-donchian">
+    <mutation ma_period="20" shift="1"></mutation>
+    <field name="NAME">Donchian</field>
+    <field name="PERIOD">60</field>
+    <field name="COMPONENT">upper</field> <!-- upper|middle|lower -->
+  </block>
+
+  <!-- envelopes: Envelopes -->
+  <block type="envelopes" id="example-envelopes">
+    <mutation ma_period="14" deviation="0.1" shift="0" ma_method="0" applied_price="0"></mutation>
+    <field name="NAME">Envelopes</field>
+    <field name="PERIOD">60</field>
+    <field name="COMPONENT">upper</field> <!-- upper|lower -->
+  </block>
+
+  <!-- stddev: Standard Deviation -->
+  <block type="stddev" id="example-stddev">
+    <mutation ma_period="20" shift="0" ma_method="0" applied_price="0"></mutation>
+    <field name="NAME">StdDev</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- ta_highest: Highest value over period -->
+  <block type="ta_highest" id="example-highest">
+    <mutation ma_period="14" mode="2"></mutation> <!-- mode: 0=close,1=open,2=high,3=low -->
+    <field name="NAME">Highest</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- ta_lowest: Lowest value over period -->
+  <block type="ta_lowest" id="example-lowest">
+    <mutation ma_period="14" mode="3"></mutation> <!-- mode: 0=close,1=open,2=high,3=low -->
+    <field name="NAME">Lowest</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+
+  <!-- === Volume Indicators === -->
+
+  <!-- ta_obv: On Balance Volume -->
+  <block type="ta_obv" id="example-obv">
+    <mutation applied_volume="0"></mutation>
+    <field name="NAME">OBV</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- ta_mfi: Money Flow Index -->
+  <block type="ta_mfi" id="example-mfi">
+    <mutation ma_period="14" applied_volume="0"></mutation>
+    <field name="NAME">MFI</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- ta_vwap: Volume Weighted Average Price -->
+  <block type="ta_vwap" id="example-vwap">
+    <field name="NAME">VWAP</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- ad: Accumulation/Distribution -->
+  <block type="ad" id="example-ad">
+    <mutation applied_volume="0"></mutation>
+    <field name="NAME">A/D</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- chaikin: Chaikin Oscillator -->
+  <block type="chaikin" id="example-chaikin">
+    <mutation fast_ema="3" slow_ema="10" ma_method="1" applied_volume="0"></mutation>
+    <field name="NAME">Chaikin</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- volumes: Volumes -->
+  <block type="volumes" id="example-volumes">
+    <field name="NAME">Volumes</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- force: Force Index -->
+  <block type="force" id="example-force">
+    <mutation ma_period="13" ma_method="0" applied_volume="0"></mutation>
+    <field name="NAME">Force</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- bwmfi: Market Facilitation Index -->
+  <block type="bwmfi" id="example-bwmfi">
+    <mutation applied_volume="0"></mutation>
+    <field name="NAME">BW MFI</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+
+  <!-- === Bill Williams Indicators === -->
+
+  <!-- ac: Accelerator Oscillator -->
+  <block type="ac" id="example-ac">
+    <field name="NAME">AC</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- ao: Awesome Oscillator -->
+  <block type="ao" id="example-ao">
+    <field name="NAME">AO</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- alligator: Williams Alligator -->
+  <block type="alligator" id="example-alligator">
+    <mutation jaw_period="13" jaw_shift="8" teeth_period="8" teeth_shift="5" lips_period="5" lips_shift="3" ma_method="2" applied_price="4"></mutation>
+    <field name="NAME">Alligator</field>
+    <field name="PERIOD">60</field>
+    <field name="COMPONENT">jaw</field> <!-- jaw|teeth|lips -->
+  </block>
+
+  <!-- gator: Gator Oscillator -->
+  <block type="gator" id="example-gator">
+    <mutation jaw_period="13" jaw_shift="8" teeth_period="8" teeth_shift="5" lips_period="5" lips_shift="3" ma_method="2" applied_price="4"></mutation>
+    <field name="NAME">Gator</field>
+    <field name="PERIOD">60</field>
+    <field name="COMPONENT">upper</field> <!-- upper|lower -->
+  </block>
+
+  <!-- fractals: Fractals -->
+  <block type="fractals" id="example-fractals">
+    <field name="NAME">Fractals</field>
+    <field name="PERIOD">60</field>
+    <field name="COMPONENT">upper</field> <!-- upper|lower -->
+  </block>
+
+  <!-- bullsPower: Bulls Power -->
+  <block type="bullsPower" id="example-bulls">
+    <mutation ma_period="13" applied_price="0"></mutation>
+    <field name="NAME">Bulls</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- bearsPower: Bears Power -->
+  <block type="bearsPower" id="example-bears">
+    <mutation ma_period="13" applied_price="0"></mutation>
+    <field name="NAME">Bears</field>
+    <field name="PERIOD">60</field>
+  </block>
+
+  <!-- osma: Moving Average of Oscillator -->
+  <block type="osma" id="example-osma">
+    <mutation fastema="12" slowema="26" signalsma="9" applied_price="0"></mutation>
+    <field name="NAME">OsMA</field>
+    <field name="PERIOD">60</field>
+    <field name="COMPONENT">main</field> <!-- main|signal -->
+  </block>
+
+
+  <!-- === Ichimoku === -->
+
+  <!-- ta_ichimoku: Ichimoku Cloud -->
+  <block type="ta_ichimoku" id="example-ichimoku">
+    <mutation tenkan_period="9" kijun_period="26" senkou_span_b="52"></mutation>
+    <field name="NAME">Ichimoku</field>
+    <field name="PERIOD">60</field>
+    <field name="COMPONENT">tenkan</field> <!-- tenkan|kijun|senkou_a|senkou_b|chikou -->
+  </block>
+
+
+  <!-- ========================================== -->
+  <!-- TRADE BLOCKS (6 blocks)                    -->
+  <!-- ========================================== -->
+
+  <!-- trade_order: Open a trade -->
+  <block type="trade_order" id="example-order">
+    <field name="TRADE_ID">my_trade</field>
+    <field name="DIRECTION">long</field> <!-- long|short -->
+    <value name="SIZE">
+      <shadow type="math_number">
+        <field name="NUM">0.1</field>
+      </shadow>
+    </value>
+    <field name="LEVERAGE">1</field>
+    <field name="ORDER_TYPE">market</field> <!-- market|limit|stop -->
+    <next>
+      <!-- trade_stop_loss or trade_take_profit -->
+    </next>
+  </block>
+
+  <!-- trade_stop_loss: Set stop loss -->
+  <block type="trade_stop_loss" id="example-sl">
+    <field name="CLOSE_TYPE">full</field> <!-- full|partial -->
+    <field name="TRADE_ID">my_trade</field>
+    <value name="PRICE">
+      <!-- price calculation block (e.g., entry - ATR * 1.5) -->
+    </value>
+    <next>
+      <!-- trade_take_profit -->
+    </next>
+  </block>
+
+  <!-- trade_take_profit: Set take profit -->
+  <block type="trade_take_profit" id="example-tp">
+    <field name="CLOSE_TYPE">full</field>
+    <field name="TRADE_ID">my_trade</field>
+    <value name="PRICE">
+      <!-- price calculation block -->
+    </value>
+  </block>
+
+  <!-- trade_entry_price: Get entry price of trade -->
+  <block type="trade_entry_price" id="example-entry">
+    <field name="TRADE_ID">my_trade</field>
+  </block>
+
+  <!-- trade_close_all: Close all positions -->
+  <block type="trade_close_all" id="example-close-all">
+  </block>
+
+</blocks_catalog>
