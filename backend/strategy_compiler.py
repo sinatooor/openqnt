@@ -130,8 +130,11 @@ class StrategyCompiler:
         for param in key_params:
             val1 = params1.get(param)
             val2 = params2.get(param)
-            if val1 is not None and val2 is not None and val1 != val2:
-                return False  # Different params, not identical
+            
+            # If both are present, compare them (converting to string to handle int/str mismatch)
+            if val1 is not None and val2 is not None:
+                if str(val1) != str(val2):
+                    return False  # Different params
         
         # If same type and same/missing params, they're identical
         return True
@@ -149,10 +152,47 @@ class StrategyCompiler:
                 left_id = condition.get("left")
                 right_id = condition.get("right")
                 
-                left_var = next((v for v in variables if v.get("id") == left_id), None) if isinstance(left_id, str) else None
-                right_var = next((v for v in variables if v.get("id") == right_id), None) if isinstance(right_id, str) else None
+                # Resolve left/right to variable definitions
+                left_var = None
+                right_var = None
                 
-                if left_var and right_var and self._are_identical_indicators(left_var, right_var):
+                # Case 1: ID reference
+                if isinstance(left_id, str):
+                    left_var = next((v for v in variables if v.get("id") == left_id), None)
+                    # Case 2: Direct type usage (e.g. "ta_sma")
+                    if not left_var and left_id in self.INDICATOR_TYPES:
+                        # Create a temporary var def for comparison
+                        left_var = {"id": f"auto_{left_id}", "type": left_id, "params": {}}
+                        # Add to variables so we can modify it if needed
+                        variables.append(left_var)
+                        condition["left"] = left_var["id"] # Update condition to use ID
+                
+                if isinstance(right_id, str):
+                    right_var = next((v for v in variables if v.get("id") == right_id), None)
+                    if not right_var and right_id in self.INDICATOR_TYPES:
+                        right_var = {"id": f"auto_{right_id}", "type": right_id, "params": {}}
+                        variables.append(right_var)
+                        condition["right"] = right_var["id"]
+
+                # Check for identity
+                is_identical = False
+                if left_var and right_var:
+                    if self._are_identical_indicators(left_var, right_var):
+                        is_identical = True
+                elif left_id == right_id and isinstance(left_id, str):
+                    # Fallback: exact string match of IDs or types
+                    is_identical = True
+                    # If they are just strings but not in variables, we need to create vars to fix them
+                    if not left_var:
+                        left_var = {"id": f"auto_{left_id}_1", "type": left_id, "params": {}}
+                        variables.append(left_var)
+                        condition["left"] = left_var["id"]
+                    if not right_var:
+                        right_var = {"id": f"auto_{right_id}_2", "type": right_id, "params": {}}
+                        variables.append(right_var)
+                        condition["right"] = right_var["id"]
+                
+                if is_identical and left_var and right_var:
                     # Fix: Make left "Fast" (shorter period) and right "Slow" (longer period)
                     ind_type = left_var.get("type", "")
                     
@@ -182,6 +222,8 @@ class StrategyCompiler:
                     
                     print(f"Auto-fixed identical indicators: {ind_type} -> Fast({fast_period}) vs Slow({slow_period})")
         
+        # Update variables in json
+        strategy_json["variables"] = variables
         return strategy_json
 
     def compile(self, strategy_json: Dict[str, Any]) -> str:
