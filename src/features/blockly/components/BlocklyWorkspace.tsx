@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Code2, Copy, Check, Download, Upload, ZoomIn, ZoomOut, Maximize2, Undo2, Redo2, Wand2, FileCode, BarChart3, BookOpen, Search, Pencil, TrendingUp } from "lucide-react";
+import { Code2, Copy, Check, Download, Upload, ZoomIn, ZoomOut, Maximize2, Undo2, Redo2, Wand2, FileCode, BarChart3, BookOpen, Search, Pencil, TrendingUp, Loader2, History as HistoryIcon } from "lucide-react";
 import { toast } from "sonner";
 import { BacktestingPanel } from "@/features/backtest/components/BacktestingPanel";
 import { StrategyTemplatesDialog } from "@/components/StrategyTemplatesDialog";
@@ -532,43 +532,92 @@ export const BlocklyWorkspace = ({
       toast.error("Add blocks to your workspace first to run a backtest.");
       return;
     }
-    if (!generatedMqlCode || generatedMqlCode.includes('Add blocks to your workspace')) {
-      toast.error("No strategy code generated. Add blocks to create a strategy.");
+
+    // Get workspace XML
+    const workspaceXml = getCurrentWorkspaceXml();
+    if (!workspaceXml) {
+      toast.error("No strategy blocks found. Add blocks to create a strategy.");
       return;
     }
 
     // Start backtesting
     setIsBacktesting(true);
     setShowBacktest(true);
-    const loadingToast = toast.loading("Running backtest simulation...", {
-      description: "Fetching real market data and analyzing your strategy"
+    const loadingToast = toast.loading("Running backtest on server...", {
+      description: "Analyzing your strategy with historical market data"
     });
+
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+
     try {
-      // Fetch real market data
-      const historicalData = await fetchMarketData({
-        symbol: "AAPL",
-        interval: "daily",
-        outputsize: "full"
+      const response = await fetch(`${backendUrl}/backtest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspaceXml: workspaceXml,
+          symbol: 'EURUSD',
+          startDate: '2024-01-01',
+          endDate: '2024-03-31',
+          initialBalance: 100000,
+          tradeSize: 100000
+        })
       });
 
-      // Run backtest with real data (convert MQL to JS for simulation)
-      const result = await runBacktest(generatedMqlCode, "AAPL", 90, historicalData);
-      setBacktestResult(result);
-
-      // Dismiss loading toast
+      const data = await response.json();
       toast.dismiss(loadingToast);
 
-      // Show success toast with key metrics and visual feedback
-      const isProfit = result.metrics.totalReturn >= 0;
-      toast.success(isProfit ? "🎉 Backtest completed successfully!" : "Backtest completed", {
-        description: `${isProfit ? "📈" : "📉"} Return: ${result.metrics.totalReturn.toFixed(2)}% | Win Rate: ${result.metrics.winRate.toFixed(1)}% | ${result.metrics.totalTrades} trades`,
-        duration: 5000
-      });
+      if (data.success) {
+        // Map backend response to frontend format
+        const result = {
+          metrics: {
+            totalReturn: ((data.final_balance - data.initial_balance) / data.initial_balance) * 100,
+            winRate: data.metrics.win_rate,
+            maxDrawdown: data.metrics.max_drawdown,
+            sharpeRatio: data.metrics.sharpe_ratio || 0,
+            totalTrades: data.metrics.total_trades,
+            winningTrades: data.metrics.winning_trades,
+            losingTrades: data.metrics.losing_trades,
+            profitableTrades: data.metrics.winning_trades,
+            averageWin: data.metrics.avg_win || 0,
+            averageLoss: data.metrics.avg_loss || 0,
+            profitFactor: data.metrics.profit_factor || 1,
+          },
+          trades: data.trades.map((t: any) => ({
+            type: t.side,
+            date: t.entry_time,
+            price: t.entry_price,
+            exitDate: t.exit_time,
+            exitPrice: t.exit_price,
+            profit: t.profit_loss
+          })),
+          equityCurve: data.equity_curve.map((point: any) => ({
+            date: point.timestamp,
+            value: point.equity
+          })),
+          chartData: data.equity_curve.map((point: any) => ({
+            date: point.timestamp,
+            equity: point.equity
+          }))
+        };
+
+        setBacktestResult(result);
+
+        const isProfit = result.metrics.totalReturn >= 0;
+        toast.success(isProfit ? "🎉 Backtest completed!" : "Backtest completed", {
+          description: `${isProfit ? "📈" : "📉"} Return: ${result.metrics.totalReturn.toFixed(2)}% | Win Rate: ${result.metrics.winRate.toFixed(1)}% | ${result.metrics.totalTrades} trades`,
+          duration: 5000
+        });
+      } else {
+        toast.error("Backtest failed", {
+          description: data.error || "Check your strategy and try again"
+        });
+        setShowBacktest(false);
+      }
     } catch (error) {
       console.error("Backtest error:", error);
       toast.dismiss(loadingToast);
       toast.error("Backtest failed", {
-        description: "Failed to run backtest simulation. Check your strategy blocks."
+        description: "Backend not running? Start with: cd backend && uvicorn main:app --port 8000"
       });
       setShowBacktest(false);
     } finally {
@@ -1060,6 +1109,32 @@ export const BlocklyWorkspace = ({
           <TooltipContent>
             <p>Toggle code view</p>
             <p className="text-xs text-muted-foreground mt-1">View generated strategy code</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={showBacktest ? "default" : "outline"}
+              size="sm"
+              onClick={handlePreviewBacktest}
+              disabled={isBacktesting || isEmpty}
+              className={cn(
+                "transition-all duration-200",
+                showBacktest ? "bg-purple-600 hover:bg-purple-700" : "hover:shadow-[0_0_0_2px_rgba(147,51,234,0.5)]"
+              )}
+            >
+              {isBacktesting ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <HistoryIcon className="w-4 h-4 mr-2" />
+              )}
+              {isBacktesting ? "Testing..." : "Backtest"}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Run backtest</p>
+            <p className="text-xs text-muted-foreground mt-1">Test your strategy on historical data</p>
           </TooltipContent>
         </Tooltip>
 
