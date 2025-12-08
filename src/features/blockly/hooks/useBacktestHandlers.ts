@@ -62,9 +62,9 @@ export const useBacktestHandlers = ({
         // Backend execution
         const xml = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(workspaceRef.current));
 
-        // Create AbortController for timeout (2 minutes for LLM-based backtests)
+        // Create AbortController for timeout (10 minutes for LLM-based backtests)
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 120000);
+        const timeoutId = setTimeout(() => controller.abort(), 600000);
 
         const response = await fetch('http://localhost:8000/backtest', {
           method: 'POST',
