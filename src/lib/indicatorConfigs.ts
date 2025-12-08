@@ -656,6 +656,26 @@ export const indicatorConfigs: Record<string, IndicatorConfig> = {
       { name: 'shift', label: 'Shift', type: 'number', default: 1, min: 0 }
     ],
     mqlFunction: 'iLowest'
+  },
+  'ta_support': {
+    name: 'ta_support',
+    displayName: 'Support Level',
+    defaultTimeframe: 60,
+    params: [
+      { name: 'lookback', label: 'Lookback Bars', type: 'number', default: 20, min: 5 },
+      { name: 'strength', label: 'Min Touches', type: 'number', default: 2, min: 1 }
+    ],
+    mqlFunction: 'iCustom'
+  },
+  'ta_resistance': {
+    name: 'ta_resistance',
+    displayName: 'Resistance Level',
+    defaultTimeframe: 60,
+    params: [
+      { name: 'lookback', label: 'Lookback Bars', type: 'number', default: 20, min: 5 },
+      { name: 'strength', label: 'Min Touches', type: 'number', default: 2, min: 1 }
+    ],
+    mqlFunction: 'iCustom'
   }
 };
 

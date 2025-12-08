@@ -63,4 +63,6 @@ import './bullsPower';
 import './fractals';
 import './highest';
 import './lowest';
+import './support';
+import './resistance';
 

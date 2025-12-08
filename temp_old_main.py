@@ -9,106 +9,15 @@ Run with: uvicorn main:app --reload --port 8000
 
 import os
 import re
-import json
 import httpx
-import asyncio
-from typing import List, Optional, Dict, Any
+from typing import Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
-from datetime import datetime
-
-# RAG & GCG Imports
-from rag_system import block_library
-from strategy_compiler import strategy_compiler
-
-# Logging
-from llm_logger import (
-    log_llm_call, log_conversion, log_backtest, 
-    log_strategy_generation, log_general, log_error, 
-    log_api_request, get_log_stats
-)
 
 # Load environment variables
 load_dotenv()
-
-# ============================================================
-# RAG + GCG Prompts
-# ============================================================
-
-RAG_ROUTER_PROMPT = """You are a Trading Strategy Architect. Identify the building blocks needed.
-
-AVAILABLE BLOCKS:
-{available_blocks}
-
-USER REQUEST: "{user_request}"
-
-TASK: Select the MINIMUM block types needed. Always include:
-- 'trade_order' for any buy/sell action
-- Comparison operators (operator_less, operator_greater) for conditions
-- The specific indicator mentioned (ta_rsi, ta_sma, ta_ema, etc.)
-
-OUTPUT: JSON array of block type strings only.
-Example: ["ta_rsi", "operator_less", "trade_order"]"""
-
-GCG_PLANNER_PROMPT = """You are a Trading Strategy Planner. Create a structured execution plan.
-
-USER REQUEST: "{user_request}"
-AVAILABLE BLOCKS:
-{block_list}
-
-CREATE A JSON PLAN using this schema:
-{{
-    "timeframe": 60,
-    "variables": [
-        {{"id": "rsi", "type": "ta_rsi", "params": {{"period": 14, "timeframe": 60}}}}
-    ],
-    "entry_conditions": [
-        {{"operator": "operator_less", "left": "rsi", "right": 30}}
-    ],
-    "exit_conditions": [
-        {{"operator": "operator_greater", "left": "rsi", "right": 70}}
-    ],
-    "entry_action": {{
-        "direction": "long",
-        "size": 0.1,
-        "sl_pips": 50,
-        "tp_pips": 100
-    }},
-    "exit_action": {{
-        "type": "close_all"
-    }}
-}}
-
-RULES:
-1. Use ONLY block types from AVAILABLE BLOCKS
-2. "left"/"right" can be a variable ID (string) or number
-3. "operator" must be: operator_less, operator_greater, operator_less_equals, operator_greater_equals
-4. Common indicator params: period (14), timeframe (60 = 1 hour)
-5. If user mentions "cross above" = operator_greater, "cross below" = operator_less
-6. sl_pips/tp_pips are optional, omit if not specified
-7. CRITICAL GRAMMAR RULE: NEVER compare two identical indicators (same type AND same params).
-   - WRONG: SMA(period=14) > SMA(period=14) - makes no sense
-   - CORRECT: SMA(period=10) > SMA(period=20) - Fast vs Slow
-   - For crossovers, use different periods: Fast (shorter) vs Slow (longer)
-   - Default Fast/Slow: SMA(10/20), EMA(12/26), RSI(7/14)
-8. CRITICAL GRAMMAR RULE: SCALE COMPATIBILITY
-   - NEVER compare Price (SMA, EMA, BB, Price) with Oscillators (RSI, Stoch, 0-100).
-   - WRONG: Price > RSI (e.g. 1.0500 > 30) - impossible
-   - WRONG: SMA > Stoch
-   - CORRECT: RSI > 30 (Oscillator vs Level)
-   - CORRECT: Price > SMA (Price vs Price)
-   - CORRECT: SMA(10) > SMA(20) (Price vs Price)
-
-9. CRITICAL GRAMMAR RULE: TYPE SAFETY
-   - Comparison operators (<, >, =) need NUMBERS on both sides.
-   - WRONG: (RSI > 30) > 50 (Boolean > Number)
-   - WRONG: (SMA > EMA) AND (RSI) (Boolean AND Number)
-   - CORRECT: (RSI > 30) AND (SMA > EMA) (Boolean AND Boolean)
-
-OUTPUT: Valid JSON only, no markdown."""
-
 
 app = FastAPI(title="Strategy Generator API", version="1.0.0")
 
@@ -128,8 +37,6 @@ DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions"
 class StrategyRequest(BaseModel):
     message: str
     existingXml: Optional[str] = None
-    use_rag: bool = False
-    ai_model: str = "deepseek"
 
 
 class StrategyResponse(BaseModel):
@@ -154,12 +61,6 @@ class BacktestRequest(BaseModel):
     endDate: str = "2024-03-31"
     initialBalance: float = 100000.0
     tradeSize: int = 100000
-    engine: str = "backtesting.py"
-    optimize: bool = False
-    opt_metric: str = "Return [%]"
-    opt_method: str = "grid"
-    ai_model: str = "deepseek"
-    use_llm: bool = True
 
 
 class BacktestResponse(BaseModel):
@@ -167,12 +68,8 @@ class BacktestResponse(BaseModel):
     symbol: str
     start_date: str
     end_date: str
-    initial_balance: float = 10000
-    final_balance: Optional[float] = None
-    # Optimization results
-    best_params: Optional[Dict[str, Any]] = None
-    best_metric_value: Optional[float] = None
-    params_tested: Optional[Dict[str, str]] = None
+    initial_balance: float
+    final_balance: float
     metrics: dict
     trades: list
     equity_curve: list
@@ -579,283 +476,36 @@ async def call_deepseek(
     max_tokens: int = 4000
 ) -> str:
     """Call DeepSeek API and return the response content."""
-    import time
-    start_time = time.time()
-    
     api_key = os.getenv("DEEPSEEK_API_KEY")
     if not api_key or api_key == "your_deepseek_api_key_here":
-        log_error(ValueError("DEEPSEEK_API_KEY not configured"), "call_deepseek")
         raise HTTPException(
             status_code=500,
             detail="DEEPSEEK_API_KEY not configured. Add your key to backend/.env"
         )
 
-    try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(
-                DEEPSEEK_API_URL,
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": "deepseek-chat",
-                    "messages": messages,
-                    "temperature": temperature,
-                    "max_tokens": max_tokens
-                }
-            )
-
-            duration_ms = (time.time() - start_time) * 1000
-
-            if response.status_code != 200:
-                log_llm_call(
-                    model="deepseek-chat",
-                    endpoint=DEEPSEEK_API_URL,
-                    messages=messages,
-                    response="",
-                    duration_ms=duration_ms,
-                    temperature=temperature,
-                    success=False,
-                    error=f"HTTP {response.status_code}: {response.text[:500]}"
-                )
-                raise HTTPException(
-                    status_code=response.status_code,
-                    detail=f"DeepSeek API error: {response.text}"
-                )
-
-            data = response.json()
-            content = data["choices"][0]["message"]["content"]
-            
-            # Extract token counts if available
-            tokens_input = data.get("usage", {}).get("prompt_tokens")
-            tokens_output = data.get("usage", {}).get("completion_tokens")
-            
-            # Log successful call
-            log_llm_call(
-                model="deepseek-chat",
-                endpoint=DEEPSEEK_API_URL,
-                messages=messages,
-                response=content,
-                duration_ms=duration_ms,
-                tokens_input=tokens_input,
-                tokens_output=tokens_output,
-                temperature=temperature,
-                success=True
-            )
-            
-            return content
-            
-    except Exception as e:
-        duration_ms = (time.time() - start_time) * 1000
-        log_llm_call(
-            model="deepseek-chat",
-            endpoint=DEEPSEEK_API_URL,
-            messages=messages,
-            response="",
-            duration_ms=duration_ms,
-            temperature=temperature,
-            success=False,
-            error=str(e)
-        )
-        raise
-
-
-async def call_gemini(
-    messages: list[dict],
-    temperature: float = 0.3,
-    max_tokens: int = 4000
-) -> str:
-    """Call Google Gemini API and return the response content."""
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise HTTPException(
-            status_code=500,
-            detail="GEMINI_API_KEY not configured. Add your key to backend/.env"
-        )
-
-    # Convert OpenAI-style messages to Gemini format
-    contents = []
-    system_instruction = None
-    
-    for msg in messages:
-        if msg["role"] == "system":
-            system_instruction = {"parts": [{"text": msg["content"]}]}
-        elif msg["role"] == "user":
-            contents.append({"role": "user", "parts": [{"text": msg["content"]}]})
-        elif msg["role"] == "assistant":
-            contents.append({"role": "model", "parts": [{"text": msg["content"]}]})
-
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={api_key}"
-    
-    payload = {
-        "contents": contents,
-        "generationConfig": {
-            "temperature": temperature,
-            "maxOutputTokens": max_tokens
-        }
-    }
-    
-    if system_instruction:
-        payload["systemInstruction"] = system_instruction
-
     async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.post(
-            url,
-            headers={"Content-Type": "application/json"},
-            json=payload
+            DEEPSEEK_API_URL,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "deepseek-chat",
+                "messages": messages,
+                "temperature": temperature,
+                "max_tokens": max_tokens
+            }
         )
 
         if response.status_code != 200:
             raise HTTPException(
                 status_code=response.status_code,
-                detail=f"Gemini API error: {response.text}"
+                detail=f"DeepSeek API error: {response.text}"
             )
 
         data = response.json()
-        try:
-            return data["candidates"][0]["content"]["parts"][0]["text"]
-        except (KeyError, IndexError):
-            return "Error: No content generated by Gemini"
-
-
-async def call_lovable_gemini(
-    messages: list[dict],
-    temperature: float = 0.3,
-    max_tokens: int = 8000
-) -> str:
-    """
-    Call Lovable Gateway (proxies to Gemini) - matches original Supabase Edge Function.
-    Uses https://ai.gateway.lovable.dev/v1/chat/completions
-    """
-    import time
-    start_time = time.time()
-    
-    api_key = os.getenv("LOVABLE_API_KEY")
-    if not api_key:
-        log_error(ValueError("LOVABLE_API_KEY not configured"), "call_lovable_gemini")
-        raise HTTPException(
-            status_code=500,
-            detail="LOVABLE_API_KEY not configured. Add your key to backend/.env"
-        )
-
-    url = "https://ai.gateway.lovable.dev/v1/chat/completions"
-    
-    payload = {
-        "model": "google/gemini-3-pro",
-        "messages": messages,
-        "temperature": temperature,
-        "max_tokens": max_tokens
-    }
-
-    try:
-        async with httpx.AsyncClient(timeout=90.0) as client:
-            response = await client.post(
-                url,
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json"
-                },
-                json=payload
-            )
-
-            duration_ms = (time.time() - start_time) * 1000
-
-            if response.status_code == 429:
-                log_llm_call(
-                    model="google/gemini-3-pro",
-                    endpoint=url,
-                    messages=messages,
-                    response="",
-                    duration_ms=duration_ms,
-                    temperature=temperature,
-                    success=False,
-                    error="Rate limit exceeded (429)"
-                )
-                raise HTTPException(
-                    status_code=429,
-                    detail="Rate limit exceeded. Please try again in a moment."
-                )
-            
-            if response.status_code == 402:
-                log_llm_call(
-                    model="google/gemini-3-pro",
-                    endpoint=url,
-                    messages=messages,
-                    response="",
-                    duration_ms=duration_ms,
-                    temperature=temperature,
-                    success=False,
-                    error="AI credits exhausted (402)"
-                )
-                raise HTTPException(
-                    status_code=402,
-                    detail="AI credits exhausted. Please add credits to continue."
-                )
-
-            if response.status_code != 200:
-                log_llm_call(
-                    model="google/gemini-3-pro",
-                    endpoint=url,
-                    messages=messages,
-                    response="",
-                    duration_ms=duration_ms,
-                    temperature=temperature,
-                    success=False,
-                    error=f"HTTP {response.status_code}: {response.text[:500]}"
-                )
-                raise HTTPException(
-                    status_code=response.status_code,
-                    detail=f"Lovable Gateway error: {response.text}"
-                )
-
-            data = response.json()
-            try:
-                content = data["choices"][0]["message"]["content"]
-                
-                # Extract token counts if available
-                tokens_input = data.get("usage", {}).get("prompt_tokens")
-                tokens_output = data.get("usage", {}).get("completion_tokens")
-                
-                log_llm_call(
-                    model="google/gemini-3-pro",
-                    endpoint=url,
-                    messages=messages,
-                    response=content,
-                    duration_ms=duration_ms,
-                    tokens_input=tokens_input,
-                    tokens_output=tokens_output,
-                    temperature=temperature,
-                    success=True
-                )
-                
-                return content
-            except (KeyError, IndexError):
-                log_llm_call(
-                    model="google/gemini-3-pro",
-                    endpoint=url,
-                    messages=messages,
-                    response="",
-                    duration_ms=duration_ms,
-                    temperature=temperature,
-                    success=False,
-                    error="No content in response"
-                )
-                return "Error: No content generated by Lovable Gateway"
-                
-    except Exception as e:
-        duration_ms = (time.time() - start_time) * 1000
-        log_llm_call(
-            model="google/gemini-3-pro",
-            endpoint=url,
-            messages=messages,
-            response="",
-            duration_ms=duration_ms,
-            temperature=temperature,
-            success=False,
-            error=str(e)
-        )
-        raise
+        return data["choices"][0]["message"]["content"]
 
 
 async def call_deepseek_reasoning(
@@ -929,18 +579,8 @@ async def root():
             "/ig/login",
             "/ig/positions",
             "/ig/position",
-            "/ig/trade",
-            "/logs"
+            "/ig/trade"
         ]
-    }
-
-
-@app.get("/logs")
-async def get_logs():
-    """Get log statistics for the current week."""
-    return {
-        "status": "ok",
-        "stats": get_log_stats()
     }
 
 
@@ -1008,142 +648,6 @@ async def validate_strategy(request: ValidateStrategyRequest):
     )
 
 
-@app.post("/generate-strategy-rag", response_model=StrategyResponse)
-async def generate_strategy_rag(request: StrategyRequest):
-    """
-    Generate strategy using RAG + GCG pipeline.
-    
-    Flow:
-    1. Retrieve relevant block types based on user request (RAG).
-    2. Plan strategy structure in JSON (GCG).
-    3. Compile JSON to valid Blockly XML.
-    """
-    import time
-    start_time = time.time()
-    
-    try:
-        log_general(f"RAG Generation started: {request.message[:100]}...")
-        print(f"=== RAG Generation: {request.message} ===")
-        
-        # Step 1: Retrieval (RAG)
-        # First, use keyword-based retrieval as baseline
-        keyword_blocks = block_library.retrieve_relevant_blocks(request.message)
-        print(f"Keyword retrieval found {len(keyword_blocks)} blocks")
-        
-        # Get compact summary for the router
-        all_types = block_library.get_all_block_types()
-        
-        # Select AI model
-        llm_func = call_deepseek
-        ai_model = request.ai_model or "deepseek"
-        if ai_model == "gemini":
-            llm_func = call_lovable_gemini
-
-        # Ask LLM to select relevant blocks (can augment keyword results)
-        router_messages = [
-            {"role": "system", "content": RAG_ROUTER_PROMPT.format(
-                available_blocks=", ".join(all_types),
-                user_request=request.message
-            )},
-            {"role": "user", "content": "Select blocks."}
-        ]
-        
-        try:
-            router_response = await llm_func(router_messages, temperature=0.1)
-            # Clean JSON
-            clean_response = router_response.strip()
-            if clean_response.startswith("```"):
-                clean_response = clean_response.split("\n", 1)[1]
-            if clean_response.endswith("```"):
-                clean_response = clean_response.rsplit("\n", 1)[0]
-            if clean_response.startswith("json"):
-                clean_response = clean_response[4:].strip()
-            
-            llm_selected_types = json.loads(clean_response)
-            print(f"LLM selected: {llm_selected_types}")
-        except Exception as e:
-            print(f"Router JSON parse failed: {e}, using keyword fallback")
-            llm_selected_types = []
-        
-        # Merge LLM selection with keyword results
-        all_selected_types = set(keyword_blocks.keys())
-        all_selected_types.update(llm_selected_types)
-        
-        # Build block templates for the planner
-        block_templates = []
-        for b_type in all_selected_types:
-            xml = block_library.get_block_xml(b_type)
-            if xml:
-                block_templates.append(f"{b_type}: {xml}")
-        
-        print(f"Total {len(block_templates)} block templates for planning")
-
-        # Step 2: Structured Generation (GCG)
-        planner_messages = [
-            {"role": "system", "content": GCG_PLANNER_PROMPT.format(
-                user_request=request.message,
-                block_list="\n".join(block_templates)
-            )},
-            {"role": "user", "content": "Create the execution plan."}
-        ]
-        
-        plan_response = await llm_func(planner_messages, temperature=0.2)
-        
-        try:
-            # Clean markdown code blocks if present
-            clean_json = plan_response.strip()
-            if clean_json.startswith("```"):
-                clean_json = clean_json.split("\n", 1)[1]
-            if clean_json.endswith("```"):
-                clean_json = clean_json.rsplit("\n", 1)[0]
-            if clean_json.startswith("json"):
-                clean_json = clean_json[4:].strip()
-                
-            strategy_plan = json.loads(clean_json)
-            print(f"GCG Plan: {json.dumps(strategy_plan, indent=2)}")
-        except Exception as e:
-            print(f"GCG Plan parsing failed: {e}")
-            print(f"Raw response: {plan_response}")
-            raise HTTPException(status_code=500, detail="Failed to generate valid strategy plan")
-
-        # Step 3: Compilation
-        final_xml = strategy_compiler.compile(strategy_plan)
-        
-        if not final_xml:
-            raise HTTPException(status_code=500, detail="Failed to compile strategy to XML")
-        
-        duration_ms = (time.time() - start_time) * 1000
-        log_strategy_generation(
-            mode="RAG",
-            user_prompt=request.message,
-            generated_xml=final_xml,
-            ai_model=ai_model,
-            success=True,
-            ai_fixed=False,
-            duration_ms=duration_ms
-        )
-            
-        return StrategyResponse(
-            xml=final_xml,
-            ai_fixed=False # RAG pipeline shouldn't need fixing
-        )
-
-    except Exception as e:
-        duration_ms = (time.time() - start_time) * 1000
-        log_strategy_generation(
-            mode="RAG",
-            user_prompt=request.message,
-            generated_xml="",
-            ai_model=request.ai_model or "deepseek",
-            success=False,
-            duration_ms=duration_ms,
-            error=str(e)
-        )
-        print(f"RAG Generation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-
 @app.post("/generate-strategy", response_model=StrategyResponse)
 async def generate_strategy(request: StrategyRequest):
     """
@@ -1163,32 +667,13 @@ async def generate_strategy(request: StrategyRequest):
     if request.existingXml:
         user_prompt = f"Modify this existing strategy:\n\n{request.existingXml}\n\nUser request: {request.message}"
     
-    # Legacy Mode uses Lovable Gateway (Gemini) by default - matches Supabase Edge Function
-    # This is the same gateway used in supabase/functions/generate-strategy/index.ts
-    llm_func = call_lovable_gemini
-    
-    # Allow override to other models if explicitly requested
-    if request.ai_model == "deepseek":
-        llm_func = call_deepseek
-    elif request.ai_model == "gemini-direct":
-        llm_func = call_lovable_gemini
-    
-    print(f"Legacy Mode: Using {llm_func.__name__}")
-
-    # Load the original 2770-line system prompt from Supabase Edge Function (Legacy Mode)
-    # This contains the full JavaScript block definitions which are essential for the AI
-    prompt_path = os.path.join(os.path.dirname(__file__), "FULL_SYSTEM_PROMPT.txt")
-    with open(prompt_path, "r") as f:
-        full_system_prompt = f.read()
-    print(f"Legacy Mode: Loaded full system prompt ({len(full_system_prompt)} chars, {len(full_system_prompt.splitlines())} lines)")
-
     # First pass: Generate strategy
     first_messages = [
-        {"role": "system", "content": full_system_prompt},
+        {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": user_prompt}
     ]
     
-    first_response = await llm_func(first_messages)
+    first_response = await call_deepseek(first_messages)
     first_xml = extract_xml(first_response)
     
     block_count = len(re.findall(r'<block ', first_xml))
@@ -1361,110 +846,87 @@ Generate the complete MQL5 code."""
     )
 
 
-@app.post("/backtest")
+@app.post("/backtest", response_model=BacktestResponse)
 async def run_backtest_endpoint(request: BacktestRequest):
     """
-    Run backtest on a Blockly strategy using backtesting.py.
+    Run backtest on a Blockly strategy.
     
-    1. Converts Blockly XML to Python strategy code
-    2. Fetches historical data from yfinance
-    3. Runs backtest with backtesting.py engine
+    1. Converts Blockly XML to strategy code via LLM
+    2. Tries to fetch real data from IG if authenticated
+    3. Falls back to synthetic data if IG not available
     4. Returns metrics, trades, and equity curve
     """
-    try:
-        print(f"=== Running backtest for {request.symbol} ===")
-        print(f"Period: {request.startDate} to {request.endDate}")
-        print(f"Engine: {request.engine}, AI Model: {request.ai_model}")
-        
-        # Import new backtest service
-        from backtest_service import run_backtest_pipeline
-        
-        # Map date range to yfinance period
-        from datetime import datetime
+    print(f"=== Running backtest for {request.symbol} ===")
+    print(f"Period: {request.startDate} to {request.endDate}")
+    
+    # Import backtest runner (lazy import to avoid startup issues)
+    from backtest_runner import run_backtest, fetch_real_data_from_ig
+    from strategy_converter import convert_xml_to_strategy, get_fallback_strategy
+    
+    # Try to get real data from IG if client is authenticated
+    historical_data = None
+    data_source = "synthetic"
+    
+    client = get_ig_client()
+    if client.is_authenticated:
         try:
-            start = datetime.strptime(request.startDate, "%Y-%m-%d")
-            end = datetime.strptime(request.endDate, "%Y-%m-%d")
-            days = (end - start).days
-            
-            if days <= 7:
-                period = "5d"
-            elif days <= 30:
-                period = "1mo"
-            elif days <= 90:
-                period = "3mo"
-            elif days <= 180:
-                period = "6mo"
-            elif days <= 365:
-                period = "1y"
-            else:
-                period = "2y"
-        except:
-            period = "1y"
-        
-        # Map symbol for yfinance
-        symbol_map = {
-            "EURUSD": "EURUSD=X",
-            "GBPUSD": "GBPUSD=X",
-            "USDJPY": "USDJPY=X",
-            "BTCUSD": "BTC-USD",
-            "ETHUSD": "ETH-USD",
-            "AUDUSD": "AUDUSD=X",
-            "USDCAD": "USDCAD=X",
-            "USDCHF": "USDCHF=X",
-            "SOLUSD": "SOL-USD",
-        }
-        yf_symbol = symbol_map.get(request.symbol, request.symbol)
-        
-        # Select AI model
-        # For nautilus/backtesting.py engines, always use DeepSeek (they only need LLM for code conversion)
-        # Gemini is only used for AI Simulation engine
-        if request.engine == "ai_simulation" and request.ai_model == "gemini":
-            llm_func = call_lovable_gemini
-        else:
-            llm_func = call_deepseek
-        
-        # Run backtest pipeline
-        result = await run_backtest_pipeline(
+            print("Fetching real data from IG...")
+            historical_data = await fetch_real_data_from_ig(
+                ig_client=client,
+                symbol=request.symbol,
+                start_date=request.startDate,
+                end_date=request.endDate,
+                resolution="HOUR"
+            )
+            data_source = "IG API"
+            print(f"Fetched {len(historical_data)} bars from IG")
+        except Exception as e:
+            print(f"Failed to fetch IG data: {e}, using synthetic")
+            historical_data = None
+    else:
+        print("IG not authenticated, using synthetic data")
+    
+    try:
+        # Convert XML to strategy code
+        print("Converting XML to strategy code...")
+        strategy_code = await convert_xml_to_strategy(
             xml=request.workspaceXml,
-            symbol=yf_symbol,
-            period=period,
-            interval="1d",
-            cash=request.initialBalance,
-            use_llm=request.use_llm,  # Use LLM if requested
-            engine=request.engine,
-            call_deepseek=llm_func,
-            optimize=request.optimize,
-            opt_metric=request.opt_metric,
-            opt_method=request.opt_method
+            strategy_name="BlocklyStrategy",
+            instrument_id=f"{request.symbol}.SIM"
         )
-        
-        if not result.get("success"):
-            return {"success": False, "error": result.get("error", "Backtest failed")}
-        
-        # Safely access metrics
-        metrics = result.get("metrics", {})
-        if not metrics:
-            return {"success": False, "error": "No metrics returned from backtest"}
-        
-        print(f"Backtest complete: {metrics.get('total_trades', 0)} trades")
-        
-        return {
-            "success": True,
-            "symbol": request.symbol,
-            "start_date": request.startDate,
-            "end_date": request.endDate,
-            "initial_balance": request.initialBalance,
-            "final_balance": metrics.get("equity_final", request.initialBalance),
-            "metrics": metrics,
-            "trades": result.get("trades", []),
-            "equity_curve": result.get("equity_curve", [])
-        }
+        print(f"Strategy code generated: {len(strategy_code)} chars")
     except Exception as e:
-        import traceback
-        error_msg = str(e)
-        print(f"Backtest error: {error_msg}")
-        traceback.print_exc()
-        return {"success": False, "error": error_msg}
+        print(f"Strategy conversion failed: {e}, using fallback")
+        strategy_code = get_fallback_strategy()
+    
+    # Run backtest
+    print(f"Running backtest simulation (data source: {data_source})...")
+    result = run_backtest(
+        strategy_code=strategy_code,
+        symbol=request.symbol,
+        start_date=request.startDate,
+        end_date=request.endDate,
+        initial_balance=request.initialBalance,
+        trade_size=request.tradeSize,
+        historical_data=historical_data
+    )
+    
+    print(f"Backtest complete: {result['metrics']['total_trades']} trades")
+    
+    # Add data source to result
+    result['data_source'] = data_source
+    
+    return BacktestResponse(
+        success=result['success'],
+        symbol=result['symbol'],
+        start_date=result['start_date'],
+        end_date=result['end_date'],
+        initial_balance=result['initial_balance'],
+        final_balance=result['final_balance'],
+        metrics=result['metrics'],
+        trades=result['trades'],
+        equity_curve=result['equity_curve']
+    )
 
 
 # ============================================================

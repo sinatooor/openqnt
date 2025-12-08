@@ -1,5 +1,4 @@
 // Deprecated: Use @/features/ai instead
-export * from './AIChatPanel';
 export * from './BlockSearchDialog';
 export * from './DevLogPanel';
 export * from './FloatingChartModal';

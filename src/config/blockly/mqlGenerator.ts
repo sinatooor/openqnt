@@ -1489,3 +1489,83 @@ mqlGenerator.forBlock['macd_value'] = function (block: Blockly.Block) {
 
     return [`GetIndicatorValue(${handleName}, ${buffer}, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
+
+mqlGenerator.forBlock['ta_support'] = function (block: Blockly.Block) {
+    const period = getIndicatorPeriod(block);
+    const lookback = getIndicatorParam(block, 'lookback', 20);
+    const strength = getIndicatorParam(block, 'strength', 2);
+    const timeframe = toMqlTimeframe(period);
+
+    // Define the CalculateSupportLevel function if not already defined
+    if (!mqlGenerator.definitions_['CalculateSupportLevel']) {
+        mqlGenerator.definitions_['CalculateSupportLevel'] = `
+// Calculate Support Level using pivot point analysis
+// Finds the lowest low that has been touched 'strength' times within 'lookback' bars
+double CalculateSupportLevel(ENUM_TIMEFRAMES timeframe, int lookback, int strength) {
+    double lowestLow = iLow(NULL, timeframe, iLowest(NULL, timeframe, MODE_LOW, lookback, 1));
+    double tolerance = (iHigh(NULL, timeframe, iHighest(NULL, timeframe, MODE_HIGH, lookback, 1)) - lowestLow) * 0.02;
+    
+    int touches = 0;
+    for(int i = 1; i <= lookback; i++) {
+        if(MathAbs(iLow(NULL, timeframe, i) - lowestLow) <= tolerance) {
+            touches++;
+        }
+    }
+    
+    if(touches >= strength) return lowestLow;
+    
+    // If not enough touches, find next support zone
+    double secondLowest = lowestLow + tolerance * 2;
+    for(int i = 1; i <= lookback; i++) {
+        double low = iLow(NULL, timeframe, i);
+        if(low > lowestLow + tolerance && low < secondLowest) {
+            secondLowest = low;
+        }
+    }
+    return secondLowest;
+}
+`;
+    }
+
+    return [`CalculateSupportLevel(${timeframe}, ${lookback}, ${strength})`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
+
+mqlGenerator.forBlock['ta_resistance'] = function (block: Blockly.Block) {
+    const period = getIndicatorPeriod(block);
+    const lookback = getIndicatorParam(block, 'lookback', 20);
+    const strength = getIndicatorParam(block, 'strength', 2);
+    const timeframe = toMqlTimeframe(period);
+
+    // Define the CalculateResistanceLevel function if not already defined
+    if (!mqlGenerator.definitions_['CalculateResistanceLevel']) {
+        mqlGenerator.definitions_['CalculateResistanceLevel'] = `
+// Calculate Resistance Level using pivot point analysis
+// Finds the highest high that has been touched 'strength' times within 'lookback' bars
+double CalculateResistanceLevel(ENUM_TIMEFRAMES timeframe, int lookback, int strength) {
+    double highestHigh = iHigh(NULL, timeframe, iHighest(NULL, timeframe, MODE_HIGH, lookback, 1));
+    double tolerance = (highestHigh - iLow(NULL, timeframe, iLowest(NULL, timeframe, MODE_LOW, lookback, 1))) * 0.02;
+    
+    int touches = 0;
+    for(int i = 1; i <= lookback; i++) {
+        if(MathAbs(iHigh(NULL, timeframe, i) - highestHigh) <= tolerance) {
+            touches++;
+        }
+    }
+    
+    if(touches >= strength) return highestHigh;
+    
+    // If not enough touches, find next resistance zone
+    double secondHighest = highestHigh - tolerance * 2;
+    for(int i = 1; i <= lookback; i++) {
+        double high = iHigh(NULL, timeframe, i);
+        if(high < highestHigh - tolerance && high > secondHighest) {
+            secondHighest = high;
+        }
+    }
+    return secondHighest;
+}
+`;
+    }
+
+    return [`CalculateResistanceLevel(${timeframe}, ${lookback}, ${strength})`, mqlGenerator.ORDER_FUNCTION_CALL];
+};
