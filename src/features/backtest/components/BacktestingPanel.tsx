@@ -24,6 +24,7 @@ interface BacktestingPanelProps {
   isLoading: boolean;
   symbol?: string;
   onClose?: () => void;
+  onRunBacktest?: (engine: 'frontend' | 'backtesting.py' | 'nautilus') => void;
 }
 
 export const BacktestingPanel = ({
@@ -31,15 +32,24 @@ export const BacktestingPanel = ({
   isLoading,
   symbol = 'AAPL',
   onClose,
+  onRunBacktest,
 }: BacktestingPanelProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [interval, setInterval] = useState('1D');
+  const [engine, setEngine] = useState<'frontend' | 'backtesting.py' | 'nautilus'>('frontend');
 
   const togglePanel = () => {
     if (!isExpanded && onClose) {
       onClose();
     } else {
       setIsExpanded(!isExpanded);
+    }
+  };
+
+  const handleEngineChange = (newEngine: 'frontend' | 'backtesting.py' | 'nautilus') => {
+    setEngine(newEngine);
+    if (onRunBacktest) {
+      onRunBacktest(newEngine);
     }
   };
 
@@ -71,17 +81,46 @@ export const BacktestingPanel = ({
         <div className="flex flex-col h-full animate-fade-in">
           {/* Header */}
           <div className="p-4 border-b border-border">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-foreground">Backtest Results</h2>
               <Badge variant="secondary" className="gap-1">
                 <Activity className="h-3 w-3" />
                 {symbol}
               </Badge>
             </div>
+
+            {/* Engine Toggle */}
+            <div className="flex items-center gap-2 mb-4 bg-muted/50 p-1 rounded-lg">
+              <Button
+                variant={engine === 'frontend' ? 'default' : 'ghost'}
+                size="sm"
+                className="flex-1 h-7 text-xs"
+                onClick={() => handleEngineChange('frontend')}
+              >
+                Simple
+              </Button>
+              <Button
+                variant={engine === 'backtesting.py' ? 'default' : 'ghost'}
+                size="sm"
+                className="flex-1 h-7 text-xs"
+                onClick={() => handleEngineChange('backtesting.py')}
+              >
+                Python
+              </Button>
+              <Button
+                variant={engine === 'nautilus' ? 'default' : 'ghost'}
+                size="sm"
+                className="flex-1 h-7 text-xs"
+                onClick={() => handleEngineChange('nautilus')}
+              >
+                Nautilus
+              </Button>
+            </div>
+
             {isLoading && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                Running backtest...
+                Running backtest ({engine})...
               </div>
             )}
           </div>
@@ -115,7 +154,7 @@ export const BacktestingPanel = ({
                     <BarChart3 className="h-4 w-4" />
                     Performance Metrics
                   </h3>
-                  
+
                   <div className="grid grid-cols-2 gap-3">
                     {/* Total Return */}
                     <Card className="bg-background/50 animate-scale-in hover-scale transition-all duration-200">
@@ -242,8 +281,8 @@ export const BacktestingPanel = ({
                       </Card>
                     ) : (
                       result.trades.map((trade, index) => (
-                        <Card 
-                          key={index} 
+                        <Card
+                          key={index}
                           className="bg-background/50 animate-fade-in hover-scale transition-all duration-200"
                           style={{ animationDelay: `${index * 30}ms` }}
                         >

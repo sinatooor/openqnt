@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button, Input, ScrollArea, Card, Switch, Label } from "@/components/ui";
-import { Loader2, Send, Sparkles, MessageSquare, Code, Blocks, X, Eye, Zap, Shield } from "lucide-react";
+import { Loader2, Send, Sparkles, MessageSquare, Code, Blocks, X, Eye, Zap, Shield, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks";
 import ReactMarkdown from "react-markdown";
 import { LogEntry } from "@/components";
@@ -21,16 +21,56 @@ interface AIChatPanelProps {
 }
 
 export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSelectedBlocksXml, onLog }: AIChatPanelProps) => {
-  const [messages, setMessages] = useState<Message[]>([]);
+  // Load initial state from localStorage
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const saved = localStorage.getItem('aiChatMessages');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isGenerateMode, setIsGenerateMode] = useState(true);
+  const [isGenerateMode, setIsGenerateMode] = useState(() => {
+    const saved = localStorage.getItem('aiChatGenerateMode');
+    return saved ? JSON.parse(saved) : true;
+  });
   const [draggedBlockXml, setDraggedBlockXml] = useState<{ xml: string; name: string } | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [workspaceBlockCount, setWorkspaceBlockCount] = useState(0);
-  const [pureDeepSeek, setPureDeepSeek] = useState(false);
-  const [validationEnabled, setValidationEnabled] = useState(true);
+  const [pureDeepSeek, setPureDeepSeek] = useState(() => {
+    const saved = localStorage.getItem('aiChatPureDeepSeek');
+    return saved ? JSON.parse(saved) : false;
+  });
+  const [validationEnabled, setValidationEnabled] = useState(() => {
+    const saved = localStorage.getItem('aiChatValidationEnabled');
+    return saved ? JSON.parse(saved) : true;
+  });
+  const [validationModel, setValidationModel] = useState<"deepseek" | "gemini">(() => {
+    const saved = localStorage.getItem('aiChatValidationModel');
+    return saved ? JSON.parse(saved) : "deepseek";
+  });
+  const [aiModel, setAiModel] = useState<"deepseek" | "gemini">("deepseek");
   const { toast } = useToast();
+
+  // Persist messages to localStorage
+  useEffect(() => {
+    localStorage.setItem('aiChatMessages', JSON.stringify(messages));
+  }, [messages]);
+
+  // Persist settings to localStorage
+  useEffect(() => {
+    localStorage.setItem('aiChatGenerateMode', JSON.stringify(isGenerateMode));
+  }, [isGenerateMode]);
+
+  useEffect(() => {
+    localStorage.setItem('aiChatPureDeepSeek', JSON.stringify(pureDeepSeek));
+  }, [pureDeepSeek]);
+
+  useEffect(() => {
+    localStorage.setItem('aiChatValidationEnabled', JSON.stringify(validationEnabled));
+  }, [validationEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem('aiChatValidationModel', JSON.stringify(validationModel));
+  }, [validationModel]);
 
   // Listen for block drop events from workspace
   useEffect(() => {
@@ -51,6 +91,7 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
     const count = xml ? (xml.match(/<block /g) || []).length : 0;
     setWorkspaceBlockCount(count);
   }, [getCurrentWorkspaceXml]);
+
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -122,14 +163,15 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
         let aiFixed = false;
 
         if (pureDeepSeek) {
-          // Pure DeepSeek mode - use RAG + GCG pipeline
+          // RAG + GCG mode (New Method) - Uses local Python backend with DeepSeek
           const response = await fetch(`${backendUrl}/generate-strategy-rag`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               message: input,
               existingXml: currentXml,
-              blockXml: attachedBlock?.xml || null
+              blockXml: attachedBlock?.xml || null,
+              ai_model: aiModel
             })
           });
 
@@ -143,46 +185,88 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
           aiFixed = data.ai_fixed;
           console.log("RAG + GCG generation complete");
         } else {
-          // Gemini + DeepSeek mode - use Supabase Edge Function
-          const { data, error } = await supabase.functions.invoke('generate-strategy', {
-            body: {
-              message: input,
-              currentWorkspace: currentXml,
-              blockXml: attachedBlock?.xml || null
-            }
-          });
+          // Legacy Mode - Full Context approach
+          if (aiModel === "gemini") {
+            // Use Supabase Edge Function (Gemini via Lovable Gateway)
+            // This matches the original main-test branch behavior
+            const { data, error } = await supabase.functions.invoke('generate-strategy', {
+              body: {
+                message: input,
+                currentWorkspace: currentXml,
+                blockXml: attachedBlock?.xml || null
+              }
+            });
 
-          if (error) {
-            if (onLog) {
-              onLog({
-                type: 'error',
-                mode: 'generate',
-                error: error.message || 'Failed to generate strategy',
-                timestamp: Date.now()
-              });
+            if (error) {
+              if (onLog) {
+                onLog({
+                  type: 'error',
+                  mode: 'generate',
+                  error: error.message || 'Failed to generate strategy',
+                  timestamp: Date.now()
+                });
+              }
+              throw new Error(error.message || "Failed to generate strategy");
             }
-            throw new Error(error.message || "Failed to generate strategy");
+
+            generatedXml = data.xml;
+            aiFixed = data.ai_fixed || false;
+            console.log("Legacy mode: Supabase Edge Function (Gemini) generation complete");
+          } else {
+            // Use local Python backend with DeepSeek (Full context mode)
+            const response = await fetch(`${backendUrl}/strategy/legacy`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                message: input,
+                existingXml: currentXml,
+                blockXml: attachedBlock?.xml || null,
+                ai_model: "deepseek"
+              })
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.detail || "Failed to generate strategy");
+            }
+
+            const data = await response.json();
+            generatedXml = data.xml;
+            aiFixed = data.ai_fixed || false;
+            console.log("Legacy mode: Local backend (DeepSeek) generation complete");
           }
-
-          generatedXml = data.xml;
         }
 
-        // Pass 2: Validate with DeepSeek Reasoning (if enabled)
+        // Pass 2: Validate (if enabled)
         let validatedXml = generatedXml;
 
         if (validationEnabled) {
           try {
-            const validateResponse = await fetch(`${backendUrl}/validate-strategy`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ xml: generatedXml })
-            });
+            if (validationModel === "gemini") {
+              // Use Supabase Edge Function (Gemini)
+              const { data, error } = await supabase.functions.invoke('validate-strategy', {
+                body: { xml: generatedXml }
+              });
 
-            if (validateResponse.ok) {
-              const validateData = await validateResponse.json();
-              validatedXml = validateData.xml;
-              aiFixed = validateData.ai_fixed || aiFixed;
-              console.log("DeepSeek Reasoning validation complete");
+              if (!error && data) {
+                validatedXml = data.xml;
+                aiFixed = data.ai_fixed || aiFixed;
+                console.log("Gemini validation complete");
+              }
+            } else {
+              // Use backend (DeepSeek Reasoning)
+              const validateResponse = await fetch(`${backendUrl}/validate-strategy`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ xml: generatedXml })
+              });
+
+              if (validateResponse.ok) {
+                const validateData = await validateResponse.json();
+                validatedXml = validateData.xml;
+                aiFixed = validateData.ai_fixed || aiFixed;
+                console.log("DeepSeek Reasoning validation complete");
+              }
             }
           } catch (e) {
             console.log("Validation fallback - using original XML");
@@ -341,9 +425,21 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
   return (
     <Card className="flex flex-col h-full bg-background/95 backdrop-blur border-border">
       <div className="p-4 border-b border-border">
-        <div className="flex items-center gap-2 mb-3">
-          <Sparkles className="w-5 h-5 text-pink-500" />
-          <h3 className="font-semibold text-foreground">AI Strategy Generator</h3>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-pink-500" />
+            <h3 className="font-semibold text-foreground">AI Strategy Generator</h3>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            onClick={() => setMessages([])}
+            title="Clear Chat"
+          >
+            <Trash2 className="w-4 h-4 mr-1" />
+            <span className="text-xs">Clear</span>
+          </Button>
         </div>
         <div className="flex gap-2 mb-3">
           <Button
@@ -368,31 +464,56 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
 
         {/* LLM Mode and Validation Toggles */}
         {isGenerateMode && (
-          <div className="flex items-center gap-4 text-xs">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3 text-[10px]">
+            <div className="flex items-center gap-1" title={pureDeepSeek ? "RAG + GCG (Smart Context)" : "Full Context (Legacy)"}>
               <Switch
                 id="pure-deepseek"
                 checked={pureDeepSeek}
                 onCheckedChange={setPureDeepSeek}
-                className="data-[state=checked]:bg-yellow-500"
+                className="scale-75"
               />
-              <Label htmlFor="pure-deepseek" className="flex items-center gap-1 cursor-pointer text-muted-foreground">
-                <Zap className="w-3 h-3" />
-                {pureDeepSeek ? "DeepSeek Only" : "Gemini + DeepSeek"}
+              <Label htmlFor="pure-deepseek" className="cursor-pointer font-normal text-muted-foreground">
+                {pureDeepSeek ? "Use RAG (Smart)" : "Use Legacy (Full)"}
               </Label>
             </div>
-            <div className="flex items-center gap-2">
+
+            {/* AI Model Toggle */}
+            <div className="flex items-center gap-1" title={aiModel === "deepseek" ? "Using DeepSeek V3" : "Using Gemini 2.0 Flash"}>
+              <Switch
+                id="ai-model-toggle"
+                checked={aiModel === "deepseek"}
+                onCheckedChange={(checked) => setAiModel(checked ? "deepseek" : "gemini")}
+                className="scale-75 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-orange-500"
+              />
+              <Label htmlFor="ai-model-toggle" className="cursor-pointer font-normal text-muted-foreground">
+                {aiModel === "deepseek" ? "DeepSeek" : "Gemini"}
+              </Label>
+            </div>
+
+            <div className="flex items-center gap-1" title={validationEnabled ? "Validation ON" : "Validation OFF"}>
               <Switch
                 id="validation"
                 checked={validationEnabled}
                 onCheckedChange={setValidationEnabled}
-                className="data-[state=checked]:bg-green-500"
+                className="data-[state=checked]:bg-green-500 scale-75"
               />
-              <Label htmlFor="validation" className="flex items-center gap-1 cursor-pointer text-muted-foreground">
-                <Shield className="w-3 h-3" />
-                Validation
+              <Label htmlFor="validation" className="cursor-pointer text-muted-foreground font-medium">
+                V
               </Label>
             </div>
+            {validationEnabled && (
+              <div className="flex items-center gap-1" title={validationModel === "deepseek" ? "Validation: DeepSeek" : "Validation: Gemini"}>
+                <Switch
+                  id="validation-model"
+                  checked={validationModel === "gemini"}
+                  onCheckedChange={(checked) => setValidationModel(checked ? "gemini" : "deepseek")}
+                  className="data-[state=checked]:bg-blue-500 scale-75"
+                />
+                <Label htmlFor="validation-model" className="cursor-pointer text-muted-foreground font-medium">
+                  {validationModel === "deepseek" ? "D" : "G"}
+                </Label>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -86,6 +86,8 @@ class BlockLibrary:
         self.blocks: Dict[str, str] = {}
         self.block_descriptions: Dict[str, str] = {}
         self.block_categories: Dict[str, str] = {}
+        self.rules: List[str] = []
+        self.templates: List[Dict[str, str]] = []
         self.load_catalog()
         
         print(f"BlockLibrary loaded {len(self.blocks)} blocks from {catalog_path}")
@@ -119,8 +121,51 @@ class BlockLibrary:
                         self.block_categories[block_type] = 'control'
                     elif block_type.startswith('environment_'):
                         self.block_categories[block_type] = 'environment'
+                    elif block_type.startswith('variables_'):
+                        self.block_categories[block_type] = 'variable'
+                    elif block_type.startswith('function_'):
+                        self.block_categories[block_type] = 'function'
                     else:
                         self.block_categories[block_type] = 'other'
+            
+            # Load Rules
+            for rule in root.findall(".//rules/rule"):
+                if rule.text:
+                    self.rules.append(rule.text.strip())
+                    
+            # Load Templates
+            for template in root.findall(".//templates/template"):
+                temp_data = {
+                    'name': template.get('name', 'Unnamed Strategy'),
+                    'description': template.find('description').text.strip() if template.find('description') is not None else "",
+                    'xml': ""
+                }
+                
+                # Extract XML content
+                xml_node = template.find('xml')
+                if xml_node is not None:
+                    # Get the inner XML string (the strategy definition)
+                    # We need to be careful to get the content inside <xml>...</xml>
+                    # The catalog has <xml><xml>...</xml></xml> structure based on my previous read
+                    # Let's extract the inner text or the first child
+                    
+                    # Actually, let's just convert the whole xml node to string and clean it up
+                    xml_str = ET.tostring(xml_node, encoding="unicode")
+                    # Remove the outer <xml> tag from the catalog wrapper if present, 
+                    # but we want the <xml> tag for the strategy itself.
+                    # Based on catalog structure:
+                    # <template ...>
+                    #   <xml>
+                    #     <xml xmlns="...">...</xml>
+                    #   </xml>
+                    # </template>
+                    
+                    # So we want the child of the <xml> node
+                    if len(xml_node) > 0:
+                        strategy_xml = ET.tostring(xml_node[0], encoding="unicode")
+                        temp_data['xml'] = strategy_xml.strip()
+                
+                self.templates.append(temp_data)
                     
         except Exception as e:
             print(f"Error loading block catalog: {e}")
@@ -215,6 +260,74 @@ class BlockLibrary:
         for cat, blocks in sorted(categories.items()):
             lines.append(f"{cat.upper()}: {', '.join(sorted(blocks))}")
         return "\n".join(lines)
+    
+    def build_full_system_prompt(self) -> str:
+        """Build the complete system prompt with ALL block definitions (Legacy Mode)."""
+        
+        # 1. Build Rules Section
+        rules_text = ""
+        if self.rules:
+            rules_text = "CRITICAL RULES:\n"
+            for i, rule in enumerate(self.rules, 1):
+                rules_text += f"{i}. {rule}\n"
+        else:
+            # Fallback if no rules loaded
+            rules_text = "CRITICAL RULES:\n1. You MUST ONLY use blocks listed below\n2. Follow exact XML structure"
+
+        # 2. Build Examples/Templates Section
+        examples_text = "EXAMPLES:\n\n"
+        for i, temp in enumerate(self.templates, 1):
+            examples_text += f"Example {i} - {temp['name']}:\n"
+            examples_text += f"Description: {temp['description']}\n"
+            examples_text += "Output:\n"
+            examples_text += f"{temp['xml']}\n\n"
+
+        # 3. Build Catalog Section
+        catalog_text = f"=== COMPLETE BLOCK CATALOG ({len(self.blocks)} blocks) ===\n\n"
+        
+        # Group blocks by category
+        categories = {}
+        for b_type, cat in self.block_categories.items():
+            if cat not in categories:
+                categories[cat] = []
+            categories[cat].append(b_type)
+        
+        category_names = {
+            'control': 'CONTROL BLOCKS',
+            'environment': 'ENVIRONMENT BLOCKS', 
+            'operator': 'OPERATOR BLOCKS',
+            'indicator': 'TECHNICAL INDICATOR BLOCKS',
+            'trade': 'TRADE BLOCKS',
+            'other': 'OTHER BLOCKS'
+        }
+        
+        for cat in ['control', 'environment', 'operator', 'indicator', 'trade', 'other']:
+            if cat in categories:
+                catalog_text += f"\n--- {category_names.get(cat, cat.upper())} ---\n\n"
+                for b_type in sorted(categories[cat]):
+                    xml = self.blocks.get(b_type, '')
+                    # Clean XML for prompt (remove id attributes, comments)
+                    xml = re.sub(r' id="[^"]*"', '', xml)
+                    xml = re.sub(r'<!--[^>]*-->', '', xml)
+                    catalog_text += f"- {b_type}: {xml}\n\n"
+
+        # Combine everything
+        prompt = f"""You are a trading strategy expert that creates Blockly XML code for visual programming.
+
+{rules_text}
+
+{catalog_text}
+
+{examples_text}
+
+=== OUTPUT FORMAT ===
+
+IMPORTANT: Return ONLY the XML wrapped in <xml></xml> tags. NO explanations.
+The first block MUST have x="50" y="50" positioning.
+Use control_forever as the main loop wrapper.
+"""
+        
+        return prompt
 
 
 # Singleton instance

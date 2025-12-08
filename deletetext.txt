@@ -39,6 +39,7 @@
   <mutation period="5" ma_period="14">
 </mutation>
 
+
   <field name="NAME">SMA</field>
 
   <field name="PERIOD">5</field>

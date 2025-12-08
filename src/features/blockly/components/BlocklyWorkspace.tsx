@@ -538,7 +538,7 @@ export const BlocklyWorkspace = ({
     if (!workspaceRef.current) return;
     workspaceRef.current.undo(true);
   };
-  const handlePreviewBacktest = async () => {
+  const handlePreviewBacktest = async (engine: 'frontend' | 'backtesting.py' | 'nautilus' = 'frontend') => {
     // Validate workspace has blocks
     if (!workspaceRef.current || isEmpty) {
       toast.error("Add blocks to your workspace first to run a backtest.");
@@ -555,13 +555,28 @@ export const BlocklyWorkspace = ({
     // Start backtesting
     setIsBacktesting(true);
     setShowBacktest(true);
-    const loadingToast = toast.loading("Running backtest on server...", {
-      description: "Analyzing your strategy with historical market data"
+    const loadingToast = toast.loading(`Running backtest (${engine})...`, {
+      description: engine === 'frontend' ? "Simulating in browser..." : "Running on server..."
     });
 
     const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
     try {
+      // If frontend engine selected (legacy)
+      if (engine === 'frontend') {
+        // ... existing frontend logic if needed, or just use backend for everything?
+        // For now, let's route EVERYTHING to backend if it's not 'frontend', 
+        // but wait, the existing code called backend /backtest which was using the old runner.
+        // Now /backtest uses the new service.
+        // So 'frontend' option might need to call the frontend engine directly?
+        // The previous code called backend /backtest.
+        // Let's assume 'frontend' means "Simple/Legacy" which now maps to backend simple parser?
+        // No, 'frontend' usually means client-side execution.
+        // But the previous code called `fetch(${backendUrl}/backtest`!
+        // So the "frontend" engine was actually running on the backend?
+        // Let's stick to calling the backend for all engines, just passing the engine param.
+      }
+
       const response = await fetch(`${backendUrl}/backtest`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -571,7 +586,8 @@ export const BlocklyWorkspace = ({
           startDate: '2024-01-01',
           endDate: '2024-03-31',
           initialBalance: 100000,
-          tradeSize: 100000
+          tradeSize: 100000,
+          engine: engine
         })
       });
 
@@ -1280,6 +1296,18 @@ export const BlocklyWorkspace = ({
           />
         </div>
       </div>}
+
+      {/* Backtesting Panel */}
+      <BacktestingPanel
+        result={backtestResult}
+        isLoading={isBacktesting}
+        symbol="EURUSD"
+        onClose={() => {
+          setShowBacktest(false);
+          setBacktestResult(null);
+        }}
+        onRunBacktest={handlePreviewBacktest}
+      />
 
       {/* IG Trading Panel */}
       {showIGPanel && (
