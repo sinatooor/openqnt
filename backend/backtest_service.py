@@ -2,7 +2,7 @@
 Backtest Service - Real backtesting using backtesting.py and NautilusTrader
 
 Pipeline:
-1. Convert Blockly XML → Python Strategy class (using DeepSeek)
+1. Convert Blockly XML → Python Strategy class (using DeepSeek or AST parser)
 2. Fetch historical data (local database, yfinance, or alphavantage)
 3. Execute backtest (backtesting.py OR NautilusTrader)
 4. Return results
@@ -16,7 +16,43 @@ import json
 import re
 import traceback
 import sys
+import math
 from llm_logger import log_backtest
+from strategy_store import (
+    hash_xml,
+    load_by_id,
+    load_latest_by_hash,
+    save_strategy_version,
+)
+
+# Import AST-based parser
+try:
+    from ast_parser import parse_xml_ast, BlocklyASTParser
+    AST_PARSER_AVAILABLE = True
+except ImportError:
+    AST_PARSER_AVAILABLE = False
+    print("Warning: AST parser not available, using regex-based parser")
+
+
+def sanitize_for_json(obj):
+    """
+    Recursively sanitize an object for JSON serialization.
+    Converts NaN, Infinity, -Infinity to None or 0.
+    """
+    if isinstance(obj, dict):
+        return {k: sanitize_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_for_json(item) for item in obj]
+    elif isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return 0  # or None
+        return obj
+    elif isinstance(obj, (np.floating, np.integer)):
+        val = float(obj)
+        if math.isnan(val) or math.isinf(val):
+            return 0
+        return val
+    return obj
 
 # backtesting.py imports
 from backtesting import Backtest, Strategy
@@ -512,7 +548,8 @@ def fetch_historical_data(
 def parse_xml_simple(xml: str) -> Dict[str, Any]:
     """
     Enhanced XML parser to extract strategy components.
-    Supports: SMA, EMA, RSI, MACD, Bollinger Bands, Stochastic, ATR, VWAP
+    Supports: SMA, EMA, RSI, MACD, Bollinger Bands, Stochastic, ATR, VWAP,
+              CCI, Williams %R, ADX/DMI, Donchian, Keltner, SAR, SuperTrend
     """
     result = {
         "indicators": [],
@@ -614,6 +651,140 @@ def parse_xml_simple(xml: str) -> Dict[str, Any]:
     if '<block type="ta_vwap"' in xml:
         result["indicators"].append({"type": "VWAP"})
     
+    # Extract CCI (Commodity Channel Index)
+    if '<block type="ta_cci"' in xml:
+        period = re.search(r'<block type="ta_cci"[^>]*>.*?<mutation[^>]*ma_period="(\d+)"', xml, re.DOTALL)
+        if not period:
+            period = re.search(r'<block type="ta_cci"[^>]*>.*?<field name="PERIOD">(\d+)</field>', xml, re.DOTALL)
+        result["indicators"].append({
+            "type": "CCI",
+            "period": int(period.group(1)) if period else 20
+        })
+    
+    # Extract Williams %R
+    if '<block type="ta_williams_r"' in xml:
+        period = re.search(r'<block type="ta_williams_r"[^>]*>.*?<mutation[^>]*ma_period="(\d+)"', xml, re.DOTALL)
+        if not period:
+            period = re.search(r'<block type="ta_williams_r"[^>]*>.*?<field name="PERIOD">(\d+)</field>', xml, re.DOTALL)
+        result["indicators"].append({
+            "type": "WILLIAMS_R",
+            "period": int(period.group(1)) if period else 14
+        })
+    
+    # Extract ADX
+    if '<block type="ta_adx"' in xml:
+        period = re.search(r'<block type="ta_adx"[^>]*>.*?<mutation[^>]*ma_period="(\d+)"', xml, re.DOTALL)
+        if not period:
+            period = re.search(r'<block type="ta_adx"[^>]*>.*?<field name="PERIOD">(\d+)</field>', xml, re.DOTALL)
+        result["indicators"].append({
+            "type": "ADX",
+            "period": int(period.group(1)) if period else 14
+        })
+    
+    # Extract DMI (Directional Movement Index) - includes +DI, -DI, ADX
+    if '<block type="ta_dmi"' in xml:
+        period = re.search(r'<block type="ta_dmi"[^>]*>.*?<mutation[^>]*ma_period="(\d+)"', xml, re.DOTALL)
+        if not period:
+            period = re.search(r'<block type="ta_dmi"[^>]*>.*?<field name="PERIOD">(\d+)</field>', xml, re.DOTALL)
+        # Extract component (plus_di, minus_di, adx)
+        component = re.search(r'<block type="ta_dmi"[^>]*>.*?<field name="COMPONENT">(\w+)</field>', xml, re.DOTALL)
+        result["indicators"].append({
+            "type": "DMI",
+            "period": int(period.group(1)) if period else 14,
+            "component": component.group(1) if component else "adx"
+        })
+    
+    # Extract Donchian Channel
+    if '<block type="donchian"' in xml:
+        period = re.search(r'<block type="donchian"[^>]*>.*?<mutation[^>]*ma_period="(\d+)"', xml, re.DOTALL)
+        if not period:
+            period = re.search(r'<block type="donchian"[^>]*>.*?<field name="PERIOD">(\d+)</field>', xml, re.DOTALL)
+        component = re.search(r'<block type="donchian"[^>]*>.*?<field name="COMPONENT">(\w+)</field>', xml, re.DOTALL)
+        result["indicators"].append({
+            "type": "DONCHIAN",
+            "period": int(period.group(1)) if period else 20,
+            "component": component.group(1) if component else "upper"
+        })
+    
+    # Extract Keltner Channel
+    if '<block type="ta_keltner"' in xml:
+        period = re.search(r'<block type="ta_keltner"[^>]*>.*?<mutation[^>]*ma_period="(\d+)"', xml, re.DOTALL)
+        if not period:
+            period = re.search(r'<block type="ta_keltner"[^>]*>.*?<field name="PERIOD">(\d+)</field>', xml, re.DOTALL)
+        mult = re.search(r'<block type="ta_keltner"[^>]*>.*?<mutation[^>]*deviation="([\d.]+)"', xml, re.DOTALL)
+        component = re.search(r'<block type="ta_keltner"[^>]*>.*?<field name="COMPONENT">(\w+)</field>', xml, re.DOTALL)
+        result["indicators"].append({
+            "type": "KELTNER",
+            "period": int(period.group(1)) if period else 20,
+            "multiplier": float(mult.group(1)) if mult else 2.0,
+            "component": component.group(1) if component else "middle"
+        })
+    
+    # Extract Parabolic SAR
+    if '<block type="ta_sar"' in xml:
+        step = re.search(r'<block type="ta_sar"[^>]*>.*?<mutation[^>]*step="([\d.]+)"', xml, re.DOTALL)
+        maximum = re.search(r'<block type="ta_sar"[^>]*>.*?<mutation[^>]*maximum="([\d.]+)"', xml, re.DOTALL)
+        result["indicators"].append({
+            "type": "SAR",
+            "step": float(step.group(1)) if step else 0.02,
+            "maximum": float(maximum.group(1)) if maximum else 0.2
+        })
+    
+    # Extract SuperTrend
+    if '<block type="ta_supertrend"' in xml:
+        period = re.search(r'<block type="ta_supertrend"[^>]*>.*?<mutation[^>]*ma_period="(\d+)"', xml, re.DOTALL)
+        if not period:
+            period = re.search(r'<block type="ta_supertrend"[^>]*>.*?<field name="PERIOD">(\d+)</field>', xml, re.DOTALL)
+        mult = re.search(r'<block type="ta_supertrend"[^>]*>.*?<mutation[^>]*multiplier="([\d.]+)"', xml, re.DOTALL)
+        result["indicators"].append({
+            "type": "SUPERTREND",
+            "period": int(period.group(1)) if period else 10,
+            "multiplier": float(mult.group(1)) if mult else 3.0
+        })
+    
+    # Extract MFI (Money Flow Index)
+    if '<block type="ta_mfi"' in xml:
+        period = re.search(r'<block type="ta_mfi"[^>]*>.*?<mutation[^>]*ma_period="(\d+)"', xml, re.DOTALL)
+        if not period:
+            period = re.search(r'<block type="ta_mfi"[^>]*>.*?<field name="PERIOD">(\d+)</field>', xml, re.DOTALL)
+        result["indicators"].append({
+            "type": "MFI",
+            "period": int(period.group(1)) if period else 14
+        })
+    
+    # Extract OBV (On Balance Volume)
+    if '<block type="ta_obv"' in xml:
+        result["indicators"].append({"type": "OBV"})
+    
+    # Extract Momentum
+    if '<block type="momentum"' in xml:
+        period = re.search(r'<block type="momentum"[^>]*>.*?<mutation[^>]*ma_period="(\d+)"', xml, re.DOTALL)
+        if not period:
+            period = re.search(r'<block type="momentum"[^>]*>.*?<field name="PERIOD">(\d+)</field>', xml, re.DOTALL)
+        result["indicators"].append({
+            "type": "MOMENTUM",
+            "period": int(period.group(1)) if period else 14
+        })
+    
+    # Extract Highest/Lowest
+    if '<block type="ta_highest"' in xml:
+        period = re.search(r'<block type="ta_highest"[^>]*>.*?<mutation[^>]*ma_period="(\d+)"', xml, re.DOTALL)
+        if not period:
+            period = re.search(r'<block type="ta_highest"[^>]*>.*?<field name="PERIOD">(\d+)</field>', xml, re.DOTALL)
+        result["indicators"].append({
+            "type": "HIGHEST",
+            "period": int(period.group(1)) if period else 20
+        })
+    
+    if '<block type="ta_lowest"' in xml:
+        period = re.search(r'<block type="ta_lowest"[^>]*>.*?<mutation[^>]*ma_period="(\d+)"', xml, re.DOTALL)
+        if not period:
+            period = re.search(r'<block type="ta_lowest"[^>]*>.*?<field name="PERIOD">(\d+)</field>', xml, re.DOTALL)
+        result["indicators"].append({
+            "type": "LOWEST",
+            "period": int(period.group(1)) if period else 20
+        })
+
     # Extract trade direction - check for both long and short entries
     if 'direction">long' in xml.lower() or 'direction\\">long' in xml:
         result["entry_direction"] = "long"
@@ -623,13 +794,57 @@ def parse_xml_simple(xml: str) -> Dict[str, Any]:
         if 'direction">long' not in xml.lower():
             result["entry_direction"] = "short"
     
-    # Check for comparison operators
-    if "operator_greater" in xml:
-        result["conditions"].append({"type": "greater"})
-    if "operator_less" in xml:
-        result["conditions"].append({"type": "less"})
+    # Check for comparison operators - extract all operator types with context
+    # Greater/Less (basic)
+    if "operator_greater" in xml and "operator_greater_equals" not in xml:
+        result["conditions"].append({"type": "greater", "operator": ">"})
+    if "operator_less" in xml and "operator_less_equals" not in xml:
+        result["conditions"].append({"type": "less", "operator": "<"})
+    
+    # Greater/Less equals
+    if "operator_greater_equals" in xml:
+        result["conditions"].append({"type": "greater_equals", "operator": ">="})
+    if "operator_less_equals" in xml:
+        result["conditions"].append({"type": "less_equals", "operator": "<="})
+    
+    # Equality operators
+    if "operator_equals" in xml and "operator_not_equals" not in xml:
+        result["conditions"].append({"type": "equals", "operator": "=="})
+    if "operator_not_equals" in xml:
+        result["conditions"].append({"type": "not_equals", "operator": "!="})
+    
+    # Boolean operators
+    if "operator_and" in xml:
+        result["conditions"].append({"type": "and", "operator": "and"})
+        result["has_compound_condition"] = True
+    if "operator_or" in xml:
+        result["conditions"].append({"type": "or", "operator": "or"})
+        result["has_compound_condition"] = True
+    if "operator_not" in xml:
+        result["conditions"].append({"type": "not", "operator": "not"})
+    
+    # Math operators (for detecting calculations)
+    if "operator_add" in xml:
+        result["conditions"].append({"type": "add", "operator": "+"})
+    if "operator_subtract" in xml:
+        result["conditions"].append({"type": "subtract", "operator": "-"})
+    if "operator_multiply" in xml:
+        result["conditions"].append({"type": "multiply", "operator": "*"})
+    if "operator_divide" in xml:
+        result["conditions"].append({"type": "divide", "operator": "/"})
+    
+    # Crossover detection
     if "crossover" in xml.lower():
         result["conditions"].append({"type": "crossover"})
+    
+    # Extract threshold values from conditions (e.g., RSI < 30, RSI > 70)
+    # Look for pattern: indicator block followed by comparison with number
+    threshold_pattern = r'<block type="(ta_rsi|ta_cci|ta_williams_r|ta_mfi)"[^>]*>.*?</block>\s*</value>\s*<value name="RIGHT">\s*<(?:shadow|block) type="math_number"[^>]*>\s*<field name="NUM">(\d+(?:\.\d+)?)</field>'
+    for match in re.finditer(threshold_pattern, xml, re.DOTALL):
+        indicator_type = match.group(1)
+        threshold = float(match.group(2))
+        result["thresholds"] = result.get("thresholds", {})
+        result["thresholds"][indicator_type] = threshold
     
     # Extract SL/TP
     sl_match = re.search(r'sl_pips["\s>]+(\d+)', xml, re.IGNORECASE)
@@ -654,6 +869,62 @@ def parse_xml_simple(xml: str) -> Dict[str, Any]:
     size_match = re.search(r'<field name="SIZE">([\d.]+)</field>', xml)
     if size_match:
         result["trade_size"] = float(size_match.group(1))
+    
+    # === RISK MANAGEMENT BLOCKS ===
+    
+    # Extract trailing stop
+    if '<block type="risk_trailing_stop"' in xml:
+        trailing_pct = re.search(r'<block type="risk_trailing_stop"[^>]*>.*?<field name="PERCENT">([\d.]+)</field>', xml, re.DOTALL)
+        if not trailing_pct:
+            trailing_pct = re.search(r'<block type="risk_trailing_stop"[^>]*>.*?<value name="PERCENT">.*?<field name="NUM">([\d.]+)</field>', xml, re.DOTALL)
+        result["risk_management"] = result.get("risk_management", {})
+        result["risk_management"]["trailing_stop_pct"] = float(trailing_pct.group(1)) if trailing_pct else 2.0
+    
+    # Extract scale in
+    if '<block type="risk_scale_in"' in xml:
+        amount = re.search(r'<block type="risk_scale_in"[^>]*>.*?<field name="AMOUNT">([\d.]+)</field>', xml, re.DOTALL)
+        intervals = re.search(r'<block type="risk_scale_in"[^>]*>.*?<field name="INTERVALS">(\d+)</field>', xml, re.DOTALL)
+        result["risk_management"] = result.get("risk_management", {})
+        result["risk_management"]["scale_in"] = {
+            "amount": float(amount.group(1)) if amount else 0.25,
+            "intervals": int(intervals.group(1)) if intervals else 4
+        }
+    
+    # Extract scale out
+    if '<block type="risk_scale_out"' in xml:
+        amount = re.search(r'<block type="risk_scale_out"[^>]*>.*?<field name="AMOUNT">([\d.]+)</field>', xml, re.DOTALL)
+        intervals = re.search(r'<block type="risk_scale_out"[^>]*>.*?<field name="INTERVALS">(\d+)</field>', xml, re.DOTALL)
+        result["risk_management"] = result.get("risk_management", {})
+        result["risk_management"]["scale_out"] = {
+            "amount": float(amount.group(1)) if amount else 0.25,
+            "intervals": int(intervals.group(1)) if intervals else 4
+        }
+    
+    # Extract max drawdown protection
+    if '<block type="risk_max_drawdown"' in xml:
+        pct = re.search(r'<block type="risk_max_drawdown"[^>]*>.*?<field name="PERCENT">([\d.]+)</field>', xml, re.DOTALL)
+        if not pct:
+            pct = re.search(r'<block type="risk_max_drawdown"[^>]*>.*?<value name="PERCENT">.*?<field name="NUM">([\d.]+)</field>', xml, re.DOTALL)
+        result["risk_management"] = result.get("risk_management", {})
+        result["risk_management"]["max_drawdown_pct"] = float(pct.group(1)) if pct else 10.0
+    
+    # Extract daily loss limit
+    if '<block type="risk_daily_loss_limit"' in xml:
+        amount = re.search(r'<block type="risk_daily_loss_limit"[^>]*>.*?<field name="AMOUNT">([\d.]+)</field>', xml, re.DOTALL)
+        if not amount:
+            amount = re.search(r'<block type="risk_daily_loss_limit"[^>]*>.*?<value name="AMOUNT">.*?<field name="NUM">([\d.]+)</field>', xml, re.DOTALL)
+        result["risk_management"] = result.get("risk_management", {})
+        result["risk_management"]["daily_loss_limit"] = float(amount.group(1)) if amount else 500.0
+    
+    # Extract position sizing mode
+    if '<field name="SIZE_TYPE">' in xml:
+        size_type = re.search(r'<field name="SIZE_TYPE">(\w+)</field>', xml)
+        if size_type:
+            result["position_sizing"] = size_type.group(1)  # "fixed", "percent", "risk_based"
+    
+    # Log parsed risk management
+    if result.get("risk_management"):
+        print(f"Risk management: {result['risk_management']}")
     
     print(f"Parsed indicators: {[i['type'] for i in result['indicators']]}")
     print(f"Has both long and short entries: {result['has_short_entry']}")
@@ -779,11 +1050,447 @@ def VWAP(high, low, close, volume):
     typical_price = (high + low + close) / 3
     return np.cumsum(typical_price * volume) / np.cumsum(volume)
 
+def CCI(high, low, close, period=20):
+    """Commodity Channel Index"""
+    high = np.asarray(high, dtype=float)
+    low = np.asarray(low, dtype=float)
+    close = np.asarray(close, dtype=float)
+    tp = (high + low + close) / 3
+    cci = np.zeros_like(close)
+    for i in range(period - 1, len(close)):
+        window = tp[i - period + 1:i + 1]
+        sma = np.mean(window)
+        mad = np.mean(np.abs(window - sma))
+        cci[i] = (tp[i] - sma) / (0.015 * mad + 1e-10)
+    return cci
+
+def WilliamsR(high, low, close, period=14):
+    """Williams %R"""
+    high = np.asarray(high, dtype=float)
+    low = np.asarray(low, dtype=float)
+    close = np.asarray(close, dtype=float)
+    wr = np.zeros_like(close)
+    for i in range(period - 1, len(close)):
+        hh = np.max(high[i - period + 1:i + 1])
+        ll = np.min(low[i - period + 1:i + 1])
+        wr[i] = -100 * (hh - close[i]) / (hh - ll + 1e-10)
+    return wr
+
+def ADX(high, low, close, period=14):
+    """Average Directional Index"""
+    high = np.asarray(high, dtype=float)
+    low = np.asarray(low, dtype=float)
+    close = np.asarray(close, dtype=float)
+    n = len(close)
+    
+    # True Range
+    tr = np.zeros(n)
+    tr[0] = high[0] - low[0]
+    for i in range(1, n):
+        tr[i] = max(high[i] - low[i], abs(high[i] - close[i-1]), abs(low[i] - close[i-1]))
+    
+    # Directional Movement
+    plus_dm = np.zeros(n)
+    minus_dm = np.zeros(n)
+    for i in range(1, n):
+        up = high[i] - high[i-1]
+        down = low[i-1] - low[i]
+        plus_dm[i] = up if up > down and up > 0 else 0
+        minus_dm[i] = down if down > up and down > 0 else 0
+    
+    # Smoothed values
+    atr = np.zeros(n)
+    plus_di = np.zeros(n)
+    minus_di = np.zeros(n)
+    
+    atr[period] = np.sum(tr[1:period+1])
+    plus_dm_sum = np.sum(plus_dm[1:period+1])
+    minus_dm_sum = np.sum(minus_dm[1:period+1])
+    
+    for i in range(period + 1, n):
+        atr[i] = atr[i-1] - atr[i-1]/period + tr[i]
+        plus_dm_sum = plus_dm_sum - plus_dm_sum/period + plus_dm[i]
+        minus_dm_sum = minus_dm_sum - minus_dm_sum/period + minus_dm[i]
+        plus_di[i] = 100 * plus_dm_sum / (atr[i] + 1e-10)
+        minus_di[i] = 100 * minus_dm_sum / (atr[i] + 1e-10)
+    
+    # ADX
+    dx = np.zeros(n)
+    adx = np.zeros(n)
+    for i in range(period, n):
+        dx[i] = 100 * abs(plus_di[i] - minus_di[i]) / (plus_di[i] + minus_di[i] + 1e-10)
+    
+    adx[2*period] = np.mean(dx[period:2*period+1])
+    for i in range(2*period + 1, n):
+        adx[i] = (adx[i-1] * (period - 1) + dx[i]) / period
+    
+    return adx
+
+def PlusDI(high, low, close, period=14):
+    """Plus Directional Indicator (+DI)"""
+    high = np.asarray(high, dtype=float)
+    low = np.asarray(low, dtype=float)
+    close = np.asarray(close, dtype=float)
+    n = len(close)
+    
+    tr = np.zeros(n)
+    plus_dm = np.zeros(n)
+    tr[0] = high[0] - low[0]
+    for i in range(1, n):
+        tr[i] = max(high[i] - low[i], abs(high[i] - close[i-1]), abs(low[i] - close[i-1]))
+        up = high[i] - high[i-1]
+        down = low[i-1] - low[i]
+        plus_dm[i] = up if up > down and up > 0 else 0
+    
+    atr = np.zeros(n)
+    plus_di = np.zeros(n)
+    atr[period] = np.sum(tr[1:period+1])
+    plus_dm_sum = np.sum(plus_dm[1:period+1])
+    
+    for i in range(period + 1, n):
+        atr[i] = atr[i-1] - atr[i-1]/period + tr[i]
+        plus_dm_sum = plus_dm_sum - plus_dm_sum/period + plus_dm[i]
+        plus_di[i] = 100 * plus_dm_sum / (atr[i] + 1e-10)
+    
+    return plus_di
+
+def MinusDI(high, low, close, period=14):
+    """Minus Directional Indicator (-DI)"""
+    high = np.asarray(high, dtype=float)
+    low = np.asarray(low, dtype=float)
+    close = np.asarray(close, dtype=float)
+    n = len(close)
+    
+    tr = np.zeros(n)
+    minus_dm = np.zeros(n)
+    tr[0] = high[0] - low[0]
+    for i in range(1, n):
+        tr[i] = max(high[i] - low[i], abs(high[i] - close[i-1]), abs(low[i] - close[i-1]))
+        up = high[i] - high[i-1]
+        down = low[i-1] - low[i]
+        minus_dm[i] = down if down > up and down > 0 else 0
+    
+    atr = np.zeros(n)
+    minus_di = np.zeros(n)
+    atr[period] = np.sum(tr[1:period+1])
+    minus_dm_sum = np.sum(minus_dm[1:period+1])
+    
+    for i in range(period + 1, n):
+        atr[i] = atr[i-1] - atr[i-1]/period + tr[i]
+        minus_dm_sum = minus_dm_sum - minus_dm_sum/period + minus_dm[i]
+        minus_di[i] = 100 * minus_dm_sum / (atr[i] + 1e-10)
+    
+    return minus_di
+
+def DonchianUpper(high, period=20):
+    """Donchian Channel Upper Band"""
+    high = np.asarray(high, dtype=float)
+    result = np.zeros_like(high)
+    for i in range(period - 1, len(high)):
+        result[i] = np.max(high[i - period + 1:i + 1])
+    return result
+
+def DonchianLower(low, period=20):
+    """Donchian Channel Lower Band"""
+    low = np.asarray(low, dtype=float)
+    result = np.zeros_like(low)
+    for i in range(period - 1, len(low)):
+        result[i] = np.min(low[i - period + 1:i + 1])
+    return result
+
+def DonchianMiddle(high, low, period=20):
+    """Donchian Channel Middle Band"""
+    return (DonchianUpper(high, period) + DonchianLower(low, period)) / 2
+
+def KeltnerUpper(high, low, close, period=20, multiplier=2.0):
+    """Keltner Channel Upper Band"""
+    close = np.asarray(close, dtype=float)
+    ema = EMA(close, period)
+    atr = ATR(high, low, close, period)
+    return ema + multiplier * atr
+
+def KeltnerLower(high, low, close, period=20, multiplier=2.0):
+    """Keltner Channel Lower Band"""
+    close = np.asarray(close, dtype=float)
+    ema = EMA(close, period)
+    atr = ATR(high, low, close, period)
+    return ema - multiplier * atr
+
+def KeltnerMiddle(close, period=20):
+    """Keltner Channel Middle Band (EMA)"""
+    return EMA(close, period)
+
+def ParabolicSAR(high, low, close, step=0.02, maximum=0.2):
+    """Parabolic SAR"""
+    high = np.asarray(high, dtype=float)
+    low = np.asarray(low, dtype=float)
+    close = np.asarray(close, dtype=float)
+    n = len(close)
+    
+    sar = np.zeros(n)
+    trend = 1  # 1 = uptrend, -1 = downtrend
+    af = step
+    ep = high[0]  # Extreme point
+    sar[0] = low[0]
+    
+    for i in range(1, n):
+        sar[i] = sar[i-1] + af * (ep - sar[i-1])
+        
+        if trend == 1:
+            if low[i] < sar[i]:
+                trend = -1
+                sar[i] = ep
+                ep = low[i]
+                af = step
+            else:
+                if high[i] > ep:
+                    ep = high[i]
+                    af = min(af + step, maximum)
+                sar[i] = min(sar[i], low[i-1], low[i-2] if i >= 2 else low[i-1])
+        else:
+            if high[i] > sar[i]:
+                trend = 1
+                sar[i] = ep
+                ep = high[i]
+                af = step
+            else:
+                if low[i] < ep:
+                    ep = low[i]
+                    af = min(af + step, maximum)
+                sar[i] = max(sar[i], high[i-1], high[i-2] if i >= 2 else high[i-1])
+    
+    return sar
+
+def SuperTrend(high, low, close, period=10, multiplier=3.0):
+    """SuperTrend indicator"""
+    high = np.asarray(high, dtype=float)
+    low = np.asarray(low, dtype=float)
+    close = np.asarray(close, dtype=float)
+    n = len(close)
+    
+    atr = ATR(high, low, close, period)
+    hl2 = (high + low) / 2
+    
+    upper_band = hl2 + multiplier * atr
+    lower_band = hl2 - multiplier * atr
+    
+    supertrend = np.zeros(n)
+    direction = np.ones(n)  # 1 = bullish, -1 = bearish
+    
+    supertrend[0] = upper_band[0]
+    
+    for i in range(1, n):
+        if close[i-1] <= supertrend[i-1]:
+            supertrend[i] = min(upper_band[i], supertrend[i-1]) if upper_band[i] < supertrend[i-1] else upper_band[i]
+            direction[i] = -1
+        else:
+            supertrend[i] = max(lower_band[i], supertrend[i-1]) if lower_band[i] > supertrend[i-1] else lower_band[i]
+            direction[i] = 1
+    
+    return supertrend
+
+def MFI(high, low, close, volume, period=14):
+    """Money Flow Index"""
+    high = np.asarray(high, dtype=float)
+    low = np.asarray(low, dtype=float)
+    close = np.asarray(close, dtype=float)
+    volume = np.asarray(volume, dtype=float)
+    
+    tp = (high + low + close) / 3
+    mf = tp * volume
+    
+    mfi = np.zeros_like(close)
+    for i in range(period, len(close)):
+        pos_mf = 0
+        neg_mf = 0
+        for j in range(i - period + 1, i + 1):
+            if tp[j] > tp[j-1]:
+                pos_mf += mf[j]
+            elif tp[j] < tp[j-1]:
+                neg_mf += mf[j]
+        mfi[i] = 100 - 100 / (1 + pos_mf / (neg_mf + 1e-10))
+    
+    return mfi
+
+def OBV(close, volume):
+    """On Balance Volume"""
+    close = np.asarray(close, dtype=float)
+    volume = np.asarray(volume, dtype=float)
+    
+    obv = np.zeros_like(close)
+    obv[0] = volume[0]
+    
+    for i in range(1, len(close)):
+        if close[i] > close[i-1]:
+            obv[i] = obv[i-1] + volume[i]
+        elif close[i] < close[i-1]:
+            obv[i] = obv[i-1] - volume[i]
+        else:
+            obv[i] = obv[i-1]
+    
+    return obv
+
+def Momentum(close, period=14):
+    """Momentum indicator"""
+    close = np.asarray(close, dtype=float)
+    mom = np.zeros_like(close)
+    for i in range(period, len(close)):
+        mom[i] = close[i] - close[i - period]
+    return mom
+
+def Highest(values, period=20):
+    """Highest value over period"""
+    values = np.asarray(values, dtype=float)
+    result = np.zeros_like(values)
+    for i in range(period - 1, len(values)):
+        result[i] = np.max(values[i - period + 1:i + 1])
+    return result
+
+def Lowest(values, period=20):
+    """Lowest value over period"""
+    values = np.asarray(values, dtype=float)
+    result = np.zeros_like(values)
+    for i in range(period - 1, len(values)):
+        result[i] = np.min(values[i - period + 1:i + 1])
+    return result
+
+class RiskManager:
+    """Risk management utilities for strategy execution"""
+    
+    def __init__(self, initial_capital, max_drawdown_pct=10.0, daily_loss_limit=None, 
+                 trailing_stop_pct=None, scale_in_intervals=0, scale_out_intervals=0):
+        self.initial_capital = initial_capital
+        self.peak_equity = initial_capital
+        self.current_equity = initial_capital
+        self.max_drawdown_pct = max_drawdown_pct
+        self.daily_loss_limit = daily_loss_limit
+        self.trailing_stop_pct = trailing_stop_pct
+        self.scale_in_intervals = scale_in_intervals
+        self.scale_out_intervals = scale_out_intervals
+        self.daily_pnl = 0
+        self.current_day = None
+        self.trailing_stop_price = None
+        self.position_entries = []  # Track scale-in entries
+        self.is_trading_halted = False
+    
+    def update_equity(self, equity, current_date=None):
+        """Update equity and check risk limits"""
+        self.current_equity = equity
+        
+        # Track peak for drawdown calculation
+        if equity > self.peak_equity:
+            self.peak_equity = equity
+        
+        # Calculate current drawdown
+        drawdown = (self.peak_equity - equity) / self.peak_equity * 100
+        
+        # Check max drawdown limit
+        if drawdown >= self.max_drawdown_pct:
+            self.is_trading_halted = True
+            return False
+        
+        # Track daily P&L
+        if current_date and current_date != self.current_day:
+            self.current_day = current_date
+            self.daily_pnl = 0
+        
+        return True
+    
+    def update_daily_pnl(self, pnl):
+        """Update daily P&L and check daily limit"""
+        self.daily_pnl += pnl
+        if self.daily_loss_limit and abs(self.daily_pnl) >= self.daily_loss_limit:
+            if self.daily_pnl < 0:
+                self.is_trading_halted = True
+                return False
+        return True
+    
+    def calculate_trailing_stop(self, entry_price, current_price, is_long=True):
+        """Calculate trailing stop price"""
+        if self.trailing_stop_pct is None:
+            return None
+        
+        if is_long:
+            # For long positions, trailing stop moves up
+            new_stop = current_price * (1 - self.trailing_stop_pct / 100)
+            if self.trailing_stop_price is None:
+                self.trailing_stop_price = entry_price * (1 - self.trailing_stop_pct / 100)
+            elif new_stop > self.trailing_stop_price:
+                self.trailing_stop_price = new_stop
+        else:
+            # For short positions, trailing stop moves down
+            new_stop = current_price * (1 + self.trailing_stop_pct / 100)
+            if self.trailing_stop_price is None:
+                self.trailing_stop_price = entry_price * (1 + self.trailing_stop_pct / 100)
+            elif new_stop < self.trailing_stop_price:
+                self.trailing_stop_price = new_stop
+        
+        return self.trailing_stop_price
+    
+    def check_trailing_stop_hit(self, current_price, is_long=True):
+        """Check if trailing stop is hit"""
+        if self.trailing_stop_price is None:
+            return False
+        
+        if is_long:
+            return current_price <= self.trailing_stop_price
+        else:
+            return current_price >= self.trailing_stop_price
+    
+    def reset_trailing_stop(self):
+        """Reset trailing stop for new position"""
+        self.trailing_stop_price = None
+    
+    def get_scale_in_size(self, total_size, entry_number):
+        """Get position size for scale-in entry"""
+        if self.scale_in_intervals <= 1:
+            return total_size
+        return total_size / self.scale_in_intervals
+    
+    def get_scale_out_size(self, position_size, exit_number):
+        """Get position size for scale-out exit"""
+        if self.scale_out_intervals <= 1:
+            return position_size
+        return position_size / self.scale_out_intervals
+    
+    def can_trade(self):
+        """Check if trading is allowed"""
+        return not self.is_trading_halted
+    
+    def reset_daily(self):
+        """Reset daily limits"""
+        self.daily_pnl = 0
+        if self.daily_loss_limit:
+            self.is_trading_halted = False
+
+def calculate_position_size(equity, risk_pct, stop_distance, price):
+    """Calculate position size based on risk percentage"""
+    risk_amount = equity * (risk_pct / 100)
+    if stop_distance <= 0:
+        return 0
+    shares = risk_amount / stop_distance
+    return int(shares)
+
+def atr_based_position_size(equity, atr, price, risk_pct=1.0, atr_multiplier=2.0):
+    """Calculate position size using ATR for stop distance"""
+    stop_distance = atr * atr_multiplier
+    return calculate_position_size(equity, risk_pct, stop_distance, price)
+
 '''
     
     # Categorize indicators
     atr_indicators = [i for i in indicators if i["type"] == "ATR"]
     vwap_indicators = [i for i in indicators if i["type"] == "VWAP"]
+    cci_indicators = [i for i in indicators if i["type"] == "CCI"]
+    williams_indicators = [i for i in indicators if i["type"] == "WILLIAMS_R"]
+    adx_indicators = [i for i in indicators if i["type"] == "ADX"]
+    dmi_indicators = [i for i in indicators if i["type"] == "DMI"]
+    donchian_indicators = [i for i in indicators if i["type"] == "DONCHIAN"]
+    keltner_indicators = [i for i in indicators if i["type"] == "KELTNER"]
+    sar_indicators = [i for i in indicators if i["type"] == "SAR"]
+    supertrend_indicators = [i for i in indicators if i["type"] == "SUPERTREND"]
+    mfi_indicators = [i for i in indicators if i["type"] == "MFI"]
+    momentum_indicators = [i for i in indicators if i["type"] == "MOMENTUM"]
     
     # Determine strategy type based on indicators
     strategy_type = "default"
@@ -801,6 +1508,23 @@ def VWAP(high, low, close, volume):
         strategy_type = "bollinger"
     elif stoch_indicators:
         strategy_type = "stochastic"
+    # New strategy types for expanded indicators
+    elif supertrend_indicators:
+        strategy_type = "supertrend"
+    elif sar_indicators:
+        strategy_type = "parabolic_sar"
+    elif donchian_indicators:
+        strategy_type = "donchian_breakout"
+    elif keltner_indicators:
+        strategy_type = "keltner_channel"
+    elif adx_indicators or dmi_indicators:
+        strategy_type = "adx_trend"
+    elif cci_indicators:
+        strategy_type = "cci"
+    elif williams_indicators:
+        strategy_type = "williams_r"
+    elif mfi_indicators:
+        strategy_type = "mfi"
     elif len(sma_indicators) >= 2:
         strategy_type = "sma_crossover"
     elif len(ema_indicators) >= 2:
@@ -818,6 +1542,19 @@ def VWAP(high, low, close, volume):
     has_short = parsed.get("has_short_entry", False)
     atr_sl_mult = parsed.get("atr_sl_mult", 2.0) or 2.0
     atr_tp_mult = parsed.get("atr_tp_mult", 6.0) or 6.0
+    
+    # Get risk management settings
+    risk_mgmt = parsed.get("risk_management", {})
+    has_trailing_stop = "trailing_stop_pct" in risk_mgmt
+    trailing_stop_pct = risk_mgmt.get("trailing_stop_pct", 2.0)
+    max_drawdown_pct = risk_mgmt.get("max_drawdown_pct", 10.0)
+    daily_loss_limit = risk_mgmt.get("daily_loss_limit")
+    scale_in = risk_mgmt.get("scale_in", {})
+    scale_out = risk_mgmt.get("scale_out", {})
+    
+    # Log risk management config
+    if risk_mgmt:
+        print(f"Risk management enabled: trailing_stop={has_trailing_stop}, max_dd={max_drawdown_pct}%")
     
     # Generate specific strategy
     if strategy_type == "multi_indicator_trend":
@@ -1046,19 +1783,379 @@ class GeneratedStrategy(Strategy):
 
     elif strategy_type == "rsi":
         period = rsi_indicators[0]["period"]
-        code += f'''
+        atr_period = 14
+        atr_sl = parsed.get("atr_sl_mult") or 1.5
+        atr_tp = parsed.get("atr_tp_mult") or 3.0
+        
+        if has_trailing_stop:
+            # RSI with trailing stop
+            code += f'''
 class GeneratedStrategy(Strategy):
     rsi_period = {period}
     oversold = 30
     overbought = 70
+    atr_period = {atr_period}
+    atr_sl_mult = {atr_sl}
+    atr_tp_mult = {atr_tp}
+    trailing_stop_pct = {trailing_stop_pct}
     
     def init(self):
         self.rsi = self.I(RSI, self.data.Close, self.rsi_period)
+        self.atr = self.I(ATR, self.data.High, self.data.Low, self.data.Close, self.atr_period)
+        self.entry_price = None
+        self.highest_since_entry = None
     
     def next(self):
+        price = self.data.Close[-1]
+        atr = self.atr[-1]
+        
+        # Skip if ATR is invalid
+        if atr <= 0 or np.isnan(atr):
+            return
+        
+        # Update trailing stop for existing position
+        if self.position:
+            if price > self.highest_since_entry:
+                self.highest_since_entry = price
+            
+            # Calculate trailing stop level
+            trailing_sl = self.highest_since_entry * (1 - self.trailing_stop_pct / 100)
+            
+            # Exit if price falls below trailing stop
+            if price < trailing_sl:
+                self.position.close()
+                self.entry_price = None
+                self.highest_since_entry = None
+                return
+            
+            # Exit on RSI overbought
+            if self.rsi[-1] > self.overbought:
+                self.position.close()
+                self.entry_price = None
+                self.highest_since_entry = None
+                return
+        
+        # Long entry on RSI oversold
         if self.rsi[-1] < self.oversold and not self.position:
-            self.{buy_action}()
+            sl = price - (atr * self.atr_sl_mult)
+            tp = price + (atr * self.atr_tp_mult)
+            self.buy(sl=sl, tp=tp)
+            self.entry_price = price
+            self.highest_since_entry = price
+'''
+        else:
+            # Standard RSI without trailing stop
+            code += f'''
+class GeneratedStrategy(Strategy):
+    rsi_period = {period}
+    oversold = 30
+    overbought = 70
+    atr_period = {atr_period}
+    atr_sl_mult = {atr_sl}
+    atr_tp_mult = {atr_tp}
+    
+    def init(self):
+        self.rsi = self.I(RSI, self.data.Close, self.rsi_period)
+        self.atr = self.I(ATR, self.data.High, self.data.Low, self.data.Close, self.atr_period)
+    
+    def next(self):
+        price = self.data.Close[-1]
+        atr = self.atr[-1]
+        
+        # Skip if ATR is invalid
+        if atr <= 0 or np.isnan(atr):
+            return
+        
+        # Long entry on RSI oversold
+        if self.rsi[-1] < self.oversold and not self.position:
+            sl = price - (atr * self.atr_sl_mult)
+            tp = price + (atr * self.atr_tp_mult)
+            self.buy(sl=sl, tp=tp)
+        
+        # Exit on RSI overbought
         elif self.rsi[-1] > self.overbought and self.position:
+            self.position.close()
+'''
+
+    elif strategy_type == "supertrend":
+        st = supertrend_indicators[0]
+        period = st.get("period", 10)
+        multiplier = st.get("multiplier", 3.0)
+        
+        if has_trailing_stop:
+            # SuperTrend with trailing stop for additional protection
+            code += f'''
+class GeneratedStrategy(Strategy):
+    period = {period}
+    multiplier = {multiplier}
+    trailing_stop_pct = {trailing_stop_pct}
+    
+    def init(self):
+        self.supertrend = self.I(SuperTrend, self.data.High, self.data.Low, self.data.Close, self.period, self.multiplier)
+        self.entry_price = None
+        self.highest_since_entry = None
+    
+    def next(self):
+        price = self.data.Close[-1]
+        st = self.supertrend[-1]
+        st_prev = self.supertrend[-2] if len(self.supertrend) > 1 else st
+        
+        # Check trailing stop if in position
+        if self.position.is_long:
+            if price > self.highest_since_entry:
+                self.highest_since_entry = price
+            trailing_sl = self.highest_since_entry * (1 - self.trailing_stop_pct / 100)
+            if price < trailing_sl:
+                self.position.close()
+                self.entry_price = None
+                self.highest_since_entry = None
+                return
+        
+        # Buy when price crosses above SuperTrend
+        if price > st and self.data.Close[-2] <= st_prev:
+            if self.position.is_short:
+                self.position.close()
+            if not self.position:
+                self.buy()
+                self.entry_price = price
+                self.highest_since_entry = price
+        
+        # Sell when price crosses below SuperTrend
+        elif price < st and self.data.Close[-2] >= st_prev:
+            if self.position.is_long:
+                self.position.close()
+                self.entry_price = None
+                self.highest_since_entry = None
+'''
+        else:
+            # Standard SuperTrend without trailing stop
+            code += f'''
+class GeneratedStrategy(Strategy):
+    period = {period}
+    multiplier = {multiplier}
+    
+    def init(self):
+        self.supertrend = self.I(SuperTrend, self.data.High, self.data.Low, self.data.Close, self.period, self.multiplier)
+    
+    def next(self):
+        price = self.data.Close[-1]
+        st = self.supertrend[-1]
+        st_prev = self.supertrend[-2] if len(self.supertrend) > 1 else st
+        
+        # Buy when price crosses above SuperTrend
+        if price > st and self.data.Close[-2] <= st_prev:
+            if self.position.is_short:
+                self.position.close()
+            if not self.position:
+                self.buy()
+        
+        # Sell when price crosses below SuperTrend
+        elif price < st and self.data.Close[-2] >= st_prev:
+            if self.position.is_long:
+                self.position.close()
+'''
+
+    elif strategy_type == "parabolic_sar":
+        sar = sar_indicators[0]
+        step = sar.get("step", 0.02)
+        maximum = sar.get("maximum", 0.2)
+        
+        code += f'''
+class GeneratedStrategy(Strategy):
+    step = {step}
+    maximum = {maximum}
+    
+    def init(self):
+        self.sar = self.I(ParabolicSAR, self.data.High, self.data.Low, self.data.Close, self.step, self.maximum)
+    
+    def next(self):
+        price = self.data.Close[-1]
+        sar = self.sar[-1]
+        
+        # Buy when price is above SAR (uptrend)
+        if price > sar and not self.position:
+            self.buy()
+        
+        # Close when price crosses below SAR
+        elif price < sar and self.position:
+            self.position.close()
+'''
+
+    elif strategy_type == "donchian_breakout":
+        dc = donchian_indicators[0]
+        period = dc.get("period", 20)
+        
+        code += f'''
+class GeneratedStrategy(Strategy):
+    period = {period}
+    
+    def init(self):
+        self.upper = self.I(DonchianUpper, self.data.High, self.period)
+        self.lower = self.I(DonchianLower, self.data.Low, self.period)
+        self.atr = self.I(ATR, self.data.High, self.data.Low, self.data.Close, 14)
+    
+    def next(self):
+        price = self.data.Close[-1]
+        atr = self.atr[-1]
+        
+        # Breakout long: price breaks above upper channel
+        if price >= self.upper[-2] and not self.position:
+            sl = price - 2 * atr
+            tp = price + 3 * atr
+            self.buy(sl=sl, tp=tp)
+        
+        # Breakout short or exit: price breaks below lower channel
+        elif price <= self.lower[-2] and self.position:
+            self.position.close()
+'''
+
+    elif strategy_type == "keltner_channel":
+        kc = keltner_indicators[0]
+        period = kc.get("period", 20)
+        mult = kc.get("multiplier", 2.0)
+        
+        code += f'''
+class GeneratedStrategy(Strategy):
+    period = {period}
+    multiplier = {mult}
+    
+    def init(self):
+        self.upper = self.I(KeltnerUpper, self.data.High, self.data.Low, self.data.Close, self.period, self.multiplier)
+        self.lower = self.I(KeltnerLower, self.data.High, self.data.Low, self.data.Close, self.period, self.multiplier)
+        self.middle = self.I(EMA, self.data.Close, self.period)
+    
+    def next(self):
+        price = self.data.Close[-1]
+        
+        # Buy on lower band touch (mean reversion)
+        if price <= self.lower[-1] and not self.position:
+            self.buy()
+        
+        # Exit at middle band
+        elif price >= self.middle[-1] and self.position.is_long:
+            self.position.close()
+        
+        # Or exit at upper band
+        elif price >= self.upper[-1] and self.position.is_long:
+            self.position.close()
+'''
+
+    elif strategy_type == "adx_trend":
+        adx = (adx_indicators[0] if adx_indicators else dmi_indicators[0]) if (adx_indicators or dmi_indicators) else {{"period": 14}}
+        period = adx.get("period", 14)
+        
+        code += f'''
+class GeneratedStrategy(Strategy):
+    period = {period}
+    adx_threshold = 25
+    
+    def init(self):
+        self.adx = self.I(ADX, self.data.High, self.data.Low, self.data.Close, self.period)
+        self.plus_di = self.I(PlusDI, self.data.High, self.data.Low, self.data.Close, self.period)
+        self.minus_di = self.I(MinusDI, self.data.High, self.data.Low, self.data.Close, self.period)
+        self.atr = self.I(ATR, self.data.High, self.data.Low, self.data.Close, self.period)
+    
+    def next(self):
+        price = self.data.Close[-1]
+        atr = self.atr[-1]
+        
+        # Strong trend + bullish: ADX > 25 and +DI > -DI
+        if self.adx[-1] > self.adx_threshold and self.plus_di[-1] > self.minus_di[-1]:
+            if not self.position:
+                sl = price - 2 * atr
+                tp = price + 3 * atr
+                self.buy(sl=sl, tp=tp)
+        
+        # Trend weakening or bearish crossover
+        elif self.adx[-1] < 20 or self.minus_di[-1] > self.plus_di[-1]:
+            if self.position:
+                self.position.close()
+'''
+
+    elif strategy_type == "cci":
+        cci = cci_indicators[0]
+        period = cci.get("period", 20)
+        
+        code += f'''
+class GeneratedStrategy(Strategy):
+    period = {period}
+    overbought = 100
+    oversold = -100
+    
+    def init(self):
+        self.cci = self.I(CCI, self.data.High, self.data.Low, self.data.Close, self.period)
+        self.atr = self.I(ATR, self.data.High, self.data.Low, self.data.Close, 14)
+    
+    def next(self):
+        price = self.data.Close[-1]
+        atr = self.atr[-1]
+        
+        # Buy on CCI oversold bounce
+        if self.cci[-1] < self.oversold and not self.position:
+            sl = price - 1.5 * atr
+            tp = price + 3 * atr
+            self.buy(sl=sl, tp=tp)
+        
+        # Exit on CCI overbought
+        elif self.cci[-1] > self.overbought and self.position:
+            self.position.close()
+'''
+
+    elif strategy_type == "williams_r":
+        wr = williams_indicators[0]
+        period = wr.get("period", 14)
+        
+        code += f'''
+class GeneratedStrategy(Strategy):
+    period = {period}
+    overbought = -20
+    oversold = -80
+    
+    def init(self):
+        self.wr = self.I(WilliamsR, self.data.High, self.data.Low, self.data.Close, self.period)
+        self.atr = self.I(ATR, self.data.High, self.data.Low, self.data.Close, 14)
+    
+    def next(self):
+        price = self.data.Close[-1]
+        atr = self.atr[-1]
+        
+        # Buy on Williams %R oversold
+        if self.wr[-1] < self.oversold and not self.position:
+            sl = price - 1.5 * atr
+            tp = price + 3 * atr
+            self.buy(sl=sl, tp=tp)
+        
+        # Exit on overbought
+        elif self.wr[-1] > self.overbought and self.position:
+            self.position.close()
+'''
+
+    elif strategy_type == "mfi":
+        mfi = mfi_indicators[0]
+        period = mfi.get("period", 14)
+        
+        code += f'''
+class GeneratedStrategy(Strategy):
+    period = {period}
+    overbought = 80
+    oversold = 20
+    
+    def init(self):
+        self.mfi = self.I(MFI, self.data.High, self.data.Low, self.data.Close, self.data.Volume, self.period)
+        self.atr = self.I(ATR, self.data.High, self.data.Low, self.data.Close, 14)
+    
+    def next(self):
+        price = self.data.Close[-1]
+        atr = self.atr[-1]
+        
+        # Buy on MFI oversold
+        if self.mfi[-1] < self.oversold and not self.position:
+            sl = price - 1.5 * atr
+            tp = price + 3 * atr
+            self.buy(sl=sl, tp=tp)
+        
+        # Exit on MFI overbought
+        elif self.mfi[-1] > self.overbought and self.position:
             self.position.close()
 '''
 
@@ -1235,10 +2332,11 @@ def run_backtest(
             for i in range(0, len(equity), max(1, len(equity) // 100)):
                 result["equity_curve"].append({
                     "time": str(equity.index[i]),
-                    "equity": float(equity.iloc[i]['Equity'])
+                    "equity": float(equity.iloc[i]['Equity']) if not math.isnan(equity.iloc[i]['Equity']) else 0
                 })
         
-        return result
+        # Sanitize result to remove NaN/Infinity values before JSON serialization
+        return sanitize_for_json(result)
         
     except Exception as e:
         print(f"Backtest execution error: {e}")
@@ -1608,7 +2706,10 @@ async def run_backtest_pipeline(
     data_source: str = "alphavantage",  # "local", "alphavantage", or "yfinance"
     start_date: str = None,
     end_date: str = None,
-    verify_with_llm: bool = False  # Verify generated code with DeepSeek
+    verify_with_llm: bool = False,  # Verify generated code with DeepSeek
+    precompiled_code: str = None,
+    code_language: str = "python",
+    strategy_id: str = None,
 ) -> Dict[str, Any]:
     """
     Complete backtest pipeline.
@@ -1629,6 +2730,9 @@ async def run_backtest_pipeline(
         start_date: Start date for local data (YYYY-MM-DD)
         end_date: End date for local data (YYYY-MM-DD)
         verify_with_llm: Send XML + Python to DeepSeek for verification before running
+        precompiled_code: Skip conversion if code already exists
+        code_language: Language of precompiled code (default python)
+        strategy_id: Optional identifier for cache reads/writes
     """
     try:
         print(f"=== Starting Backtest Pipeline ({engine}) ===")
@@ -1658,10 +2762,23 @@ async def run_backtest_pipeline(
                 "trades": []
             }
         
-        # Step 1: Convert XML to Python
+        # Step 1: Convert XML to Python (reuse cache when possible)
+        xml_hash = hash_xml(xml)
+        strategy_code = precompiled_code
+        code_lang = code_language or "python"
+
+        # Try cache when no explicit code provided
+        if not strategy_code:
+            cached = load_by_id(strategy_id) if strategy_id else load_latest_by_hash(xml_hash)
+            if cached and cached.get("code"):
+                strategy_code = cached.get("code")
+                code_lang = cached.get("language", code_lang)
+                strategy_id = cached.get("id", strategy_id)
+                print("Reusing cached strategy code from store")
+
         if engine == "nautilus":
             # ... (Nautilus logic remains same)
-            if call_deepseek:
+            if not strategy_code and call_deepseek:
                 print("Using DeepSeek for XML→Nautilus conversion...")
                 prompt = XML_TO_NAUTILUS_PROMPT.format(xml=xml)
                 messages = [
@@ -1677,10 +2794,12 @@ async def run_backtest_pipeline(
                     strategy_code = strategy_code.rsplit("\n", 1)[0]
                 if strategy_code.startswith("python"):
                     strategy_code = strategy_code[6:].strip()
-            else:
+                code_lang = "python"
+            elif not strategy_code:
                 strategy_code = "# Nautilus code generation requires LLM"
+                code_lang = "python"
         
-        elif use_llm and call_deepseek:
+        elif (use_llm and call_deepseek) and not strategy_code:
             print("Using DeepSeek for XML→Python conversion...")
             prompt = XML_TO_PYTHON_PROMPT.format(xml=xml)
             messages = [
@@ -1696,19 +2815,126 @@ async def run_backtest_pipeline(
                 strategy_code = strategy_code.rsplit("\n", 1)[0]
             if strategy_code.startswith("python"):
                 strategy_code = strategy_code[6:].strip()
+            code_lang = "python"
         else:
             print("Using simple parser for XML→Python conversion...")
-            parsed = parse_xml_simple(xml)
-            strategy_code = generate_strategy_code_simple(parsed)
+            # Try AST parser first, fall back to regex if unavailable or fails
+            if AST_PARSER_AVAILABLE and not strategy_code:
+                try:
+                    print("Using AST-based parser...")
+                    parsed = parse_xml_ast(xml)
+                except Exception as e:
+                    print(f"AST parser failed: {e}, falling back to regex parser")
+                    parsed = parse_xml_simple(xml)
+            elif not strategy_code:
+                parsed = parse_xml_simple(xml)
+            
+            if not strategy_code:
+                strategy_code = generate_strategy_code_simple(parsed)
+            code_lang = "python"
+
+        # Persist strategy pairing for reuse
+        try:
+            record = save_strategy_version(
+                xml=xml,
+                code=strategy_code,
+                language=code_lang,
+                source="precompiled" if precompiled_code else ("cache" if 'cached' in locals() and cached else "llm" if use_llm else "parser"),
+                metadata={
+                    "engine": engine,
+                    "symbol": symbol,
+                    "data_source": data_source,
+                    "interval": interval,
+                },
+                strategy_id=strategy_id,
+            )
+            strategy_id = record.get("id")
+        except Exception as e:
+            print(f"Strategy store write failed: {e}")
         
         print(f"Generated strategy code:\n{strategy_code[:500]}...")
         
         # Step 1.5: Verify generated code with DeepSeek (optional)
         if verify_with_llm and call_deepseek:
             print("Verifying generated Python code with DeepSeek...")
-            verify_prompt = f"""You are a trading strategy code reviewer.
+            
+            # Include example conversion for DeepSeek to understand the pattern
+            example_xml = '''<block type="ta_rsi"><field name="PERIOD">14</field></block>
+<block type="operator_less"><value name="A">RSI</value><value name="B">30</value></block>
+<block type="trade_order"><field name="DIRECTION">long</field></block>'''
+            
+            example_python = '''class GeneratedStrategy(Strategy):
+    rsi_period = 14
+    oversold = 30
+    
+    def init(self):
+        self.rsi = self.I(RSI, self.data.Close, self.rsi_period)
+    
+    def next(self):
+        if self.rsi[-1] < self.oversold and not self.position:
+            self.buy()'''
+            
+            # The full indicator library available in backtesting code
+            indicator_library = '''
+# AVAILABLE INDICATOR FUNCTIONS (already defined in the code):
+# - EMA(values, n) - Exponential Moving Average
+# - RSI(arr, period=14) - Relative Strength Index (returns 0-100)
+# - MACD_line(values, fast=12, slow=26) - MACD line
+# - MACD_signal(values, fast=12, slow=26, signal=9) - MACD signal line
+# - BollingerUpper(values, period=20, std_dev=2.0) - Upper Bollinger Band
+# - BollingerLower(values, period=20, std_dev=2.0) - Lower Bollinger Band
+# - StochK(high, low, close, period=14) - Stochastic %K
+# - ATR(high, low, close, period=14) - Average True Range
+# - VWAP(high, low, close, volume) - Volume Weighted Average Price
+# - CCI(high, low, close, period=20) - Commodity Channel Index
+# - WilliamsR(high, low, close, period=14) - Williams %R
+# - ADX(high, low, close, period=14) - Average Directional Index
+# - PlusDI(high, low, close, period=14) - Plus Directional Indicator
+# - MinusDI(high, low, close, period=14) - Minus Directional Indicator
+# - DonchianUpper(high, period=20) - Donchian Channel Upper
+# - DonchianLower(low, period=20) - Donchian Channel Lower
+# - KeltnerUpper(high, low, close, period=20, multiplier=2.0) - Keltner Upper
+# - KeltnerLower(high, low, close, period=20, multiplier=2.0) - Keltner Lower
+# - ParabolicSAR(high, low, close, step=0.02, maximum=0.2) - Parabolic SAR
+# - SuperTrend(high, low, close, period=10, multiplier=3.0) - SuperTrend
+# - MFI(high, low, close, volume, period=14) - Money Flow Index
+# - OBV(close, volume) - On Balance Volume
+# - Momentum(close, period=14) - Momentum
+# - Highest(values, period=20) - Highest value over period
+# - Lowest(values, period=20) - Lowest value over period
 
-I have an XML strategy and a generated Python backtesting strategy. Please verify the Python code is correct and matches the XML intent.
+# IMPORTS ALREADY AVAILABLE:
+# from backtesting import Strategy
+# from backtesting.lib import crossover
+# from backtesting.test import SMA
+# import numpy as np
+
+# DATA AVAILABLE IN STRATEGY:
+# self.data.Open, self.data.High, self.data.Low, self.data.Close, self.data.Volume
+
+# KEY METHODS:
+# self.I(indicator_func, *args) - Wrap indicator for backtesting
+# self.buy(sl=stop_loss_price, tp=take_profit_price) - Open long position
+# self.sell(sl=stop_loss_price, tp=take_profit_price) - Open short position
+# self.position - Current position (falsy if no position)
+# self.position.close() - Close current position
+# crossover(series1, series2) - Returns True when series1 crosses above series2
+'''
+            
+            verify_prompt = f"""You are a trading strategy code expert. Your job is to verify and FIX Python backtesting code.
+
+=== EXAMPLE CONVERSION ===
+INPUT XML:
+{example_xml}
+
+CORRECT OUTPUT PYTHON:
+{example_python}
+
+=== INDICATOR LIBRARY REFERENCE ===
+{indicator_library}
+
+=== YOUR TASK ===
+I have an XML strategy and generated Python code. Please verify and FIX the code to work correctly.
 
 XML STRATEGY:
 {xml}
@@ -1716,21 +2942,30 @@ XML STRATEGY:
 GENERATED PYTHON CODE:
 {strategy_code}
 
-INSTRUCTIONS:
-1. Check if the Python code correctly implements the XML strategy logic
-2. Verify indicator periods match
-3. Verify buy/sell conditions are correct
-4. Fix any bugs or issues you find
+=== VERIFICATION CHECKLIST ===
+1. Does the Python code correctly implement ALL conditions from the XML?
+2. Are indicator periods correct (check <field name="PERIOD"> and <mutation ma_period="">)?
+3. Are comparison operators correct (operator_less → <, operator_greater → >)?
+4. For RSI strategies: Is buy triggered when RSI < oversold, sell when RSI > overbought?
+5. For SMA/EMA crossover: Is crossover() used correctly?
+6. Is ATR-based stop loss calculated as: entry_price - (ATR * multiplier)?
+7. Is ATR-based take profit calculated as: entry_price + (ATR * multiplier)?
+8. Does the code check "not self.position" before opening new trades?
 
-If the code is correct, return it unchanged.
-If there are issues, return the CORRECTED code.
+=== COMMON BUGS TO FIX ===
+- Wrong: self.rsi < 30 → Correct: self.rsi[-1] < 30 (use [-1] for current value)
+- Wrong: if self.position: self.buy() → Correct: if not self.position: self.buy()
+- Wrong: sl = atr * 1.5 → Correct: sl = price - (atr * 1.5) for long positions
+- Missing: np.isnan(atr) check before using ATR values
 
-Return ONLY the Python code (no markdown, no explanation).
-The code must be a valid backtesting.py Strategy class."""
+=== OUTPUT ===
+Return ONLY the corrected Python code. No markdown, no explanation.
+The code must be a complete, runnable backtesting.py Strategy class.
+Start with "from backtesting import Strategy" and include the class definition."""
 
             verify_messages = [
-                {{"role": "system", "content": verify_prompt}},
-                {{"role": "user", "content": "Verify and return the corrected code."}}
+                {"role": "system", "content": verify_prompt},
+                {"role": "user", "content": "Analyze the XML and Python code above. Return the FIXED Python code that correctly implements the strategy."}
             ]
             verified_code = await call_deepseek(verify_messages, temperature=0.1)
             
@@ -1775,6 +3010,8 @@ The code must be a valid backtesting.py Strategy class."""
         result["period"] = period
         result["interval"] = interval
         result["strategy_code"] = strategy_code
+        result["strategy_language"] = code_lang if 'code_lang' in locals() else "python"
+        result["strategy_id"] = strategy_id
         result["data_points"] = len(data)
         result["engine"] = engine
         

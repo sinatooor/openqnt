@@ -12,7 +12,7 @@ import re
 import json
 import httpx
 import asyncio
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -22,6 +22,8 @@ from datetime import datetime
 # RAG & GCG Imports
 from rag_system import block_library
 from strategy_compiler import strategy_compiler
+from backtest_service import XML_TO_PYTHON_PROMPT
+from strategy_store import hash_xml, save_strategy_version, load_by_id, load_latest_by_hash
 
 # Logging
 from llm_logger import (
@@ -38,8 +40,8 @@ load_dotenv()
 # ============================================================
 # Comment/uncomment to switch between models:
 
-DEEPSEEK_MODEL = "deepseek-chat"           # Fast, cheaper - good for code generation
-# DEEPSEEK_MODEL = "deepseek-reasoner"     # Reasoning model - better for complex logic
+# DEEPSEEK_MODEL = "deepseek-chat"           # Fast, cheaper - good for code generation
+DEEPSEEK_MODEL = "deepseek-reasoner"     # Reasoning model - better for complex logic
 
 # ============================================================
 # RAG + GCG Prompts
@@ -144,6 +146,9 @@ class StrategyRequest(BaseModel):
 class StrategyResponse(BaseModel):
     xml: str
     ai_fixed: bool = False  # True if programmatic fix was applied
+    code: Optional[str] = None
+    code_language: Optional[str] = None
+    strategy_id: Optional[str] = None
 
 
 class MqlRequest(BaseModel):
@@ -171,6 +176,9 @@ class BacktestRequest(BaseModel):
     use_llm: bool = True
     data_source: str = "alphavantage"  # "local" (database), "alphavantage", or "yfinance"
     interval: str = "1d"  # "1d" (daily) or "1h" (hourly)
+    generatedCode: Optional[str] = None
+    codeLanguage: Optional[str] = "python"
+    strategyId: Optional[str] = None
 
 
 class BacktestResponse(BaseModel):
@@ -922,6 +930,57 @@ def extract_xml(content: str) -> str:
     return content
 
 
+async def generate_python_code_from_xml(xml: str, llm_func) -> Optional[str]:
+    """LLM helper to create executable Python strategy from Blockly XML."""
+    if not llm_func:
+        return None
+    prompt = XML_TO_PYTHON_PROMPT.format(xml=xml)
+    messages = [
+        {"role": "system", "content": prompt},
+        {"role": "user", "content": "Generate the strategy code."}
+    ]
+    code = await llm_func(messages, temperature=0.1)
+
+    if not code:
+        return None
+
+    cleaned = code.strip()
+    if cleaned.startswith("```"):
+        cleaned = cleaned.split("\n", 1)[1]
+    if cleaned.endswith("```"):
+        cleaned = cleaned.rsplit("\n", 1)[0]
+    if cleaned.startswith("python"):
+        cleaned = cleaned[6:].strip()
+    return cleaned.strip()
+
+
+async def get_or_create_strategy_code(
+    xml: str,
+    llm_func,
+    source: str,
+    strategy_id: Optional[str] = None,
+) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    """Fetch code from cache or generate + persist a new version."""
+    xml_hash = hash_xml(xml)
+    cached = load_by_id(strategy_id) if strategy_id else load_latest_by_hash(xml_hash)
+    if cached and cached.get("code"):
+        return cached.get("code"), cached.get("language", "python"), cached.get("id")
+
+    code = await generate_python_code_from_xml(xml, llm_func)
+    if not code:
+        return None, None, strategy_id
+
+    record = save_strategy_version(
+        xml=xml,
+        code=code,
+        language="python",
+        source=source,
+        metadata={"context": "generation"},
+        strategy_id=strategy_id,
+    )
+    return code, "python", record.get("id")
+
+
 # ============================================================
 # Endpoints
 # ============================================================
@@ -1174,10 +1233,19 @@ async def generate_strategy_rag(request: StrategyRequest):
             ai_fixed=False,
             duration_ms=duration_ms
         )
+
+        code, code_lang, strategy_id = await get_or_create_strategy_code(
+            final_xml,
+            llm_func,
+            source="rag_generation",
+        )
             
         return StrategyResponse(
             xml=final_xml,
-            ai_fixed=False # RAG pipeline shouldn't need fixing
+            ai_fixed=False, # RAG pipeline shouldn't need fixing
+            code=code,
+            code_language=code_lang,
+            strategy_id=strategy_id,
         )
 
     except Exception as e:
@@ -1298,7 +1366,18 @@ async def generate_strategy(request: StrategyRequest):
                 if still_valid:
                     block_count = len(re.findall(r'<block ', param_fixed_xml))
                     print(f"Pass 3 complete (LLM fixed): {block_count} blocks")
-                    return StrategyResponse(xml=param_fixed_xml, ai_fixed=False)
+                    code, code_lang, strategy_id = await get_or_create_strategy_code(
+                        param_fixed_xml,
+                        call_deepseek,
+                        source="generate_strategy",
+                    )
+                    return StrategyResponse(
+                        xml=param_fixed_xml,
+                        ai_fixed=False,
+                        code=code,
+                        code_language=code_lang,
+                        strategy_id=strategy_id,
+                    )
                 else:
                     print(f"Pass 3 failed to fix: {remaining_issues}, using fallback")
         except Exception as e:
@@ -1311,11 +1390,33 @@ async def generate_strategy(request: StrategyRequest):
         if was_fixed:
             print(f"Pass 4 complete: Programmatically fixed identical indicators")
             ai_fixed = True
-            return StrategyResponse(xml=fixed_xml, ai_fixed=True)
+            code, code_lang, strategy_id = await get_or_create_strategy_code(
+                fixed_xml,
+                call_deepseek,
+                source="generate_strategy",
+            )
+            return StrategyResponse(
+                xml=fixed_xml,
+                ai_fixed=True,
+                code=code,
+                code_language=code_lang,
+                strategy_id=strategy_id,
+            )
         else:
             print("Pass 4: No fixes needed or could not fix")
     
-    return StrategyResponse(xml=validated_xml, ai_fixed=ai_fixed)
+    code, code_lang, strategy_id = await get_or_create_strategy_code(
+        validated_xml,
+        call_deepseek,
+        source="generate_strategy",
+    )
+    return StrategyResponse(
+        xml=validated_xml,
+        ai_fixed=ai_fixed,
+        code=code,
+        code_language=code_lang,
+        strategy_id=strategy_id,
+    )
 
 
 class ChatRequest(BaseModel):
@@ -1450,6 +1551,17 @@ async def run_backtest_endpoint(request: BacktestRequest):
         # For "simple" engine, force local database and enable DeepSeek verification
         data_source = request.data_source
         use_llm = request.use_llm
+        precompiled_code = request.generatedCode
+        code_language = request.codeLanguage or "python"
+        strategy_id = request.strategyId
+
+        if not precompiled_code:
+            cached = load_by_id(strategy_id) if strategy_id else load_latest_by_hash(hash_xml(request.workspaceXml))
+            if cached and cached.get("code"):
+                precompiled_code = cached.get("code")
+                code_language = cached.get("language", code_language)
+                strategy_id = cached.get("id", strategy_id)
+                print("Using cached strategy code for backtest")
         
         if request.engine == "simple":
             data_source = "local"
@@ -1515,7 +1627,10 @@ async def run_backtest_endpoint(request: BacktestRequest):
             opt_method=request.opt_method,
             data_source=data_source,
             start_date=request.startDate if data_source == "local" else None,
-            end_date=request.endDate if data_source == "local" else None
+            end_date=request.endDate if data_source == "local" else None,
+            precompiled_code=precompiled_code,
+            code_language=code_language,
+            strategy_id=strategy_id,
         )
         
         if not result.get("success"):
@@ -1537,7 +1652,9 @@ async def run_backtest_endpoint(request: BacktestRequest):
             "final_balance": metrics.get("equity_final", request.initialBalance),
             "metrics": metrics,
             "trades": result.get("trades", []),
-            "equity_curve": result.get("equity_curve", [])
+            "equity_curve": result.get("equity_curve", []),
+            "strategy_id": result.get("strategy_id") or strategy_id,
+            "strategy_language": result.get("strategy_language"),
         }
     except Exception as e:
         import traceback

@@ -1,70 +1,114 @@
-  <xml xmlns="https://developers.google.com/blockly/xml">
-  <block type="operator_and" id="vDeanMK31paUBGRA-*A#" x="150" y="-30">
-  <value name="LEFT">
-  <block type="operator_less" id="[;5L+H44tBA|5/GJxLvB">
-  <value name="LEFT">
-  <block type="ta_sma" id="oJ0(7P70(@t.5X/Oh^Y7">
-  <mutation period="5" ma_period="14">
-</mutation>
-
-  <field name="NAME">SMA</field>
-
-  <field name="PERIOD">5</field>
-
-</block>
-
-</value>
-
-  <value name="RIGHT">
-  <block type="ta_sma" id="+Z.]|$9*umiX)W]!FFXn">
-  <mutation period="5" ma_period="14">
-</mutation>
-
-  <field name="NAME">SMA</field>
-
-  <field name="PERIOD">5</field>
-
-</block>
-
-</value>
-
-</block>
-
-</value>
-
-  <value name="RIGHT">
-  <block type="operator_greater" id="*,bfc19Ot=(*g?M2{Gyl">
-  <value name="LEFT">
-  <block type="ta_sma" id="AjSXEI=rT)_t2q7T-0cQ">
-  <mutation period="5" ma_period="14">
-</mutation>
-
-
-  <field name="NAME">SMA</field>
-
-  <field name="PERIOD">5</field>
-
-</block>
-
-</value>
-
-  <value name="RIGHT">
-  <block type="ta_sma" id="P56S2LS5ShFw{(CCB].D">
-  <mutation period="5" ma_period="14">
-</mutation>
-
-  <field name="NAME">SMA</field>
-
-  <field name="PERIOD">5</field>
-
-</block>
-
-</value>
-
-</block>
-
-</value>
-
-</block>
-
+<xml xmlns="https://developers.google.com/blockly/xml">
+  <block type="control_forever" x="50" y="50">
+    <statement name="DO">
+      <block type="control_if">
+        <value name="CONDITION">
+          <block type="operator_less">
+            <value name="LEFT">
+              <block type="ta_rsi">
+                <field name="PERIOD">60</field>
+                <mutation ma_period="14" applied_price="0"></mutation>
+                <field name="NAME">RSI</field>
+              </block>
+            </value>
+            <value name="RIGHT">
+              <shadow type="math_number">
+                <field name="NUM">30</field>
+              </shadow>
+            </value>
+          </block>
+        </value>
+        <statement name="DO">
+          <block type="trade_order">
+            <field name="TRADE_ID">rsi_reversal_trade</field>
+            <field name="DIRECTION">long</field>
+            <value name="SIZE">
+              <shadow type="math_number">
+                <field name="NUM">0.1</field>
+              </shadow>
+            </value>
+            <field name="LEVERAGE">1</field>
+            <field name="ORDER_TYPE">market</field>
+            <next>
+              <block type="trade_stop_loss">
+                <field name="CLOSE_TYPE">full</field>
+                <field name="TRADE_ID">rsi_reversal_trade</field>
+                <value name="PRICE">
+                  <block type="operator_subtract">
+                    <value name="LEFT">
+                      <block type="trade_entry_price">
+                        <field name="TRADE_ID">rsi_reversal_trade</field>
+                      </block>
+                    </value>
+                    <value name="RIGHT">
+                      <block type="operator_multiply">
+                        <value name="LEFT">
+                          <block type="ta_atr">
+                            <field name="PERIOD">60</field>
+                            <mutation ma_period="14"></mutation>
+                            <field name="NAME">ATR</field>
+                          </block>
+                        </value>
+                        <value name="RIGHT">
+                          <shadow type="math_number">
+                            <field name="NUM">1.5</field>
+                          </shadow>
+                        </value>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+                <next>
+                  <block type="trade_take_profit">
+                    <field name="CLOSE_TYPE">full</field>
+                    <field name="TRADE_ID">rsi_reversal_trade</field>
+                    <value name="PRICE">
+                      <block type="operator_add">
+                        <value name="LEFT">
+                          <block type="trade_entry_price">
+                            <field name="TRADE_ID">rsi_reversal_trade</field>
+                          </block>
+                        </value>
+                        <value name="RIGHT">
+                          <block type="operator_multiply">
+                            <value name="LEFT">
+                              <block type="operator_multiply">
+                                <value name="LEFT">
+                                  <block type="ta_atr">
+                                    <field name="PERIOD">60</field>
+                                    <mutation ma_period="14"></mutation>
+                                    <field name="NAME">ATR</field>
+                                  </block>
+                                </value>
+                                <value name="RIGHT">
+                                  <shadow type="math_number">
+                                    <field name="NUM">1.5</field>
+                                  </shadow>
+                                </value>
+                              </block>
+                            </value>
+                            <value name="RIGHT">
+                              <shadow type="math_number">
+                                <field name="NUM">2</field>
+                              </shadow>
+                            </value>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </statement>
+      </block>
+    </statement>
+  </block>
 </xml>
+
+lsof -ti:8000 | xargs kill -9 2>/dev/null; sleep 1; cd /Users/sina/project-fire/PPM/backend && source venv/bin/activate && uvicorn main:app --host 
+
+
+
+everytime you want to test something make py script instead of putting it in the terminal
