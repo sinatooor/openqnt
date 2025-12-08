@@ -54,13 +54,135 @@ class StrategyCompiler:
         },
     }
 
+    # Comparison operators that require different operands
+    COMPARISON_OPERATORS = {
+        'operator_greater', 'operator_less', 
+        'operator_greater_equals', 'operator_less_equals'
+    }
+    
+    # Indicator types that should never be compared with identical params
+    INDICATOR_TYPES = {
+        'ta_sma', 'ta_ema', 'ta_rsi', 'ta_atr', 'ta_cci', 'ta_adx', 
+        'ta_bb', 'ta_stochastic', 'macd_value', 'ta_supertrend',
+        'ta_macd', 'ta_lwma', 'ta_smma', 'dema', 'tema', 'momentum',
+        'ta_williams_r', 'ta_sar', 'ta_keltner', 'ta_obv', 'ta_mfi'
+    }
+
     def __init__(self):
         self.id_counter = 0
+        self.validation_errors = []
 
     def _gen_id(self, prefix: str = "block") -> str:
         """Generate unique block ID."""
         self.id_counter += 1
         return f"{prefix}_{self.id_counter}"
+
+    def validate_conditions(self, conditions: List[Dict], variables: List[Dict]) -> List[str]:
+        """
+        Validate conditions for grammar rules.
+        Returns list of validation errors.
+        """
+        errors = []
+        
+        for i, condition in enumerate(conditions):
+            operator = condition.get("operator", "")
+            
+            # Check if it's a comparison operator
+            if operator in self.COMPARISON_OPERATORS:
+                left = condition.get("left")
+                right = condition.get("right")
+                
+                # Get variable definitions
+                left_var = next((v for v in variables if v.get("id") == left), None) if isinstance(left, str) else None
+                right_var = next((v for v in variables if v.get("id") == right), None) if isinstance(right, str) else None
+                
+                # Rule: Cannot compare two identical indicators
+                if left_var and right_var:
+                    if self._are_identical_indicators(left_var, right_var):
+                        errors.append(
+                            f"Condition {i+1}: Cannot compare identical indicators "
+                            f"({left_var.get('type')} with same parameters). "
+                            f"Use different periods (e.g., Fast vs Slow)."
+                        )
+        
+        return errors
+
+    def _are_identical_indicators(self, var1: Dict, var2: Dict) -> bool:
+        """Check if two variable definitions represent identical indicators."""
+        type1 = var1.get("type", "")
+        type2 = var2.get("type", "")
+        
+        # Must be same type
+        if type1 != type2:
+            return False
+        
+        # Must be an indicator type
+        if type1 not in self.INDICATOR_TYPES:
+            return False
+        
+        # Compare params
+        params1 = var1.get("params", {})
+        params2 = var2.get("params", {})
+        
+        # Key params to compare
+        key_params = ['period', 'ma_period', 'timeframe', 'k_period', 'fastEMA', 'slowEMA']
+        
+        for param in key_params:
+            val1 = params1.get(param)
+            val2 = params2.get(param)
+            if val1 is not None and val2 is not None and val1 != val2:
+                return False  # Different params, not identical
+        
+        # If same type and same/missing params, they're identical
+        return True
+
+    def fix_identical_indicators(self, strategy_json: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Auto-fix identical indicators by making them Fast/Slow variants.
+        """
+        variables = strategy_json.get("variables", [])
+        conditions = strategy_json.get("entry_conditions", []) + strategy_json.get("exit_conditions", [])
+        
+        for condition in conditions:
+            operator = condition.get("operator", "")
+            if operator in self.COMPARISON_OPERATORS:
+                left_id = condition.get("left")
+                right_id = condition.get("right")
+                
+                left_var = next((v for v in variables if v.get("id") == left_id), None) if isinstance(left_id, str) else None
+                right_var = next((v for v in variables if v.get("id") == right_id), None) if isinstance(right_id, str) else None
+                
+                if left_var and right_var and self._are_identical_indicators(left_var, right_var):
+                    # Fix: Make left "Fast" (shorter period) and right "Slow" (longer period)
+                    ind_type = left_var.get("type", "")
+                    
+                    # Default periods for Fast/Slow
+                    period_configs = {
+                        'ta_sma': (10, 20),
+                        'ta_ema': (12, 26),
+                        'ta_rsi': (7, 14),
+                        'ta_cci': (7, 14),
+                        'ta_adx': (7, 14),
+                        'ta_atr': (7, 14),
+                    }
+                    
+                    fast_period, slow_period = period_configs.get(ind_type, (10, 20))
+                    
+                    # Update left to Fast
+                    if "params" not in left_var:
+                        left_var["params"] = {}
+                    left_var["params"]["period"] = fast_period
+                    left_var["params"]["name"] = f"Fast {ind_type.replace('ta_', '').upper()}"
+                    
+                    # Update right to Slow
+                    if "params" not in right_var:
+                        right_var["params"] = {}
+                    right_var["params"]["period"] = slow_period
+                    right_var["params"]["name"] = f"Slow {ind_type.replace('ta_', '').upper()}"
+                    
+                    print(f"Auto-fixed identical indicators: {ind_type} -> Fast({fast_period}) vs Slow({slow_period})")
+        
+        return strategy_json
 
     def compile(self, strategy_json: Dict[str, Any]) -> str:
         """
@@ -90,6 +212,10 @@ class StrategyCompiler:
         """
         try:
             self.id_counter = 0
+            self.validation_errors = []
+            
+            # Auto-fix identical indicators before compilation
+            strategy_json = self.fix_identical_indicators(strategy_json)
             
             # Create root XML
             root = ET.Element("xml", {"xmlns": "https://developers.google.com/blockly/xml"})
