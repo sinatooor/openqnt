@@ -4,6 +4,7 @@ import { Loader2, Send, Sparkles, MessageSquare, Code, Blocks, X, Eye } from "lu
 import { useToast } from "@/hooks";
 import ReactMarkdown from "react-markdown";
 import { LogEntry } from "@/components";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   role: "user" | "assistant";
@@ -114,36 +115,26 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
           });
         }
 
-        // Use local Python backend
-        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-        const response = await fetch(
-          `${backendUrl}/generate-strategy`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              message: input,
-              existingXml: currentXml
-            }),
+        // Use Supabase Edge Function for strategy generation
+        const { data, error } = await supabase.functions.invoke('generate-strategy', {
+          body: {
+            message: input,
+            currentWorkspace: currentXml,
+            blockXml: attachedBlock?.xml || null
           }
-        );
+        });
 
-        if (!response.ok) {
-          const errorData = await response.json();
+        if (error) {
           if (onLog) {
             onLog({
               type: 'error',
               mode: 'generate',
-              error: errorData.error || 'Failed to generate strategy',
+              error: error.message || 'Failed to generate strategy',
               timestamp: Date.now()
             });
           }
-          throw new Error(errorData.error || "Failed to generate strategy");
+          throw new Error(error.message || "Failed to generate strategy");
         }
-
-        const data = await response.json();
 
         if (onLog) {
           onLog({
