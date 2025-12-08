@@ -9,15 +9,70 @@ Run with: uvicorn main:app --reload --port 8000
 
 import os
 import re
+import json
 import httpx
-from typing import Optional
+import asyncio
+from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
+from datetime import datetime
+
+# RAG & GCG Imports
+from rag_system import block_library
+from strategy_compiler import strategy_compiler
 
 # Load environment variables
 load_dotenv()
+
+# ============================================================
+# RAG + GCG Prompts
+# ============================================================
+
+RAG_ROUTER_PROMPT = """You are a Trading Strategy Architect. Your goal is to identify the necessary building blocks for a user's strategy.
+
+Available Blocks:
+{available_blocks}
+
+User Request: "{user_request}"
+
+Task:
+1. Analyze the user's request to understand the logic (indicators, conditions, actions).
+2. Select the MINIMUM set of block types needed to build this strategy.
+3. Always include 'trade_order' if a trade is implied.
+
+Return ONLY a JSON list of block types strings.
+Example: ["ta_rsi", "operator_less", "trade_order"]"""
+
+GCG_PLANNER_PROMPT = """You are a Trading Strategy Planner. You must create a structured execution plan for a trading strategy.
+
+Context:
+- User Request: "{user_request}"
+- Available Blocks: {block_list}
+
+Task:
+Create a JSON plan following this EXACT schema:
+{{
+    "variables": [
+        {{ "id": "var1", "type": "BLOCK_TYPE", "params": {{ "period": 14, "timeframe": 60 }} }}
+    ],
+    "entry_conditions": [
+        {{ "operator": "operator_less", "left": "var1", "right": 30 }}
+    ],
+    "action": {{
+        "type": "trade_order",
+        "direction": "long",
+        "size": 0.1
+    }}
+}}
+
+Rules:
+1. Use ONLY the provided Available Blocks.
+2. "left" and "right" in conditions can be a variable ID (string) or a number.
+3. "params" must match the block's mutation attributes (e.g., ma_period for SMA).
+4. Output valid JSON only. No markdown."""
+
 
 app = FastAPI(title="Strategy Generator API", version="1.0.0")
 
@@ -646,6 +701,111 @@ async def validate_strategy(request: ValidateStrategyRequest):
         validated=True,
         ai_fixed=ai_fixed
     )
+
+
+@app.post("/generate-strategy-rag", response_model=StrategyResponse)
+async def generate_strategy_rag(request: StrategyRequest):
+    """
+    Generate strategy using RAG + GCG pipeline.
+    
+    Flow:
+    1. Retrieve relevant block types based on user request (RAG).
+    2. Plan strategy structure in JSON (GCG).
+    3. Compile JSON to valid Blockly XML.
+    """
+    try:
+        print(f"=== RAG Generation: {request.message} ===")
+        
+        # Step 1: Retrieval (RAG)
+        # Get all available types for the router to choose from
+        all_types = block_library.get_all_block_types()
+        
+        # Ask LLM to select relevant blocks
+        router_messages = [
+            {"role": "system", "content": RAG_ROUTER_PROMPT.format(
+                available_blocks=", ".join(all_types),
+                user_request=request.message
+            )},
+            {"role": "user", "content": "Select blocks."}
+        ]
+        
+        router_response = await call_deepseek(router_messages, temperature=0.1)
+        try:
+            selected_types = json.loads(router_response.strip("`json \n"))
+        except:
+            # Fallback: use keyword search
+            print("Router JSON parse failed, using keyword search")
+            selected_types = [] 
+            
+        # Augment with keyword search to be safe
+        keyword_blocks = block_library.retrieve_relevant_blocks(request.message)
+        # Note: retrieve_relevant_blocks returns XML, we need types. 
+        # Let's just use the keyword logic inside retrieve_relevant_blocks to get types if we refactor,
+        # but for now let's trust the LLM + keywords.
+        
+        # Actually, let's just use the block library to get the XML templates for the selected types
+        # plus the core blocks.
+        
+        # Fetch XML templates for selected types
+        block_templates = []
+        for b_type in selected_types:
+            xml = block_library.get_block_xml(b_type)
+            if xml:
+                block_templates.append(f"{b_type}: {xml}")
+                
+        # Add core blocks if missing
+        core_types = ['control_forever', 'control_if', 'trade_order', 'math_number']
+        for c_type in core_types:
+            if c_type not in selected_types:
+                xml = block_library.get_block_xml(c_type)
+                if xml:
+                    block_templates.append(f"{c_type}: {xml}")
+        
+        print(f"Selected {len(block_templates)} block templates")
+
+        # Step 2: Structured Generation (GCG)
+        planner_messages = [
+            {"role": "system", "content": GCG_PLANNER_PROMPT.format(
+                user_request=request.message,
+                block_list="\n".join(block_templates)
+            )},
+            {"role": "user", "content": "Create the execution plan."}
+        ]
+        
+        plan_response = await call_deepseek(planner_messages, temperature=0.1)
+        
+        try:
+            # Clean markdown code blocks if present
+            clean_json = plan_response.strip()
+            if clean_json.startswith("```"):
+                clean_json = clean_json.split("\n", 1)[1]
+            if clean_json.endswith("```"):
+                clean_json = clean_json.rsplit("\n", 1)[0]
+            if clean_json.startswith("json"):
+                clean_json = clean_json[4:]
+                
+            strategy_plan = json.loads(clean_json)
+            print("GCG Plan created successfully")
+        except Exception as e:
+            print(f"GCG Plan parsing failed: {e}")
+            print(f"Raw response: {plan_response}")
+            raise HTTPException(status_code=500, detail="Failed to generate valid strategy plan")
+
+        # Step 3: Compilation
+        final_xml = strategy_compiler.compile(strategy_plan)
+        
+        if not final_xml:
+            raise HTTPException(status_code=500, detail="Failed to compile strategy to XML")
+            
+        return StrategyResponse(
+            xml=final_xml,
+            ai_fixed=False # RAG pipeline shouldn't need fixing
+        )
+
+    except Exception as e:
+        print(f"RAG Generation failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 
 @app.post("/generate-strategy", response_model=StrategyResponse)

@@ -122,8 +122,8 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
         let aiFixed = false;
 
         if (pureDeepSeek) {
-          // Pure DeepSeek mode - use backend directly with full block catalog
-          const response = await fetch(`${backendUrl}/generate-strategy`, {
+          // Pure DeepSeek mode - use RAG + GCG pipeline
+          const response = await fetch(`${backendUrl}/generate-strategy-rag`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -141,7 +141,7 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
           const data = await response.json();
           generatedXml = data.xml;
           aiFixed = data.ai_fixed;
-          console.log("Pure DeepSeek generation complete");
+          console.log("RAG + GCG generation complete");
         } else {
           // Gemini + DeepSeek mode - use Supabase Edge Function
           const { data, error } = await supabase.functions.invoke('generate-strategy', {
