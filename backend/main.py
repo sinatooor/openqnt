@@ -30,48 +30,59 @@ load_dotenv()
 # RAG + GCG Prompts
 # ============================================================
 
-RAG_ROUTER_PROMPT = """You are a Trading Strategy Architect. Your goal is to identify the necessary building blocks for a user's strategy.
+RAG_ROUTER_PROMPT = """You are a Trading Strategy Architect. Identify the building blocks needed.
 
-Available Blocks:
+AVAILABLE BLOCKS:
 {available_blocks}
 
-User Request: "{user_request}"
+USER REQUEST: "{user_request}"
 
-Task:
-1. Analyze the user's request to understand the logic (indicators, conditions, actions).
-2. Select the MINIMUM set of block types needed to build this strategy.
-3. Always include 'trade_order' if a trade is implied.
+TASK: Select the MINIMUM block types needed. Always include:
+- 'trade_order' for any buy/sell action
+- Comparison operators (operator_less, operator_greater) for conditions
+- The specific indicator mentioned (ta_rsi, ta_sma, ta_ema, etc.)
 
-Return ONLY a JSON list of block types strings.
+OUTPUT: JSON array of block type strings only.
 Example: ["ta_rsi", "operator_less", "trade_order"]"""
 
-GCG_PLANNER_PROMPT = """You are a Trading Strategy Planner. You must create a structured execution plan for a trading strategy.
+GCG_PLANNER_PROMPT = """You are a Trading Strategy Planner. Create a structured execution plan.
 
-Context:
-- User Request: "{user_request}"
-- Available Blocks: {block_list}
+USER REQUEST: "{user_request}"
+AVAILABLE BLOCKS:
+{block_list}
 
-Task:
-Create a JSON plan following this EXACT schema:
+CREATE A JSON PLAN using this schema:
 {{
+    "timeframe": 60,
     "variables": [
-        {{ "id": "var1", "type": "BLOCK_TYPE", "params": {{ "period": 14, "timeframe": 60 }} }}
+        {{"id": "rsi", "type": "ta_rsi", "params": {{"period": 14, "timeframe": 60}}}}
     ],
     "entry_conditions": [
-        {{ "operator": "operator_less", "left": "var1", "right": 30 }}
+        {{"operator": "operator_less", "left": "rsi", "right": 30}}
     ],
-    "action": {{
-        "type": "trade_order",
+    "exit_conditions": [
+        {{"operator": "operator_greater", "left": "rsi", "right": 70}}
+    ],
+    "entry_action": {{
         "direction": "long",
-        "size": 0.1
+        "size": 0.1,
+        "sl_pips": 50,
+        "tp_pips": 100
+    }},
+    "exit_action": {{
+        "type": "close_all"
     }}
 }}
 
-Rules:
-1. Use ONLY the provided Available Blocks.
-2. "left" and "right" in conditions can be a variable ID (string) or a number.
-3. "params" must match the block's mutation attributes (e.g., ma_period for SMA).
-4. Output valid JSON only. No markdown."""
+RULES:
+1. Use ONLY block types from AVAILABLE BLOCKS
+2. "left"/"right" can be a variable ID (string) or number
+3. "operator" must be: operator_less, operator_greater, operator_less_equals, operator_greater_equals
+4. Common indicator params: period (14), timeframe (60 = 1 hour)
+5. If user mentions "cross above" = operator_greater, "cross below" = operator_less
+6. sl_pips/tp_pips are optional, omit if not specified
+
+OUTPUT: Valid JSON only, no markdown."""
 
 
 app = FastAPI(title="Strategy Generator API", version="1.0.0")
@@ -717,10 +728,14 @@ async def generate_strategy_rag(request: StrategyRequest):
         print(f"=== RAG Generation: {request.message} ===")
         
         # Step 1: Retrieval (RAG)
-        # Get all available types for the router to choose from
+        # First, use keyword-based retrieval as baseline
+        keyword_blocks = block_library.retrieve_relevant_blocks(request.message)
+        print(f"Keyword retrieval found {len(keyword_blocks)} blocks")
+        
+        # Get compact summary for the router
         all_types = block_library.get_all_block_types()
         
-        # Ask LLM to select relevant blocks
+        # Ask LLM to select relevant blocks (can augment keyword results)
         router_messages = [
             {"role": "system", "content": RAG_ROUTER_PROMPT.format(
                 available_blocks=", ".join(all_types),
@@ -729,39 +744,35 @@ async def generate_strategy_rag(request: StrategyRequest):
             {"role": "user", "content": "Select blocks."}
         ]
         
-        router_response = await call_deepseek(router_messages, temperature=0.1)
         try:
-            selected_types = json.loads(router_response.strip("`json \n"))
-        except:
-            # Fallback: use keyword search
-            print("Router JSON parse failed, using keyword search")
-            selected_types = [] 
+            router_response = await call_deepseek(router_messages, temperature=0.1)
+            # Clean JSON
+            clean_response = router_response.strip()
+            if clean_response.startswith("```"):
+                clean_response = clean_response.split("\n", 1)[1]
+            if clean_response.endswith("```"):
+                clean_response = clean_response.rsplit("\n", 1)[0]
+            if clean_response.startswith("json"):
+                clean_response = clean_response[4:].strip()
             
-        # Augment with keyword search to be safe
-        keyword_blocks = block_library.retrieve_relevant_blocks(request.message)
-        # Note: retrieve_relevant_blocks returns XML, we need types. 
-        # Let's just use the keyword logic inside retrieve_relevant_blocks to get types if we refactor,
-        # but for now let's trust the LLM + keywords.
+            llm_selected_types = json.loads(clean_response)
+            print(f"LLM selected: {llm_selected_types}")
+        except Exception as e:
+            print(f"Router JSON parse failed: {e}, using keyword fallback")
+            llm_selected_types = []
         
-        # Actually, let's just use the block library to get the XML templates for the selected types
-        # plus the core blocks.
+        # Merge LLM selection with keyword results
+        all_selected_types = set(keyword_blocks.keys())
+        all_selected_types.update(llm_selected_types)
         
-        # Fetch XML templates for selected types
+        # Build block templates for the planner
         block_templates = []
-        for b_type in selected_types:
+        for b_type in all_selected_types:
             xml = block_library.get_block_xml(b_type)
             if xml:
                 block_templates.append(f"{b_type}: {xml}")
-                
-        # Add core blocks if missing
-        core_types = ['control_forever', 'control_if', 'trade_order', 'math_number']
-        for c_type in core_types:
-            if c_type not in selected_types:
-                xml = block_library.get_block_xml(c_type)
-                if xml:
-                    block_templates.append(f"{c_type}: {xml}")
         
-        print(f"Selected {len(block_templates)} block templates")
+        print(f"Total {len(block_templates)} block templates for planning")
 
         # Step 2: Structured Generation (GCG)
         planner_messages = [
@@ -772,7 +783,7 @@ async def generate_strategy_rag(request: StrategyRequest):
             {"role": "user", "content": "Create the execution plan."}
         ]
         
-        plan_response = await call_deepseek(planner_messages, temperature=0.1)
+        plan_response = await call_deepseek(planner_messages, temperature=0.2)
         
         try:
             # Clean markdown code blocks if present
@@ -782,10 +793,10 @@ async def generate_strategy_rag(request: StrategyRequest):
             if clean_json.endswith("```"):
                 clean_json = clean_json.rsplit("\n", 1)[0]
             if clean_json.startswith("json"):
-                clean_json = clean_json[4:]
+                clean_json = clean_json[4:].strip()
                 
             strategy_plan = json.loads(clean_json)
-            print("GCG Plan created successfully")
+            print(f"GCG Plan: {json.dumps(strategy_plan, indent=2)}")
         except Exception as e:
             print(f"GCG Plan parsing failed: {e}")
             print(f"Raw response: {plan_response}")
