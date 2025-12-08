@@ -26,6 +26,11 @@ export const IGTradingPanel = ({ onClose }: IGTradingPanelProps) => {
     const [positions, setPositions] = useState<Position[]>([]);
     const [accountId, setAccountId] = useState<string | null>(null);
 
+    // Credentials
+    const [apiKey, setApiKey] = useState("");
+    const [username, setUsername] = useState("");
+    const [password, setPassword] = useState("");
+
     // Trade form
     const [symbol, setSymbol] = useState("EURUSD");
     const [direction, setDirection] = useState<"BUY" | "SELL">("BUY");
@@ -35,11 +40,23 @@ export const IGTradingPanel = ({ onClose }: IGTradingPanelProps) => {
     const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
     const handleConnect = async () => {
+        if (!apiKey || !username || !password) {
+            toast.error("Missing credentials", {
+                description: "Please enter API key, username, and password",
+            });
+            return;
+        }
+
         setIsConnecting(true);
         try {
             const response = await fetch(`${backendUrl}/ig/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    api_key: apiKey,
+                    username: username,
+                    password: password,
+                }),
             });
 
             const data = await response.json();
@@ -53,7 +70,7 @@ export const IGTradingPanel = ({ onClose }: IGTradingPanelProps) => {
                 fetchPositions();
             } else {
                 toast.error("Connection failed", {
-                    description: data.error || "Check your IG credentials in .env",
+                    description: data.error || data.detail || "Invalid credentials",
                 });
             }
         } catch (error) {
@@ -170,11 +187,45 @@ export const IGTradingPanel = ({ onClose }: IGTradingPanelProps) => {
             <CardContent className="flex-1 space-y-4 overflow-auto">
                 {/* Connection Section */}
                 {!isConnected && (
-                    <div className="p-4 border border-dashed rounded-lg text-center space-y-3">
-                        <Link2 className="w-8 h-8 mx-auto text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">
-                            Connect to IG to start live trading
-                        </p>
+                    <div className="space-y-3">
+                        <div className="text-center mb-2">
+                            <Link2 className="w-6 h-6 mx-auto text-muted-foreground mb-2" />
+                            <p className="text-sm text-muted-foreground">
+                                Enter your IG Demo credentials
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <div className="space-y-1">
+                                <Label className="text-xs">API Key</Label>
+                                <Input
+                                    value={apiKey}
+                                    onChange={(e) => setApiKey(e.target.value)}
+                                    placeholder="Your IG API key"
+                                    className="text-sm"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="text-xs">Username</Label>
+                                <Input
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    placeholder="Your IG username"
+                                    className="text-sm"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="text-xs">Password</Label>
+                                <Input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="Your IG password"
+                                    className="text-sm"
+                                />
+                            </div>
+                        </div>
+
                         <Button onClick={handleConnect} disabled={isConnecting} className="w-full">
                             {isConnecting ? (
                                 <>
@@ -184,12 +235,15 @@ export const IGTradingPanel = ({ onClose }: IGTradingPanelProps) => {
                             ) : (
                                 <>
                                     <Power className="w-4 h-4 mr-2" />
-                                    Connect to IG
+                                    Connect to IG Demo
                                 </>
                             )}
                         </Button>
-                        <p className="text-xs text-muted-foreground">
-                            Using demo account for safety
+                        <p className="text-xs text-muted-foreground text-center">
+                            Get API key from{" "}
+                            <a href="https://labs.ig.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                                labs.ig.com
+                            </a>
                         </p>
                     </div>
                 )}

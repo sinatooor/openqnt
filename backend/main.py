@@ -76,6 +76,7 @@ class BacktestResponse(BaseModel):
 
 
 class IGLoginRequest(BaseModel):
+    api_key: Optional[str] = None
     username: Optional[str] = None
     password: Optional[str] = None
 
@@ -716,11 +717,14 @@ async def ig_login(request: IGLoginRequest = None):
     print("=== IG Login ===")
     client = get_ig_client()
     
-    # Override credentials if provided
-    if request and request.username:
-        client.username = request.username
-    if request and request.password:
-        client.password = request.password
+    # Override credentials if provided in request
+    if request:
+        if request.api_key:
+            client.api_key = request.api_key
+        if request.username:
+            client.username = request.username
+        if request.password:
+            client.password = request.password
     
     result = await client.login()
     
