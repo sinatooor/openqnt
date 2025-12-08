@@ -292,6 +292,7 @@ TRADE BLOCKS:
    - This is an ERROR for crossover strategies (e.g., SMA(ma_period="14") > SMA(ma_period="14") makes no sense)
    - FIX: Make one Fast (shorter period) and one Slow (longer period)
    - Standard periods: SMA Fast=10/Slow=20, EMA Fast=12/Slow=26, RSI Fast=7/Slow=14
+   - for example: it should NOT be like this (mutation ma_period="14" shift="0") for every indicator
 
 2. COMPARISON LOGIC: Ensure crossover comparisons are logical:
    - For bullish crossover (Fast crossing above Slow): Fast > Slow with operator_greater
