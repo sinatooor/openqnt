@@ -332,6 +332,234 @@ class BlocklyXMLEvaluator:
     def should_sell(self, data: pd.DataFrame, index: int) -> bool:
         """Check if sell signal is triggered at given index."""
         return self.evaluate_condition(self.sell_conditions, data, index)
+    
+    def to_python_logic(self) -> str:
+        """
+        Convert parsed conditions to human-readable Python logic.
+        This is used for LLM verification.
+        """
+        lines = []
+        lines.append("# Trading Strategy Logic (auto-generated from Blockly XML)")
+        lines.append("")
+        
+        # Buy conditions
+        lines.append("def should_buy(data, index):")
+        if self.buy_conditions:
+            for i, cond in enumerate(self.buy_conditions):
+                for comp in cond.get('comparisons', []):
+                    left = self._value_to_python(comp.get('left'))
+                    right = self._value_to_python(comp.get('right'))
+                    op = comp.get('operator', '==')
+                    
+                    if op == 'crosses_above':
+                        lines.append(f"    # Condition {i+1}: {left} crosses above {right}")
+                        lines.append(f"    if {left}[index-1] <= {right}[index-1] and {left}[index] > {right}[index]:")
+                        lines.append(f"        return True")
+                    elif op == 'crosses_below':
+                        lines.append(f"    # Condition {i+1}: {left} crosses below {right}")
+                        lines.append(f"    if {left}[index-1] >= {right}[index-1] and {left}[index] < {right}[index]:")
+                        lines.append(f"        return True")
+                    else:
+                        lines.append(f"    # Condition {i+1}: {left} {op} {right}")
+                        lines.append(f"    if {left}[index] {op} {right}[index]:")
+                        lines.append(f"        return True")
+        else:
+            lines.append("    # No buy conditions defined")
+            lines.append("    return False")
+        lines.append("    return False")
+        lines.append("")
+        
+        # Sell conditions
+        lines.append("def should_sell(data, index):")
+        if self.sell_conditions:
+            for i, cond in enumerate(self.sell_conditions):
+                for comp in cond.get('comparisons', []):
+                    left = self._value_to_python(comp.get('left'))
+                    right = self._value_to_python(comp.get('right'))
+                    op = comp.get('operator', '==')
+                    
+                    if op == 'crosses_above':
+                        lines.append(f"    # Condition {i+1}: {left} crosses above {right}")
+                        lines.append(f"    if {left}[index-1] <= {right}[index-1] and {left}[index] > {right}[index]:")
+                        lines.append(f"        return True")
+                    elif op == 'crosses_below':
+                        lines.append(f"    # Condition {i+1}: {left} crosses below {right}")
+                        lines.append(f"    if {left}[index-1] >= {right}[index-1] and {left}[index] < {right}[index]:")
+                        lines.append(f"        return True")
+                    else:
+                        lines.append(f"    # Condition {i+1}: {left} {op} {right}")
+                        lines.append(f"    if {left}[index] {op} {right}[index]:")
+                        lines.append(f"        return True")
+        else:
+            lines.append("    # No sell conditions defined")
+            lines.append("    return False")
+        lines.append("    return False")
+        
+        return "\n".join(lines)
+    
+    def _value_to_python(self, value_def: Optional[Dict]) -> str:
+        """Convert a value definition to Python code string."""
+        if value_def is None:
+            return "None"
+        
+        val_type = value_def.get('type')
+        
+        if val_type == 'number':
+            return str(value_def.get('value', 0))
+        
+        elif val_type == 'price':
+            field = value_def.get('field', 'close')
+            return f"data['{field}']"
+        
+        elif val_type == 'indicator':
+            name = value_def.get('name', '')
+            period = value_def.get('params', {}).get('period', 14)
+            return f"data['{name}_{period}']"
+        
+        return "None"
+
+
+async def verify_xml_to_python_with_llm(xml_string: str, python_logic: str) -> Dict[str, Any]:
+    """
+    Use LLM to verify that the XML was correctly translated to Python logic.
+    
+    Sends both the original XML and generated Python to the LLM for validation.
+    Returns verified/corrected Python logic.
+    """
+    import httpx
+    import os
+    
+    system_prompt = """You are a trading strategy validator. Your job is to verify that Blockly XML 
+was correctly translated to Python trading logic.
+
+Given:
+1. The original Blockly XML
+2. The generated Python logic
+
+You must:
+1. Analyze the XML to understand the intended trading conditions
+2. Check if the Python logic correctly implements those conditions
+3. If correct, return the Python logic unchanged with "VERIFIED: true"
+4. If incorrect, fix the Python logic and return with "VERIFIED: false" and "CORRECTIONS: <list>"
+
+Return your response in this format:
+```python
+# VERIFIED: true/false
+# CORRECTIONS: <none or list of fixes made>
+
+<the verified or corrected Python code>
+```"""
+
+    user_prompt = f"""Please verify this XML-to-Python translation:
+
+## Original Blockly XML:
+```xml
+{xml_string}
+```
+
+## Generated Python Logic:
+```python
+{python_logic}
+```
+
+Verify the translation is correct. If not, provide the corrected Python code."""
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt}
+    ]
+    
+    # Call DeepSeek API
+    api_key = os.getenv("DEEPSEEK_API_KEY")
+    if not api_key:
+        print("Warning: DEEPSEEK_API_KEY not set, skipping LLM verification")
+        return {
+            "verified": False,
+            "skipped": True,
+            "python_logic": python_logic,
+            "message": "LLM verification skipped (no API key)"
+        }
+    
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                "https://api.deepseek.com/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": "deepseek-chat",
+                    "messages": messages,
+                    "temperature": 0.3,
+                    "max_tokens": 2000
+                }
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                content = data["choices"][0]["message"]["content"]
+                
+                # Parse response
+                verified = "VERIFIED: true" in content.lower() or "verified: true" in content.lower()
+                
+                # Extract Python code from response
+                if "```python" in content:
+                    code_start = content.find("```python") + 9
+                    code_end = content.find("```", code_start)
+                    if code_end > code_start:
+                        verified_logic = content[code_start:code_end].strip()
+                    else:
+                        verified_logic = python_logic
+                else:
+                    verified_logic = python_logic
+                
+                print(f"LLM Verification: {'PASSED' if verified else 'CORRECTIONS MADE'}")
+                
+                return {
+                    "verified": verified,
+                    "skipped": False,
+                    "python_logic": verified_logic,
+                    "llm_response": content
+                }
+            else:
+                print(f"LLM API error: {response.status_code}")
+                return {
+                    "verified": False,
+                    "skipped": True,
+                    "python_logic": python_logic,
+                    "message": f"LLM API error: {response.status_code}"
+                }
+                
+    except Exception as e:
+        print(f"LLM verification error: {e}")
+        return {
+            "verified": False,
+            "skipped": True,
+            "python_logic": python_logic,
+            "message": str(e)
+        }
+
+
+class LLMVerifiedEvaluator(BlocklyXMLEvaluator):
+    """
+    An evaluator that uses LLM to verify the XML-to-Python translation.
+    """
+    
+    def __init__(self, xml_string: str):
+        super().__init__(xml_string)
+        self.verification_result = None
+        self.verified_logic = None
+    
+    async def verify(self) -> Dict[str, Any]:
+        """Run LLM verification on the parsed logic."""
+        python_logic = self.to_python_logic()
+        self.verification_result = await verify_xml_to_python_with_llm(
+            self.xml_string, 
+            python_logic
+        )
+        self.verified_logic = self.verification_result.get("python_logic", python_logic)
+        return self.verification_result
 
 
 # Test
