@@ -1046,6 +1046,152 @@ async def get_symbols():
         }
 
 
+@app.get("/market-data")
+async def get_market_data(
+    symbol: str = "AAPL",
+    start_date: str = None,
+    end_date: str = None,
+    interval: str = "1d"
+):
+    """
+    Get historical OHLCV market data for a symbol.
+    
+    Priority:
+    1. Local database (if available and has data)
+    2. Alpha Vantage API
+    3. yfinance fallback
+    """
+    try:
+        from backtest_service import (
+            fetch_local_db_data, 
+            fetch_alphavantage_data, 
+            fetch_historical_data,
+            LOCAL_DB_AVAILABLE
+        )
+        import pandas as pd
+        
+        df = None
+        source = None
+        
+        # 1. Try local database first
+        if LOCAL_DB_AVAILABLE:
+            try:
+                df = fetch_local_db_data(
+                    symbol=symbol,
+                    start_date=start_date,
+                    end_date=end_date,
+                    interval=interval
+                )
+                if df is not None and not df.empty:
+                    source = "local_database"
+                    print(f"Fetched {len(df)} bars for {symbol} from local database")
+            except Exception as e:
+                print(f"Local DB fetch failed: {e}")
+                df = None
+        
+        # 2. Try Alpha Vantage
+        if df is None or df.empty:
+            try:
+                # Calculate period from dates
+                period = "1y"
+                if start_date and end_date:
+                    from datetime import datetime
+                    start = datetime.strptime(start_date, "%Y-%m-%d")
+                    end = datetime.strptime(end_date, "%Y-%m-%d")
+                    days = (end - start).days
+                    if days <= 30:
+                        period = "1mo"
+                    elif days <= 90:
+                        period = "3mo"
+                    elif days <= 180:
+                        period = "6mo"
+                    elif days <= 365:
+                        period = "1y"
+                    else:
+                        period = "2y"
+                
+                df = fetch_alphavantage_data(symbol=symbol, period=period, interval=interval)
+                if df is not None and not df.empty:
+                    source = "alphavantage"
+                    print(f"Fetched {len(df)} bars for {symbol} from Alpha Vantage")
+            except Exception as e:
+                print(f"Alpha Vantage fetch failed: {e}")
+                df = None
+        
+        # 3. Fallback to yfinance
+        if df is None or df.empty:
+            try:
+                period = "1y"
+                if start_date and end_date:
+                    from datetime import datetime
+                    start = datetime.strptime(start_date, "%Y-%m-%d")
+                    end = datetime.strptime(end_date, "%Y-%m-%d")
+                    days = (end - start).days
+                    if days <= 30:
+                        period = "1mo"
+                    elif days <= 90:
+                        period = "3mo"
+                    elif days <= 180:
+                        period = "6mo"
+                    elif days <= 365:
+                        period = "1y"
+                    else:
+                        period = "2y"
+                
+                df = fetch_historical_data(symbol=symbol, period=period, interval=interval, data_source="yfinance")
+                if df is not None and not df.empty:
+                    source = "yfinance"
+                    print(f"Fetched {len(df)} bars for {symbol} from yfinance")
+            except Exception as e:
+                print(f"yfinance fetch failed: {e}")
+                return {
+                    "success": False,
+                    "error": f"Failed to fetch data from all sources: {e}",
+                    "data": []
+                }
+        
+        if df is None or df.empty:
+            return {
+                "success": False,
+                "error": f"No data found for {symbol}",
+                "data": []
+            }
+        
+        # Filter by date range if provided
+        if start_date:
+            df = df[df.index >= start_date]
+        if end_date:
+            df = df[df.index <= end_date]
+        
+        # Convert to list of dicts
+        data = []
+        for idx, row in df.iterrows():
+            data.append({
+                "date": str(idx.date()) if hasattr(idx, 'date') else str(idx),
+                "open": float(row["Open"]),
+                "high": float(row["High"]),
+                "low": float(row["Low"]),
+                "close": float(row["Close"]),
+                "volume": int(row["Volume"]) if pd.notna(row["Volume"]) else 0
+            })
+        
+        return {
+            "success": True,
+            "symbol": symbol,
+            "source": source,
+            "count": len(data),
+            "data": data
+        }
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {
+            "success": False,
+            "error": str(e),
+            "data": []
+        }
+
 @app.get("/logs")
 async def get_logs():
     """Get log statistics for the current week."""
@@ -1622,12 +1768,14 @@ async def run_backtest_endpoint(request: BacktestRequest):
             use_llm=False if request.engine == "frontend" else use_llm,
             engine=request.engine,
             call_deepseek=llm_func,
+            call_gemini=call_gemini,  # For parse verification
             optimize=request.optimize,
             opt_metric=request.opt_metric,
             opt_method=request.opt_method,
             data_source=data_source,
             start_date=request.startDate if data_source == "local" else None,
             end_date=request.endDate if data_source == "local" else None,
+            verify_with_llm=True,  # Enable Gemini + DeepSeek verification
             precompiled_code=precompiled_code,
             code_language=code_language,
             strategy_id=strategy_id,
