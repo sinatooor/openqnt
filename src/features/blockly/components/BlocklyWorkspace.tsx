@@ -429,7 +429,10 @@ export const BlocklyWorkspace = ({
       const code = generateCode(workspaceRef.current, 'mql', leverage);
       setGeneratedMqlCode(code);
 
-      // Also generate XML
+      // Only update XML if we are NOT currently editing it (basic heuristic: if focused? No, hard to track)
+      // Or just accept that workspace changes overwrite manual edits until applied.
+      // For "Paste & Create", this is fine.
+
       const xml = Blockly.Xml.workspaceToDom(workspaceRef.current);
       const xmlText = Blockly.Xml.domToText(xml);
       // Format XML for readability
@@ -437,6 +440,10 @@ export const BlocklyWorkspace = ({
         .replace(/></g, '>\n<')
         .replace(/(<[^/][^>]*>)/g, '  $1')
         .replace(/(<\/[^>]+>)/g, '$1\n');
+
+      // If we are in XML tab and have pending edits, maybe don't overwrite?
+      // For now, let's keep it simple: Workspace is truth.
+      // If user pastes, they should click "Create" immediately.
       setCurrentXmlCode(formattedXml);
       onXmlChange?.(formattedXml);
     }
@@ -1186,7 +1193,7 @@ export const BlocklyWorkspace = ({
       </div>
 
       {/* Code View Panel */}
-      {showCode && <div className="w-[500px] border-l border-[#3e3e42] bg-[#1e1e1e] flex flex-col animate-in slide-in-from-right duration-300">
+      {showCode && <div className="w-[500px] h-full border-l border-[#3e3e42] bg-[#1e1e1e] flex flex-col animate-in slide-in-from-right duration-300">
         <div className="h-12 border-b border-[#3e3e42] flex items-center justify-between px-4 bg-[#252526]">
           <div className="flex items-center gap-1">
             {/* Tab Buttons */}
@@ -1244,14 +1251,25 @@ export const BlocklyWorkspace = ({
             </Tooltip>
           </div>
         </div>
-        <div className="flex-1 overflow-auto custom-scrollbar relative bg-[#1e1e1e] text-gray-300">
-          <div className="min-h-full p-4">
+        <div className="flex-1 flex flex-col min-h-0 relative bg-[#1e1e1e] text-gray-300">
+          <div className="flex-1 flex flex-col min-h-0 p-4">
             {codeTab === "mql" ? (
-              renderCodeWithLineNumbers(generatedMqlCode)
+              <div className="flex-1 overflow-auto custom-scrollbar">
+                {renderCodeWithLineNumbers(generatedMqlCode)}
+              </div>
             ) : (
-              <pre className="font-mono text-sm text-emerald-300 whitespace-pre-wrap break-all">
-                {currentXmlCode || "<!-- No blocks in workspace -->"}
-              </pre>
+              <textarea
+                value={currentXmlCode || ""}
+                onChange={(e) => {
+                  setCurrentXmlCode(e.target.value);
+                  // Note: We don't automatically update workspace on typing 
+                  // to prevent breaking invalid XML while typing.
+                  // User must click "Create Blocks" to apply changes.
+                }}
+                className="w-full h-full flex-1 font-mono text-sm bg-transparent text-emerald-300 resize-none focus:outline-none p-2 border border-dashed border-[#3e3e42] rounded-md focus:border-emerald-500/50 transition-colors"
+                spellCheck={false}
+                placeholder="<!-- Paste Blockly XML here and click 'Create Blocks' -->"
+              />
             )}
           </div>
         </div>
@@ -1264,13 +1282,36 @@ export const BlocklyWorkspace = ({
               </>
             ) : (
               <>
-                <span>{currentXmlCode.split('\n').length} lines</span>
+                <span>{codeTab === "xml"
+                  ? (currentXmlCode.match(/\n/g) || []).length + 1
+                  : currentXmlCode.split('\n').length} lines</span>
                 <span>{currentXmlCode.length} chars</span>
               </>
             )}
           </div>
-          <div>
-            {codeTab === "mql" ? `Complexity: ${getCodeStatistics().complexity}` : "Live Preview"}
+          <div className="flex gap-2">
+            {codeTab === "xml" && (
+              <Button
+                variant="default"
+                size="sm"
+                className="h-6 px-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={() => {
+                  if (!currentXmlCode) {
+                    toast.error("No XML code to load");
+                    return;
+                  }
+                  // Force load the XML, replacing existing blocks as it's a direct edit action
+                  handleBlocksGenerated(currentXmlCode, true);
+                  // handleBlocksGenerated handles parsing and toast notifications
+                }}
+              >
+                <Upload className="w-3 h-3 mr-1" />
+                Create Blocks
+              </Button>
+            )}
+            <div>
+              {codeTab === "mql" ? `Complexity: ${getCodeStatistics().complexity}` : "Live Edit"}
+            </div>
           </div>
         </div>
       </div>}
