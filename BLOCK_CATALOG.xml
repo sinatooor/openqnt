@@ -2,7 +2,7 @@
 <!--
   BLOCKLY BLOCK CATALOG
   All available blocks for trading strategy creation
-  Total: 84 unique block types
+  Total: 94 unique block types
 -->
 
 <blocks_catalog>
@@ -993,9 +993,24 @@
     </statement>
   </block>
 
-  <!-- control_stop: Stop execution -->
   <block type="control_stop" id="example-stop">
     <field name="TYPE">all</field>
+  </block>
+
+  <!-- control_wait: Wait for N seconds -->
+  <block type="control_wait" id="example-wait">
+    <value name="SECONDS">
+      <shadow type="math_number">
+        <field name="NUM">1</field>
+      </shadow>
+    </value>
+  </block>
+
+  <!-- control_wait_until: Wait until condition -->
+  <block type="control_wait_until" id="example-wait-until">
+    <value name="CONDITION">
+      <!-- condition block -->
+    </value>
   </block>
 
 
@@ -1304,9 +1319,13 @@
     <field name="PERIOD">60</field>
   </block>
 
+
+
+
   <!-- ta_supertrend: SuperTrend -->
   <block type="ta_supertrend" id="example-supertrend">
-    <mutation ma_period="10" multiplier="3"></mutation>
+    <field name="PERIOD_VALUE">10</field>
+    <field name="MULTIPLIER">3</field>
     <field name="NAME">SuperTrend</field>
     <field name="PERIOD">60</field>
   </block>
@@ -1647,6 +1666,99 @@
     <value name="VALUE">
       <shadow type="math_number">
         <field name="NUM">0</field>
+      </shadow>
+    </value>
+  </block>
+
+
+
+  <!-- ========================================== -->
+  <!-- RISK MANAGEMENT BLOCKS (8 blocks)          -->
+  <!-- ========================================== -->
+
+  <!-- risk_trailing_stop: Set trailing stop loss -->
+  <block type="risk_trailing_stop" id="example-trailing-stop">
+    <value name="PERCENT">
+      <shadow type="math_number">
+        <field name="NUM">1</field>
+      </shadow>
+    </value>
+  </block>
+
+  <!-- risk_scale_in: Scale into position -->
+  <block type="risk_scale_in" id="example-scale-in">
+    <value name="AMOUNT">
+      <shadow type="math_number">
+        <field name="NUM">0.1</field>
+      </shadow>
+    </value>
+    <value name="INTERVALS">
+      <shadow type="math_number">
+        <field name="NUM">3</field>
+      </shadow>
+    </value>
+  </block>
+
+  <!-- risk_scale_out: Scale out of position -->
+  <block type="risk_scale_out" id="example-scale-out">
+    <value name="AMOUNT">
+      <shadow type="math_number">
+        <field name="NUM">0.1</field>
+      </shadow>
+    </value>
+    <value name="INTERVALS">
+      <shadow type="math_number">
+        <field name="NUM">3</field>
+      </shadow>
+    </value>
+  </block>
+
+  <!-- risk_max_drawdown: Max Drawdown Protection -->
+  <block type="risk_max_drawdown" id="example-max-drawdown">
+    <value name="PERCENT">
+      <shadow type="math_number">
+        <field name="NUM">10</field>
+      </shadow>
+    </value>
+  </block>
+
+  <!-- risk_daily_loss_limit: Daily Loss Limit -->
+  <block type="risk_daily_loss_limit" id="example-daily-loss">
+    <value name="AMOUNT">
+      <shadow type="math_number">
+        <field name="NUM">100</field>
+      </shadow>
+    </value>
+  </block>
+
+  <!-- risk_position_percent: Position Size by % Capital -->
+  <block type="risk_position_percent" id="example-pos-percent">
+    <value name="PERCENT">
+      <shadow type="math_number">
+        <field name="NUM">1</field>
+      </shadow>
+    </value>
+  </block>
+
+  <!-- risk_kelly_criterion: Kelly Criterion -->
+  <block type="risk_kelly_criterion" id="example-kelly">
+    <value name="WIN_RATE">
+      <shadow type="math_number">
+        <field name="NUM">50</field>
+      </shadow>
+    </value>
+    <value name="WIN_LOSS_RATIO">
+      <shadow type="math_number">
+        <field name="NUM">1.5</field>
+      </shadow>
+    </value>
+  </block>
+
+  <!-- risk_fixed_amount: Fixed Position Size -->
+  <block type="risk_fixed_amount" id="example-fixed-pos">
+    <value name="AMOUNT">
+      <shadow type="math_number">
+        <field name="NUM">1</field>
       </shadow>
     </value>
   </block>

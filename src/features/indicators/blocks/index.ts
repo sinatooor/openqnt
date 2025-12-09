@@ -47,6 +47,7 @@ import './stddev';
 
 // Trend
 import './sar';
+import './supertrend';
 
 // Volume
 import './obv';

@@ -2087,6 +2087,25 @@ Blockly.Blocks['ta_stochastic'] = {
   }
 };
 
+// 39.5. SuperTrend
+// XML: <block type="ta_supertrend"><field name="PERIOD">60</field><field name="PERIOD_VALUE">10</field><field name="MULTIPLIER">3</field><field name="NAME">SuperTrend</field></block>
+Blockly.Blocks['ta_supertrend'] = {
+  init: function() {
+    this.appendDummyInput()
+      .appendField("SuperTrend");
+    this.appendDummyInput()
+      .appendField("Period")
+      .appendField(new Blockly.FieldNumber(10), "PERIOD_VALUE");
+    this.appendDummyInput()
+      .appendField("Multiplier")
+      .appendField(new Blockly.FieldNumber(3), "MULTIPLIER");
+    this.setOutput(true, "Number");
+    this.setStyle('indicator_blocks');
+    this.setTooltip("SuperTrend");
+    this.setHelpUrl("");
+  }
+};
+
 // 40. TEMA (Triple Exponential Moving Average)
 // XML: <block type="tema"><field name="PERIOD">60</field><mutation ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">TEMA</field></block>
 Blockly.Blocks['tema'] = {
@@ -2808,3 +2827,258 @@ Output:
    - Keep IDs simple and readable
 
 REMEMBER: If you're not sure if a block exists, CHECK THE LIST ABOVE. If it's not there, DON'T USE IT.
+
+// ===================================
+// MISSING BLOCKS ADDENDUM
+// ===================================
+
+// --- TRADE BLOCKS ---
+
+// XML: <block type="trade_order"><field name="TRADE_ID">trade1</field><field name="DIRECTION">long</field><value name="SIZE"><shadow type="math_number"><field name="NUM">0.1</field></shadow></value><field name="LEVERAGE">1</field><field name="ORDER_TYPE">market</field></block>
+Blockly.Blocks['trade_order'] = {
+  init: function() {
+    this.appendDummyInput().appendField("Order").appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
+    this.appendDummyInput().appendField("Direction").appendField(new Blockly.FieldDropdown([["Buy","long"], ["Sell","short"]]), "DIRECTION");
+    this.appendValueInput("SIZE").setCheck("Number").appendField("Size");
+    this.appendDummyInput().appendField("Leverage").appendField(new Blockly.FieldNumber(1), "LEVERAGE");
+    this.appendDummyInput().appendField("Type").appendField(new Blockly.FieldDropdown([["Market","market"], ["Limit","limit"], ["Stop","stop"]]), "ORDER_TYPE");
+    this.setPreviousStatement(true, "TradeAction");
+    this.setNextStatement(true, "TradeAction");
+    this.setStyle('trade_blocks');
+  }
+};
+
+// XML: <block type="trade_close"><field name="TRADE_ID">trade1</field><value name="PERCENT"><shadow type="math_number"><field name="NUM">100</field></shadow></value></block>
+Blockly.Blocks['trade_close'] = {
+  init: function() {
+    this.appendDummyInput().appendField("Close").appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
+    this.appendValueInput("PERCENT").setCheck("Number").appendField("Percent");
+    this.setPreviousStatement(true, "TradeAction");
+    this.setNextStatement(true, "TradeAction");
+    this.setStyle('trade_blocks');
+  }
+};
+
+// XML: <block type="trade_close_all"></block>
+Blockly.Blocks['trade_close_all'] = {
+  init: function() {
+    this.appendDummyInput().appendField("Close All Positions");
+    this.setPreviousStatement(true, "TradeAction");
+    this.setNextStatement(true, "TradeAction");
+    this.setStyle('trade_blocks');
+  }
+};
+
+// XML: <block type="trade_stop_loss"><field name="CLOSE_TYPE">full</field><field name="TRADE_ID">trade1</field><value name="PRICE"></value></block>
+Blockly.Blocks['trade_stop_loss'] = {
+  init: function() {
+    this.appendDummyInput().appendField("Set Stop Loss");
+    this.appendDummyInput().appendField("Type").appendField(new Blockly.FieldDropdown([["Full","full"], ["Partial","partial"]]), "CLOSE_TYPE");
+    this.appendDummyInput().appendField("Trade ID").appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
+    this.appendValueInput("PRICE").setCheck("Number").appendField("Price");
+    this.setPreviousStatement(true, "TradeAction");
+    this.setNextStatement(true, "TradeAction");
+    this.setStyle('trade_blocks');
+  }
+};
+
+// XML: <block type="trade_take_profit"><field name="CLOSE_TYPE">full</field><field name="TRADE_ID">trade1</field><value name="PRICE"></value></block>
+Blockly.Blocks['trade_take_profit'] = {
+  init: function() {
+    this.appendDummyInput().appendField("Set Take Profit");
+    this.appendDummyInput().appendField("Type").appendField(new Blockly.FieldDropdown([["Full","full"], ["Partial","partial"]]), "CLOSE_TYPE");
+    this.appendDummyInput().appendField("Trade ID").appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
+    this.appendValueInput("PRICE").setCheck("Number").appendField("Price");
+    this.setPreviousStatement(true, "TradeAction");
+    this.setNextStatement(true, "TradeAction");
+    this.setStyle('trade_blocks');
+  }
+};
+
+// XML: <block type="trade_entry_price"><field name="TRADE_ID">trade1</field></block>
+Blockly.Blocks['trade_entry_price'] = {
+  init: function() {
+    this.appendDummyInput().appendField("Entry Price").appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
+    this.setOutput(true, "Number");
+    this.setStyle('trade_blocks');
+  }
+};
+
+// XML: <block type="trade_pnl_of"><field name="TRADE_ID">trade1</field></block>
+Blockly.Blocks['trade_pnl_of'] = {
+  init: function() {
+    this.appendDummyInput().appendField("PnL of").appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
+    this.setOutput(true, "Number");
+    this.setStyle('trade_blocks');
+  }
+};
+
+// XML: <block type="trade_position_size"><field name="TRADE_ID">trade1</field></block>
+Blockly.Blocks['trade_position_size'] = {
+  init: function() {
+    this.appendDummyInput().appendField("Position Size of").appendField(new Blockly.FieldTextInput("trade1"), "TRADE_ID");
+    this.setOutput(true, "Number");
+    this.setStyle('trade_blocks');
+  }
+};
+
+// --- RISK BLOCKS ---
+
+// XML: <block type="risk_trailing_stop"><value name="PERCENT"><shadow type="math_number"><field name="NUM">1</field></shadow></value></block>
+Blockly.Blocks['risk_trailing_stop'] = {
+  init: function() {
+    this.appendValueInput("PERCENT").setCheck("Number").appendField("Trailing Stop %");
+    this.setPreviousStatement(true, "TradeAction");
+    this.setNextStatement(true, "TradeAction");
+    this.setStyle('risk_blocks');
+  }
+};
+
+// XML: <block type="risk_scale_in"><value name="AMOUNT"><shadow type="math_number"><field name="NUM">0.1</field></shadow></value><value name="INTERVALS"><shadow type="math_number"><field name="NUM">3</field></shadow></value></block>
+Blockly.Blocks['risk_scale_in'] = {
+  init: function() {
+    this.appendValueInput("AMOUNT").setCheck("Number").appendField("Scale In Amount");
+    this.appendValueInput("INTERVALS").setCheck("Number").appendField("Intervals");
+    this.setPreviousStatement(true, "TradeAction");
+    this.setNextStatement(true, "TradeAction");
+    this.setStyle('risk_blocks');
+  }
+};
+
+// XML: <block type="risk_scale_out"><value name="AMOUNT"><shadow type="math_number"><field name="NUM">0.1</field></shadow></value><value name="INTERVALS"><shadow type="math_number"><field name="NUM">3</field></shadow></value></block>
+Blockly.Blocks['risk_scale_out'] = {
+  init: function() {
+    this.appendValueInput("AMOUNT").setCheck("Number").appendField("Scale Out Amount");
+    this.appendValueInput("INTERVALS").setCheck("Number").appendField("Intervals");
+    this.setPreviousStatement(true, "TradeAction");
+    this.setNextStatement(true, "TradeAction");
+    this.setStyle('risk_blocks');
+  }
+};
+
+// XML: <block type="risk_max_drawdown"><value name="PERCENT"><shadow type="math_number"><field name="NUM">10</field></shadow></value></block>
+Blockly.Blocks['risk_max_drawdown'] = {
+  init: function() {
+    this.appendValueInput("PERCENT").setCheck("Number").appendField("Max Drawdown %");
+    this.setPreviousStatement(true, "TradeAction");
+    this.setNextStatement(true, "TradeAction");
+    this.setStyle('risk_blocks');
+  }
+};
+
+// XML: <block type="risk_daily_loss_limit"><value name="AMOUNT"><shadow type="math_number"><field name="NUM">100</field></shadow></value></block>
+Blockly.Blocks['risk_daily_loss_limit'] = {
+  init: function() {
+    this.appendValueInput("AMOUNT").setCheck("Number").appendField("Daily Loss Limit");
+    this.setPreviousStatement(true, "TradeAction");
+    this.setNextStatement(true, "TradeAction");
+    this.setStyle('risk_blocks');
+  }
+};
+
+// XML: <block type="risk_position_percent"><value name="PERCENT"><shadow type="math_number"><field name="NUM">1</field></shadow></value></block>
+Blockly.Blocks['risk_position_percent'] = {
+  init: function() {
+    this.appendValueInput("PERCENT").setCheck("Number").appendField("Pos Size % Equity");
+    this.setOutput(true, "Number");
+    this.setStyle('risk_blocks');
+  }
+};
+
+// XML: <block type="risk_kelly_criterion"><value name="WIN_RATE"><shadow type="math_number"><field name="NUM">50</field></shadow></value><value name="WIN_LOSS_RATIO"><shadow type="math_number"><field name="NUM">1.5</field></shadow></value></block>
+Blockly.Blocks['risk_kelly_criterion'] = {
+  init: function() {
+    this.appendValueInput("WIN_RATE").setCheck("Number").appendField("Kelly Win Rate");
+    this.appendValueInput("WIN_LOSS_RATIO").setCheck("Number").appendField("Win/Loss Ratio");
+    this.setOutput(true, "Number");
+    this.setStyle('risk_blocks');
+  }
+};
+
+// XML: <block type="risk_fixed_amount"><value name="AMOUNT"><shadow type="math_number"><field name="NUM">100</field></shadow></value></block>
+Blockly.Blocks['risk_fixed_amount'] = {
+  init: function() {
+    this.appendValueInput("AMOUNT").setCheck("Number").appendField("Fixed Risk Amount");
+    this.setOutput(true, "Number");
+    this.setStyle('risk_blocks');
+  }
+};
+
+// --- CONTROL & VARIABLES ---
+
+// XML: <block type="control_wait"><value name="SECONDS"><shadow type="math_number"><field name="NUM">1</field></shadow></value></block>
+Blockly.Blocks['control_wait'] = {
+  init: function() {
+    this.appendValueInput("SECONDS").setCheck("Number").appendField("Wait Seconds");
+    this.setPreviousStatement(true, "TradeAction");
+    this.setNextStatement(true, "TradeAction");
+    this.setStyle('control_blocks');
+  }
+};
+
+// XML: <block type="control_wait_until"><value name="CONDITION"></value></block>
+Blockly.Blocks['control_wait_until'] = {
+  init: function() {
+    this.appendValueInput("CONDITION").setCheck("Boolean").appendField("Wait Until");
+    this.setPreviousStatement(true, "TradeAction");
+    this.setNextStatement(true, "TradeAction");
+    this.setStyle('control_blocks');
+  }
+};
+
+// XML: <block type="variables_set"><field name="VAR">myVar</field><value name="VALUE"></value></block>
+Blockly.Blocks['variables_set'] = {
+  init: function() {
+    this.appendValueInput("VALUE").appendField("Set").appendField(new Blockly.FieldTextInput("myVar"), "VAR").appendField("to");
+    this.setPreviousStatement(true);
+    this.setNextStatement(true);
+    this.setStyle('variable_blocks');
+  }
+};
+
+// XML: <block type="variables_get"><field name="VAR">myVar</field></block>
+Blockly.Blocks['variables_get'] = {
+  init: function() {
+    this.appendDummyInput().appendField("Get").appendField(new Blockly.FieldTextInput("myVar"), "VAR");
+    this.setOutput(true);
+    this.setStyle('variable_blocks');
+  }
+};
+
+// XML: <block type="variables_change"><field name="VAR">myVar</field><value name="DELTA"></value></block>
+Blockly.Blocks['variables_change'] = {
+  init: function() {
+    this.appendValueInput("DELTA").appendField("Change").appendField(new Blockly.FieldTextInput("myVar"), "VAR").appendField("by");
+    this.setPreviousStatement(true);
+    this.setNextStatement(true);
+    this.setStyle('variable_blocks');
+  }
+};
+
+// XML: <block type="function_define"><field name="NAME">myFunc</field><statement name="STACK"></statement></block>
+Blockly.Blocks['function_define'] = {
+  init: function() {
+    this.appendDummyInput().appendField("Function").appendField(new Blockly.FieldTextInput("myFunc"), "NAME");
+    this.appendStatementInput("STACK");
+    this.setStyle('procedure_blocks');
+  }
+};
+
+// XML: <block type="function_call"><field name="NAME">myFunc</field></block>
+Blockly.Blocks['function_call'] = {
+  init: function() {
+    this.appendDummyInput().appendField("Call").appendField(new Blockly.FieldTextInput("myFunc"), "NAME");
+    this.setPreviousStatement(true);
+    this.setNextStatement(true);
+    this.setStyle('procedure_blocks');
+  }
+};
+
+// XML: <block type="function_return"><value name="VALUE"></value></block>
+Blockly.Blocks['function_return'] = {
+  init: function() {
+    this.appendValueInput("VALUE").appendField("Return");
+    this.setPreviousStatement(true);
+    this.setStyle('procedure_blocks');
+  }
+};

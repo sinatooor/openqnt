@@ -1569,3 +1569,18 @@ double CalculateResistanceLevel(ENUM_TIMEFRAMES timeframe, int lookback, int str
 
     return [`CalculateResistanceLevel(${timeframe}, ${lookback}, ${strength})`, mqlGenerator.ORDER_FUNCTION_CALL];
 };
+
+mqlGenerator.forBlock['ta_supertrend'] = function (block: Blockly.Block) {
+    const period = getIndicatorPeriod(block);
+    const atrPeriod = block.getFieldValue('PERIOD_VALUE') || '10';
+    const multiplier = block.getFieldValue('MULTIPLIER') || '3';
+
+    const handleName = 'handle_supertrend_' + block.id.replace(/[^a-zA-Z0-9]/g, '_');
+    mqlGenerator.definitions_[handleName] = `int ${handleName} = INVALID_HANDLE;`;
+
+    // Assumes "SuperTrend" custom indicator is installed in MT5
+    // iCustom(symbol, period, name, param1, param2...)
+    mqlGenerator.initializations_.push(`${handleName} = iCustom(NULL, ${toMqlTimeframe(period)}, "SuperTrend", ${atrPeriod}, ${multiplier});`);
+
+    return [`GetIndicatorValue(${handleName}, 0, 0)`, mqlGenerator.ORDER_FUNCTION_CALL];
+};

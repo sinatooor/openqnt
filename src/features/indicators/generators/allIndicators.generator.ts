@@ -334,7 +334,14 @@ javascriptGenerator.forBlock['stddev'] = function (block: any) {
     return [`stdDev(${period}, ${ma_period}, ${shift}, ${method}, ${applied_price})`, Order.ATOMIC];
 };
 
+
 // Trend
+javascriptGenerator.forBlock['ta_supertrend'] = function (block: any) {
+    const period = getParam(block, 'period_value', 10);
+    const multiplier = getParam(block, 'multiplier', 3);
+    return [`superTrend(${period}, ${multiplier})`, Order.ATOMIC];
+};
+
 javascriptGenerator.forBlock['ta_sar'] = function (block: any) {
     const period = getParam(block, 'period', 0);
     const step = getParam(block, 'step', 0.02);
