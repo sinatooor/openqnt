@@ -88,6 +88,10 @@
 | `strategy_runner.py` | **Execution Service**. Manages the live trading loop, polling, and trade lifecycle. |
 | `backtest_runner.py` | **Simulation Engine**. Runs strategies against historical data. |
 | `strategy_converter.py` | **Code Transpiler**. Uses LLM to convert XML to NautilusTrader/Python code. |
+| `llm_verified_evaluator.py` | **LLM Verification Service**. Verifies XML-to-Python translation using LLM. |
+| `block_python_map.json` | **Block to Python Mapping**. Maps Blockly blocks to Python code. |
+| `blockly_generator.py` | **Blockly Generator**. Converts Python code to Blockly XML. |
+| `backtesting.py` | **Backtesting Engine**. main and best backtesting engine. |
 
 ## 5. Key Frontend Features
 

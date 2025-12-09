@@ -51,15 +51,15 @@ load_dotenv()
 #   - Uses Gemini for verification (via Lovable)
 # ============================================================
 
-USE_DEEPSEEK_ONLY = False  # <-- CHANGE THIS TO SWITCH MODES
+USE_DEEPSEEK_ONLY = True  # <-- CHANGE THIS TO SWITCH MODES
 
 # ============================================================
 # DeepSeek Model Configuration
 # ============================================================
 # Comment/uncomment to switch between models:
 
-DEEPSEEK_MODEL = "deepseek-reasoner"     # Reasoning model - better for complex logic
-# DEEPSEEK_MODEL = "deepseek-chat"       # Fast, cheaper - good for code generation (TESTING)
+# DEEPSEEK_MODEL = "deepseek-reasoner"     # Reasoning model - better for complex logic
+DEEPSEEK_MODEL = "deepseek-chat"       # Fast, cheaper - good for code generation (TESTING)
 
 # ============================================================
 # RAG + GCG Prompts
