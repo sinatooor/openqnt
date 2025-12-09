@@ -58,7 +58,24 @@
         "ForceIndex": "def ForceIndex(close, volume, period=13):\n    \"\"\"Force Index\"\"\"\n    close = np.asarray(close, dtype=float)\n    volume = np.asarray(volume, dtype=float)\n    force = np.zeros_like(close)\n    for i in range(1, len(close)):\n        force[i] = (close[i] - close[i-1]) * volume[i]\n    return EMA(force, period)",
         "AwesomeOsc": "def AwesomeOsc(high, low, fast=5, slow=34):\n    \"\"\"Awesome Oscillator\"\"\"\n    hl2 = (np.asarray(high) + np.asarray(low)) / 2\n    fast_sma = np.zeros_like(hl2)\n    slow_sma = np.zeros_like(hl2)\n    for i in range(fast - 1, len(hl2)):\n        fast_sma[i] = np.mean(hl2[i - fast + 1:i + 1])\n    for i in range(slow - 1, len(hl2)):\n        slow_sma[i] = np.mean(hl2[i - slow + 1:i + 1])\n    return fast_sma - slow_sma",
         "AcceleratorOsc": "def AcceleratorOsc(high, low, fast=5, slow=34, signal=5):\n    \"\"\"Accelerator Oscillator\"\"\"\n    ao = AwesomeOsc(high, low, fast, slow)\n    ao_sma = np.zeros_like(ao)\n    for i in range(signal - 1, len(ao)):\n        ao_sma[i] = np.mean(ao[i - signal + 1:i + 1])\n    return ao - ao_sma",
-        "Envelopes": "def Envelopes(values, period=20, deviation=0.1):\n    \"\"\"Envelopes - returns (upper, lower)\"\"\"\n    values = np.asarray(values, dtype=float)\n    sma = np.zeros_like(values)\n    for i in range(period - 1, len(values)):\n        sma[i] = np.mean(values[i - period + 1:i + 1])\n    upper = sma * (1 + deviation)\n    lower = sma * (1 - deviation)\n    return upper"
+        "Envelopes": "def Envelopes(values, period=20, deviation=0.1):\n    \"\"\"Envelopes\"\"\"\n    values = np.asarray(values, dtype=float)\n    sma = np.zeros_like(values)\n    for i in range(period - 1, len(values)):\n        sma[i] = np.mean(values[i - period + 1:i + 1])\n    upper = sma * (1 + deviation)\n    return upper",
+        "AD": "def AD(high, low, close, volume):\n    \"\"\"Accumulation/Distribution\"\"\"\n    high = np.asarray(high, dtype=float)\n    low = np.asarray(low, dtype=float)\n    close = np.asarray(close, dtype=float)\n    volume = np.asarray(volume, dtype=float)\n    mfm = ((close - low) - (high - close)) / (high - low + 1e-10)\n    mfv = mfm * volume\n    return np.cumsum(mfv)",
+        "ADXWilder": "def ADXWilder(high, low, close, period=14):\n    \"\"\"Wilder's ADX\"\"\"\n    return ADX(high, low, close, period)",
+        "Alligator_Jaw": "def Alligator_Jaw(high, low, period=13, shift=8):\n    \"\"\"Alligator Jaw (Blue)\"\"\"\n    hl2 = (np.asarray(high) + np.asarray(low)) / 2\n    return SMMA(hl2, period)",
+        "Alligator_Teeth": "def Alligator_Teeth(high, low, period=8, shift=5):\n    \"\"\"Alligator Teeth (Red)\"\"\"\n    hl2 = (np.asarray(high) + np.asarray(low)) / 2\n    return SMMA(hl2, period)",
+        "Alligator_Lips": "def Alligator_Lips(high, low, period=5, shift=3):\n    \"\"\"Alligator Lips (Green)\"\"\"\n    hl2 = (np.asarray(high) + np.asarray(low)) / 2\n    return SMMA(hl2, period)",
+        "AMA": "def AMA(values, period=10, fast=2, slow=30):\n    \"\"\"Adaptive Moving Average (Kaufman)\"\"\"\n    values = np.asarray(values, dtype=float)\n    result = np.zeros_like(values)\n    result[0] = values[0]\n    fast_sc = 2 / (fast + 1)\n    slow_sc = 2 / (slow + 1)\n    for i in range(period, len(values)):\n        change = abs(values[i] - values[i - period])\n        volatility = sum(abs(values[j] - values[j-1]) for j in range(i - period + 1, i + 1))\n        er = change / (volatility + 1e-10)\n        sc = (er * (fast_sc - slow_sc) + slow_sc) ** 2\n        result[i] = result[i-1] + sc * (values[i] - result[i-1])\n    return result",
+        "BearsPower": "def BearsPower(high, low, close, period=13):\n    \"\"\"Bears Power\"\"\"\n    ema = EMA(close, period)\n    return np.asarray(low) - ema",
+        "BullsPower": "def BullsPower(high, low, close, period=13):\n    \"\"\"Bulls Power\"\"\"\n    ema = EMA(close, period)\n    return np.asarray(high) - ema",
+        "BWMFI": "def BWMFI(high, low, volume):\n    \"\"\"Bill Williams Market Facilitation Index\"\"\"\n    high = np.asarray(high, dtype=float)\n    low = np.asarray(low, dtype=float)\n    volume = np.asarray(volume, dtype=float)\n    return (high - low) / (volume + 1e-10)",
+        "DeMarker": "def DeMarker(high, low, period=14):\n    \"\"\"DeMarker\"\"\"\n    high = np.asarray(high, dtype=float)\n    low = np.asarray(low, dtype=float)\n    dem_high = np.zeros_like(high)\n    dem_low = np.zeros_like(low)\n    for i in range(1, len(high)):\n        dem_high[i] = max(0, high[i] - high[i-1])\n        dem_low[i] = max(0, low[i-1] - low[i])\n    result = np.zeros_like(high)\n    for i in range(period, len(high)):\n        sum_high = np.sum(dem_high[i - period + 1:i + 1])\n        sum_low = np.sum(dem_low[i - period + 1:i + 1])\n        result[i] = sum_high / (sum_high + sum_low + 1e-10)\n    return result",
+        "FRAMA": "def FRAMA(values, period=16):\n    \"\"\"Fractal Adaptive Moving Average\"\"\"\n    values = np.asarray(values, dtype=float)\n    result = np.zeros_like(values)\n    result[0] = values[0]\n    half = period // 2\n    for i in range(period, len(values)):\n        n1 = (np.max(values[i-half:i]) - np.min(values[i-half:i])) / half\n        n2 = (np.max(values[i-period:i-half]) - np.min(values[i-period:i-half])) / half\n        n3 = (np.max(values[i-period:i]) - np.min(values[i-period:i])) / period\n        if n1 + n2 > 0 and n3 > 0:\n            d = (np.log(n1 + n2) - np.log(n3)) / np.log(2)\n        else:\n            d = 1\n        alpha = np.exp(-4.6 * (d - 1))\n        alpha = max(0.01, min(1, alpha))\n        result[i] = alpha * values[i] + (1 - alpha) * result[i-1]\n    return result",
+        "Gator_Upper": "def Gator_Upper(high, low):\n    \"\"\"Gator Oscillator Upper\"\"\"\n    jaw = Alligator_Jaw(high, low)\n    teeth = Alligator_Teeth(high, low)\n    return np.abs(jaw - teeth)",
+        "Gator_Lower": "def Gator_Lower(high, low):\n    \"\"\"Gator Oscillator Lower\"\"\"\n    teeth = Alligator_Teeth(high, low)\n    lips = Alligator_Lips(high, low)\n    return -np.abs(teeth - lips)",
+        "OSMA": "def OSMA(values, fast=12, slow=26, signal=9):\n    \"\"\"Moving Average of Oscillator\"\"\"\n    macd = MACD_line(values, fast, slow)\n    macd_sig = MACD_signal(values, fast, slow, signal)\n    return macd - macd_sig",
+        "Volumes": "def Volumes(volume):\n    \"\"\"Volume indicator\"\"\"\n    return np.asarray(volume, dtype=float)",
+        "SupportLevel": "def SupportLevel(low, period=20):\n    \"\"\"Support Level\"\"\"\n    return Lowest(low, period)",
+        "ResistanceLevel": "def ResistanceLevel(high, period=20):\n    \"\"\"Resistance Level\"\"\"\n    return Highest(high, period)"
     },
     "indicators": {
         "ta_sma": {
@@ -417,6 +434,147 @@
             "value_expr": "self.env_upper[-1]",
             "default_period": 20,
             "default_deviation": 0.1
+        },
+        "ad": {
+            "type": "AD",
+            "helper": "AD",
+            "class_param": "",
+            "init_code": "self.ad = self.I(AD, self.data.High, self.data.Low, self.data.Close, self.data.Volume)",
+            "value_expr": "self.ad[-1]"
+        },
+        "adxWilder": {
+            "type": "ADXWILDER",
+            "helper": [
+                "ADX",
+                "ADXWilder"
+            ],
+            "class_param": "adxw_period = {period}",
+            "init_code": "self.adx_wilder = self.I(ADXWilder, self.data.High, self.data.Low, self.data.Close, self.adxw_period)",
+            "value_expr": "self.adx_wilder[-1]",
+            "default_period": 14
+        },
+        "alligator": {
+            "type": "ALLIGATOR",
+            "helper": [
+                "SMMA",
+                "Alligator_Jaw",
+                "Alligator_Teeth",
+                "Alligator_Lips"
+            ],
+            "class_param": "",
+            "init_code": "self.alligator_jaw = self.I(Alligator_Jaw, self.data.High, self.data.Low)\n        self.alligator_teeth = self.I(Alligator_Teeth, self.data.High, self.data.Low)\n        self.alligator_lips = self.I(Alligator_Lips, self.data.High, self.data.Low)",
+            "value_expr": "self.alligator_jaw[-1]"
+        },
+        "ama": {
+            "type": "AMA",
+            "helper": "AMA",
+            "class_param": "ama_period = {period}",
+            "init_code": "self.ama = self.I(AMA, self.data.Close, self.ama_period)",
+            "value_expr": "self.ama[-1]",
+            "default_period": 10
+        },
+        "bearsPower": {
+            "type": "BEARSPOWER",
+            "helper": [
+                "EMA",
+                "BearsPower"
+            ],
+            "class_param": "bears_period = {period}",
+            "init_code": "self.bears_power = self.I(BearsPower, self.data.High, self.data.Low, self.data.Close, self.bears_period)",
+            "value_expr": "self.bears_power[-1]",
+            "default_period": 13
+        },
+        "bullsPower": {
+            "type": "BULLSPOWER",
+            "helper": [
+                "EMA",
+                "BullsPower"
+            ],
+            "class_param": "bulls_period = {period}",
+            "init_code": "self.bulls_power = self.I(BullsPower, self.data.High, self.data.Low, self.data.Close, self.bulls_period)",
+            "value_expr": "self.bulls_power[-1]",
+            "default_period": 13
+        },
+        "bwmfi": {
+            "type": "BWMFI",
+            "helper": "BWMFI",
+            "class_param": "",
+            "init_code": "self.bwmfi = self.I(BWMFI, self.data.High, self.data.Low, self.data.Volume)",
+            "value_expr": "self.bwmfi[-1]"
+        },
+        "demarker": {
+            "type": "DEMARKER",
+            "helper": "DeMarker",
+            "class_param": "demarker_period = {period}",
+            "init_code": "self.demarker = self.I(DeMarker, self.data.High, self.data.Low, self.demarker_period)",
+            "value_expr": "self.demarker[-1]",
+            "default_period": 14
+        },
+        "frama": {
+            "type": "FRAMA",
+            "helper": "FRAMA",
+            "class_param": "frama_period = {period}",
+            "init_code": "self.frama = self.I(FRAMA, self.data.Close, self.frama_period)",
+            "value_expr": "self.frama[-1]",
+            "default_period": 16
+        },
+        "gator": {
+            "type": "GATOR",
+            "helper": [
+                "SMMA",
+                "Alligator_Jaw",
+                "Alligator_Teeth",
+                "Alligator_Lips",
+                "Gator_Upper",
+                "Gator_Lower"
+            ],
+            "class_param": "",
+            "init_code": "self.gator_upper = self.I(Gator_Upper, self.data.High, self.data.Low)\n        self.gator_lower = self.I(Gator_Lower, self.data.High, self.data.Low)",
+            "value_expr": "self.gator_upper[-1]"
+        },
+        "osma": {
+            "type": "OSMA",
+            "helper": [
+                "EMA",
+                "MACD_line",
+                "MACD_signal",
+                "OSMA"
+            ],
+            "class_param": "osma_fast = {fast}\n    osma_slow = {slow}\n    osma_signal = {signal}",
+            "init_code": "self.osma = self.I(OSMA, self.data.Close, self.osma_fast, self.osma_slow, self.osma_signal)",
+            "value_expr": "self.osma[-1]",
+            "default_fast": 12,
+            "default_slow": 26,
+            "default_signal": 9
+        },
+        "ta_support": {
+            "type": "SUPPORT",
+            "helper": [
+                "Lowest",
+                "SupportLevel"
+            ],
+            "class_param": "support_period = {period}",
+            "init_code": "self.support = self.I(SupportLevel, self.data.Low, self.support_period)",
+            "value_expr": "self.support[-1]",
+            "default_period": 20
+        },
+        "ta_resistance": {
+            "type": "RESISTANCE",
+            "helper": [
+                "Highest",
+                "ResistanceLevel"
+            ],
+            "class_param": "resistance_period = {period}",
+            "init_code": "self.resistance = self.I(ResistanceLevel, self.data.High, self.resistance_period)",
+            "value_expr": "self.resistance[-1]",
+            "default_period": 20
+        },
+        "volumes": {
+            "type": "VOLUMES",
+            "helper": "Volumes",
+            "class_param": "",
+            "init_code": "self.volumes = self.I(Volumes, self.data.Volume)",
+            "value_expr": "self.volumes[-1]"
         }
     },
     "operators": {

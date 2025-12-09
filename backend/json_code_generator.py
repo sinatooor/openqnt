@@ -110,6 +110,21 @@ def generate_strategy_from_json(parsed: Dict[str, Any]) -> str:
             "AO": "ao",
             "AC": "ac",
             "ENVELOPES": "envelopes",
+            # New indicators (final batch)
+            "AD": "ad",
+            "ADXWILDER": "adxWilder",
+            "ALLIGATOR": "alligator",
+            "AMA": "ama",
+            "BEARSPOWER": "bearsPower",
+            "BULLSPOWER": "bullsPower",
+            "BWMFI": "bwmfi",
+            "DEMARKER": "demarker",
+            "FRAMA": "frama",
+            "GATOR": "gator",
+            "OSMA": "osma",
+            "SUPPORT": "ta_support",
+            "RESISTANCE": "ta_resistance",
+            "VOLUMES": "volumes",
         }
         
         block_type = block_type_mapping.get(ind_type)
