@@ -21,6 +21,7 @@ from datetime import datetime
 
 # RAG & GCG Imports
 from rag_system import block_library
+from vector_rag import get_vector_rag, two_stage_retrieve, STRATEGY_TYPES
 from strategy_compiler import strategy_compiler
 from backtest_service import XML_TO_PYTHON_PROMPT
 from strategy_store import hash_xml, save_strategy_version, load_by_id, load_latest_by_hash
@@ -36,12 +37,29 @@ from llm_logger import (
 load_dotenv()
 
 # ============================================================
+# LLM PROVIDER CONFIGURATION
+# ============================================================
+# Set USE_DEEPSEEK_ONLY = True to use DeepSeek for ALL LLM calls
+# Set USE_DEEPSEEK_ONLY = False to use DeepSeek + Gemini (default)
+#
+# When True:
+#   - Gemini calls are replaced with DeepSeek
+#   - All verification uses DeepSeek
+#   - Useful for testing/cost control
+# When False:
+#   - Uses DeepSeek for code generation/fixing
+#   - Uses Gemini for verification (via Lovable)
+# ============================================================
+
+USE_DEEPSEEK_ONLY = False  # <-- CHANGE THIS TO SWITCH MODES
+
+# ============================================================
 # DeepSeek Model Configuration
 # ============================================================
 # Comment/uncomment to switch between models:
 
-# DEEPSEEK_MODEL = "deepseek-chat"           # Fast, cheaper - good for code generation
 DEEPSEEK_MODEL = "deepseek-reasoner"     # Reasoning model - better for complex logic
+# DEEPSEEK_MODEL = "deepseek-chat"       # Fast, cheaper - good for code generation (TESTING)
 
 # ============================================================
 # RAG + GCG Prompts
@@ -130,6 +148,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Log LLM configuration on startup
+@app.on_event("startup")
+async def log_llm_config():
+    print("=" * 60)
+    print("LLM CONFIGURATION")
+    print("=" * 60)
+    print(f"  USE_DEEPSEEK_ONLY: {USE_DEEPSEEK_ONLY}")
+    print(f"  DEEPSEEK_MODEL: {DEEPSEEK_MODEL}")
+    if USE_DEEPSEEK_ONLY:
+        print("  ⚠️  ALL LLM calls will use DeepSeek (Gemini disabled)")
+    else:
+        print("  ✓ Using DeepSeek + Gemini (normal mode)")
+    print("=" * 60)
 
 # DeepSeek API configuration
 DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions"
@@ -610,7 +642,7 @@ async def call_deepseek(
         )
 
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=180.0) as client:
             response = await client.post(
                 DEEPSEEK_API_URL,
                 headers={
@@ -680,12 +712,21 @@ async def call_deepseek(
         raise
 
 
+
 async def call_gemini(
     messages: list[dict],
     temperature: float = 0.3,
     max_tokens: int = 4000
 ) -> str:
-    """Call Google Gemini API and return the response content."""
+    """Call Google Gemini API and return the response content.
+    
+    If USE_DEEPSEEK_ONLY is True, redirects to DeepSeek instead.
+    """
+    # Check if we should redirect to DeepSeek
+    if USE_DEEPSEEK_ONLY:
+        print("[LLM] USE_DEEPSEEK_ONLY=True, redirecting Gemini call to DeepSeek")
+        return await call_deepseek(messages, temperature=temperature)
+    
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise HTTPException(
@@ -1163,6 +1204,31 @@ async def get_market_data(
         if end_date:
             df = df[df.index <= end_date]
         
+        # Resample to higher timeframes if needed
+        # 1h data can become 4h, 1d data can become 1w
+        if interval in ["4h", "4H"]:
+            # Resample 1h data to 4h (group every 4 hours)
+            print(f"Resampling to 4H timeframe...")
+            df = df.resample("4h").agg({
+                "Open": "first",
+                "High": "max",
+                "Low": "min",
+                "Close": "last",
+                "Volume": "sum"
+            }).dropna()
+            print(f"Resampled to {len(df)} bars (4H)")
+        elif interval in ["1w", "1W"]:
+            # Resample 1d data to 1w (group by week)
+            print(f"Resampling to 1W timeframe...")
+            df = df.resample("W").agg({
+                "Open": "first",
+                "High": "max",
+                "Low": "min", 
+                "Close": "last",
+                "Volume": "sum"
+            }).dropna()
+            print(f"Resampled to {len(df)} bars (1W)")
+        
         # Convert to list of dicts
         data = []
         for idx, row in df.iterrows():
@@ -1268,10 +1334,10 @@ async def validate_strategy(request: ValidateStrategyRequest):
 @app.post("/generate-strategy-rag", response_model=StrategyResponse)
 async def generate_strategy_rag(request: StrategyRequest):
     """
-    Generate strategy using RAG + GCG pipeline.
+    Generate strategy using Enhanced RAG + GCG pipeline.
     
     Flow:
-    1. Retrieve relevant block types based on user request (RAG).
+    1. Two-stage retrieval: Classify strategy type → Vector search for blocks
     2. Plan strategy structure in JSON (GCG).
     3. Compile JSON to valid Blockly XML.
     """
@@ -1280,23 +1346,33 @@ async def generate_strategy_rag(request: StrategyRequest):
     
     try:
         log_general(f"RAG Generation started: {request.message[:100]}...")
-        print(f"=== RAG Generation: {request.message} ===")
-        
-        # Step 1: Retrieval (RAG)
-        # First, use keyword-based retrieval as baseline
-        keyword_blocks = block_library.retrieve_relevant_blocks(request.message)
-        print(f"Keyword retrieval found {len(keyword_blocks)} blocks")
-        
-        # Get compact summary for the router
-        all_types = block_library.get_all_block_types()
+        print(f"=== Enhanced RAG Generation: {request.message} ===")
         
         # Select AI model
         llm_func = call_deepseek
         ai_model = request.ai_model or "deepseek"
         if ai_model == "gemini":
             llm_func = call_lovable_gemini
-
-        # Ask LLM to select relevant blocks (can augment keyword results)
+        
+        # Step 1: Two-Stage Retrieval (NEW)
+        # Stage 1: Classify strategy type using LLM
+        # Stage 2: Vector search + category-specific blocks
+        vector_rag = get_vector_rag()
+        
+        strategy_type, retrieved_blocks = await two_stage_retrieve(
+            query=request.message,
+            block_library=block_library,
+            vector_rag=vector_rag,
+            call_llm=llm_func,
+            n_results=15
+        )
+        
+        print(f"[RAG] Strategy type: {strategy_type}")
+        print(f"[RAG] Retrieved {len(retrieved_blocks)} blocks via two-stage retrieval")
+        
+        # Also get LLM router selection for augmentation
+        all_types = block_library.get_all_block_types()
+        
         router_messages = [
             {"role": "system", "content": RAG_ROUTER_PROMPT.format(
                 available_blocks=", ".join(all_types),
@@ -1317,23 +1393,24 @@ async def generate_strategy_rag(request: StrategyRequest):
                 clean_response = clean_response[4:].strip()
             
             llm_selected_types = json.loads(clean_response)
-            print(f"LLM selected: {llm_selected_types}")
+            print(f"LLM router selected: {llm_selected_types}")
         except Exception as e:
-            print(f"Router JSON parse failed: {e}, using keyword fallback")
+            print(f"Router JSON parse failed: {e}, using two-stage results only")
             llm_selected_types = []
+
         
-        # Merge LLM selection with keyword results
-        all_selected_types = set(keyword_blocks.keys())
-        all_selected_types.update(llm_selected_types)
+        # Merge LLM router selection with two-stage retrieval results
+        all_selected_types = set(retrieved_blocks.keys())  # From two-stage retrieval
+        all_selected_types.update(llm_selected_types)       # Augment with LLM router
         
         # Build block templates for the planner
         block_templates = []
         for b_type in all_selected_types:
-            xml = block_library.get_block_xml(b_type)
+            xml = retrieved_blocks.get(b_type) or block_library.get_block_xml(b_type)
             if xml:
                 block_templates.append(f"{b_type}: {xml}")
         
-        print(f"Total {len(block_templates)} block templates for planning")
+        print(f"[RAG] Total {len(block_templates)} block templates for planning (strategy: {strategy_type})")
 
         # Step 2: Structured Generation (GCG)
         planner_messages = [
@@ -1669,6 +1746,34 @@ Generate the complete MQL5 code."""
     )
 
 
+# ============================================================
+# ADMIN ENDPOINTS (Testing Only) - DISABLED
+# ============================================================
+
+# class EmbeddingRequest(BaseModel):
+#     block_type: str
+#     description: str
+#     category: str = "other"
+
+# @app.post("/admin/add-embedding")
+# async def add_embedding(request: EmbeddingRequest):
+#     """Add a new block embedding to the vector database."""
+#     try:
+#         from vector_rag import get_vector_rag
+#         rag = get_vector_rag()
+#         success = rag.add_new_block_embedding(
+#             block_type=request.block_type,
+#             description=request.description,
+#             category=request.category
+#         )
+#         if success:
+#             return {"status": "success", "message": f"Added embedding for {request.block_type}"}
+#         else:
+#             raise HTTPException(status_code=500, detail="Failed to add embedding")
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/backtest")
 async def run_backtest_endpoint(request: BacktestRequest):
     """
@@ -1775,7 +1880,7 @@ async def run_backtest_endpoint(request: BacktestRequest):
             data_source=data_source,
             start_date=request.startDate if data_source == "local" else None,
             end_date=request.endDate if data_source == "local" else None,
-            verify_with_llm=True,  # Enable Gemini + DeepSeek verification
+            verify_with_llm=True,  # Enable LLM verification (Gemini + DeepSeek)
             precompiled_code=precompiled_code,
             code_language=code_language,
             strategy_id=strategy_id,
