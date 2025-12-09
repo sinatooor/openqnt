@@ -211,6 +211,7 @@ class BacktestRequest(BaseModel):
     generatedCode: Optional[str] = None
     codeLanguage: Optional[str] = "python"
     strategyId: Optional[str] = None
+    templateId: Optional[str] = None  # Pre-built template ID (e.g., "rsi-oversold-reversal")
 
 
 class BacktestResponse(BaseModel):
@@ -940,7 +941,7 @@ async def call_deepseek_reasoning(
                 "Content-Type": "application/json"
             },
             json={
-                "model": "deepseek-reasoner",
+                "model": "deepseek-chat",
                 "messages": messages,
                 "max_tokens": max_tokens
             }
@@ -994,6 +995,7 @@ async def generate_python_code_from_xml(xml: str, llm_func) -> Optional[str]:
         cleaned = cleaned.rsplit("\n", 1)[0]
     if cleaned.startswith("python"):
         cleaned = cleaned[6:].strip()
+        
     return cleaned.strip()
 
 
@@ -1004,14 +1006,40 @@ async def get_or_create_strategy_code(
     strategy_id: Optional[str] = None,
 ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     """Fetch code from cache or generate + persist a new version."""
+    import time
+    start_time = time.time()
+    
     xml_hash = hash_xml(xml)
     cached = load_by_id(strategy_id) if strategy_id else load_latest_by_hash(xml_hash)
     if cached and cached.get("code"):
+        log_general(f"[CACHE HIT] Loaded Python code from cache (ID: {cached.get('id')})")
         return cached.get("code"), cached.get("language", "python"), cached.get("id")
 
+    log_general(f"[CODE GEN] Generating Python code from XML ({len(xml)} chars)...")
     code = await generate_python_code_from_xml(xml, llm_func)
+    
+    duration_ms = (time.time() - start_time) * 1000
+    
     if not code:
+        log_conversion(
+            conversion_type="xml_to_python",
+            input_data=xml,
+            output_data="",
+            success=False,
+            duration_ms=duration_ms,
+            error="LLM returned no code"
+        )
         return None, None, strategy_id
+
+    # Log successful conversion
+    log_conversion(
+        conversion_type="xml_to_python",
+        input_data=xml,
+        output_data=code,
+        success=True,
+        duration_ms=duration_ms
+    )
+    log_general(f"[CODE GEN] Python code generated successfully ({len(code)} chars)")
 
     record = save_strategy_version(
         xml=xml,
@@ -1021,6 +1049,7 @@ async def get_or_create_strategy_code(
         metadata={"context": "generation"},
         strategy_id=strategy_id,
     )
+    log_general(f"[CACHE SAVE] Saved strategy to cache (ID: {record.get('id')})")
     return code, "python", record.get("id")
 
 
@@ -1548,6 +1577,9 @@ async def generate_strategy(request: StrategyRequest):
     block_count = len(re.findall(r'<block ', first_xml))
     print(f"Pass 1 complete: {block_count} blocks, {len(first_xml)} chars")
     
+    # Log XML generation
+    log_general(f"[XML GEN] Generated Blockly XML ({len(first_xml)} chars, {block_count} blocks)")
+    
     # Second pass: Validate and fix structure
     print("=== PASS 2: Validating and fixing strategy ===")
     
@@ -1892,6 +1924,7 @@ async def run_backtest_endpoint(request: BacktestRequest):
             precompiled_code=precompiled_code,
             code_language=code_language,
             strategy_id=strategy_id,
+            template_id=request.templateId,  # Pre-built template lookup
         )
         
         if not result.get("success"):
