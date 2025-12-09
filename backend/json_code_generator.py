@@ -254,8 +254,101 @@ class GeneratedStrategy(Strategy):
     return "\n\n".join(code_parts), unknown_blocks
 
 
+def _build_compound_condition(conditions: List[Dict], indicator_vars: Dict[str, str]) -> str:
+    """
+    Build a compound condition expression from parsed conditions.
+    Handles AND, OR, NOT operators and comparison operators.
+    
+    Args:
+        conditions: List of condition dicts from parser
+        indicator_vars: Dict mapping indicator types to value expressions
+    
+    Returns:
+        Python condition expression string
+    """
+    # Extract operators from conditions
+    has_and = any(c.get("type") == "and" for c in conditions)
+    has_or = any(c.get("type") == "or" for c in conditions)
+    has_not = any(c.get("type") == "not" for c in conditions)
+    
+    # Extract comparison type
+    comparison_type = None
+    for c in conditions:
+        if c.get("type") in ("less", "greater", "equals", "less_equals", "greater_equals"):
+            comparison_type = c.get("type")
+            break
+    
+    # Build individual indicator conditions
+    indicator_conditions = []
+    for ind_type, expr in indicator_vars.items():
+        if ind_type == "RSI":
+            # RSI oversold/overbought
+            indicator_conditions.append(f"{expr} < 30")
+        elif ind_type in ("CCI", "WILLIAMS_R"):
+            indicator_conditions.append(f"{expr} < -80")
+        elif ind_type == "MFI":
+            indicator_conditions.append(f"{expr} < 20")
+        elif ind_type == "STOCHASTIC":
+            indicator_conditions.append(f"{expr} < 20")
+    
+    if not indicator_conditions:
+        return ""
+    
+    # Combine conditions based on operators
+    if has_and and len(indicator_conditions) > 1:
+        return " and ".join(f"({c})" for c in indicator_conditions)
+    elif has_or and len(indicator_conditions) > 1:
+        return " or ".join(f"({c})" for c in indicator_conditions)
+    else:
+        return indicator_conditions[0] if indicator_conditions else "True"
+
+
+def _detect_strategy_type(parsed: Dict[str, Any]) -> str:
+    """
+    Detect the strategy type from parsed indicators and conditions.
+    Returns: 'crossover', 'oscillator', 'breakout', 'trend', or 'default'
+    """
+    indicators = parsed.get("indicators", [])
+    conditions = parsed.get("conditions", [])
+    
+    indicator_types = [i.get("type", "").upper() for i in indicators]
+    
+    # MA Crossover detection
+    sma_count = sum(1 for t in indicator_types if t == "SMA")
+    ema_count = sum(1 for t in indicator_types if t == "EMA")
+    if sma_count >= 2 or ema_count >= 2:
+        return "crossover"
+    
+    # MACD crossover
+    if "MACD" in indicator_types:
+        return "macd_crossover"
+    
+    # Oscillator strategy (RSI, Stochastic, CCI)
+    oscillators = {"RSI", "STOCHASTIC", "CCI", "WILLIAMS_R", "MFI"}
+    if any(t in oscillators for t in indicator_types):
+        return "oscillator"
+    
+    # Breakout (Bollinger, Donchian, Keltner)
+    breakout_indicators = {"BOLLINGER", "DONCHIAN", "KELTNER", "SUPPORT", "RESISTANCE"}
+    if any(t in breakout_indicators for t in indicator_types):
+        return "breakout"
+    
+    # Trend following (ADX, SuperTrend)
+    trend_indicators = {"ADX", "SUPERTREND", "ICHIMOKU"}
+    if any(t in trend_indicators for t in indicator_types):
+        return "trend"
+    
+    return "default"
+
+
 def _build_condition_code(parsed: Dict[str, Any], indicator_vars: Dict[str, str], block_map: Dict) -> str:
-    """Build the condition/trading logic code for the next() method."""
+    """Build the condition/trading logic code for the next() method.
+    
+    Improvements:
+    - Detects strategy type automatically
+    - Handles AND/OR compound conditions
+    - Uses thresholds from parsed data when available
+    """
     
     direction = parsed.get("entry_direction", "long")
     buy_action = "buy" if direction == "long" else "sell"
@@ -263,51 +356,37 @@ def _build_condition_code(parsed: Dict[str, Any], indicator_vars: Dict[str, str]
     
     conditions = parsed.get("conditions", [])
     indicators = parsed.get("indicators", [])
+    thresholds = parsed.get("thresholds", {})
     
-    # Determine strategy type based on indicators
-    has_rsi = any(i["type"] == "RSI" for i in indicators)
-    has_sma = any(i["type"] == "SMA" for i in indicators)
-    has_ema = any(i["type"] == "EMA" for i in indicators)
-    has_macd = any(i["type"] == "MACD" for i in indicators)
-    has_bb = any(i["type"] == "BOLLINGER" for i in indicators)
-    has_stoch = any(i["type"] == "STOCHASTIC" for i in indicators)
+    # Detect strategy type
+    strategy_type = _detect_strategy_type(parsed)
     
-    # Count MAs for crossover detection
-    sma_count = sum(1 for i in indicators if i["type"] == "SMA")
-    ema_count = sum(1 for i in indicators if i["type"] == "EMA")
+    # Check for compound operators
+    has_and = any(c.get("type") == "and" for c in conditions)
+    has_or = any(c.get("type") == "or" for c in conditions)
     
     lines = []
     
-    # RSI strategy
-    if has_rsi and not (sma_count >= 2 or ema_count >= 2):
-        rsi_expr = indicator_vars.get("RSI", "self.rsi[-1]")
-        lines.append(f"        # RSI-based entry/exit")
-        lines.append(f"        if {rsi_expr} < 30:")
-        lines.append(f"            if not self.position:")
-        lines.append(f"                self.{buy_action}()")
-        lines.append(f"        elif {rsi_expr} > 70:")
-        lines.append(f"            if self.position:")
-        lines.append(f"                self.position.close()")
+    # Build based on strategy type
+    if strategy_type == "crossover":
+        # MA Crossover
+        sma_count = sum(1 for i in indicators if i.get("type") == "SMA")
+        if sma_count >= 2:
+            lines.append(f"        # SMA Crossover strategy")
+            lines.append(f"        if crossover(self.sma0, self.sma1):")
+            lines.append(f"            self.{buy_action}()")
+            lines.append(f"        elif crossover(self.sma1, self.sma0):")
+            lines.append(f"            if self.position:")
+            lines.append(f"                self.position.close()")
+        else:  # EMA crossover
+            lines.append(f"        # EMA Crossover strategy")
+            lines.append(f"        if crossover(self.ema0, self.ema1):")
+            lines.append(f"            self.{buy_action}()")
+            lines.append(f"        elif crossover(self.ema1, self.ema0):")
+            lines.append(f"            if self.position:")
+            lines.append(f"                self.position.close()")
     
-    # MA Crossover strategy
-    elif sma_count >= 2:
-        lines.append(f"        # SMA Crossover strategy")
-        lines.append(f"        if crossover(self.sma0, self.sma1):")
-        lines.append(f"            self.{buy_action}()")
-        lines.append(f"        elif crossover(self.sma1, self.sma0):")
-        lines.append(f"            if self.position:")
-        lines.append(f"                self.position.close()")
-    
-    elif ema_count >= 2:
-        lines.append(f"        # EMA Crossover strategy")
-        lines.append(f"        if crossover(self.ema0, self.ema1):")
-        lines.append(f"            self.{buy_action}()")
-        lines.append(f"        elif crossover(self.ema1, self.ema0):")
-        lines.append(f"            if self.position:")
-        lines.append(f"                self.position.close()")
-    
-    # MACD strategy
-    elif has_macd:
+    elif strategy_type == "macd_crossover":
         lines.append(f"        # MACD crossover strategy")
         lines.append(f"        if crossover(self.macd_line, self.macd_signal):")
         lines.append(f"            if not self.position:")
@@ -316,41 +395,112 @@ def _build_condition_code(parsed: Dict[str, Any], indicator_vars: Dict[str, str]
         lines.append(f"            if self.position:")
         lines.append(f"                self.position.close()")
     
-    # Bollinger Bands strategy
-    elif has_bb:
-        lines.append(f"        # Bollinger Bands mean reversion")
-        lines.append(f"        if self.data.Close[-1] < self.bb_lower[-1]:")
-        lines.append(f"            if not self.position:")
-        lines.append(f"                self.{buy_action}()")
-        lines.append(f"        elif self.data.Close[-1] > self.bb_upper[-1]:")
-        lines.append(f"            if self.position:")
-        lines.append(f"                self.position.close()")
+    elif strategy_type == "oscillator":
+        # Build oscillator conditions (RSI, Stoch, CCI, etc.)
+        osc_conditions_buy = []
+        osc_conditions_sell = []
+        
+        for ind_type, expr in indicator_vars.items():
+            if ind_type == "RSI":
+                buy_thresh = thresholds.get("ta_rsi", 30)
+                osc_conditions_buy.append(f"{expr} < {buy_thresh}")
+                osc_conditions_sell.append(f"{expr} > {100 - buy_thresh}")
+            elif ind_type == "STOCHASTIC":
+                osc_conditions_buy.append(f"{expr} < 20")
+                osc_conditions_sell.append(f"{expr} > 80")
+            elif ind_type == "CCI":
+                buy_thresh = thresholds.get("ta_cci", -100)
+                osc_conditions_buy.append(f"{expr} < {buy_thresh}")
+                osc_conditions_sell.append(f"{expr} > {-buy_thresh}")
+            elif ind_type == "MFI":
+                buy_thresh = thresholds.get("ta_mfi", 20)
+                osc_conditions_buy.append(f"{expr} < {buy_thresh}")
+                osc_conditions_sell.append(f"{expr} > {100 - buy_thresh}")
+            elif ind_type == "WILLIAMS_R":
+                buy_thresh = thresholds.get("ta_williams_r", -80)
+                osc_conditions_buy.append(f"{expr} < {buy_thresh}")
+                osc_conditions_sell.append(f"{expr} > {-100 - buy_thresh}")
+        
+        # Combine conditions with AND/OR
+        if osc_conditions_buy:
+            if has_and and len(osc_conditions_buy) > 1:
+                buy_cond = " and ".join(f"({c})" for c in osc_conditions_buy)
+                sell_cond = " and ".join(f"({c})" for c in osc_conditions_sell)
+            elif has_or and len(osc_conditions_buy) > 1:
+                buy_cond = " or ".join(f"({c})" for c in osc_conditions_buy)
+                sell_cond = " or ".join(f"({c})" for c in osc_conditions_sell)
+            else:
+                buy_cond = osc_conditions_buy[0]
+                sell_cond = osc_conditions_sell[0] if osc_conditions_sell else f"not ({buy_cond})"
+            
+            lines.append(f"        # Oscillator-based entry/exit")
+            lines.append(f"        if {buy_cond}:")
+            lines.append(f"            if not self.position:")
+            lines.append(f"                self.{buy_action}()")
+            lines.append(f"        elif {sell_cond}:")
+            lines.append(f"            if self.position:")
+            lines.append(f"                self.position.close()")
     
-    # Stochastic strategy
-    elif has_stoch:
-        lines.append(f"        # Stochastic oversold/overbought")
-        lines.append(f"        if self.stoch_k[-1] < 20:")
-        lines.append(f"            if not self.position:")
-        lines.append(f"                self.{buy_action}()")
-        lines.append(f"        elif self.stoch_k[-1] > 80:")
-        lines.append(f"            if self.position:")
-        lines.append(f"                self.position.close()")
+    elif strategy_type == "breakout":
+        # Bollinger/Donchian/Keltner breakout
+        if any(i.get("type") == "BOLLINGER" for i in indicators):
+            lines.append(f"        # Bollinger Bands mean reversion")
+            lines.append(f"        if self.data.Close[-1] < self.bb_lower[-1]:")
+            lines.append(f"            if not self.position:")
+            lines.append(f"                self.{buy_action}()")
+            lines.append(f"        elif self.data.Close[-1] > self.bb_upper[-1]:")
+            lines.append(f"            if self.position:")
+            lines.append(f"                self.position.close()")
+        elif any(i.get("type") == "DONCHIAN" for i in indicators):
+            lines.append(f"        # Donchian Channel breakout")
+            lines.append(f"        if self.data.Close[-1] > self.donchian_upper[-1]:")
+            lines.append(f"            if not self.position:")
+            lines.append(f"                self.{buy_action}()")
+            lines.append(f"        elif self.data.Close[-1] < self.donchian_lower[-1]:")
+            lines.append(f"            if self.position:")
+            lines.append(f"                self.position.close()")
+        else:
+            lines.append(f"        # Breakout strategy")
+            lines.append(f"        pass  # TODO: Add breakout logic")
     
-    # Default: Simple MA strategy
-    elif has_sma or has_ema:
-        ma_expr = indicator_vars.get("SMA") or indicator_vars.get("EMA", "self.sma0[-1]")
-        lines.append(f"        # Price vs MA strategy")
-        lines.append(f"        if self.data.Close[-1] > {ma_expr}:")
-        lines.append(f"            if not self.position:")
-        lines.append(f"                self.{buy_action}()")
-        lines.append(f"        elif self.data.Close[-1] < {ma_expr}:")
-        lines.append(f"            if self.position:")
-        lines.append(f"                self.position.close()")
+    elif strategy_type == "trend":
+        # ADX/SuperTrend trend following
+        if any(i.get("type") == "ADX" for i in indicators):
+            lines.append(f"        # ADX trend following")
+            lines.append(f"        if self.adx[-1] > 25 and self.plus_di[-1] > self.minus_di[-1]:")
+            lines.append(f"            if not self.position:")
+            lines.append(f"                self.{buy_action}()")
+            lines.append(f"        elif self.adx[-1] > 25 and self.minus_di[-1] > self.plus_di[-1]:")
+            lines.append(f"            if self.position:")
+            lines.append(f"                self.position.close()")
+        elif any(i.get("type") == "SUPERTREND" for i in indicators):
+            lines.append(f"        # SuperTrend following")
+            lines.append(f"        if self.supertrend[-1] < self.data.Close[-1]:")
+            lines.append(f"            if not self.position:")
+            lines.append(f"                self.{buy_action}()")
+            lines.append(f"        elif self.supertrend[-1] > self.data.Close[-1]:")
+            lines.append(f"            if self.position:")
+            lines.append(f"                self.position.close()")
+        else:
+            lines.append(f"        # Trend strategy")
+            lines.append(f"        pass  # TODO: Add trend logic")
     
     else:
-        # Fallback
-        lines.append(f"        # Default strategy (no indicators detected)")
-        lines.append(f"        pass")
+        # Default: Simple MA if available
+        has_sma = any(i.get("type") == "SMA" for i in indicators)
+        has_ema = any(i.get("type") == "EMA" for i in indicators)
+        if has_sma or has_ema:
+            ma_expr = indicator_vars.get("SMA") or indicator_vars.get("EMA", "self.sma0[-1]")
+            lines.append(f"        # Price vs MA strategy")
+            lines.append(f"        if self.data.Close[-1] > {ma_expr}:")
+            lines.append(f"            if not self.position:")
+            lines.append(f"                self.{buy_action}()")
+            lines.append(f"        elif self.data.Close[-1] < {ma_expr}:")
+            lines.append(f"            if self.position:")
+            lines.append(f"                self.position.close()")
+        else:
+            lines.append(f"        # Default strategy (no indicators detected)")
+            lines.append(f"        pass")
     
     return "\n".join(lines)
 
@@ -394,3 +544,23 @@ if __name__ == "__main__":
     code2, unknown2 = generate_strategy_from_json(test_unknown)
     print(code2)
     print(f"\nUnknown blocks: {unknown2}")
+    
+    # Test with compound AND condition (RSI + Stochastic)
+    print("\n" + "=" * 60)
+    print("Testing COMPOUND condition (RSI AND Stochastic):")
+    print("=" * 60)
+    test_compound = {
+        "indicators": [
+            {"type": "RSI", "period": 14},
+            {"type": "STOCHASTIC", "k_period": 14, "d_period": 3},
+        ],
+        "entry_direction": "long",
+        "conditions": [
+            {"type": "and", "operator": "and"},
+            {"type": "less"}
+        ],
+    }
+    code3, unknown3 = generate_strategy_from_json(test_compound)
+    print(code3)
+    print(f"\nUnknown blocks: {unknown3}")
+
