@@ -71,6 +71,7 @@ export const SettingsPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1"
   const [backtestResult, setBacktestResult] = useState<BacktestResult | null>(null);
   const [startDate, setStartDate] = useState("2024-01-01");
   const [endDate, setEndDate] = useState("2024-03-31");
+  const [timeframe, setTimeframe] = useState<"1h" | "4h" | "1d" | "1w">("1d");
 
   // Live state
   const [isStrategyRunning, setIsStrategyRunning] = useState(false);
@@ -171,6 +172,7 @@ export const SettingsPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1"
           symbol: tradingSymbol,
           startDate,
           endDate,
+          interval: timeframe,
           initialBalance: parseFloat(capitalAllocation),
           tradeSize: parseFloat(capitalAllocation),
           engine: engine,
@@ -452,6 +454,22 @@ export const SettingsPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1"
                   className="bg-secondary text-xs"
                 />
               </div>
+            </div>
+
+            {/* Timeframe Selection */}
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Timeframe</label>
+              <Select value={timeframe} onValueChange={(v: any) => setTimeframe(v)}>
+                <SelectTrigger className="bg-secondary h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1h">1 Hour</SelectItem>
+                  <SelectItem value="4h">4 Hours</SelectItem>
+                  <SelectItem value="1d">1 Day</SelectItem>
+                  <SelectItem value="1w">1 Week</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Engine Selection */}

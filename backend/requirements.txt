@@ -14,3 +14,7 @@ aiohttp>=3.9.0
 
 # Market data
 yfinance>=0.2.0
+
+# RAG
+chromadb>=0.4.0
+sentence-transformers>=2.2.2
