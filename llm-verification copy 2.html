@@ -700,6 +700,45 @@ Reply with ONLY the category name.
             </div>
         </section>
 
+        <!-- ========================================== -->
+        <!-- HYBRID XML→PYTHON CONVERSION -->
+        <!-- ========================================== -->
+        <section>
+            <h2>Hybrid Code Conversion (Option B)</h2>
+            <div class="card">
+                <p style="color: var(--text-muted); margin-bottom: 20px;">
+                    The backtest pipeline now uses a <strong>hybrid approach</strong> for converting Blockly XML to
+                    Python:
+                    Local Parse → Draft Python → LLM Fix
+                </p>
+
+                <h3 style="color: var(--text-primary); margin: 20px 0 10px;">Why Hybrid?</h3>
+                <ul style="color: var(--text-muted); margin-left: 20px;">
+                    <li><strong>Cheaper:</strong> Python code is ~10x smaller than XML = fewer tokens</li>
+                    <li><strong>Faster:</strong> LLM only fixes, doesn't generate from scratch</li>
+                    <li><strong>More reliable:</strong> Local parser extracts parameters deterministically</li>
+                    <li><strong>Fallback:</strong> If LLM fails, draft code still works for most cases</li>
+                </ul>
+
+                <h3 style="color: var(--text-primary); margin: 20px 0 10px;">Key Functions</h3>
+                <table>
+                    <tbody>
+                        <tr>
+                            <td><code>parse_xml_simple()</code></td>
+                            <td>Regex-based XML parser</td>
+                        </tr>
+                        <tr>
+                            <td><code>generate_strategy_code_simple()</code></td>
+                            <td>Generates draft Python from parsed structure</td>
+                        </tr>
+                        <tr>
+                            <td><code>LLM_FIX_PYTHON_PROMPT</code></td>
+                            <td>New prompt for fixing draft code</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
         <footer>
             <p>Project Prometheus (PPM) • Pipeline Documentation</p>
         </footer>

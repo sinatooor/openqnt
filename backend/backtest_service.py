@@ -108,25 +108,39 @@ Convert the following Blockly XML strategy into a Python class compatible with t
 INPUT XML:
 {xml}
 
-RULES:
+CRITICAL RULES:
 1. Create a class that extends `Strategy` from backtesting.py
 2. Use `self.I()` wrapper for ALL indicators
-3. Map blocks:
-   - ta_sma → SMA (from backtesting.test import SMA)
-   - ta_ema → EMA (use the custom EMA function defined below - DO NOT import from backtesting.test)
-   - ta_rsi → Use talib or manual RSI calculation
-   - operator_greater → >
-   - operator_less → <
-   - trade_order direction=long → self.buy()
-   - trade_order direction=short → self.sell()
-4. Extract periods from mutation attributes (ma_period, period)
-5. Use crossover() for comparing indicators
-6. Stop loss/take profit: Calcluate valid levels. For Long: SL < Entry < TP. For Short: TP < Entry < SL. If relying on block logic and values are equal, DO NOT set sl/tp arguments.
+3. DO NOT IMPORT TALIB - it is not available! Use the custom indicator functions below.
+4. DO NOT use .shift() on arrays - backtesting.py's _Array objects don't support it. Use indexing instead: array[-1], array[-2]
+5. DO NOT use pandas methods on self.data - it's not a DataFrame!
+
+INDICATOR MAPPING:
+- ta_sma → use SMA from backtesting.test
+- ta_ema → use custom EMA function (defined below)
+- ta_rsi → use custom RSI function (defined below) 
+- ta_atr → use custom ATR function (defined below)
+- operator_greater → >
+- operator_less → <
+- trade_order direction=long → self.buy()
+- trade_order direction=short → self.sell()
+
+RULES:
+1. Extract periods from mutation attributes (ma_period, period)
+2. Use crossover() for comparing indicators
+3. CRITICAL SL/TP RULES:
+   - If the strategy XML doesn't specify explicit SL/TP values, DO NOT pass sl/tp to buy()/sell()
+   - If using ATR for SL/TP: check that atr_value > 0 before using it
+   - For Long: SL = price - atr_value, TP = price + atr_value (only if atr_value > 0)
+   - DO NOT pass SL/TP if they would be equal to entry price
+   - When in doubt, use self.buy() or self.sell() without sl/tp arguments
+   - CRITICAL: Never use modulo (%) on self.data.index (it's DateTime). Use len(self.data) % n == 0 instead.
+4. Access price data via: self.data.Close, self.data.Open, self.data.High, self.data.Low
 
 OUTPUT FORMAT:
 Return ONLY the Python code. No markdown, no explanation.
 
-TEMPLATE:
+REQUIRED TEMPLATE:
 ```
 from backtesting import Strategy
 from backtesting.lib import crossover
@@ -142,21 +156,96 @@ def EMA(values, n):
         ema[i] = alpha * values[i] + (1 - alpha) * ema[i-1]
     return ema
 
+def RSI(values, n=14):
+    values = np.asarray(values)
+    deltas = np.diff(values)
+    gains = np.where(deltas > 0, deltas, 0)
+    losses = np.where(deltas < 0, -deltas, 0)
+    
+    avg_gain = np.zeros_like(values)
+    avg_loss = np.zeros_like(values)
+    
+    avg_gain[n] = np.mean(gains[:n])
+    avg_loss[n] = np.mean(losses[:n])
+    
+    for i in range(n+1, len(values)):
+        avg_gain[i] = (avg_gain[i-1] * (n-1) + gains[i-1]) / n
+        avg_loss[i] = (avg_loss[i-1] * (n-1) + losses[i-1]) / n
+    
+    rs = np.where(avg_loss != 0, avg_gain / avg_loss, 0)
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
+
+def ATR(high, low, close, n=14):
+    high = np.asarray(high)
+    low = np.asarray(low)
+    close = np.asarray(close)
+    
+    tr = np.zeros(len(close))
+    tr[0] = high[0] - low[0]
+    
+    for i in range(1, len(close)):
+        hl = high[i] - low[i]
+        hc = abs(high[i] - close[i-1])
+        lc = abs(low[i] - close[i-1])
+        tr[i] = max(hl, hc, lc)
+    
+    atr = np.zeros(len(close))
+    atr[n-1] = np.mean(tr[:n])
+    for i in range(n, len(close)):
+        atr[i] = (atr[i-1] * (n-1) + tr[i]) / n
+    return atr
+
 class GeneratedStrategy(Strategy):
-    fast_period = 10
-    slow_period = 20
+    rsi_period = 14
+    atr_period = 14
     
     def init(self):
-        self.fast_sma = self.I(SMA, self.data.Close, self.fast_period)
-        self.slow_sma = self.I(SMA, self.data.Close, self.slow_period)
+        self.rsi = self.I(RSI, self.data.Close, self.rsi_period)
+        self.atr = self.I(ATR, self.data.High, self.data.Low, self.data.Close, self.atr_period)
     
     def next(self):
-        if crossover(self.fast_sma, self.slow_sma):
+        if self.rsi[-1] < 30:
             self.buy()
-        elif crossover(self.slow_sma, self.fast_sma):
+        elif self.rsi[-1] > 70:
             self.sell()
 ```
 """
+
+# LLM Prompt for FIXING locally-generated Python code (Option B - Hybrid Approach)
+# This is simpler and more reliable than generating from XML scratch
+LLM_FIX_PYTHON_PROMPT = """You are a Python code fixer for the backtesting.py library.
+
+The following Python strategy code was auto-generated from a visual block editor.
+It may contain bugs, syntax errors, or incorrect API usage.
+
+DRAFT CODE TO FIX:
+```python
+{draft_code}
+```
+
+ORIGINAL STRATEGY INTENT (from parsed blocks):
+- Indicators: {indicators}
+- Entry direction: {entry_direction}
+- Has short entries: {has_short}
+- Risk management: {risk_management}
+
+YOUR TASK - Fix and validate:
+1. SYNTAX: Fix any Python syntax errors
+2. INDICATORS: Ensure all indicators use self.I() wrapper correctly
+3. COMPARISONS: Use array[-1] for current values, not .shift() or pandas methods
+4. TRADES: Verify buy()/sell() calls match the intended direction
+5. SL/TP: If ATR-based SL/TP is used, validate the math is correct
+6. IMPORTS: Ensure all required imports are present (Strategy, crossover, SMA, numpy)
+
+CRITICAL RULES:
+- DO NOT change the strategy logic unless it's clearly broken
+- DO NOT add features not in the original draft
+- DO NOT remove working code
+- Keep the class named 'GeneratedStrategy'
+- If the code looks correct, return it unchanged
+
+RETURN: Only the fixed Python code. No markdown, no explanation, no ```python blocks."""
 
 # LLM Prompt for XML → NautilusTrader conversion
 XML_TO_NAUTILUS_PROMPT = """You are a trading strategy code converter.
@@ -2810,24 +2899,72 @@ async def run_backtest_pipeline(
                 code_lang = "python"
         
         elif (use_llm and call_deepseek) and not strategy_code:
-            print("Using DeepSeek for XML→Python conversion...")
-            prompt = XML_TO_PYTHON_PROMPT.format(xml=xml)
+            # ============================================
+            # OPTION B: HYBRID APPROACH
+            # 1. Generate draft code locally (fast, deterministic)
+            # 2. Send draft to LLM for fixing (simpler task)
+            # ============================================
+            print("Using HYBRID approach: Local parse → Draft code → LLM fix...")
+            
+            # Step 1: Local parsing
+            if AST_PARSER_AVAILABLE:
+                try:
+                    print("  [1/3] AST-based parsing...")
+                    parsed = parse_xml_ast(xml)
+                except Exception as e:
+                    print(f"  AST parser failed: {e}, using regex parser")
+                    parsed = parse_xml_simple(xml)
+            else:
+                parsed = parse_xml_simple(xml)
+            
+            # Step 2: Generate draft Python code locally
+            print("  [2/3] Generating draft Python code locally...")
+            draft_code = generate_strategy_code_simple(parsed)
+            
+            # Extract metadata for LLM context
+            indicators_str = ", ".join([f"{i['type']}({i.get('period', 'default')})" for i in parsed.get("indicators", [])])
+            risk_mgmt_str = str(parsed.get("risk_management", "None"))
+            
+            # Step 3: Send draft to LLM for fixing
+            print("  [3/3] Sending draft to LLM for validation/fixing...")
+            prompt = LLM_FIX_PYTHON_PROMPT.format(
+                draft_code=draft_code,
+                indicators=indicators_str or "None detected",
+                entry_direction=parsed.get("entry_direction", "long"),
+                has_short=parsed.get("has_short_entry", False),
+                risk_management=risk_mgmt_str
+            )
             messages = [
                 {"role": "system", "content": prompt},
-                {"role": "user", "content": "Generate the strategy code."}
+                {"role": "user", "content": "Fix the code if needed, or return it unchanged if correct."}
             ]
-            strategy_code = await call_deepseek(messages, temperature=0.1)
             
-            # Clean code
-            if strategy_code.startswith("```"):
-                strategy_code = strategy_code.split("\n", 1)[1]
-            if strategy_code.endswith("```"):
-                strategy_code = strategy_code.rsplit("\n", 1)[0]
-            if strategy_code.startswith("python"):
-                strategy_code = strategy_code[6:].strip()
+            try:
+                fixed_code = await call_deepseek(messages, temperature=0.1)
+                
+                # Clean code (remove markdown if present)
+                if fixed_code.startswith("```"):
+                    fixed_code = fixed_code.split("\n", 1)[1]
+                if fixed_code.endswith("```"):
+                    fixed_code = fixed_code.rsplit("\n", 1)[0]
+                if fixed_code.startswith("python"):
+                    fixed_code = fixed_code[6:].strip()
+                
+                # Validate that LLM returned code (not an error message)
+                if "class GeneratedStrategy" in fixed_code or "def init" in fixed_code:
+                    strategy_code = fixed_code
+                    print("  ✓ LLM successfully validated/fixed the code")
+                else:
+                    # LLM returned something weird, use draft
+                    print("  ⚠ LLM response invalid, using local draft code")
+                    strategy_code = draft_code
+            except Exception as e:
+                print(f"  ⚠ LLM fix failed: {e}, using local draft code")
+                strategy_code = draft_code
+            
             code_lang = "python"
         else:
-            print("Using simple parser for XML→Python conversion...")
+            print("Using simple parser for XML→Python conversion (no LLM)...")
             # Try AST parser first, fall back to regex if unavailable or fails
             if AST_PARSER_AVAILABLE and not strategy_code:
                 try:
