@@ -618,16 +618,25 @@ def fetch_historical_data(
     Returns:
         DataFrame with Open, High, Low, Close, Volume columns
     """
-    # Use local database if specified
-    if data_source == "local":
+    # PRIORITY 1: Check Local Database (Always try first as per user request)
+    if LOCAL_DB_AVAILABLE:
         try:
-            return fetch_local_db_data(symbol, start_date, end_date, interval)
+            print(f"Checking local database for {symbol}...")
+            # If dates provided, use them. If not, we might need logic to infer, 
+            # but usually start_date/end_date are passed from main.py now.
+            # If period provided but no dates (rare for local), we skip or try our best.
+            if start_date and end_date:
+                df = fetch_local_db_data(symbol, start_date, end_date, interval)
+                if not df.empty:
+                    print(f"Found {len(df)} bars in local database.")
+                    return df
+                print("Local database returned no data.")
+            else:
+                print("Skipping local DB check: valid start/end dates required.")
         except Exception as e:
-            print(f"Local database failed: {e}")
-            print("Falling back to yfinance...")
-            data_source = "yfinance"
-    
-    # Try Alpha Vantage first (default)
+            print(f"Local database check failed (continuing to external providers): {e}")
+
+    # PRIORITY 2: Alpha Vantage (if selected or default)
     if data_source == "alphavantage":
         try:
             return fetch_alphavantage_data(symbol, period, interval)
@@ -635,7 +644,7 @@ def fetch_historical_data(
             print(f"Alpha Vantage failed: {e}")
             print("Falling back to yfinance...")
     
-    # Fallback to yfinance
+    # PRIORITY 3: yfinance (Fallback)
     try:
         # Map common forex/crypto symbols to Yahoo Finance format
         symbol_map = {
@@ -2312,7 +2321,8 @@ def run_backtest(
     data: pd.DataFrame,
     cash: float = 10000,
     commission: float = 0.002,
-    margin: float = 1.0
+    margin: float = 1.0,
+    strategy_params: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     """
     Execute backtest using backtesting.py
@@ -2331,6 +2341,15 @@ def run_backtest(
         
         if not strategy_class:
             raise ValueError("No Strategy class found in generated code")
+            
+        # Inject parameters into the strategy class (for structure-based caching)
+        if strategy_params:
+            print(f"Injecting {len(strategy_params)} parameters into strategy class")
+            for key, value in strategy_params.items():
+                if hasattr(strategy_class, key):
+                    setattr(strategy_class, key, value)
+                else:
+                    print(f"Warning: Cached strategy missing parameter '{key}' - ignoring")
         
         # Run backtest
         bt = Backtest(
@@ -2398,6 +2417,34 @@ def run_backtest(
         win_rate = float(stats['Win Rate [%]']) / 100 if pd.notna(stats['Win Rate [%]']) else 0
         kelly = win_rate - (1 - win_rate) / payoff_ratio if payoff_ratio > 0 else 0
 
+        # Capture raw stats output
+        raw_stats = stats.to_string()
+        
+        # Generate plot as HTML string
+        visualization_html = None
+        try:
+            # Create a temporary file to save the plot
+            import tempfile
+            # from backtesting._plotting import plot
+            import os
+            
+            with tempfile.NamedTemporaryFile(suffix='.html', delete=False) as tmp:
+                temp_path = tmp.name
+            
+            # Use lower-level plot function to save to temp file
+            bt.plot(filename=temp_path, open_browser=False)
+            
+            # Read the content back
+            with open(temp_path, 'r', encoding='utf-8') as f:
+                visualization_html = f.read()
+            
+            # Clean up
+            os.unlink(temp_path)
+            
+        except Exception as e:
+            print(f"Error generating visualization: {e}")
+            visualization_html = None
+
         # Extract results
         result = {
             "success": True,
@@ -2432,6 +2479,8 @@ def run_backtest(
                 "equity_final": float(stats['Equity Final [$]']),
                 "equity_peak": float(stats['Equity Peak [$]']),
             },
+            "visualization_html": visualization_html,
+            "raw_stats": raw_stats,
             "trades": [],
             "equity_curve": []
         }
@@ -2840,26 +2889,6 @@ async def run_backtest_pipeline(
 ) -> Dict[str, Any]:
     """
     Complete backtest pipeline.
-    
-    Args:
-        xml: Blockly XML strategy
-        symbol: Trading symbol (e.g., "AAPL", "SPY")
-        period: Historical data period ("1y", "2y", etc.)
-        interval: Bar interval ("1d", "1h", etc.)
-        cash: Starting capital
-        use_llm: Whether to use LLM for code generation
-        call_deepseek: DeepSeek API callable
-        engine: Backtest engine ("backtesting.py", "nautilus", "ai_simulation", "simple")
-        optimize: Whether to run optimization
-        opt_metric: Metric to optimize
-        opt_method: Optimization method
-        data_source: Data provider ("local", "alphavantage", or "yfinance")
-        start_date: Start date for local data (YYYY-MM-DD)
-        end_date: End date for local data (YYYY-MM-DD)
-        verify_with_llm: Send XML + Python to DeepSeek for verification before running
-        precompiled_code: Skip conversion if code already exists
-        code_language: Language of precompiled code (default python)
-        strategy_id: Optional identifier for cache reads/writes
     """
     try:
         print(f"=== Starting Backtest Pipeline ({engine}) ===")
@@ -2889,39 +2918,92 @@ async def run_backtest_pipeline(
                 "trades": []
             }
         
-        # Step 1: Convert XML to Python (reuse cache when possible)
-        xml_hash = hash_xml(xml)
-        strategy_code = precompiled_code
+        # Imports for caching and code generation
+        from strategy_store import (
+            hash_xml, hash_xml_structure, 
+            load_latest_by_hash, load_by_structure_hash, 
+            save_strategy_version, load_by_id
+        )
+        from json_code_generator import get_strategy_parameters, generate_strategy_from_json
+        from xml_parser import parse_xml_simple
+
+        generated_code = None
+        strategy_params = None
+        parsing_error = None
         code_lang = code_language or "python"
-        pipeline_warnings = []  # Track warnings for frontend
-
-        # Try cache when no explicit code provided
-        if not strategy_code:
-            cached = load_by_id(strategy_id) if strategy_id else load_latest_by_hash(xml_hash)
-            if cached and cached.get("code"):
-                strategy_code = cached.get("code")
-                code_lang = cached.get("language", code_lang)
-                strategy_id = cached.get("id", strategy_id)
-                print("Reusing cached strategy code from store")
-
-        if engine == "nautilus":
-            # ... (Nautilus logic remains same)
-            if not strategy_code and call_deepseek:
-                print("Using DeepSeek for XML→Nautilus conversion...")
-                prompt = XML_TO_NAUTILUS_PROMPT.format(xml=xml)
-                messages = [
-                    {"role": "system", "content": prompt},
-                    {"role": "user", "content": "Generate the strategy code."}
-                ]
-                strategy_code = await call_deepseek(messages, temperature=0.1)
+        
+        # 1. Try to load pre-compiled code explicitly provided (from AI generation or API)
+        if precompiled_code:
+            generated_code = precompiled_code
+            print(f"Using pre-compiled strategy code (ID: {strategy_id})")
+            
+        # 2. If no pre-compiled code, check cache
+        if not generated_code:
+            # A. Check standard cache (Exact XML Match)
+            # If strategy_id is provided, try loading by ID first
+            if strategy_id:
+                cached = load_by_id(strategy_id)
+                if cached and cached.get("code"):
+                    generated_code = cached["code"]
+                    code_lang = cached.get("language", code_lang)
+                    print("Using cached strategy code (Strategy ID Match)")
+            
+            # If not found by ID, try exact XML hash
+            if not generated_code:
+                cached = load_latest_by_hash(hash_xml(xml))
+                if cached and cached.get("code"):
+                    generated_code = cached["code"]
+                    code_lang = cached.get("language", code_lang)
+                    strategy_id = cached.get("id", strategy_id)
+                    print("Using cached strategy code (Exact XML Match)")
+            
+            # B. Check Structure Cache (Fuzzy Match - Same blocks, different params)
+            if not generated_code:
+                struct_hash = hash_xml_structure(xml)
+                struct_cached = load_by_structure_hash(struct_hash)
                 
-                # Clean code
-                if strategy_code.startswith("```"):
-                    strategy_code = strategy_code.split("\n", 1)[1]
-                if strategy_code.endswith("```"):
-                    strategy_code = strategy_code.rsplit("\n", 1)[0]
-                if strategy_code.startswith("python"):
-                    strategy_code = strategy_code[6:].strip()
+                if struct_cached and struct_cached.get("code"):
+                    print("Found cached strategy structure - reusing code with new parameters")
+                    generated_code = struct_cached["code"]
+                    code_lang = struct_cached.get("language", code_lang)
+                    # Extract params from current XML to inject
+                    try:
+                        parsed_structure = parse_xml_simple(xml)
+                        strategy_params = get_strategy_parameters(parsed_structure)
+                        print(f"Extracted {len(strategy_params)} new parameters for injection")
+                    except Exception as e:
+                        print(f"Error extracting parameters for injection: {e}")
+                        # If validation fails, fallback to fresh generation
+                        generated_code = None
+        
+        # 3. Generate if not found
+        if not generated_code:
+            print("No cache found. Generating strategy code...")
+            
+            # Try deterministic local generation first (fast & reliable)
+            if engine != "nautilus": # Nautilus uses different path
+                try:
+                    parsed = parse_xml_simple(xml)
+                    code, unknown = generate_strategy_from_json(parsed)
+                    
+                    if not unknown:
+                        generated_code = code
+                        code_lang = "python"
+                        print("Successfully generated code locally (Deterministic)")
+                    else:
+                        print(f"Local generation parsed partial code. Unknown blocks: {len(unknown)}")
+                        # If allowed, LLM will fill gaps
+                except Exception as e:
+                    print(f"Local parsing failed: {e}")
+                    parsing_error = str(e)
+
+            # Fallback to LLM if needed and enabled
+            if not generated_code and use_llm and call_deepseek:
+                # ... existing LLM logic ...
+                # We will let the execution flow continue to existing LLM block
+                pass
+
+        # ... (Execution logic follows) ...
                 code_lang = "python"
             elif not strategy_code:
                 strategy_code = "# Nautilus code generation requires LLM"
@@ -3040,34 +3122,17 @@ async def run_backtest_pipeline(
                 # Use JSON-driven generator if available, fallback to legacy
                 if JSON_GENERATOR_AVAILABLE:
                     print("Using JSON-driven code generator...")
-                    strategy_code, unknown_blocks_simple = generate_strategy_from_json(parsed)
+                    generated_code, unknown_blocks_simple = generate_strategy_from_json(parsed) # Changed strategy_code to generated_code
                     if unknown_blocks_simple:
                         print(f"WARNING: {len(unknown_blocks_simple)} block(s) could not be parsed (no LLM fallback)")
                         for ub in unknown_blocks_simple:
                             print(f"  - {ub['type']}: {ub.get('original_params', {})}")
                 else:
                     print("Using legacy code generator...")
-                    strategy_code = generate_strategy_code_simple(parsed)
+                    generated_code = generate_strategy_code_simple(parsed) # Changed strategy_code to generated_code
             code_lang = "python"
 
         # Persist strategy pairing for reuse
-        try:
-            record = save_strategy_version(
-                xml=xml,
-                code=strategy_code,
-                language=code_lang,
-                source="precompiled" if precompiled_code else ("cache" if 'cached' in locals() and cached else "llm" if use_llm else "parser"),
-                metadata={
-                    "engine": engine,
-                    "symbol": symbol,
-                    "data_source": data_source,
-                    "interval": interval,
-                },
-                strategy_id=strategy_id,
-            )
-            strategy_id = record.get("id")
-        except Exception as e:
-            print(f"Strategy store write failed: {e}")
         
         print(f"Generated strategy code:\n{strategy_code[:500]}...")
         

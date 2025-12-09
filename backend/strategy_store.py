@@ -19,9 +19,33 @@ def _ensure_store_file() -> None:
             pass
 
 
+import re
+
 def hash_xml(xml: str) -> str:
     """Deterministic hash for cache lookups."""
-    return hashlib.sha256(xml.encode("utf-8")).hexdigest()
+    # Normalize: remove whitespace between tags
+    normalized = re.sub(r'>\s+<', '><', xml.strip())
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
+def hash_xml_structure(xml: str) -> str:
+    """
+    Generate a hash of the XML structure, ignoring parameter values.
+    Used to find re-usable code templates where only numbers/params changed.
+    """
+    # 1. Normalize whitespace first
+    normalized = re.sub(r'>\s+<', '><', xml.strip())
+    
+    # 2. Mask numeric values between tags (e.g., <field name="NUM">14</field> -> <field name="NUM">#</field>)
+    # Matches >123< or >12.34<
+    normalized = re.sub(r'>\d+(\.\d+)?<', '>#<', normalized)
+    
+    # 3. Mask numeric attributes (e.g., ma_period="14" -> ma_period="#")
+    # Be careful not to mask structural IDs if they are just numbers, but usually they are alphanumeric.
+    # Simple heuristic: attributes often hold params.
+    normalized = re.sub(r'="(\d+(\.\d+)?)"', '="#"', normalized)
+    
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
 
 def _iter_records():
@@ -56,6 +80,15 @@ def load_by_id(strategy_id: str) -> Optional[Dict[str, Any]]:
     return match
 
 
+def load_by_structure_hash(struct_hash: str) -> Optional[Dict[str, Any]]:
+    """Return the most recent record matching the XML structure hash."""
+    match = None
+    for rec in _iter_records():
+        if rec.get("structure_hash") == struct_hash:
+            match = rec
+    return match
+
+
 def save_strategy_version(
     xml: str,
     code: str,
@@ -69,6 +102,7 @@ def save_strategy_version(
     record = {
         "id": strategy_id or str(uuid.uuid4()),
         "xml_hash": hash_xml(xml),
+        "structure_hash": hash_xml_structure(xml),
         "xml": xml,
         "code": code,
         "language": language,

@@ -15,12 +15,13 @@ interface Message {
 
 interface AIChatPanelProps {
   onBlocksGenerated: (xml: string, isEdit?: boolean) => void;
+  onStrategyGenerated?: (strategyId: string, code?: string) => void;
   getCurrentWorkspaceXml: () => string | null;
   getSelectedBlocksXml: () => { xml: string; name: string } | null;
   onLog?: (log: LogEntry) => void;
 }
 
-export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSelectedBlocksXml, onLog }: AIChatPanelProps) => {
+export const AIChatPanel = ({ onBlocksGenerated, onStrategyGenerated, getCurrentWorkspaceXml, getSelectedBlocksXml, onLog }: AIChatPanelProps) => {
   // Load initial state from localStorage
   const [messages, setMessages] = useState<Message[]>(() => {
     const saved = localStorage.getItem('aiChatMessages');
@@ -183,6 +184,10 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
           const data = await response.json();
           generatedXml = data.xml;
           aiFixed = data.ai_fixed;
+
+          if (onStrategyGenerated && data.strategy_id) {
+            onStrategyGenerated(data.strategy_id, data.code);
+          }
           console.log("RAG + GCG generation complete");
         } else {
           // Legacy Mode - Full Context approach
@@ -211,6 +216,10 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
 
             generatedXml = data.xml;
             aiFixed = data.ai_fixed || false;
+
+            if (onStrategyGenerated && data.strategy_id) {
+              onStrategyGenerated(data.strategy_id, data.code);
+            }
             console.log("Legacy mode: Supabase Edge Function (Gemini) generation complete");
           } else {
             // Use local Python backend with DeepSeek (Full context mode)
@@ -233,6 +242,10 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
             const data = await response.json();
             generatedXml = data.xml;
             aiFixed = data.ai_fixed || false;
+
+            if (onStrategyGenerated && data.strategy_id) {
+              onStrategyGenerated(data.strategy_id, data.code);
+            }
             console.log("Legacy mode: Local backend (DeepSeek) generation complete");
           }
         }

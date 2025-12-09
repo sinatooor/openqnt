@@ -51,7 +51,7 @@ load_dotenv()
 #   - Uses Gemini for verification (via Lovable)
 # ============================================================
 
-USE_DEEPSEEK_ONLY = True  # <-- CHANGE THIS TO SWITCH MODES
+USE_DEEPSEEK_ONLY = False  # <-- CHANGE THIS TO SWITCH MODES
 
 # ============================================================
 # DeepSeek Model Configuration
@@ -227,6 +227,8 @@ class BacktestResponse(BaseModel):
     metrics: dict
     trades: list
     equity_curve: list
+    visualization_html: Optional[str] = None
+    raw_stats: Optional[str] = None
 
 
 class IGLoginRequest(BaseModel):
@@ -1628,17 +1630,23 @@ async def generate_strategy(request: StrategyRequest):
         else:
             print("Pass 4: No fixes needed or could not fix")
     
+    # Final guaranteed code generation step
+    print("=== PASS 5: Ensuring Python Code Generation ===")
+    
+    # Force generation if not already done in previous steps
     code, code_lang, strategy_id = await get_or_create_strategy_code(
         validated_xml,
         call_deepseek,
         source="generate_strategy",
     )
+    
     return StrategyResponse(
         xml=validated_xml,
         ai_fixed=ai_fixed,
         code=code,
         code_language=code_lang,
         strategy_id=strategy_id,
+        message="Strategy and Python code generated successfully."
     )
 
 
@@ -1878,8 +1886,8 @@ async def run_backtest_endpoint(request: BacktestRequest):
             opt_metric=request.opt_metric,
             opt_method=request.opt_method,
             data_source=data_source,
-            start_date=request.startDate if data_source == "local" else None,
-            end_date=request.endDate if data_source == "local" else None,
+            start_date=request.startDate,
+            end_date=request.endDate,
             verify_with_llm=True,  # Enable LLM verification (Gemini + DeepSeek)
             precompiled_code=precompiled_code,
             code_language=code_language,
@@ -1896,19 +1904,33 @@ async def run_backtest_endpoint(request: BacktestRequest):
         
         print(f"Backtest complete: {metrics.get('total_trades', 0)} trades")
         
-        return {
-            "success": True,
-            "symbol": request.symbol,
-            "start_date": request.startDate,
-            "end_date": request.endDate,
-            "initial_balance": request.initialBalance,
-            "final_balance": metrics.get("equity_final", request.initialBalance),
-            "metrics": metrics,
-            "trades": result.get("trades", []),
-            "equity_curve": result.get("equity_curve", []),
-            "strategy_id": result.get("strategy_id") or strategy_id,
-            "strategy_language": result.get("strategy_language"),
-        }
+        import math
+        # Helper to safely get float values
+        def get_float(val, default=0.0):
+            try:
+                if val is None: return default
+                if isinstance(val, (int, float)) and not math.isnan(val):
+                    return float(val)
+                return default
+            except:
+                return default
+                
+        return BacktestResponse(
+            success=True,
+            symbol=request.symbol,
+            start_date=request.startDate,
+            end_date=request.endDate,
+            initial_balance=request.initialBalance,
+            final_balance=result.get("metrics", {}).get("net_profit", 0) + request.initialBalance, 
+            metrics=result.get("metrics", {}),
+            trades=result.get("trades", []),
+            equity_curve=result.get("equity_curve", []),
+            best_params=result.get("best_params"),
+            best_metric_value=result.get("best_metric_value"),
+            params_tested=result.get("params_tested"),
+            visualization_html=result.get("visualization_html"),
+            raw_stats=result.get("raw_stats")
+        )
     except Exception as e:
         import traceback
         error_msg = str(e)

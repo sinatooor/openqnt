@@ -4,6 +4,7 @@ import { X, TrendingUp, History, Zap, AlertCircle, CheckCircle2, Play, Square, L
 import { TourTriggerButton } from "./GuidedTour";
 import { Wand2 } from "lucide-react";
 import { toast } from "sonner";
+import { BacktestVisualizationModal } from "./BacktestVisualizationModal";
 import { runBacktestTS } from "@/features/backtest/logic/engine";
 import type { OHLCVBar } from "@/features/backtest/logic/indicators";
 import { generateCode } from "@/config/blockly/generator";
@@ -42,6 +43,8 @@ interface BacktestResult {
   // Optimization
   bestParams?: Record<string, any>;
   bestMetricValue?: number;
+  visualizationHtml?: string | null;
+  rawStats?: string | null;
 }
 
 interface SettingsPanelProps {
@@ -51,9 +54,10 @@ interface SettingsPanelProps {
   leverage?: string;
   onLeverageChange?: (value: string) => void;
   getWorkspaceXml?: () => string | null;
+  generatedStrategyId?: string | null;
 }
 
-export const SettingsPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1", onLeverageChange, getWorkspaceXml }: SettingsPanelProps) => {
+export const SettingsPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1", onLeverageChange, getWorkspaceXml, generatedStrategyId }: SettingsPanelProps) => {
   const [mode, setMode] = useState<"backtest" | "live">("backtest");
   const [tradingSymbol, setTradingSymbol] = useState("EURUSD");
   const [isConnected, setIsConnected] = useState(false);
@@ -78,6 +82,11 @@ export const SettingsPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1"
   const [isStartingStrategy, setIsStartingStrategy] = useState(false);
   const [strategyStatus, setStrategyStatus] = useState<any>(null);
 
+  // Visualization state
+  const [isVisModalOpen, setIsVisModalOpen] = useState(false);
+  const [visualizationHtml, setVisualizationHtml] = useState<string | null>(null);
+  const [rawStats, setRawStats] = useState<string | null>(null);
+
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
   const handleRunBacktest = async () => {
@@ -93,6 +102,8 @@ export const SettingsPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1"
 
     setIsBacktesting(true);
     setBacktestResult(null);
+    setVisualizationHtml(null);
+    setRawStats(null);
 
     try {
       // Optional: Run Gemini verification via Supabase Edge Function (Lovable gateway)
@@ -179,7 +190,8 @@ export const SettingsPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1"
           optimize: isOptimization,
           opt_metric: optMetric,
           opt_method: optMethod,
-          ai_model: aiModel
+          ai_model: aiModel,
+          strategyId: generatedStrategyId
         })
       });
 
@@ -228,8 +240,17 @@ export const SettingsPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1"
           sqn: data.metrics.sqn,
           kellyCriterion: data.metrics.kelly_criterion,
           bestParams: data.best_params,
-          bestMetricValue: data.best_metric_value
+          bestMetricValue: data.best_metric_value,
+          visualizationHtml: data.visualization_html,
+          rawStats: data.raw_stats
         });
+
+        if (data.visualization_html) {
+          setVisualizationHtml(data.visualization_html);
+        }
+        if (data.raw_stats) {
+          setRawStats(data.raw_stats);
+        }
 
         // Show contextual toast messages based on results
         if (totalTrades === 0) {
@@ -584,10 +605,23 @@ export const SettingsPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1"
 
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Results</span>
-                    <Badge variant={backtestResult.totalReturn >= 0 ? "default" : "destructive"}>
-                      {backtestResult.totalReturn >= 0 ? <ArrowUpRight className="w-3 h-3 mr-1" /> : <ArrowDownRight className="w-3 h-3 mr-1" />}
-                      {backtestResult.totalReturn.toFixed(2)}%
-                    </Badge>
+                    <div className="flex gap-2">
+                      {backtestResult.visualizationHtml && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 text-xs"
+                          onClick={() => setIsVisModalOpen(true)}
+                        >
+                          <BarChart3 className="w-3 h-3 mr-1" />
+                          View Chart
+                        </Button>
+                      )}
+                      <Badge variant={backtestResult.totalReturn >= 0 ? "default" : "destructive"}>
+                        {backtestResult.totalReturn >= 0 ? <ArrowUpRight className="w-3 h-3 mr-1" /> : <ArrowDownRight className="w-3 h-3 mr-1" />}
+                        {backtestResult.totalReturn.toFixed(2)}%
+                      </Badge>
+                    </div>
                   </div>
                   <Separator />
                   <div className="space-y-4">
@@ -734,6 +768,13 @@ export const SettingsPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1"
           </Button>
         )}
       </div>
+
+      <BacktestVisualizationModal
+        isOpen={isVisModalOpen}
+        onClose={() => setIsVisModalOpen(false)}
+        htmlContent={visualizationHtml}
+        rawStats={rawStats}
+      />
     </div>
   );
 };
