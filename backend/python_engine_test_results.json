@@ -1,0 +1,99 @@
+{
+  "timestamp": "2025-12-09T02:29:13.185760",
+  "total_strategies": 8,
+  "passed": 8,
+  "failed": 0,
+  "results": [
+    {
+      "strategy": "MACD Crossover",
+      "success": true,
+      "iterations": 1,
+      "trades": 21,
+      "return": -5.325120457191035,
+      "win_rate": 28.57142857142857,
+      "warnings": [],
+      "xml_blocks": 45
+    },
+    {
+      "strategy": "Stochastic Oversold/Overbought",
+      "success": true,
+      "iterations": 1,
+      "trades": 15,
+      "return": 3.566001478110702,
+      "win_rate": 60.0,
+      "warnings": [],
+      "xml_blocks": 41
+    },
+    {
+      "strategy": "Keltner Channel Breakout",
+      "success": true,
+      "iterations": 1,
+      "trades": 4,
+      "return": -1.1260835034993506,
+      "win_rate": 25.0,
+      "warnings": [
+        "Low trade count: 4 (expected 5-40)"
+      ],
+      "xml_blocks": 45
+    },
+    {
+      "strategy": "ADX Trend Strength",
+      "success": true,
+      "iterations": 1,
+      "trades": 222,
+      "return": -74.77937234540586,
+      "win_rate": 36.03603603603604,
+      "warnings": [
+        "Very high trade count: 222 (expected 5-30)"
+      ],
+      "xml_blocks": 41
+    },
+    {
+      "strategy": "CCI Mean Reversion",
+      "success": true,
+      "iterations": 1,
+      "trades": 89,
+      "return": -30.342244007598712,
+      "win_rate": 28.08988764044944,
+      "warnings": [],
+      "xml_blocks": 31
+    },
+    {
+      "strategy": "Triple EMA Crossover",
+      "success": true,
+      "iterations": 1,
+      "trades": 3,
+      "return": 23.697884436891865,
+      "win_rate": 66.66666666666666,
+      "warnings": [
+        "Low trade count: 3 (expected 5-40)"
+      ],
+      "xml_blocks": 39
+    },
+    {
+      "strategy": "Williams %R Reversal",
+      "success": true,
+      "iterations": 1,
+      "trades": 0,
+      "return": 0.0,
+      "win_rate": 0,
+      "warnings": [
+        "Low trade count: 0 (expected 10-70)"
+      ],
+      "xml_blocks": 41
+    },
+    {
+      "strategy": "Parabolic SAR Trend Following",
+      "success": true,
+      "iterations": 1,
+      "trades": 0,
+      "return": 0.0,
+      "win_rate": 0,
+      "warnings": [
+        "Low trade count: 0 (expected 10-60)"
+      ],
+      "xml_blocks": 45
+    }
+  ],
+  "fixes_applied": []
+}

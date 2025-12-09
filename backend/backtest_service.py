@@ -2886,6 +2886,7 @@ async def run_backtest_pipeline(
     precompiled_code: str = None,
     code_language: str = "python",
     strategy_id: str = None,
+    template_id: str = None,  # Pre-built template ID (e.g., "rsi-oversold-reversal")
 ) -> Dict[str, Any]:
     """
     Complete backtest pipeline.
@@ -2925,15 +2926,29 @@ async def run_backtest_pipeline(
             save_strategy_version, load_by_id
         )
         from json_code_generator import get_strategy_parameters, generate_strategy_from_json
-        from xml_parser import parse_xml_simple
+        from template_strategies import get_template_strategy, TEMPLATE_STRATEGIES
+        
+        # parse_xml_simple is defined locally in this file
 
         generated_code = None
         strategy_params = None
         parsing_error = None
         code_lang = code_language or "python"
+        from_template = False
+        pipeline_warnings = []  # Collect warnings for frontend
+        
+        # 0. Check for pre-built template strategy (HIGHEST PRIORITY)
+        if template_id and template_id in TEMPLATE_STRATEGIES:
+            template_code, template_params = get_template_strategy(template_id)
+            if template_code:
+                generated_code = template_code
+                strategy_params = template_params
+                from_template = True
+                print(f"[TEMPLATE] Using pre-built code for '{template_id}'")
+                print(f"[TEMPLATE] Default params: {template_params}")
         
         # 1. Try to load pre-compiled code explicitly provided (from AI generation or API)
-        if precompiled_code:
+        if not generated_code and precompiled_code:
             generated_code = precompiled_code
             print(f"Using pre-compiled strategy code (ID: {strategy_id})")
             
@@ -2999,160 +3014,93 @@ async def run_backtest_pipeline(
 
             # Fallback to LLM if needed and enabled
             if not generated_code and use_llm and call_deepseek:
-                # ... existing LLM logic ...
-                # We will let the execution flow continue to existing LLM block
-                pass
-
-        # ... (Execution logic follows) ...
-                code_lang = "python"
-            elif not strategy_code:
-                strategy_code = "# Nautilus code generation requires LLM"
-                code_lang = "python"
-        
-        elif (use_llm and call_deepseek) and not strategy_code:
-            # ============================================
-            # OPTION B: HYBRID APPROACH
-            # 1. Generate draft code locally (fast, deterministic)
-            # 2. Send draft to LLM for fixing (simpler task)
-            # ============================================
-            print("Using HYBRID approach: Local parse → Draft code → LLM fix...")
-            
-            # Step 1: Local parsing
-            if AST_PARSER_AVAILABLE:
-                try:
-                    print("  [1/3] AST-based parsing...")
-                    parsed = parse_xml_ast(xml)
-                except Exception as e:
-                    print(f"  AST parser failed: {e}, using regex parser")
-                    parsed = parse_xml_simple(xml)
-            else:
-                parsed = parse_xml_simple(xml)
-            
-            # Step 2: Generate draft Python code locally (using JSON-driven generator)
-            print("  [2/3] Generating draft Python code locally...")
-            unknown_blocks = []
-            if JSON_GENERATOR_AVAILABLE:
-                draft_code, unknown_blocks = generate_strategy_from_json(parsed)
-                if unknown_blocks:
-                    print(f"  ⚠ {len(unknown_blocks)} block(s) could not be parsed - added placeholders for LLM")
-                    for ub in unknown_blocks:
-                        print(f"    - Unknown: {ub['type']} (params: {ub.get('original_params', {})})")
-                    # Add warning for frontend
-                    pipeline_warnings.append({
-                        "type": "unknown_blocks",
-                        "message": f"{len(unknown_blocks)} block(s) could not be parsed locally and were sent to LLM for implementation",
-                        "blocks": [ub['type'] for ub in unknown_blocks]
-                    })
-            else:
-                draft_code = generate_strategy_code_simple(parsed)
-            
-            # Extract metadata for LLM context
-            indicators_str = ", ".join([f"{i['type']}({i.get('period', 'default')})" for i in parsed.get("indicators", [])])
-            unknown_blocks_str = ", ".join([f"{ub['type']}" for ub in unknown_blocks]) if unknown_blocks else "None"
-            risk_mgmt_str = str(parsed.get("risk_management", "None"))
-            
-            # Step 3: Send draft to LLM for fixing
-            print("  [3/3] Sending draft to LLM for validation/fixing...")
-            prompt = LLM_FIX_PYTHON_PROMPT.format(
-                draft_code=draft_code,
-                indicators=indicators_str or "None detected",
-                entry_direction=parsed.get("entry_direction", "long"),
-                has_short=parsed.get("has_short_entry", False),
-                risk_management=risk_mgmt_str,
-                unknown_blocks=unknown_blocks_str
-            )
-            messages = [
-                {"role": "system", "content": prompt},
-                {"role": "user", "content": "Fix the code if needed, or return it unchanged if correct."}
-            ]
-            
-            try:
-                fixed_code = await call_deepseek(messages, temperature=0.1)
-                
-                # Clean code (remove markdown if present)
-                if fixed_code.startswith("```"):
-                    fixed_code = fixed_code.split("\n", 1)[1]
-                if fixed_code.endswith("```"):
-                    fixed_code = fixed_code.rsplit("\n", 1)[0]
-                if fixed_code.startswith("python"):
-                    fixed_code = fixed_code[6:].strip()
-                
-                # Validate that LLM returned code (not an error message)
-                if "class GeneratedStrategy" in fixed_code or "def init" in fixed_code:
-                    strategy_code = fixed_code
-                    print("  ✓ LLM successfully validated/fixed the code")
+                print("Falling back to LLM for code generation...")
+                # Use hybrid approach: local parse -> LLM fix
+                if AST_PARSER_AVAILABLE:
+                    try:
+                        parsed = parse_xml_ast(xml)
+                    except Exception as e:
+                        print(f"AST parser failed: {e}, using regex parser")
+                        parsed = parse_xml_simple(xml)
                 else:
-                    # LLM returned something weird, use draft
-                    print("  ⚠ LLM response invalid, using local draft code")
-                    strategy_code = draft_code
-            except Exception as e:
-                print(f"  ⚠ LLM fix failed: {e}, using local draft code")
-                strategy_code = draft_code
-            
-            code_lang = "python"
-        else:
-            print("Using simple parser for XML→Python conversion (no LLM)...")
-            # Try AST parser first, fall back to regex if unavailable or fails
-            if AST_PARSER_AVAILABLE and not strategy_code:
-                try:
-                    print("Using AST-based parser...")
-                    parsed = parse_xml_ast(xml)
-                except Exception as e:
-                    print(f"AST parser failed: {e}, falling back to regex parser")
                     parsed = parse_xml_simple(xml)
-            elif not strategy_code:
-                parsed = parse_xml_simple(xml)
-            
-            # Step 1.3: Gemini Parse Verification (if enabled)
-            if verify_with_llm and VERIFICATION_AVAILABLE and call_gemini and not strategy_code:
-                print("[VERIFY STEP 1] Running Gemini parse verification...")
-                parse_valid, parse_result = await verify_parsed_strategy(
-                    parsed=parsed,
-                    xml_snippet=xml[:1000],
-                    call_gemini=call_gemini
-                )
-                if not parse_valid:
-                    print(f"[VERIFY] Parse issues found: {parse_result.get('issues', [])}")
-                    # If fixed_parsed is provided, use it
-                    if parse_result.get("fixed_parsed"):
-                        print("[VERIFY] Using Gemini-corrected parsed structure")
-                        parsed = parse_result["fixed_parsed"]
-            
-            if not strategy_code:
-                # Use JSON-driven generator if available, fallback to legacy
+                
+                # Generate draft locally
                 if JSON_GENERATOR_AVAILABLE:
-                    print("Using JSON-driven code generator...")
-                    generated_code, unknown_blocks_simple = generate_strategy_from_json(parsed) # Changed strategy_code to generated_code
-                    if unknown_blocks_simple:
-                        print(f"WARNING: {len(unknown_blocks_simple)} block(s) could not be parsed (no LLM fallback)")
-                        for ub in unknown_blocks_simple:
-                            print(f"  - {ub['type']}: {ub.get('original_params', {})}")
+                    draft_code, unknown_blocks = generate_strategy_from_json(parsed)
                 else:
-                    print("Using legacy code generator...")
-                    generated_code = generate_strategy_code_simple(parsed) # Changed strategy_code to generated_code
-            code_lang = "python"
-
-        # Persist strategy pairing for reuse
+                    draft_code = generate_strategy_code_simple(parsed)
+                    unknown_blocks = []
+                
+                # Send to LLM for fixing
+                indicators_str = ", ".join([f"{i['type']}({i.get('period', 'default')})" for i in parsed.get("indicators", [])])
+                prompt = LLM_FIX_PYTHON_PROMPT.format(
+                    draft_code=draft_code,
+                    indicators=indicators_str or "None detected",
+                    entry_direction=parsed.get("entry_direction", "long"),
+                    has_short=parsed.get("has_short_entry", False),
+                    risk_management=str(parsed.get("risk_management", "None")),
+                    unknown_blocks=", ".join([ub['type'] for ub in unknown_blocks]) if unknown_blocks else "None"
+                )
+                messages = [
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": "Fix the code if needed, or return it unchanged if correct."}
+                ]
+                
+                try:
+                    fixed_code = await call_deepseek(messages, temperature=0.1)
+                    # Clean markdown
+                    if fixed_code.startswith("```"):
+                        fixed_code = fixed_code.split("\n", 1)[1]
+                    if fixed_code.endswith("```"):
+                        fixed_code = fixed_code.rsplit("\n", 1)[0]
+                    if fixed_code.startswith("python"):
+                        fixed_code = fixed_code[6:].strip()
+                    
+                    if "class GeneratedStrategy" in fixed_code or "def init" in fixed_code:
+                        generated_code = fixed_code
+                        print("LLM successfully generated/fixed code")
+                    else:
+                        generated_code = draft_code
+                        print("LLM response invalid, using local draft")
+                except Exception as e:
+                    print(f"LLM generation failed: {e}, using local draft")
+                    generated_code = draft_code
+                
+                code_lang = "python"
         
-        print(f"Generated strategy code:\n{strategy_code[:500]}...")
+        # Final check: if still no code, fail gracefully
+        if not generated_code:
+            return {
+                "success": False,
+                "error": f"Failed to generate strategy code: {parsing_error or 'No code could be generated'}",
+                "metrics": None,
+                "trades": []
+            }
         
-        # Step 1.5: Verify generated code with DeepSeek (using verification module)
-        if verify_with_llm and VERIFICATION_AVAILABLE and call_deepseek:
-            print("[VERIFY STEP 2] Running DeepSeek code verification...")
+        # IMPORTANT: Only verify if code was freshly generated (not from cache or template)
+        # from_template, strategy_params, or precompiled_code indicate cached/pre-built code
+        from_cache = from_template or strategy_params is not None or (precompiled_code is not None)
+        
+        if verify_with_llm and VERIFICATION_AVAILABLE and call_gemini and not from_cache:
+            print("[VERIFY] Running Gemini verification on generated code...")
             code_valid, code_result, fixed_code = await verify_generated_code(
-                code=strategy_code,
-                call_deepseek=call_deepseek
+                code=generated_code,
+                call_deepseek=call_gemini  # Use Gemini for verification
             )
             if not code_valid:
                 print(f"[VERIFY] Code issues found: {code_result.get('issues', [])}")
                 if fixed_code:
-                    print("[VERIFY] Applying DeepSeek-corrected code")
-                    strategy_code = fixed_code
+                    print("[VERIFY] Applying corrected code")
+                    generated_code = fixed_code
             else:
                 print("[VERIFY] Code verification passed")
-
+        elif from_cache:
+            print("[SKIP VERIFY] Using cached code - no verification needed")
         
-        # Step 2: Fetch historical data
+        print(f"Strategy code ready ({len(generated_code)} chars)")
+        
+        # Fetch historical data
         print(f"Fetching data for {symbol} using {data_source}...")
         data = fetch_historical_data(
             symbol, period, interval, 
@@ -3161,28 +3109,28 @@ async def run_backtest_pipeline(
             end_date=end_date
         )
         
-        # Step 3: Run backtest OR Optimization
+        # Run backtest OR Optimization
         if optimize:
             if engine == "nautilus":
                 print(f"Running Nautilus optimization ({opt_method}) maximizing {opt_metric}...")
-                result = run_nautilus_optimization(strategy_code, data, cash=cash, metric=opt_metric, method=opt_method)
+                result = run_nautilus_optimization(generated_code, data, cash=cash, metric=opt_metric, method=opt_method)
             elif engine != "ai_simulation":
                 print(f"Running optimization ({opt_method}) maximizing {opt_metric}...")
-                result = run_optimization(strategy_code, data, cash=cash, metric=opt_metric, method=opt_method)
+                result = run_optimization(generated_code, data, cash=cash, metric=opt_metric, method=opt_method)
             else:
-                # AI Simulation optimization not supported yet
                 result = await run_llm_backtest(xml, symbol, period, cash, call_deepseek)
         elif engine == "nautilus":
-            result = run_nautilus_backtest(strategy_code, data, cash=cash, symbol=symbol)
+            result = run_nautilus_backtest(generated_code, data, cash=cash, symbol=symbol)
         else:
-            result = run_backtest(strategy_code, data, cash=cash)
+            # Pass strategy_params for dynamic injection if available
+            result = run_backtest(generated_code, data, cash=cash, strategy_params=strategy_params)
         
         # Add metadata
         result["symbol"] = symbol
         result["period"] = period
         result["interval"] = interval
-        result["strategy_code"] = strategy_code
-        result["strategy_language"] = code_lang if 'code_lang' in locals() else "python"
+        result["strategy_code"] = generated_code
+        result["strategy_language"] = code_lang
         result["strategy_id"] = strategy_id
         result["data_points"] = len(data)
         result["engine"] = engine
@@ -3194,7 +3142,7 @@ async def run_backtest_pipeline(
             success=result.get("success", False),
             trades=len(result.get("trades", [])),
             return_pct=result.get("metrics", {}).get("return_pct", 0) if result.get("metrics") else 0,
-            strategy_input=strategy_code,
+            strategy_input=generated_code,
             full_metrics=result
         )
         

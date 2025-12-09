@@ -35,6 +35,7 @@ interface BlocklyWorkspaceProps {
   leverage?: number;
   onXmlChange?: (xml: string | null) => void;
   onStrategyGenerated?: (strategyId: string, code?: string) => void;
+  onTemplateLoaded?: (templateId: string, templateXml?: string) => void;
 }
 
 export const BlocklyWorkspace = ({
@@ -45,7 +46,8 @@ export const BlocklyWorkspace = ({
   onAIPanelChange,
   leverage = 1,
   onXmlChange,
-  onStrategyGenerated
+  onStrategyGenerated,
+  onTemplateLoaded
 }: BlocklyWorkspaceProps = {}) => {
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
@@ -512,6 +514,11 @@ export const BlocklyWorkspace = ({
         description: template.description,
         duration: 4000
       });
+      // Notify parent that a template was loaded (enables pre-built Python code path)
+      // Pass the template's original XML for structure comparison later
+      if (onTemplateLoaded) {
+        onTemplateLoaded(template.id, template.workspace);
+      }
     } catch (error) {
       toast.error("Failed to load template.");
       console.error(error);

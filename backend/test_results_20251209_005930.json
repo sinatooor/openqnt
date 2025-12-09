@@ -1,0 +1,696 @@
+[
+  {
+    "strategy_name": "RSI Oversold Buy",
+    "prompt": "Create a simple RSI strategy: buy when RSI(14) is below 30, use 1 hour timeframe",
+    "timestamp": "2025-12-09T00:54:40.224068",
+    "generation": {
+      "success": true,
+      "xml": "<xml xmlns=\"https://developers.google.com/blockly/xml\">\n  <block type=\"control_forever\" x=\"50\" y=\"50\">\n    <statement name=\"DO\">\n      <block type=\"control_if\">\n        <value name=\"CONDITION\">\n          <block type=\"operator_less\">\n            <value name=\"LEFT\">\n              <block type=\"ta_rsi\">\n                <field name=\"PERIOD\">60</field>\n                <mutation ma_period=\"14\" applied_price=\"0\"></mutation>\n                <field name=\"NAME\">RSI</field>\n              </block>\n            </value>\n            <value name=\"RIGHT\">\n              <shadow type=\"math_number\">\n                <field name=\"NUM\">30</field>\n              </shadow>\n            </value>\n          </block>\n        </value>\n        <statement name=\"DO\">\n          <block type=\"trade_open\">\n            <field name=\"TRADE_ID\">rsi_oversold_trade</field>\n            <field name=\"DIRECTION\">long</field>\n            <value name=\"SIZE\">\n              <shadow type=\"math_number\">\n                <field name=\"NUM\">0.1</field>\n              </shadow>\n            </value>\n            <field name=\"LEVERAGE\">1</field>\n            <field name=\"ORDER_TYPE\">market</field>\n            <next>\n              <block type=\"trade_stop_loss\">\n                <field name=\"CLOSE_TYPE\">full</field>\n                <field name=\"TRADE_ID\">rsi_oversold_trade</field>\n                <value name=\"PRICE\">\n                  <block type=\"operator_subtract\">\n                    <value name=\"LEFT\">\n                      <block type=\"trade_entry_price\">\n                        <field name=\"TRADE_ID\">rsi_oversold_trade</field>\n                      </block>\n                    </value>\n                    <value name=\"RIGHT\">\n                      <block type=\"operator_multiply\">\n                        <value name=\"LEFT\">\n                          <block type=\"ta_atr\">\n                            <field name=\"PERIOD\">60</field>\n                            <mutation ma_period=\"14\"></mutation>\n                            <field name=\"NAME\">ATR</field>\n                          </block>\n                        </value>\n                        <value name=\"RIGHT\">\n                          <shadow type=\"math_number\">\n                            <field name=\"NUM\">1.5</field>\n                          </shadow>\n                        </value>\n                      </block>\n                    </value>\n                  </block>\n                </value>\n                <next>\n                  <block type=\"trade_take_profit\">\n                    <field name=\"CLOSE_TYPE\">full</field>\n                    <field name=\"TRADE_ID\">rsi_oversold_trade</field>\n                    <value name=\"PRICE\">\n                      <block type=\"operator_add\">\n                        <value name=\"LEFT\">\n                          <block type=\"trade_entry_price\">\n                            <field name=\"TRADE_ID\">rsi_oversold_trade</field>\n                          </block>\n                        </value>\n                        <value name=\"RIGHT\">\n                          <block type=\"operator_multiply\">\n                            <value name=\"LEFT\">\n                              <block type=\"operator_multiply\">\n                                <value name=\"LEFT\">\n                                  <block type=\"ta_atr\">\n                                    <field name=\"PERIOD\">60</field>\n                                    <mutation ma_period=\"14\"></mutation>\n                                    <field name=\"NAME\">ATR</field>\n                                  </block>\n                                </value>\n                                <value name=\"RIGHT\">\n                                  <shadow type=\"math_number\">\n                                    <field name=\"NUM\">1.5</field>\n                                  </shadow>\n                                </value>\n                              </block>\n                            </value>\n                            <value name=\"RIGHT\">\n                              <shadow type=\"math_number\">\n                                <field name=\"NUM\">2</field>\n                              </shadow>\n                            </value>\n                          </block>\n                        </value>\n                      </block>\n                    </value>\n                  </block>\n                </next>\n              </block>\n            </next>\n          </block>\n        </statement>\n      </block>\n    </statement>\n  </block>\n</xml>",
+      "ai_fixed": false
+    },
+    "backtest": {
+      "success": false,
+      "error": "Long orders require: SL (246.65443420410156) < LIMIT (246.65443420410156) < TP (246.65443420410156)"
+    },
+    "analysis": {},
+    "success": false
+  },
+  {
+    "strategy_name": "SMA Crossover",
+    "prompt": "Create a golden cross strategy: buy when SMA(10) crosses above SMA(20) on 1 hour timeframe",
+    "timestamp": "2025-12-09T00:56:07.617139",
+    "generation": {
+      "success": true,
+      "xml": "<xml xmlns=\"https://developers.google.com/blockly/xml\">\n  <block type=\"control_forever\" x=\"50\" y=\"50\">\n    <statement name=\"DO\">\n      <block type=\"control_if\">\n        <value name=\"CONDITION\">\n          <block type=\"environment_new_candle_open\">\n            <field name=\"TIMEFRAME\">60</field>\n          </block>\n        </value>\n        <statement name=\"DO\">\n          <block type=\"control_if\">\n            <value name=\"CONDITION\">\n              <block type=\"operator_and\">\n                <value name=\"LEFT\">\n                  <block type=\"operator_less\">\n                    <value name=\"LEFT\">\n                      <block type=\"environment_prev_candle_open\">\n                        <field name=\"TIMEFRAME\">60</field>\n                      </block>\n                    </value>\n                    <value name=\"RIGHT\">\n                      <block type=\"ta_sma\">\n                        <field name=\"PERIOD\">60</field>\n                        <mutation ma_period=\"10\" shift=\"0\" applied_price=\"0\"></mutation>\n                        <field name=\"NAME\">Fast SMA</field>\n                      </block>\n                    </value>\n                  </block>\n                </value>\n                <value name=\"RIGHT\">\n                  <block type=\"operator_greater\">\n                    <value name=\"LEFT\">\n                      <block type=\"environment_prev_ticker_close\">\n                        <field name=\"TIMEFRAME\">60</field>\n                      </block>\n                    </value>\n                    <value name=\"RIGHT\">\n                      <block type=\"ta_sma\">\n                        <field name=\"PERIOD\">60</field>\n                        <mutation ma_period=\"10\" shift=\"0\" applied_price=\"0\"></mutation>\n                        <field name=\"NAME\">Fast SMA</field>\n                      </block>\n                    </value>\n                  </block>\n                </value>\n              </block>\n            </value>\n            <statement name=\"DO\">\n              <block type=\"control_if\">\n                <value name=\"CONDITION\">\n                  <block type=\"operator_greater\">\n                    <value name=\"LEFT\">\n                      <block type=\"ta_sma\">\n                        <field name=\"PERIOD\">60</field>\n                        <mutation ma_period=\"10\" shift=\"0\" applied_price=\"0\"></mutation>\n                        <field name=\"NAME\">Fast SMA</field>\n                      </block>\n                    </value>\n                    <value name=\"RIGHT\">\n                      <block type=\"ta_sma\">\n                        <field name=\"PERIOD\">60</field>\n                        <mutation ma_period=\"20\" shift=\"0\" applied_price=\"0\"></mutation>\n                        <field name=\"NAME\">Slow SMA</field>\n                      </block>\n                    </value>\n                  </block>\n                </value>\n                <statement name=\"DO\">\n                  <block type=\"trade_close\">\n                    <field name=\"TRADE_ID\">golden_cross_trade</field>\n                    <next>\n                      <block type=\"trade_open\">\n                        <field name=\"TRADE_ID\">golden_cross_trade</field>\n                        <field name=\"DIRECTION\">long</field>\n                        <value name=\"SIZE\">\n                          <shadow type=\"math_number\">\n                            <field name=\"NUM\">0.1</field>\n                          </shadow>\n                        </value>\n                        <field name=\"LEVERAGE\">1</field>\n                        <field name=\"ORDER_TYPE\">market</field>\n                        <next>\n                          <block type=\"trade_modify_sl\">\n                            <field name=\"TRADE_ID\">golden_cross_trade</field>\n                            <value name=\"PRICE\">\n                              <block type=\"operator_subtract\">\n                                <value name=\"LEFT\">\n                                  <block type=\"trade_entry_price\">\n                                    <field name=\"TRADE_ID\">golden_cross_trade</field>\n                                  </block>\n                                </value>\n                                <value name=\"RIGHT\">\n                                  <block type=\"operator_multiply\">\n                                    <value name=\"LEFT\">\n                                      <block type=\"ta_atr\">\n                                        <field name=\"PERIOD\">60</field>\n                                        <mutation ma_period=\"14\"></mutation>\n                                        <field name=\"NAME\">ATR</field>\n                                      </block>\n                                    </value>\n                                    <value name=\"RIGHT\">\n                                      <shadow type=\"math_number\">\n                                        <field name=\"NUM\">2</field>\n                                      </shadow>\n                                    </value>\n                                  </block>\n                                </value>\n                              </block>\n                            </value>\n                            <next>\n                              <block type=\"trade_modify_tp\">\n                                <field name=\"TRADE_ID\">golden_cross_trade</field>\n                                <value name=\"PRICE\">\n                                  <block type=\"operator_add\">\n                                    <value name=\"LEFT\">\n                                      <block type=\"trade_entry_price\">\n                                        <field name=\"TRADE_ID\">golden_cross_trade</field>\n                                      </block>\n                                    </value>\n                                    <value name=\"RIGHT\">\n                                      <block type=\"operator_multiply\">\n                                        <value name=\"LEFT\">\n                                          <block type=\"operator_multiply\">\n                                            <value name=\"LEFT\">\n                                              <block type=\"ta_atr\">\n                                                <field name=\"PERIOD\">60</field>\n                                                <mutation ma_period=\"14\"></mutation>\n                                                <field name=\"NAME\">ATR</field>\n                                              </block>\n                                            </value>\n                                            <value name=\"RIGHT\">\n                                              <shadow type=\"math_number\">\n                                                <field name=\"NUM\">2</field>\n                                              </shadow>\n                                            </value>\n                                          </block>\n                                        </value>\n                                        <value name=\"RIGHT\">\n                                          <shadow type=\"math_number\">\n                                            <field name=\"NUM\">3</field>\n                                          </shadow>\n                                        </value>\n                                      </block>\n                                    </value>\n                                  </block>\n                                </value>\n                              </block>\n                            </next>\n                          </block>\n                        </next>\n                      </block>\n                    </next>\n                  </block>\n                </statement>\n              </block>\n            </statement>\n          </block>\n        </statement>\n      </block>\n    </statement>\n  </block>\n</xml>",
+      "ai_fixed": false
+    },
+    "backtest": {
+      "success": true,
+      "symbol": "AAPL",
+      "start_date": "2024-01-01",
+      "end_date": "2024-12-01",
+      "initial_balance": 100000.0,
+      "final_balance": 101645.77618431799,
+      "metrics": {
+        "total_return": 1.6457761843179906,
+        "cagr": 1.6514743020986877,
+        "net_profit": 1645.7761843179906,
+        "profit_factor": 1.991741665393397,
+        "expectancy": 0,
+        "payoff_ratio": 0.4966924590566051,
+        "max_drawdown": -3.303200078035906,
+        "max_drawdown_duration": "207 days 00:00:00",
+        "calmar_ratio": 0.4999619348158468,
+        "sharpe_ratio": 0.5550660875108747,
+        "sortino_ratio": 0.6978742049080906,
+        "var_95": -0.2864668707956586,
+        "cvar_95": -0.4320504703991889,
+        "sqn": 0.6999441058423976,
+        "kelly_criterion": 39.733634696232194,
+        "win_rate": 80.0,
+        "loss_rate": 20.0,
+        "total_trades": 10,
+        "avg_holding_time": "30 days 00:00:00",
+        "return_volatility": 2.939706022594589,
+        "skewness": 0.7552933322085353,
+        "kurtosis": 12.542958524451482,
+        "equity_final": 101645.77618431799,
+        "equity_peak": 101944.57574486487
+      },
+      "trades": [
+        {
+          "entry_time": "2025-02-07 00:00:00-05:00",
+          "exit_time": "2025-02-10 00:00:00-05:00",
+          "entry_price": 231.55275755143822,
+          "exit_price": 228.7876615470872,
+          "pnl": -158.48840422956715,
+          "return_pct": -0.01591765471300548,
+          "size": 43.0,
+          "type": "long"
+        },
+        {
+          "entry_time": "2025-02-10 00:00:00-05:00",
+          "exit_time": "2025-02-13 00:00:00-05:00",
+          "entry_price": 228.7876615470872,
+          "exit_price": 236.10265815205582,
+          "pnl": 274.5642865195246,
+          "return_pct": 0.027908917475675102,
+          "size": 43.0,
+          "type": "long"
+        },
+        {
+          "entry_time": "2025-02-13 00:00:00-05:00",
+          "exit_time": "2025-02-14 00:00:00-05:00",
+          "entry_price": 236.10265815205582,
+          "exit_price": 240.4278440984732,
+          "pnl": 141.62924756048542,
+          "return_pct": 0.014282452253225334,
+          "size": 42.0,
+          "type": "long"
+        },
+        {
+          "entry_time": "2025-02-14 00:00:00-05:00",
+          "exit_time": "2025-04-03 00:00:00-04:00",
+          "entry_price": 240.4278440984732,
+          "exit_price": 204.83954098981803,
+          "pnl": -1495.6323530321017,
+          "return_pct": -0.15172468070666115,
+          "size": 41.0,
+          "type": "long"
+        },
+        {
+          "entry_time": "2025-04-03 00:00:00-04:00",
+          "exit_time": "2025-08-29 00:00:00-04:00",
+          "entry_price": 204.83954098981803,
+          "exit_price": 232.28481317583598,
+          "pnl": 1275.4091269289586,
+          "return_pct": 0.129716281091488,
+          "size": 48.0,
+          "type": "long"
+        },
+        {
+          "entry_time": "2025-08-29 00:00:00-04:00",
+          "exit_time": "2025-10-07 00:00:00-04:00",
+          "entry_price": 232.28481317583598,
+          "exit_price": 256.56129542181253,
+          "pnl": 978.5491812088128,
+          "return_pct": 0.10030268320273028,
+          "size": 42.0,
+          "type": "long"
+        },
+        {
+          "entry_time": "2025-10-07 00:00:00-04:00",
+          "exit_time": "2025-11-10 00:00:00-05:00",
+          "entry_price": 256.56129542181253,
+          "exit_price": 268.9599914550781,
+          "pnl": 442.5584849209607,
+          "return_pct": 0.04422979483657169,
+          "size": 39.0,
+          "type": "long"
+        },
+        {
+          "entry_time": "2025-11-10 00:00:00-05:00",
+          "exit_time": "2025-11-13 00:00:00-05:00",
+          "entry_price": 268.9599914550781,
+          "exit_price": 274.1099853515625,
+          "pnl": 150.36259588623045,
+          "return_pct": 0.015109510975537968,
+          "size": 37.0,
+          "type": "long"
+        },
+        {
+          "entry_time": "2025-11-13 00:00:00-05:00",
+          "exit_time": "2025-11-25 00:00:00-05:00",
+          "entry_price": 274.1099853515625,
+          "exit_price": 275.2699890136719,
+          "pnl": 2.2047736816406243,
+          "return_pct": 0.00022342751687914018,
+          "size": 36.0,
+          "type": "long"
+        },
+        {
+          "entry_time": "2025-11-25 00:00:00-05:00",
+          "exit_time": "2025-11-26 00:00:00-05:00",
+          "entry_price": 275.2699890136719,
+          "exit_price": 276.9599914550781,
+          "pnl": 21.079529296875002,
+          "return_pct": 0.002127156987097748,
+          "size": 36.0,
+          "type": "long"
+        }
+      ],
+      "equity_curve": [
+        {
+          "time": "2024-12-09 00:00:00-05:00",
+          "equity": 100000.0
+        },
+        {
+          "time": "2024-12-11 00:00:00-05:00",
+          "equity": 100000.0
+        },
+        {
+          "time": "2024-12-13 00:00:00-05:00",
+          "equity": 100000.0
+        },
+        {
+          "time": "2024-12-17 00:00:00-05:00",
+          "equity": 100000.0
+        },
+        {
+          "time": "2024-12-19 00:00:00-05:00",
+          "equity": 100000.0
+        },
+        {
+          "time": "2024-12-23 00:00:00-05:00",
+          "equity": 100000.0
+        },
+        {
+          "time": "2024-12-26 00:00:00-05:00",
+          "equity": 100000.0
+        },
+        {
+          "time": "2024-12-30 00:00:00-05:00",
+          "equity": 100000.0
+        },
+        {
+          "time": "2025-01-02 00:00:00-05:00",
+          "equity": 100000.0
+        },
+        {
+          "time": "2025-01-06 00:00:00-05:00",
+          "equity": 100000.0
+        },
+        {
+          "time": "2025-01-08 00:00:00-05:00",
+          "equity": 100000.0
+        },
+        {
+          "time": "2025-01-13 00:00:00-05:00",
+          "equity": 100000.0
+        },
+        {
+          "time": "2025-01-15 00:00:00-05:00",
+          "equity": 100000.0
+        },
+        {
+          "time": "2025-01-17 00:00:00-05:00",
+          "equity": 100000.0
+        },
+        {
+          "time": "2025-01-22 00:00:00-05:00",
+          "equity": 100000.0
+        },
+        {
+          "time": "2025-01-24 00:00:00-05:00",
+          "equity": 100000.0
+        },
+        {
+          "time": "2025-01-28 00:00:00-05:00",
+          "equity": 100000.0
+        },
+        {
+          "time": "2025-01-30 00:00:00-05:00",
+          "equity": 100000.0
+        },
+        {
+          "time": "2025-02-03 00:00:00-05:00",
+          "equity": 100000.0
+        },
+        {
+          "time": "2025-02-05 00:00:00-05:00",
+          "equity": 100000.0
+        },
+        {
+          "time": "2025-02-07 00:00:00-05:00",
+          "equity": 99767.33860957429
+        },
+        {
+          "time": "2025-02-11 00:00:00-05:00",
+          "equity": 99952.53904218857
+        },
+        {
+          "time": "2025-02-13 00:00:00-05:00",
+          "equity": 100289.62180216571
+        },
+        {
+          "time": "2025-02-18 00:00:00-05:00",
+          "equity": 100369.56078906084
+        },
+        {
+          "time": "2025-02-20 00:00:00-05:00",
+          "equity": 100425.13062853838
+        },
+        {
+          "time": "2025-02-24 00:00:00-05:00",
+          "equity": 100477.02313036943
+        },
+        {
+          "time": "2025-02-26 00:00:00-05:00",
+          "equity": 100201.6244487288
+        },
+        {
+          "time": "2025-02-28 00:00:00-05:00",
+          "equity": 100262.09782214189
+        },
+        {
+          "time": "2025-03-04 00:00:00-05:00",
+          "equity": 100020.61347765947
+        },
+        {
+          "time": "2025-03-06 00:00:00-05:00",
+          "equity": 99996.09768481279
+        },
+        {
+          "time": "2025-03-10 00:00:00-04:00",
+          "equity": 99675.34412951494
+        },
+        {
+          "time": "2025-03-12 00:00:00-04:00",
+          "equity": 99246.31118578935
+        },
+        {
+          "time": "2025-03-14 00:00:00-04:00",
+          "equity": 99103.7095622542
+        },
+        {
+          "time": "2025-03-18 00:00:00-04:00",
+          "equity": 99071.0207957747
+        },
+        {
+          "time": "2025-03-20 00:00:00-04:00",
+          "equity": 99128.6345042708
+        },
+        {
+          "time": "2025-03-24 00:00:00-04:00",
+          "equity": 99399.5375499251
+        },
+        {
+          "time": "2025-03-26 00:00:00-04:00",
+          "equity": 99432.22506518388
+        },
+        {
+          "time": "2025-03-28 00:00:00-04:00",
+          "equity": 99283.90286059404
+        },
+        {
+          "time": "2025-04-01 00:00:00-04:00",
+          "equity": 99500.05373950029
+        },
+        {
+          "time": "2025-04-03 00:00:00-04:00",
+          "equity": 98629.99302587204
+        },
+        {
+          "time": "2025-04-07 00:00:00-04:00",
+          "equity": 97590.50767430954
+        },
+        {
+          "time": "2025-04-09 00:00:00-04:00",
+          "equity": 98422.38291845017
+        },
+        {
+          "time": "2025-04-11 00:00:00-04:00",
+          "equity": 98388.89659032517
+        },
+        {
+          "time": "2025-04-15 00:00:00-04:00",
+          "equity": 98579.76499852829
+        },
+        {
+          "time": "2025-04-17 00:00:00-04:00",
+          "equity": 98332.92857274704
+        },
+        {
+          "time": "2025-04-22 00:00:00-04:00",
+          "equity": 98464.95786962204
+        },
+        {
+          "time": "2025-04-24 00:00:00-04:00",
+          "equity": 98877.78526220017
+        },
+        {
+          "time": "2025-04-28 00:00:00-04:00",
+          "equity": 98962.45616063767
+        },
+        {
+          "time": "2025-04-30 00:00:00-04:00",
+          "equity": 99075.35020360642
+        },
+        {
+          "time": "2025-05-02 00:00:00-04:00",
+          "equity": 98733.32017430954
+        },
+        {
+          "time": "2025-05-06 00:00:00-04:00",
+          "equity": 98406.11802587204
+        },
+        {
+          "time": "2025-05-08 00:00:00-04:00",
+          "equity": 98357.32554540329
+        },
+        {
+          "time": "2025-05-12 00:00:00-04:00",
+          "equity": 99006.77281102829
+        },
+        {
+          "time": "2025-05-14 00:00:00-04:00",
+          "equity": 99080.53721532517
+        },
+        {
+          "time": "2025-05-16 00:00:00-04:00",
+          "equity": 99029.28526220017
+        },
+        {
+          "time": "2025-05-20 00:00:00-04:00",
+          "equity": 98818.52940282517
+        },
+        {
+          "time": "2025-05-22 00:00:00-04:00",
+          "equity": 98555.08311376267
+        },
+        {
+          "time": "2025-05-27 00:00:00-04:00",
+          "equity": 98499.99986180954
+        },
+        {
+          "time": "2025-05-29 00:00:00-04:00",
+          "equity": 98487.54576024704
+        },
+        {
+          "time": "2025-06-02 00:00:00-04:00",
+          "equity": 98571.36924657517
+        },
+        {
+          "time": "2025-06-04 00:00:00-04:00",
+          "equity": 98625.01695165329
+        },
+        {
+          "time": "2025-06-06 00:00:00-04:00",
+          "equity": 98677.70518407517
+        },
+        {
+          "time": "2025-06-10 00:00:00-04:00",
+          "equity": 98617.83116063767
+        },
+        {
+          "time": "2025-06-12 00:00:00-04:00",
+          "equity": 98451.62119970017
+        },
+        {
+          "time": "2025-06-16 00:00:00-04:00",
+          "equity": 98414.26035985642
+        },
+        {
+          "time": "2025-06-18 00:00:00-04:00",
+          "equity": 98326.12510595017
+        },
+        {
+          "time": "2025-06-23 00:00:00-04:00",
+          "equity": 98561.78990087204
+        },
+        {
+          "time": "2025-06-25 00:00:00-04:00",
+          "equity": 98564.66392430954
+        },
+        {
+          "time": "2025-06-27 00:00:00-04:00",
+          "equity": 98541.67173680954
+        },
+        {
+          "time": "2025-07-01 00:00:00-04:00",
+          "equity": 98864.51231298142
+        },
+        {
+          "time": "2025-07-03 00:00:00-04:00",
+          "equity": 99138.97495946579
+        },
+        {
+          "time": "2025-07-08 00:00:00-04:00",
+          "equity": 98969.41123876267
+        },
+        {
+          "time": "2025-07-10 00:00:00-04:00",
+          "equity": 99084.36924657517
+        },
+        {
+          "time": "2025-07-14 00:00:00-04:00",
+          "equity": 98902.83116063767
+        },
+        {
+          "time": "2025-07-16 00:00:00-04:00",
+          "equity": 98976.59702977829
+        },
+        {
+          "time": "2025-07-18 00:00:00-04:00",
+          "equity": 99025.45323095017
+        },
+        {
+          "time": "2025-07-22 00:00:00-04:00",
+          "equity": 99179.68882665329
+        },
+        {
+          "time": "2025-07-24 00:00:00-04:00",
+          "equity": 99149.03257665329
+        },
+        {
+          "time": "2025-07-28 00:00:00-04:00",
+          "equity": 99162.92442235642
+        },
+        {
+          "time": "2025-07-30 00:00:00-04:00",
+          "equity": 98923.42832860642
+        },
+        {
+          "time": "2025-08-01 00:00:00-04:00",
+          "equity": 98603.94151220017
+        },
+        {
+          "time": "2025-08-05 00:00:00-04:00",
+          "equity": 98629.80625829392
+        },
+        {
+          "time": "2025-08-07 00:00:00-04:00",
+          "equity": 99449.36070165329
+        },
+        {
+          "time": "2025-08-11 00:00:00-04:00",
+          "equity": 99804.18907079392
+        },
+        {
+          "time": "2025-08-13 00:00:00-04:00",
+          "equity": 100099.10386571579
+        },
+        {
+          "time": "2025-08-15 00:00:00-04:00",
+          "equity": 100015.66416845017
+        },
+        {
+          "time": "2025-08-19 00:00:00-04:00",
+          "equity": 99966.27256688767
+        },
+        {
+          "time": "2025-08-21 00:00:00-04:00",
+          "equity": 99694.85533055954
+        },
+        {
+          "time": "2025-08-25 00:00:00-04:00",
+          "equity": 99803.23033055954
+        },
+        {
+          "time": "2025-08-27 00:00:00-04:00",
+          "equity": 99962.91587743454
+        },
+        {
+          "time": "2025-08-29 00:00:00-04:00",
+          "equity": 100002.44523450267
+        },
+        {
+          "time": "2025-09-03 00:00:00-04:00",
+          "equity": 100268.04832288157
+        },
+        {
+          "time": "2025-09-05 00:00:00-04:00",
+          "equity": 100319.23838635813
+        },
+        {
+          "time": "2025-09-09 00:00:00-04:00",
+          "equity": 100095.1757948054
+        },
+        {
+          "time": "2025-09-11 00:00:00-04:00",
+          "equity": 99913.91108533274
+        },
+        {
+          "time": "2025-09-15 00:00:00-04:00",
+          "equity": 100193.77992078196
+        },
+        {
+          "time": "2025-09-17 00:00:00-04:00",
+          "equity": 100289.86735364329
+        },
+        {
+          "time": "2025-09-19 00:00:00-04:00",
+          "equity": 100563.02180310618
+        },
+        {
+          "time": "2025-09-23 00:00:00-04:00",
+          "equity": 100937.7187635554
+        },
+        {
+          "time": "2025-09-25 00:00:00-04:00",
+          "equity": 101040.09889050853
+        },
+        {
+          "time": "2025-09-29 00:00:00-04:00",
+          "equity": 100937.7187635554
+        },
+        {
+          "time": "2025-10-01 00:00:00-04:00",
+          "equity": 100980.51728650462
+        },
+        {
+          "time": "2025-10-03 00:00:00-04:00",
+          "equity": 101088.35249158274
+        },
+        {
+          "time": "2025-10-07 00:00:00-04:00",
+          "equity": 100983.16229076328
+        },
+        {
+          "time": "2025-10-09 00:00:00-04:00",
+          "equity": 100888.09324474278
+        },
+        {
+          "time": "2025-10-13 00:00:00-04:00",
+          "equity": 100639.5146619791
+        },
+        {
+          "time": "2025-10-15 00:00:00-04:00",
+          "equity": 100704.97129650059
+        },
+        {
+          "time": "2025-10-17 00:00:00-04:00",
+          "equity": 100819.90930004063
+        },
+        {
+          "time": "2025-10-21 00:00:00-04:00",
+          "equity": 101228.23339672032
+        },
+        {
+          "time": "2025-10-23 00:00:00-04:00",
+          "equity": 101103.9435102457
+        },
+        {
+          "time": "2025-10-27 00:00:00-04:00",
+          "equity": 101463.56521434727
+        },
+        {
+          "time": "2025-10-29 00:00:00-04:00",
+          "equity": 101498.24246044102
+        },
+        {
+          "time": "2025-10-31 00:00:00-04:00",
+          "equity": 101524.34680004063
+        },
+        {
+          "time": "2025-11-04 00:00:00-05:00",
+          "equity": 101511.48922557774
+        },
+        {
+          "time": "2025-11-06 00:00:00-05:00",
+          "equity": 101500.96917552891
+        },
+        {
+          "time": "2025-11-10 00:00:00-05:00",
+          "equity": 101456.0765756754
+        },
+        {
+          "time": "2025-11-12 00:00:00-05:00",
+          "equity": 101605.5568918375
+        },
+        {
+          "time": "2025-11-14 00:00:00-05:00",
+          "equity": 101528.01690599766
+        },
+        {
+          "time": "2025-11-18 00:00:00-05:00",
+          "equity": 101349.09686205235
+        },
+        {
+          "time": "2025-11-20 00:00:00-05:00",
+          "equity": 101306.25677416172
+        },
+        {
+          "time": "2025-11-24 00:00:00-05:00",
+          "equity": 101654.37725756016
+        },
+        {
+          "time": "2025-11-26 00:00:00-05:00",
+          "equity": 101633.53521752112
+        },
+        {
+          "time": "2025-12-01 00:00:00-05:00",
+          "equity": 101833.3358767008
+        },
+        {
+          "time": "2025-12-03 00:00:00-05:00",
+          "equity": 101871.13543724768
+        },
+        {
+          "time": "2025-12-05 00:00:00-05:00",
+          "equity": 101677.81561302893
+        }
+      ],
+      "strategy_id": "463112ef-c67e-4cb1-b4e4-cd9b52fdb0ac",
+      "strategy_language": "python"
+    },
+    "analysis": {
+      "valid": true,
+      "issues": [],
+      "metrics_summary": {
+        "return_pct": 1.6457761843179906,
+        "win_rate": 80.0,
+        "num_trades": 10,
+        "max_drawdown": -3.303200078035906,
+        "sharpe": 0.5550660875108747
+      }
+    },
+    "success": true
+  },
+  {
+    "strategy_name": "Weekly Buy",
+    "prompt": "Buy every week on Monday, use daily timeframe",
+    "timestamp": "2025-12-09T00:58:04.391190",
+    "generation": {
+      "success": true,
+      "xml": "<xml xmlns=\"https://developers.google.com/blockly/xml\">\n  <block type=\"control_forever\" x=\"50\" y=\"50\">\n    <statement name=\"DO\">\n      <block type=\"control_if\">\n        <value name=\"CONDITION\">\n          <block type=\"operator_and\">\n            <value name=\"LEFT\">\n              <block type=\"environment_new_candle_open\">\n                <field name=\"TIMEFRAME\">1440</field>\n              </block>\n            </value>\n            <value name=\"RIGHT\">\n              <block type=\"operator_equals\">\n                <value name=\"LEFT\">\n                  <block type=\"environment_day_of_week\"></block>\n                </value>\n                <value name=\"RIGHT\">\n                  <shadow type=\"math_number\">\n                    <field name=\"NUM\">1</field>\n                  </shadow>\n                </value>\n              </block>\n            </value>\n          </block>\n        </value>\n        <statement name=\"DO\">\n          <block type=\"trade_open\">\n            <field name=\"TRADE_ID\">weekly_monday_buy</field>\n            <field name=\"DIRECTION\">long</field>\n            <value name=\"SIZE\">\n              <shadow type=\"math_number\">\n                <field name=\"NUM\">0.1</field>\n              </shadow>\n            </value>\n            <field name=\"LEVERAGE\">1</field>\n            <field name=\"ORDER_TYPE\">market</field>\n            <next>\n              <block type=\"trade_stop_loss\">\n                <field name=\"CLOSE_TYPE\">full</field>\n                <field name=\"TRADE_ID\">weekly_monday_buy</field>\n                <value name=\"PRICE\">\n                  <block type=\"operator_subtract\">\n                    <value name=\"LEFT\">\n                      <block type=\"trade_entry_price\">\n                        <field name=\"TRADE_ID\">weekly_monday_buy</field>\n                      </block>\n                    </value>\n                    <value name=\"RIGHT\">\n                      <block type=\"operator_multiply\">\n                        <value name=\"LEFT\">\n                          <block type=\"ta_atr\">\n                            <field name=\"PERIOD\">1440</field>\n                            <mutation ma_period=\"14\"></mutation>\n                            <field name=\"NAME\">ATR</field>\n                          </block>\n                        </value>\n                        <value name=\"RIGHT\">\n                          <shadow type=\"math_number\">\n                            <field name=\"NUM\">2</field>\n                          </shadow>\n                        </value>\n                      </block>\n                    </value>\n                  </block>\n                </value>\n                <next>\n                  <block type=\"trade_take_profit\">\n                    <field name=\"CLOSE_TYPE\">full</field>\n                    <field name=\"TRADE_ID\">weekly_monday_buy</field>\n                    <value name=\"PRICE\">\n                      <block type=\"operator_add\">\n                        <value name=\"LEFT\">\n                          <block type=\"trade_entry_price\">\n                            <field name=\"TRADE_ID\">weekly_monday_buy</field>\n                          </block>\n                        </value>\n                        <value name=\"RIGHT\">\n                          <block type=\"operator_multiply\">\n                            <value name=\"LEFT\">\n                              <block type=\"operator_multiply\">\n                                <value name=\"LEFT\">\n                                  <block type=\"ta_atr\">\n                                    <field name=\"PERIOD\">1440</field>\n                                    <mutation ma_period=\"14\"></mutation>\n                                    <field name=\"NAME\">ATR</field>\n                                  </block>\n                                </value>\n                                <value name=\"RIGHT\">\n                                  <shadow type=\"math_number\">\n                                    <field name=\"NUM\">2</field>\n                                  </shadow>\n                                </value>\n                              </block>\n                            </value>\n                            <value name=\"RIGHT\">\n                              <shadow type=\"math_number\">\n                                <field name=\"NUM\">3</field>\n                              </shadow>\n                            </value>\n                          </block>\n                        </value>\n                      </block>\n                    </value>\n                  </block>\n                </next>\n              </block>\n            </next>\n          </block>\n        </statement>\n      </block>\n    </statement>\n  </block>\n</xml>",
+      "ai_fixed": false
+    },
+    "backtest": {
+      "success": false,
+      "error": "Long orders require: SL (249.9097137451172) < LIMIT (249.9097137451172) < TP (249.9097137451172)"
+    },
+    "analysis": {},
+    "success": false
+  }
+]
