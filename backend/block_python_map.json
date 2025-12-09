@@ -29,7 +29,36 @@
         "WilliamsR": "def WilliamsR(high, low, close, period=14):\n    \"\"\"Williams %R\"\"\"\n    high = np.asarray(high, dtype=float)\n    low = np.asarray(low, dtype=float)\n    close = np.asarray(close, dtype=float)\n    wr = np.zeros_like(close)\n    for i in range(period - 1, len(close)):\n        hh = np.max(high[i - period + 1:i + 1])\n        ll = np.min(low[i - period + 1:i + 1])\n        wr[i] = -100 * (hh - close[i]) / (hh - ll + 1e-10)\n    return wr",
         "ADX": "def ADX(high, low, close, period=14):\n    \"\"\"Average Directional Index\"\"\"\n    high = np.asarray(high, dtype=float)\n    low = np.asarray(low, dtype=float)\n    close = np.asarray(close, dtype=float)\n    n = len(close)\n    tr = np.zeros(n)\n    plus_dm = np.zeros(n)\n    minus_dm = np.zeros(n)\n    tr[0] = high[0] - low[0]\n    for i in range(1, n):\n        tr[i] = max(high[i] - low[i], abs(high[i] - close[i-1]), abs(low[i] - close[i-1]))\n        up = high[i] - high[i-1]\n        down = low[i-1] - low[i]\n        plus_dm[i] = up if up > down and up > 0 else 0\n        minus_dm[i] = down if down > up and down > 0 else 0\n    atr = np.zeros(n)\n    plus_di = np.zeros(n)\n    minus_di = np.zeros(n)\n    atr[period] = np.sum(tr[1:period+1])\n    plus_dm_sum = np.sum(plus_dm[1:period+1])\n    minus_dm_sum = np.sum(minus_dm[1:period+1])\n    for i in range(period + 1, n):\n        atr[i] = atr[i-1] - atr[i-1]/period + tr[i]\n        plus_dm_sum = plus_dm_sum - plus_dm_sum/period + plus_dm[i]\n        minus_dm_sum = minus_dm_sum - minus_dm_sum/period + minus_dm[i]\n        plus_di[i] = 100 * plus_dm_sum / (atr[i] + 1e-10)\n        minus_di[i] = 100 * minus_dm_sum / (atr[i] + 1e-10)\n    dx = np.zeros(n)\n    adx = np.zeros(n)\n    for i in range(period, n):\n        dx[i] = 100 * abs(plus_di[i] - minus_di[i]) / (plus_di[i] + minus_di[i] + 1e-10)\n    adx[2*period] = np.mean(dx[period:2*period+1])\n    for i in range(2*period + 1, n):\n        adx[i] = (adx[i-1] * (period - 1) + dx[i]) / period\n    return adx",
         "VWAP": "def VWAP(high, low, close, volume):\n    \"\"\"Volume Weighted Average Price\"\"\"\n    typical_price = (np.asarray(high) + np.asarray(low) + np.asarray(close)) / 3\n    return np.cumsum(typical_price * volume) / (np.cumsum(volume) + 1e-10)",
-        "SuperTrend": "def SuperTrend(high, low, close, period=10, multiplier=3.0):\n    \"\"\"SuperTrend indicator\"\"\"\n    high = np.asarray(high, dtype=float)\n    low = np.asarray(low, dtype=float)\n    close = np.asarray(close, dtype=float)\n    atr = ATR(high, low, close, period)\n    hl2 = (high + low) / 2\n    upper = hl2 + multiplier * atr\n    lower = hl2 - multiplier * atr\n    supertrend = np.zeros_like(close)\n    direction = np.ones_like(close)\n    supertrend[0] = upper[0]\n    for i in range(1, len(close)):\n        if close[i] > upper[i-1]:\n            direction[i] = 1\n        elif close[i] < lower[i-1]:\n            direction[i] = -1\n        else:\n            direction[i] = direction[i-1]\n        if direction[i] == 1:\n            supertrend[i] = lower[i]\n        else:\n            supertrend[i] = upper[i]\n    return supertrend"
+        "SuperTrend": "def SuperTrend(high, low, close, period=10, multiplier=3.0):\n    \"\"\"SuperTrend indicator\"\"\"\n    high = np.asarray(high, dtype=float)\n    low = np.asarray(low, dtype=float)\n    close = np.asarray(close, dtype=float)\n    atr = ATR(high, low, close, period)\n    hl2 = (high + low) / 2\n    upper = hl2 + multiplier * atr\n    lower = hl2 - multiplier * atr\n    supertrend = np.zeros_like(close)\n    direction = np.ones_like(close)\n    supertrend[0] = upper[0]\n    for i in range(1, len(close)):\n        if close[i] > upper[i-1]:\n            direction[i] = 1\n        elif close[i] < lower[i-1]:\n            direction[i] = -1\n        else:\n            direction[i] = direction[i-1]\n        if direction[i] == 1:\n            supertrend[i] = lower[i]\n        else:\n            supertrend[i] = upper[i]\n    return supertrend",
+        "ParabolicSAR": "def ParabolicSAR(high, low, close, step=0.02, maximum=0.2):\n    \"\"\"Parabolic SAR\"\"\"\n    high = np.asarray(high, dtype=float)\n    low = np.asarray(low, dtype=float)\n    n = len(close)\n    sar = np.zeros(n)\n    trend = 1\n    af = step\n    ep = high[0]\n    sar[0] = low[0]\n    for i in range(1, n):\n        sar[i] = sar[i-1] + af * (ep - sar[i-1])\n        if trend == 1:\n            if low[i] < sar[i]:\n                trend = -1\n                sar[i] = ep\n                ep = low[i]\n                af = step\n            else:\n                if high[i] > ep:\n                    ep = high[i]\n                    af = min(af + step, maximum)\n        else:\n            if high[i] > sar[i]:\n                trend = 1\n                sar[i] = ep\n                ep = high[i]\n                af = step\n            else:\n                if low[i] < ep:\n                    ep = low[i]\n                    af = min(af + step, maximum)\n    return sar",
+        "DonchianUpper": "def DonchianUpper(high, period=20):\n    \"\"\"Donchian Channel Upper\"\"\"\n    high = np.asarray(high, dtype=float)\n    result = np.zeros_like(high)\n    for i in range(period - 1, len(high)):\n        result[i] = np.max(high[i - period + 1:i + 1])\n    return result",
+        "DonchianLower": "def DonchianLower(low, period=20):\n    \"\"\"Donchian Channel Lower\"\"\"\n    low = np.asarray(low, dtype=float)\n    result = np.zeros_like(low)\n    for i in range(period - 1, len(low)):\n        result[i] = np.min(low[i - period + 1:i + 1])\n    return result",
+        "KeltnerUpper": "def KeltnerUpper(high, low, close, period=20, multiplier=2.0):\n    \"\"\"Keltner Channel Upper\"\"\"\n    ema = EMA(close, period)\n    atr = ATR(high, low, close, period)\n    return ema + multiplier * atr",
+        "KeltnerLower": "def KeltnerLower(high, low, close, period=20, multiplier=2.0):\n    \"\"\"Keltner Channel Lower\"\"\"\n    ema = EMA(close, period)\n    atr = ATR(high, low, close, period)\n    return ema - multiplier * atr",
+        "MFI": "def MFI(high, low, close, volume, period=14):\n    \"\"\"Money Flow Index\"\"\"\n    high = np.asarray(high, dtype=float)\n    low = np.asarray(low, dtype=float)\n    close = np.asarray(close, dtype=float)\n    volume = np.asarray(volume, dtype=float)\n    tp = (high + low + close) / 3\n    mf = tp * volume\n    mfi = np.zeros_like(close)\n    for i in range(period, len(close)):\n        pos_mf = 0\n        neg_mf = 0\n        for j in range(i - period + 1, i + 1):\n            if tp[j] > tp[j-1]:\n                pos_mf += mf[j]\n            elif tp[j] < tp[j-1]:\n                neg_mf += mf[j]\n        mfi[i] = 100 - 100 / (1 + pos_mf / (neg_mf + 1e-10))\n    return mfi",
+        "OBV": "def OBV(close, volume):\n    \"\"\"On Balance Volume\"\"\"\n    close = np.asarray(close, dtype=float)\n    volume = np.asarray(volume, dtype=float)\n    obv = np.zeros_like(close)\n    obv[0] = volume[0]\n    for i in range(1, len(close)):\n        if close[i] > close[i-1]:\n            obv[i] = obv[i-1] + volume[i]\n        elif close[i] < close[i-1]:\n            obv[i] = obv[i-1] - volume[i]\n        else:\n            obv[i] = obv[i-1]\n    return obv",
+        "Momentum": "def Momentum(close, period=14):\n    \"\"\"Momentum\"\"\"\n    close = np.asarray(close, dtype=float)\n    mom = np.zeros_like(close)\n    for i in range(period, len(close)):\n        mom[i] = close[i] - close[i - period]\n    return mom",
+        "DEMA": "def DEMA(values, period=14):\n    \"\"\"Double EMA\"\"\"\n    ema1 = EMA(values, period)\n    ema2 = EMA(ema1, period)\n    return 2 * ema1 - ema2",
+        "TEMA": "def TEMA(values, period=14):\n    \"\"\"Triple EMA\"\"\"\n    ema1 = EMA(values, period)\n    ema2 = EMA(ema1, period)\n    ema3 = EMA(ema2, period)\n    return 3 * ema1 - 3 * ema2 + ema3",
+        "LWMA": "def LWMA(values, period=14):\n    \"\"\"Linear Weighted Moving Average\"\"\"\n    values = np.asarray(values, dtype=float)\n    result = np.zeros_like(values)\n    weights = np.arange(1, period + 1)\n    for i in range(period - 1, len(values)):\n        window = values[i - period + 1:i + 1]\n        result[i] = np.sum(window * weights) / np.sum(weights)\n    return result",
+        "SMMA": "def SMMA(values, period=14):\n    \"\"\"Smoothed Moving Average\"\"\"\n    values = np.asarray(values, dtype=float)\n    result = np.zeros_like(values)\n    result[period-1] = np.mean(values[:period])\n    for i in range(period, len(values)):\n        result[i] = (result[i-1] * (period - 1) + values[i]) / period\n    return result",
+        "VIDYA": "def VIDYA(values, period=14, cmo_period=9):\n    \"\"\"Variable Index Dynamic Average\"\"\"\n    values = np.asarray(values, dtype=float)\n    result = np.zeros_like(values)\n    result[0] = values[0]\n    for i in range(1, len(values)):\n        if i < cmo_period:\n            cmo = 0\n        else:\n            ups = 0\n            downs = 0\n            for j in range(i - cmo_period + 1, i + 1):\n                change = values[j] - values[j-1]\n                if change > 0:\n                    ups += change\n                else:\n                    downs -= change\n            cmo = abs(ups - downs) / (ups + downs + 1e-10)\n        sc = 2 / (period + 1)\n        result[i] = sc * cmo * values[i] + (1 - sc * cmo) * result[i-1]\n    return result",
+        "Ichimoku_Tenkan": "def Ichimoku_Tenkan(high, low, period=9):\n    \"\"\"Ichimoku Tenkan-sen\"\"\"\n    high = np.asarray(high, dtype=float)\n    low = np.asarray(low, dtype=float)\n    result = np.zeros_like(high)\n    for i in range(period - 1, len(high)):\n        result[i] = (np.max(high[i - period + 1:i + 1]) + np.min(low[i - period + 1:i + 1])) / 2\n    return result",
+        "Ichimoku_Kijun": "def Ichimoku_Kijun(high, low, period=26):\n    \"\"\"Ichimoku Kijun-sen\"\"\"\n    return Ichimoku_Tenkan(high, low, period)",
+        "Ichimoku_SenkouA": "def Ichimoku_SenkouA(high, low, tenkan_period=9, kijun_period=26):\n    \"\"\"Ichimoku Senkou Span A\"\"\"\n    tenkan = Ichimoku_Tenkan(high, low, tenkan_period)\n    kijun = Ichimoku_Kijun(high, low, kijun_period)\n    return (tenkan + kijun) / 2",
+        "Ichimoku_SenkouB": "def Ichimoku_SenkouB(high, low, period=52):\n    \"\"\"Ichimoku Senkou Span B\"\"\"\n    return Ichimoku_Tenkan(high, low, period)",
+        "Highest": "def Highest(values, period=20):\n    \"\"\"Highest value over period\"\"\"\n    values = np.asarray(values, dtype=float)\n    result = np.zeros_like(values)\n    for i in range(period - 1, len(values)):\n        result[i] = np.max(values[i - period + 1:i + 1])\n    return result",
+        "Lowest": "def Lowest(values, period=20):\n    \"\"\"Lowest value over period\"\"\"\n    values = np.asarray(values, dtype=float)\n    result = np.zeros_like(values)\n    for i in range(period - 1, len(values)):\n        result[i] = np.min(values[i - period + 1:i + 1])\n    return result",
+        "PlusDI": "def PlusDI(high, low, close, period=14):\n    \"\"\"Plus Directional Indicator\"\"\"\n    high = np.asarray(high, dtype=float)\n    low = np.asarray(low, dtype=float)\n    close = np.asarray(close, dtype=float)\n    n = len(close)\n    tr = np.zeros(n)\n    plus_dm = np.zeros(n)\n    for i in range(1, n):\n        tr[i] = max(high[i] - low[i], abs(high[i] - close[i-1]), abs(low[i] - close[i-1]))\n        up = high[i] - high[i-1]\n        down = low[i-1] - low[i]\n        plus_dm[i] = up if up > down and up > 0 else 0\n    atr = np.zeros(n)\n    plus_di = np.zeros(n)\n    atr[period] = np.sum(tr[1:period+1])\n    plus_dm_sum = np.sum(plus_dm[1:period+1])\n    for i in range(period + 1, n):\n        atr[i] = atr[i-1] - atr[i-1]/period + tr[i]\n        plus_dm_sum = plus_dm_sum - plus_dm_sum/period + plus_dm[i]\n        plus_di[i] = 100 * plus_dm_sum / (atr[i] + 1e-10)\n    return plus_di",
+        "MinusDI": "def MinusDI(high, low, close, period=14):\n    \"\"\"Minus Directional Indicator\"\"\"\n    high = np.asarray(high, dtype=float)\n    low = np.asarray(low, dtype=float)\n    close = np.asarray(close, dtype=float)\n    n = len(close)\n    tr = np.zeros(n)\n    minus_dm = np.zeros(n)\n    for i in range(1, n):\n        tr[i] = max(high[i] - low[i], abs(high[i] - close[i-1]), abs(low[i] - close[i-1]))\n        up = high[i] - high[i-1]\n        down = low[i-1] - low[i]\n        minus_dm[i] = down if down > up and down > 0 else 0\n    atr = np.zeros(n)\n    minus_di = np.zeros(n)\n    atr[period] = np.sum(tr[1:period+1])\n    minus_dm_sum = np.sum(minus_dm[1:period+1])\n    for i in range(period + 1, n):\n        atr[i] = atr[i-1] - atr[i-1]/period + tr[i]\n        minus_dm_sum = minus_dm_sum - minus_dm_sum/period + minus_dm[i]\n        minus_di[i] = 100 * minus_dm_sum / (atr[i] + 1e-10)\n    return minus_di",
+        "StdDev": "def StdDev(values, period=20):\n    \"\"\"Standard Deviation\"\"\"\n    values = np.asarray(values, dtype=float)\n    result = np.zeros_like(values)\n    for i in range(period - 1, len(values)):\n        result[i] = np.std(values[i - period + 1:i + 1])\n    return result",
+        "TRIX": "def TRIX(values, period=14):\n    \"\"\"Triple Exponential Average\"\"\"\n    ema1 = EMA(values, period)\n    ema2 = EMA(ema1, period)\n    ema3 = EMA(ema2, period)\n    trix = np.zeros_like(ema3)\n    for i in range(1, len(ema3)):\n        if ema3[i-1] != 0:\n            trix[i] = (ema3[i] - ema3[i-1]) / ema3[i-1] * 100\n    return trix",
+        "RVI": "def RVI(open_, high, low, close, period=10):\n    \"\"\"Relative Vigor Index\"\"\"\n    close = np.asarray(close, dtype=float)\n    open_ = np.asarray(open_, dtype=float)\n    high = np.asarray(high, dtype=float)\n    low = np.asarray(low, dtype=float)\n    num = close - open_\n    den = high - low\n    rvi = np.zeros_like(close)\n    for i in range(period - 1, len(close)):\n        rvi[i] = np.sum(num[i - period + 1:i + 1]) / (np.sum(den[i - period + 1:i + 1]) + 1e-10)\n    return rvi",
+        "ChaikinOsc": "def ChaikinOsc(high, low, close, volume, fast=3, slow=10):\n    \"\"\"Chaikin Oscillator\"\"\"\n    high = np.asarray(high, dtype=float)\n    low = np.asarray(low, dtype=float)\n    close = np.asarray(close, dtype=float)\n    volume = np.asarray(volume, dtype=float)\n    mfm = ((close - low) - (high - close)) / (high - low + 1e-10)\n    mfv = mfm * volume\n    adl = np.cumsum(mfv)\n    return EMA(adl, fast) - EMA(adl, slow)",
+        "ForceIndex": "def ForceIndex(close, volume, period=13):\n    \"\"\"Force Index\"\"\"\n    close = np.asarray(close, dtype=float)\n    volume = np.asarray(volume, dtype=float)\n    force = np.zeros_like(close)\n    for i in range(1, len(close)):\n        force[i] = (close[i] - close[i-1]) * volume[i]\n    return EMA(force, period)",
+        "AwesomeOsc": "def AwesomeOsc(high, low, fast=5, slow=34):\n    \"\"\"Awesome Oscillator\"\"\"\n    hl2 = (np.asarray(high) + np.asarray(low)) / 2\n    fast_sma = np.zeros_like(hl2)\n    slow_sma = np.zeros_like(hl2)\n    for i in range(fast - 1, len(hl2)):\n        fast_sma[i] = np.mean(hl2[i - fast + 1:i + 1])\n    for i in range(slow - 1, len(hl2)):\n        slow_sma[i] = np.mean(hl2[i - slow + 1:i + 1])\n    return fast_sma - slow_sma",
+        "AcceleratorOsc": "def AcceleratorOsc(high, low, fast=5, slow=34, signal=5):\n    \"\"\"Accelerator Oscillator\"\"\"\n    ao = AwesomeOsc(high, low, fast, slow)\n    ao_sma = np.zeros_like(ao)\n    for i in range(signal - 1, len(ao)):\n        ao_sma[i] = np.mean(ao[i - signal + 1:i + 1])\n    return ao - ao_sma",
+        "Envelopes": "def Envelopes(values, period=20, deviation=0.1):\n    \"\"\"Envelopes - returns (upper, lower)\"\"\"\n    values = np.asarray(values, dtype=float)\n    sma = np.zeros_like(values)\n    for i in range(period - 1, len(values)):\n        sma[i] = np.mean(values[i - period + 1:i + 1])\n    upper = sma * (1 + deviation)\n    lower = sma * (1 - deviation)\n    return upper"
     },
     "indicators": {
         "ta_sma": {
@@ -162,6 +191,232 @@
             "value_expr": "self.supertrend[-1]",
             "default_period": 10,
             "default_multiplier": 3.0
+        },
+        "ta_sar": {
+            "type": "SAR",
+            "helper": "ParabolicSAR",
+            "class_param": "sar_step = {step}\n    sar_max = {maximum}",
+            "init_code": "self.sar = self.I(ParabolicSAR, self.data.High, self.data.Low, self.data.Close, self.sar_step, self.sar_max)",
+            "value_expr": "self.sar[-1]",
+            "default_step": 0.02,
+            "default_maximum": 0.2
+        },
+        "donchian": {
+            "type": "DONCHIAN",
+            "helper": [
+                "DonchianUpper",
+                "DonchianLower"
+            ],
+            "class_param": "donchian_period = {period}",
+            "init_code": "self.donchian_upper = self.I(DonchianUpper, self.data.High, self.donchian_period)\n        self.donchian_lower = self.I(DonchianLower, self.data.Low, self.donchian_period)",
+            "value_expr": "self.donchian_upper[-1]",
+            "default_period": 20
+        },
+        "ta_keltner": {
+            "type": "KELTNER",
+            "helper": [
+                "EMA",
+                "ATR",
+                "KeltnerUpper",
+                "KeltnerLower"
+            ],
+            "class_param": "keltner_period = {period}\n    keltner_mult = {multiplier}",
+            "init_code": "self.keltner_upper = self.I(KeltnerUpper, self.data.High, self.data.Low, self.data.Close, self.keltner_period, self.keltner_mult)\n        self.keltner_lower = self.I(KeltnerLower, self.data.High, self.data.Low, self.data.Close, self.keltner_period, self.keltner_mult)",
+            "value_expr": "self.keltner_upper[-1]",
+            "default_period": 20,
+            "default_multiplier": 2.0
+        },
+        "ta_mfi": {
+            "type": "MFI",
+            "helper": "MFI",
+            "class_param": "mfi_period = {period}",
+            "init_code": "self.mfi = self.I(MFI, self.data.High, self.data.Low, self.data.Close, self.data.Volume, self.mfi_period)",
+            "value_expr": "self.mfi[-1]",
+            "default_period": 14
+        },
+        "ta_obv": {
+            "type": "OBV",
+            "helper": "OBV",
+            "class_param": "",
+            "init_code": "self.obv = self.I(OBV, self.data.Close, self.data.Volume)",
+            "value_expr": "self.obv[-1]"
+        },
+        "momentum": {
+            "type": "MOMENTUM",
+            "helper": "Momentum",
+            "class_param": "momentum_period = {period}",
+            "init_code": "self.momentum = self.I(Momentum, self.data.Close, self.momentum_period)",
+            "value_expr": "self.momentum[-1]",
+            "default_period": 14
+        },
+        "dema": {
+            "type": "DEMA",
+            "helper": [
+                "EMA",
+                "DEMA"
+            ],
+            "class_param": "dema_period = {period}",
+            "init_code": "self.dema = self.I(DEMA, self.data.Close, self.dema_period)",
+            "value_expr": "self.dema[-1]",
+            "default_period": 14
+        },
+        "tema": {
+            "type": "TEMA",
+            "helper": [
+                "EMA",
+                "TEMA"
+            ],
+            "class_param": "tema_period = {period}",
+            "init_code": "self.tema = self.I(TEMA, self.data.Close, self.tema_period)",
+            "value_expr": "self.tema[-1]",
+            "default_period": 14
+        },
+        "ta_lwma": {
+            "type": "LWMA",
+            "helper": "LWMA",
+            "class_param": "lwma_period = {period}",
+            "init_code": "self.lwma = self.I(LWMA, self.data.Close, self.lwma_period)",
+            "value_expr": "self.lwma[-1]",
+            "default_period": 14
+        },
+        "ta_smma": {
+            "type": "SMMA",
+            "helper": "SMMA",
+            "class_param": "smma_period = {period}",
+            "init_code": "self.smma = self.I(SMMA, self.data.Close, self.smma_period)",
+            "value_expr": "self.smma[-1]",
+            "default_period": 14
+        },
+        "vidya": {
+            "type": "VIDYA",
+            "helper": "VIDYA",
+            "class_param": "vidya_period = {period}",
+            "init_code": "self.vidya = self.I(VIDYA, self.data.Close, self.vidya_period)",
+            "value_expr": "self.vidya[-1]",
+            "default_period": 14
+        },
+        "ta_ichimoku": {
+            "type": "ICHIMOKU",
+            "helper": [
+                "Ichimoku_Tenkan",
+                "Ichimoku_Kijun",
+                "Ichimoku_SenkouA",
+                "Ichimoku_SenkouB"
+            ],
+            "class_param": "ichimoku_tenkan = {tenkan}\n    ichimoku_kijun = {kijun}\n    ichimoku_senkou = {senkou}",
+            "init_code": "self.ichimoku_tenkan = self.I(Ichimoku_Tenkan, self.data.High, self.data.Low, self.ichimoku_tenkan)\n        self.ichimoku_kijun = self.I(Ichimoku_Kijun, self.data.High, self.data.Low, self.ichimoku_kijun)\n        self.ichimoku_senkou_a = self.I(Ichimoku_SenkouA, self.data.High, self.data.Low, self.ichimoku_tenkan, self.ichimoku_kijun)\n        self.ichimoku_senkou_b = self.I(Ichimoku_SenkouB, self.data.High, self.data.Low, self.ichimoku_senkou)",
+            "value_expr": "self.ichimoku_tenkan[-1]",
+            "default_tenkan": 9,
+            "default_kijun": 26,
+            "default_senkou": 52
+        },
+        "ta_highest": {
+            "type": "HIGHEST",
+            "helper": "Highest",
+            "class_param": "highest_period = {period}",
+            "init_code": "self.highest = self.I(Highest, self.data.High, self.highest_period)",
+            "value_expr": "self.highest[-1]",
+            "default_period": 20
+        },
+        "ta_lowest": {
+            "type": "LOWEST",
+            "helper": "Lowest",
+            "class_param": "lowest_period = {period}",
+            "init_code": "self.lowest = self.I(Lowest, self.data.Low, self.lowest_period)",
+            "value_expr": "self.lowest[-1]",
+            "default_period": 20
+        },
+        "ta_dmi": {
+            "type": "DMI",
+            "helper": [
+                "PlusDI",
+                "MinusDI",
+                "ADX"
+            ],
+            "class_param": "dmi_period = {period}",
+            "init_code": "self.plus_di = self.I(PlusDI, self.data.High, self.data.Low, self.data.Close, self.dmi_period)\n        self.minus_di = self.I(MinusDI, self.data.High, self.data.Low, self.data.Close, self.dmi_period)\n        self.dmi_adx = self.I(ADX, self.data.High, self.data.Low, self.data.Close, self.dmi_period)",
+            "value_expr": "self.plus_di[-1]",
+            "default_period": 14
+        },
+        "stddev": {
+            "type": "STDDEV",
+            "helper": "StdDev",
+            "class_param": "stddev_period = {period}",
+            "init_code": "self.stddev = self.I(StdDev, self.data.Close, self.stddev_period)",
+            "value_expr": "self.stddev[-1]",
+            "default_period": 20
+        },
+        "trix": {
+            "type": "TRIX",
+            "helper": [
+                "EMA",
+                "TRIX"
+            ],
+            "class_param": "trix_period = {period}",
+            "init_code": "self.trix = self.I(TRIX, self.data.Close, self.trix_period)",
+            "value_expr": "self.trix[-1]",
+            "default_period": 14
+        },
+        "rvi": {
+            "type": "RVI",
+            "helper": "RVI",
+            "class_param": "rvi_period = {period}",
+            "init_code": "self.rvi = self.I(RVI, self.data.Open, self.data.High, self.data.Low, self.data.Close, self.rvi_period)",
+            "value_expr": "self.rvi[-1]",
+            "default_period": 10
+        },
+        "chaikin": {
+            "type": "CHAIKIN",
+            "helper": [
+                "EMA",
+                "ChaikinOsc"
+            ],
+            "class_param": "chaikin_fast = {fast}\n    chaikin_slow = {slow}",
+            "init_code": "self.chaikin = self.I(ChaikinOsc, self.data.High, self.data.Low, self.data.Close, self.data.Volume, self.chaikin_fast, self.chaikin_slow)",
+            "value_expr": "self.chaikin[-1]",
+            "default_fast": 3,
+            "default_slow": 10
+        },
+        "force": {
+            "type": "FORCE",
+            "helper": [
+                "EMA",
+                "ForceIndex"
+            ],
+            "class_param": "force_period = {period}",
+            "init_code": "self.force = self.I(ForceIndex, self.data.Close, self.data.Volume, self.force_period)",
+            "value_expr": "self.force[-1]",
+            "default_period": 13
+        },
+        "ao": {
+            "type": "AO",
+            "helper": "AwesomeOsc",
+            "class_param": "ao_fast = {fast}\n    ao_slow = {slow}",
+            "init_code": "self.ao = self.I(AwesomeOsc, self.data.High, self.data.Low, self.ao_fast, self.ao_slow)",
+            "value_expr": "self.ao[-1]",
+            "default_fast": 5,
+            "default_slow": 34
+        },
+        "ac": {
+            "type": "AC",
+            "helper": [
+                "AwesomeOsc",
+                "AcceleratorOsc"
+            ],
+            "class_param": "ac_fast = {fast}\n    ac_slow = {slow}",
+            "init_code": "self.ac = self.I(AcceleratorOsc, self.data.High, self.data.Low, self.ac_fast, self.ac_slow)",
+            "value_expr": "self.ac[-1]",
+            "default_fast": 5,
+            "default_slow": 34
+        },
+        "envelopes": {
+            "type": "ENVELOPES",
+            "helper": "Envelopes",
+            "class_param": "env_period = {period}\n    env_deviation = {deviation}",
+            "init_code": "self.env_upper = self.I(Envelopes, self.data.Close, self.env_period, self.env_deviation)",
+            "value_expr": "self.env_upper[-1]",
+            "default_period": 20,
+            "default_deviation": 0.1
         }
     },
     "operators": {
