@@ -40,6 +40,88 @@ def get_indicator_spec(block_type: str) -> Dict[str, Any]:
     return block_map.get("indicators", {}).get(block_type, {})
 
 
+def get_strategy_parameters(parsed: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Extract the strategy parameters (as a dictionary of variable_name -> value)
+    from the parsed XML, matching the variable names used in the generated code.
+    
+    This enables injecting new parameter values into cached code.
+    """
+    block_map = _load_block_map()
+    params = {}
+    
+    indicators = parsed.get("indicators", [])
+    
+    for idx, indicator in enumerate(indicators):
+        ind_type = indicator.get("type", "").upper()
+        
+        # Map parsed type to block type (same mapping as generate_strategy)
+        # TODO: Refactor this mapping to share with generate_strategy if it grows complexity
+        # For now, manually synced with generate_strategy lines 79-99
+        block_type_mapping = {
+            "SMA": "ta_sma", "EMA": "ta_ema", "RSI": "ta_rsi", "ATR": "ta_atr",
+            "MACD": "ta_macd", "BOLLINGER": "ta_bb", "STOCHASTIC": "ta_stochastic",
+            "CCI": "ta_cci", "WILLIAMS_R": "ta_williams_r", "ADX": "ta_adx",
+            "VWAP": "ta_vwap", "SUPERTREND": "ta_supertrend", "SAR": "ta_sar",
+            "DONCHIAN": "donchian", "KELTNER": "ta_keltner", "MFI": "ta_mfi",
+            "OBV": "ta_obv", "MOMENTUM": "momentum", "DEMA": "dema", "TEMA": "tema",
+            "LWMA": "ta_lwma", "SMMA": "ta_smma", "VIDYA": "vidya",
+            "ICHIMOKU": "ta_ichimoku", "HIGHEST": "ta_highest", "LOWEST": "ta_lowest",
+            "DMI": "ta_dmi", "STDDEV": "stddev", "TRIX": "trix", "RVI": "rvi",
+            "CHAIKIN": "chaikin", "FORCE": "force", "AO": "ao", "AC": "ac",
+            "ENVELOPES": "envelopes", "AD": "ad", "ADXWILDER": "adxWilder",
+            "ALLIGATOR": "alligator", "AMA": "ama", "BEARSPOWER": "bearsPower",
+            "BULLSPOWER": "bullsPower", "BWMFI": "bwmfi", "DEMARKER": "demarker",
+            "FRAMA": "frama", "GATOR": "gator", "OSMA": "osma",
+            "SUPPORT": "ta_support", "RESISTANCE": "ta_resistance", "VOLUMES": "volumes"
+        }
+        
+        block_type = block_type_mapping.get(ind_type, ind_type.lower())
+        spec = get_indicator_spec(block_type)
+        if not spec:
+            continue
+            
+        param_template = spec.get("class_param", "")
+        if not param_template:
+            continue
+            
+        # Parse template to extract variable names and values
+        for line in param_template.split("\n"):
+            line = line.strip()
+            if not line or "=" not in line:
+                continue
+                
+            name_tmpl, val_tmpl = line.split("=", 1)
+            name_tmpl = name_tmpl.strip()
+            val_tmpl = val_tmpl.strip()
+            
+            # Extract variable name (replace {idx})
+            var_name = name_tmpl.replace("{idx}", str(idx))
+            
+            # Extract value key (replace {key} -> key)
+            # Assumption: val_tmpl is simple like "{period}" or "{fast}"
+            if val_tmpl.startswith("{") and val_tmpl.endswith("}"):
+                key = val_tmpl[1:-1]
+                default_key = f"default_{key}"
+                default_val = spec.get(default_key, 14) # fallback
+                
+                # Get value from indicator dict or default
+                val = indicator.get(key, default_val)
+                
+                # Convert to number if possible
+                try:
+                    if "." in str(val):
+                        val = float(val)
+                    else:
+                        val = int(val)
+                except (ValueError, TypeError):
+                    pass
+                    
+                params[var_name] = val
+
+    return params
+
+
 def generate_strategy_from_json(parsed: Dict[str, Any]) -> tuple:
     """
     Generate a backtesting.py Strategy class from parsed XML data.

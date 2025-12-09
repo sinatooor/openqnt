@@ -34,6 +34,7 @@ interface BlocklyWorkspaceProps {
   onAIPanelChange?: (show: boolean) => void;
   leverage?: number;
   onXmlChange?: (xml: string | null) => void;
+  onStrategyGenerated?: (strategyId: string, code?: string) => void;
 }
 
 export const BlocklyWorkspace = ({
@@ -43,7 +44,8 @@ export const BlocklyWorkspace = ({
   showAIPanelFromParent,
   onAIPanelChange,
   leverage = 1,
-  onXmlChange
+  onXmlChange,
+  onStrategyGenerated
 }: BlocklyWorkspaceProps = {}) => {
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
@@ -658,7 +660,7 @@ export const BlocklyWorkspace = ({
     } catch (error: any) {
       console.error("Backtest error:", error);
       toast.dismiss(loadingToast);
-      
+
       let errorMessage = "Backend not running? Start with: cd backend && uvicorn main:app --port 8000";
       if (error.name === 'AbortError') {
         errorMessage = "Request timed out. The backtest is taking too long - try with a shorter date range.";
@@ -667,7 +669,7 @@ export const BlocklyWorkspace = ({
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       toast.error("Backtest failed", {
         description: errorMessage
       });
@@ -1348,6 +1350,7 @@ export const BlocklyWorkspace = ({
         <div className="flex-1 overflow-auto" ref={aiPanelRef}>
           <AIChatPanel
             onBlocksGenerated={handleBlocksGenerated}
+            onStrategyGenerated={onStrategyGenerated}
             getCurrentWorkspaceXml={getCurrentWorkspaceXml}
             getSelectedBlocksXml={getSelectedBlocksXml}
             onLog={handleLog}
