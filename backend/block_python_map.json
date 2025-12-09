@@ -1,0 +1,201 @@
+{
+    "meta": {
+        "version": "1.0",
+        "description": "Block-to-Python mapping for backtesting.py strategy generation",
+        "updated": "2024-12-09"
+    },
+    "imports": {
+        "base": [
+            "from backtesting import Strategy",
+            "from backtesting.lib import crossover",
+            "import numpy as np"
+        ],
+        "sma": [
+            "from backtesting.test import SMA"
+        ]
+    },
+    "helper_functions": {
+        "EMA": "def EMA(values, n):\n    \"\"\"Exponential Moving Average\"\"\"\n    values = np.asarray(values)\n    alpha = 2 / (n + 1)\n    ema = np.zeros_like(values, dtype=float)\n    ema[0] = values[0]\n    for i in range(1, len(values)):\n        ema[i] = alpha * values[i] + (1 - alpha) * ema[i-1]\n    return ema",
+        "RSI": "def RSI(values, period=14):\n    \"\"\"Relative Strength Index\"\"\"\n    values = np.asarray(values)\n    deltas = np.diff(values)\n    gains = np.where(deltas > 0, deltas, 0)\n    losses = np.where(deltas < 0, -deltas, 0)\n    avg_gain = np.zeros(len(values))\n    avg_loss = np.zeros(len(values))\n    if period < len(values):\n        avg_gain[period] = np.mean(gains[:period])\n        avg_loss[period] = np.mean(losses[:period])\n    for i in range(period + 1, len(values)):\n        avg_gain[i] = (avg_gain[i-1] * (period - 1) + gains[i-1]) / period\n        avg_loss[i] = (avg_loss[i-1] * (period - 1) + losses[i-1]) / period\n    rs = avg_gain / (avg_loss + 1e-10)\n    rsi = 100 - (100 / (1 + rs))\n    rsi[:period] = 50\n    return rsi",
+        "ATR": "def ATR(high, low, close, period=14):\n    \"\"\"Average True Range\"\"\"\n    high = np.asarray(high, dtype=float)\n    low = np.asarray(low, dtype=float)\n    close = np.asarray(close, dtype=float)\n    tr = np.zeros_like(close)\n    tr[0] = high[0] - low[0]\n    for i in range(1, len(close)):\n        hl = high[i] - low[i]\n        hc = abs(high[i] - close[i-1])\n        lc = abs(low[i] - close[i-1])\n        tr[i] = max(hl, hc, lc)\n    atr = np.zeros_like(tr)\n    atr[:period] = np.mean(tr[:period])\n    alpha = 2 / (period + 1)\n    for i in range(period, len(tr)):\n        atr[i] = alpha * tr[i] + (1 - alpha) * atr[i-1]\n    return atr",
+        "MACD_line": "def MACD_line(values, fast=12, slow=26):\n    \"\"\"MACD line\"\"\"\n    return EMA(values, fast) - EMA(values, slow)",
+        "MACD_signal": "def MACD_signal(values, fast=12, slow=26, signal=9):\n    \"\"\"MACD signal line\"\"\"\n    macd = MACD_line(values, fast, slow)\n    return EMA(macd, signal)",
+        "BollingerUpper": "def BollingerUpper(values, period=20, std_dev=2.0):\n    \"\"\"Bollinger Upper Band\"\"\"\n    values = np.asarray(values)\n    result = np.zeros_like(values)\n    for i in range(period - 1, len(values)):\n        window = values[i - period + 1:i + 1]\n        result[i] = np.mean(window) + std_dev * np.std(window)\n    return result",
+        "BollingerLower": "def BollingerLower(values, period=20, std_dev=2.0):\n    \"\"\"Bollinger Lower Band\"\"\"\n    values = np.asarray(values)\n    result = np.zeros_like(values)\n    for i in range(period - 1, len(values)):\n        window = values[i - period + 1:i + 1]\n        result[i] = np.mean(window) - std_dev * np.std(window)\n    return result",
+        "BollingerMiddle": "def BollingerMiddle(values, period=20):\n    \"\"\"Bollinger Middle Band (SMA)\"\"\"\n    values = np.asarray(values)\n    result = np.zeros_like(values)\n    for i in range(period - 1, len(values)):\n        result[i] = np.mean(values[i - period + 1:i + 1])\n    return result",
+        "StochK": "def StochK(high, low, close, period=14):\n    \"\"\"Stochastic %K\"\"\"\n    high = np.asarray(high)\n    low = np.asarray(low)\n    close = np.asarray(close)\n    k = np.zeros_like(close)\n    for i in range(period - 1, len(close)):\n        hh = np.max(high[i - period + 1:i + 1])\n        ll = np.min(low[i - period + 1:i + 1])\n        k[i] = 100 * (close[i] - ll) / (hh - ll + 1e-10)\n    return k",
+        "StochD": "def StochD(high, low, close, k_period=14, d_period=3):\n    \"\"\"Stochastic %D\"\"\"\n    k = StochK(high, low, close, k_period)\n    d = np.zeros_like(k)\n    for i in range(d_period - 1, len(k)):\n        d[i] = np.mean(k[i - d_period + 1:i + 1])\n    return d",
+        "CCI": "def CCI(high, low, close, period=20):\n    \"\"\"Commodity Channel Index\"\"\"\n    high = np.asarray(high, dtype=float)\n    low = np.asarray(low, dtype=float)\n    close = np.asarray(close, dtype=float)\n    tp = (high + low + close) / 3\n    cci = np.zeros_like(close)\n    for i in range(period - 1, len(close)):\n        window = tp[i - period + 1:i + 1]\n        sma = np.mean(window)\n        mad = np.mean(np.abs(window - sma))\n        cci[i] = (tp[i] - sma) / (0.015 * mad + 1e-10)\n    return cci",
+        "WilliamsR": "def WilliamsR(high, low, close, period=14):\n    \"\"\"Williams %R\"\"\"\n    high = np.asarray(high, dtype=float)\n    low = np.asarray(low, dtype=float)\n    close = np.asarray(close, dtype=float)\n    wr = np.zeros_like(close)\n    for i in range(period - 1, len(close)):\n        hh = np.max(high[i - period + 1:i + 1])\n        ll = np.min(low[i - period + 1:i + 1])\n        wr[i] = -100 * (hh - close[i]) / (hh - ll + 1e-10)\n    return wr",
+        "ADX": "def ADX(high, low, close, period=14):\n    \"\"\"Average Directional Index\"\"\"\n    high = np.asarray(high, dtype=float)\n    low = np.asarray(low, dtype=float)\n    close = np.asarray(close, dtype=float)\n    n = len(close)\n    tr = np.zeros(n)\n    plus_dm = np.zeros(n)\n    minus_dm = np.zeros(n)\n    tr[0] = high[0] - low[0]\n    for i in range(1, n):\n        tr[i] = max(high[i] - low[i], abs(high[i] - close[i-1]), abs(low[i] - close[i-1]))\n        up = high[i] - high[i-1]\n        down = low[i-1] - low[i]\n        plus_dm[i] = up if up > down and up > 0 else 0\n        minus_dm[i] = down if down > up and down > 0 else 0\n    atr = np.zeros(n)\n    plus_di = np.zeros(n)\n    minus_di = np.zeros(n)\n    atr[period] = np.sum(tr[1:period+1])\n    plus_dm_sum = np.sum(plus_dm[1:period+1])\n    minus_dm_sum = np.sum(minus_dm[1:period+1])\n    for i in range(period + 1, n):\n        atr[i] = atr[i-1] - atr[i-1]/period + tr[i]\n        plus_dm_sum = plus_dm_sum - plus_dm_sum/period + plus_dm[i]\n        minus_dm_sum = minus_dm_sum - minus_dm_sum/period + minus_dm[i]\n        plus_di[i] = 100 * plus_dm_sum / (atr[i] + 1e-10)\n        minus_di[i] = 100 * minus_dm_sum / (atr[i] + 1e-10)\n    dx = np.zeros(n)\n    adx = np.zeros(n)\n    for i in range(period, n):\n        dx[i] = 100 * abs(plus_di[i] - minus_di[i]) / (plus_di[i] + minus_di[i] + 1e-10)\n    adx[2*period] = np.mean(dx[period:2*period+1])\n    for i in range(2*period + 1, n):\n        adx[i] = (adx[i-1] * (period - 1) + dx[i]) / period\n    return adx",
+        "VWAP": "def VWAP(high, low, close, volume):\n    \"\"\"Volume Weighted Average Price\"\"\"\n    typical_price = (np.asarray(high) + np.asarray(low) + np.asarray(close)) / 3\n    return np.cumsum(typical_price * volume) / (np.cumsum(volume) + 1e-10)",
+        "SuperTrend": "def SuperTrend(high, low, close, period=10, multiplier=3.0):\n    \"\"\"SuperTrend indicator\"\"\"\n    high = np.asarray(high, dtype=float)\n    low = np.asarray(low, dtype=float)\n    close = np.asarray(close, dtype=float)\n    atr = ATR(high, low, close, period)\n    hl2 = (high + low) / 2\n    upper = hl2 + multiplier * atr\n    lower = hl2 - multiplier * atr\n    supertrend = np.zeros_like(close)\n    direction = np.ones_like(close)\n    supertrend[0] = upper[0]\n    for i in range(1, len(close)):\n        if close[i] > upper[i-1]:\n            direction[i] = 1\n        elif close[i] < lower[i-1]:\n            direction[i] = -1\n        else:\n            direction[i] = direction[i-1]\n        if direction[i] == 1:\n            supertrend[i] = lower[i]\n        else:\n            supertrend[i] = upper[i]\n    return supertrend"
+    },
+    "indicators": {
+        "ta_sma": {
+            "type": "SMA",
+            "helper": null,
+            "extra_imports": [
+                "from backtesting.test import SMA"
+            ],
+            "class_param": "sma{idx}_period = {period}",
+            "init_code": "self.sma{idx} = self.I(SMA, self.data.Close, self.sma{idx}_period)",
+            "value_expr": "self.sma{idx}[-1]",
+            "default_period": 14
+        },
+        "ta_ema": {
+            "type": "EMA",
+            "helper": "EMA",
+            "class_param": "ema{idx}_period = {period}",
+            "init_code": "self.ema{idx} = self.I(EMA, self.data.Close, self.ema{idx}_period)",
+            "value_expr": "self.ema{idx}[-1]",
+            "default_period": 14
+        },
+        "ta_rsi": {
+            "type": "RSI",
+            "helper": "RSI",
+            "class_param": "rsi_period = {period}",
+            "init_code": "self.rsi = self.I(RSI, self.data.Close, self.rsi_period)",
+            "value_expr": "self.rsi[-1]",
+            "default_period": 14
+        },
+        "ta_atr": {
+            "type": "ATR",
+            "helper": "ATR",
+            "class_param": "atr_period = {period}",
+            "init_code": "self.atr = self.I(ATR, self.data.High, self.data.Low, self.data.Close, self.atr_period)",
+            "value_expr": "self.atr[-1]",
+            "default_period": 14
+        },
+        "ta_macd": {
+            "type": "MACD",
+            "helper": [
+                "EMA",
+                "MACD_line",
+                "MACD_signal"
+            ],
+            "class_param": "macd_fast = {fast}\n    macd_slow = {slow}\n    macd_signal = {signal}",
+            "init_code": "self.macd_line = self.I(MACD_line, self.data.Close, self.macd_fast, self.macd_slow)\n        self.macd_signal = self.I(MACD_signal, self.data.Close, self.macd_fast, self.macd_slow, self.macd_signal)",
+            "value_expr": "self.macd_line[-1]",
+            "default_fast": 12,
+            "default_slow": 26,
+            "default_signal": 9
+        },
+        "macd_value": {
+            "type": "MACD",
+            "helper": [
+                "EMA",
+                "MACD_line",
+                "MACD_signal"
+            ],
+            "class_param": "macd_fast = {fast}\n    macd_slow = {slow}\n    macd_signal_period = {signal}",
+            "init_code": "self.macd_line = self.I(MACD_line, self.data.Close, self.macd_fast, self.macd_slow)\n        self.macd_signal = self.I(MACD_signal, self.data.Close, self.macd_fast, self.macd_slow, self.macd_signal_period)",
+            "value_expr": "self.macd_line[-1]",
+            "default_fast": 12,
+            "default_slow": 26,
+            "default_signal": 9
+        },
+        "ta_bb": {
+            "type": "BOLLINGER",
+            "helper": [
+                "BollingerUpper",
+                "BollingerLower",
+                "BollingerMiddle"
+            ],
+            "class_param": "bb_period = {period}\n    bb_std = {std}",
+            "init_code": "self.bb_upper = self.I(BollingerUpper, self.data.Close, self.bb_period, self.bb_std)\n        self.bb_lower = self.I(BollingerLower, self.data.Close, self.bb_period, self.bb_std)\n        self.bb_middle = self.I(BollingerMiddle, self.data.Close, self.bb_period)",
+            "value_expr": "self.bb_middle[-1]",
+            "default_period": 20,
+            "default_std": 2.0
+        },
+        "ta_stochastic": {
+            "type": "STOCHASTIC",
+            "helper": [
+                "StochK",
+                "StochD"
+            ],
+            "class_param": "stoch_k = {k_period}\n    stoch_d = {d_period}",
+            "init_code": "self.stoch_k = self.I(StochK, self.data.High, self.data.Low, self.data.Close, self.stoch_k)\n        self.stoch_d = self.I(StochD, self.data.High, self.data.Low, self.data.Close, self.stoch_k, self.stoch_d)",
+            "value_expr": "self.stoch_k[-1]",
+            "default_k_period": 14,
+            "default_d_period": 3
+        },
+        "ta_cci": {
+            "type": "CCI",
+            "helper": "CCI",
+            "class_param": "cci_period = {period}",
+            "init_code": "self.cci = self.I(CCI, self.data.High, self.data.Low, self.data.Close, self.cci_period)",
+            "value_expr": "self.cci[-1]",
+            "default_period": 20
+        },
+        "ta_williams_r": {
+            "type": "WILLIAMS_R",
+            "helper": "WilliamsR",
+            "class_param": "williams_period = {period}",
+            "init_code": "self.williams_r = self.I(WilliamsR, self.data.High, self.data.Low, self.data.Close, self.williams_period)",
+            "value_expr": "self.williams_r[-1]",
+            "default_period": 14
+        },
+        "ta_adx": {
+            "type": "ADX",
+            "helper": "ADX",
+            "class_param": "adx_period = {period}",
+            "init_code": "self.adx = self.I(ADX, self.data.High, self.data.Low, self.data.Close, self.adx_period)",
+            "value_expr": "self.adx[-1]",
+            "default_period": 14
+        },
+        "ta_vwap": {
+            "type": "VWAP",
+            "helper": "VWAP",
+            "class_param": "",
+            "init_code": "self.vwap = self.I(VWAP, self.data.High, self.data.Low, self.data.Close, self.data.Volume)",
+            "value_expr": "self.vwap[-1]"
+        },
+        "ta_supertrend": {
+            "type": "SUPERTREND",
+            "helper": [
+                "ATR",
+                "SuperTrend"
+            ],
+            "class_param": "supertrend_period = {period}\n    supertrend_mult = {multiplier}",
+            "init_code": "self.supertrend = self.I(SuperTrend, self.data.High, self.data.Low, self.data.Close, self.supertrend_period, self.supertrend_mult)",
+            "value_expr": "self.supertrend[-1]",
+            "default_period": 10,
+            "default_multiplier": 3.0
+        }
+    },
+    "operators": {
+        "operator_greater": "{left} > {right}",
+        "operator_less": "{left} < {right}",
+        "operator_greater_equals": "{left} >= {right}",
+        "operator_less_equals": "{left} <= {right}",
+        "operator_equals": "{left} == {right}",
+        "operator_not_equals": "{left} != {right}",
+        "operator_and": "({left}) and ({right})",
+        "operator_or": "({left}) or ({right})",
+        "operator_not": "not ({value})",
+        "operator_add": "{left} + {right}",
+        "operator_subtract": "{left} - {right}",
+        "operator_multiply": "{left} * {right}",
+        "operator_divide": "{left} / {right}"
+    },
+    "trade_actions": {
+        "buy": "self.buy()",
+        "sell": "self.sell()",
+        "buy_with_sl": "self.buy(sl={sl})",
+        "buy_with_tp": "self.buy(tp={tp})",
+        "buy_with_sl_tp": "self.buy(sl={sl}, tp={tp})",
+        "sell_with_sl": "self.sell(sl={sl})",
+        "sell_with_tp": "self.sell(tp={tp})",
+        "sell_with_sl_tp": "self.sell(sl={sl}, tp={tp})",
+        "close_position": "self.position.close()"
+    },
+    "conditions": {
+        "rsi_oversold": "{rsi_expr} < {threshold}",
+        "rsi_overbought": "{rsi_expr} > {threshold}",
+        "price_above_ma": "self.data.Close[-1] > {ma_expr}",
+        "price_below_ma": "self.data.Close[-1] < {ma_expr}",
+        "ma_crossover_up": "crossover({fast_ma}, {slow_ma})",
+        "ma_crossover_down": "crossover({slow_ma}, {fast_ma})"
+    }
+}
