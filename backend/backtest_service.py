@@ -237,6 +237,7 @@ ORIGINAL STRATEGY INTENT (from parsed blocks):
 - Entry direction: {entry_direction}
 - Has short entries: {has_short}
 - Risk management: {risk_management}
+- UNKNOWN BLOCKS (need implementation): {unknown_blocks}
 
 YOUR TASK - Fix and validate:
 1. SYNTAX: Fix any Python syntax errors
@@ -245,6 +246,25 @@ YOUR TASK - Fix and validate:
 4. TRADES: Verify buy()/sell() calls match the intended direction
 5. SL/TP: If ATR-based SL/TP is used, validate the math is correct
 6. IMPORTS: Ensure all required imports are present (Strategy, crossover, SMA, numpy)
+
+PLACEHOLDER BLOCKS (CRITICAL):
+The code may contain `# TODO: LLM_FILL` comments marking indicators that could not 
+be parsed locally. You MUST:
+- Replace these placeholders with working indicator implementations
+- Use self.I() wrapper for all custom indicators
+- If you cannot implement an indicator, add a comment explaining why and use a 
+  sensible default (e.g., return the close price)
+
+Example placeholder:
+    # TODO: LLM_FILL - Unknown indicator 'XYZ' - params: {{'period': 14}}
+    # self.unknown_xyz_0 = self.I(???, self.data.Close, ???)  # PLACEHOLDER
+
+Your fix should be:
+    def XYZ(values, period=14):
+        # Your implementation
+        return values  # or actual calculation
+    # ... then in init():
+    self.xyz = self.I(XYZ, self.data.Close, 14)
 
 CRITICAL RULES:
 - DO NOT change the strategy logic unless it's clearly broken
@@ -2927,13 +2947,19 @@ async def run_backtest_pipeline(
             
             # Step 2: Generate draft Python code locally (using JSON-driven generator)
             print("  [2/3] Generating draft Python code locally...")
+            unknown_blocks = []
             if JSON_GENERATOR_AVAILABLE:
-                draft_code = generate_strategy_from_json(parsed)
+                draft_code, unknown_blocks = generate_strategy_from_json(parsed)
+                if unknown_blocks:
+                    print(f"  ⚠ {len(unknown_blocks)} block(s) could not be parsed - added placeholders for LLM")
+                    for ub in unknown_blocks:
+                        print(f"    - Unknown: {ub['type']} (params: {ub.get('original_params', {})})")
             else:
                 draft_code = generate_strategy_code_simple(parsed)
             
             # Extract metadata for LLM context
             indicators_str = ", ".join([f"{i['type']}({i.get('period', 'default')})" for i in parsed.get("indicators", [])])
+            unknown_blocks_str = ", ".join([f"{ub['type']}" for ub in unknown_blocks]) if unknown_blocks else "None"
             risk_mgmt_str = str(parsed.get("risk_management", "None"))
             
             # Step 3: Send draft to LLM for fixing
@@ -2943,7 +2969,8 @@ async def run_backtest_pipeline(
                 indicators=indicators_str or "None detected",
                 entry_direction=parsed.get("entry_direction", "long"),
                 has_short=parsed.get("has_short_entry", False),
-                risk_management=risk_mgmt_str
+                risk_management=risk_mgmt_str,
+                unknown_blocks=unknown_blocks_str
             )
             messages = [
                 {"role": "system", "content": prompt},
@@ -3006,7 +3033,11 @@ async def run_backtest_pipeline(
                 # Use JSON-driven generator if available, fallback to legacy
                 if JSON_GENERATOR_AVAILABLE:
                     print("Using JSON-driven code generator...")
-                    strategy_code = generate_strategy_from_json(parsed)
+                    strategy_code, unknown_blocks_simple = generate_strategy_from_json(parsed)
+                    if unknown_blocks_simple:
+                        print(f"WARNING: {len(unknown_blocks_simple)} block(s) could not be parsed (no LLM fallback)")
+                        for ub in unknown_blocks_simple:
+                            print(f"  - {ub['type']}: {ub.get('original_params', {})}")
                 else:
                     print("Using legacy code generator...")
                     strategy_code = generate_strategy_code_simple(parsed)
