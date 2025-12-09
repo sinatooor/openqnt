@@ -40,7 +40,7 @@ def get_indicator_spec(block_type: str) -> Dict[str, Any]:
     return block_map.get("indicators", {}).get(block_type, {})
 
 
-def generate_strategy_from_json(parsed: Dict[str, Any]) -> str:
+def generate_strategy_from_json(parsed: Dict[str, Any]) -> tuple:
     """
     Generate a backtesting.py Strategy class from parsed XML data.
     
@@ -55,7 +55,9 @@ def generate_strategy_from_json(parsed: Dict[str, Any]) -> str:
             - risk_management: Optional risk management settings
     
     Returns:
-        Complete Python code string for a Strategy class
+        Tuple of:
+            - code: Complete Python code string for a Strategy class
+            - unknown_blocks: List of blocks that couldn't be parsed (for LLM to fill)
     """
     block_map = _load_block_map()
     
@@ -65,6 +67,7 @@ def generate_strategy_from_json(parsed: Dict[str, Any]) -> str:
     class_params: List[str] = []
     init_lines: List[str] = []
     indicator_vars: Dict[str, str] = {}  # Maps indicator type to value expression
+    unknown_blocks: List[Dict[str, Any]] = []  # Track blocks we couldn't parse
     
     # Process each indicator from parsed XML
     indicators = parsed.get("indicators", [])
@@ -129,12 +132,31 @@ def generate_strategy_from_json(parsed: Dict[str, Any]) -> str:
         
         block_type = block_type_mapping.get(ind_type)
         if not block_type:
-            print(f"Warning: Unknown indicator type '{ind_type}', skipping")
+            # Unknown indicator - add placeholder for LLM to fill
+            print(f"WARNING: Unknown indicator type '{ind_type}' - adding placeholder for LLM")
+            unknown_blocks.append({
+                "type": ind_type,
+                "original_params": indicator,
+                "index": idx
+            })
+            # Add placeholder in init code for LLM to fill
+            init_lines.append(f"# TODO: LLM_FILL - Unknown indicator '{ind_type}' - params: {indicator}")
+            init_lines.append(f"# self.unknown_{ind_type.lower()}_{idx} = self.I(???, self.data.Close, ???)  # PLACEHOLDER - LLM must implement")
             continue
         
         spec = block_map.get("indicators", {}).get(block_type)
         if not spec:
-            print(f"Warning: No spec found for block type '{block_type}'")
+            # Block type exists but no spec - also add placeholder
+            print(f"WARNING: No spec found for block type '{block_type}' - adding placeholder")
+            unknown_blocks.append({
+                "type": ind_type,
+                "block_type": block_type,
+                "original_params": indicator,
+                "index": idx,
+                "reason": "no_spec"
+            })
+            init_lines.append(f"# TODO: LLM_FILL - Indicator '{block_type}' has no implementation - params: {indicator}")
+            init_lines.append(f"# self.{block_type}_{idx} = self.I(???, self.data.Close, ???)  # PLACEHOLDER - LLM must implement")
             continue
         
         # Collect helper functions needed
@@ -225,7 +247,11 @@ class GeneratedStrategy(Strategy):
 """
     code_parts.append(class_code)
     
-    return "\n\n".join(code_parts)
+    # Log if there were unknown blocks
+    if unknown_blocks:
+        print(f"WARNING: {len(unknown_blocks)} block(s) could not be parsed and have placeholders for LLM")
+    
+    return "\n\n".join(code_parts), unknown_blocks
 
 
 def _build_condition_code(parsed: Dict[str, Any], indicator_vars: Dict[str, str], block_map: Dict) -> str:
@@ -338,7 +364,7 @@ def reload_block_map():
 
 # Test the generator
 if __name__ == "__main__":
-    # Example parsed data
+    # Example parsed data with known indicator
     test_parsed = {
         "indicators": [
             {"type": "RSI", "period": 14},
@@ -347,8 +373,24 @@ if __name__ == "__main__":
         "conditions": [{"type": "less"}],
     }
     
-    code = generate_strategy_from_json(test_parsed)
+    code, unknown = generate_strategy_from_json(test_parsed)
     print("=" * 60)
-    print("Generated Strategy Code:")
+    print("Generated Strategy Code (known indicator):")
     print("=" * 60)
     print(code)
+    print(f"\nUnknown blocks: {unknown}")
+    
+    # Test with unknown indicator
+    print("\n" + "=" * 60)
+    print("Testing with UNKNOWN indicator:")
+    print("=" * 60)
+    test_unknown = {
+        "indicators": [
+            {"type": "RSI", "period": 14},
+            {"type": "UNKNOWN_XYZ", "period": 10},  # This doesn't exist
+        ],
+        "entry_direction": "long",
+    }
+    code2, unknown2 = generate_strategy_from_json(test_unknown)
+    print(code2)
+    print(f"\nUnknown blocks: {unknown2}")
