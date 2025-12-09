@@ -41,6 +41,14 @@ except ImportError:
     VERIFICATION_AVAILABLE = False
     print("Warning: Verification module not available")
 
+# Import JSON-driven code generator (new approach)
+try:
+    from json_code_generator import generate_strategy_from_json
+    JSON_GENERATOR_AVAILABLE = True
+except ImportError:
+    JSON_GENERATOR_AVAILABLE = False
+    print("Warning: JSON code generator not available, using legacy generator")
+
 
 
 def sanitize_for_json(obj):
@@ -2917,9 +2925,12 @@ async def run_backtest_pipeline(
             else:
                 parsed = parse_xml_simple(xml)
             
-            # Step 2: Generate draft Python code locally
+            # Step 2: Generate draft Python code locally (using JSON-driven generator)
             print("  [2/3] Generating draft Python code locally...")
-            draft_code = generate_strategy_code_simple(parsed)
+            if JSON_GENERATOR_AVAILABLE:
+                draft_code = generate_strategy_from_json(parsed)
+            else:
+                draft_code = generate_strategy_code_simple(parsed)
             
             # Extract metadata for LLM context
             indicators_str = ", ".join([f"{i['type']}({i.get('period', 'default')})" for i in parsed.get("indicators", [])])
@@ -2992,7 +3003,13 @@ async def run_backtest_pipeline(
                         parsed = parse_result["fixed_parsed"]
             
             if not strategy_code:
-                strategy_code = generate_strategy_code_simple(parsed)
+                # Use JSON-driven generator if available, fallback to legacy
+                if JSON_GENERATOR_AVAILABLE:
+                    print("Using JSON-driven code generator...")
+                    strategy_code = generate_strategy_from_json(parsed)
+                else:
+                    print("Using legacy code generator...")
+                    strategy_code = generate_strategy_code_simple(parsed)
             code_lang = "python"
 
         # Persist strategy pairing for reuse
