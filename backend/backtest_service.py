@@ -2893,6 +2893,7 @@ async def run_backtest_pipeline(
         xml_hash = hash_xml(xml)
         strategy_code = precompiled_code
         code_lang = code_language or "python"
+        pipeline_warnings = []  # Track warnings for frontend
 
         # Try cache when no explicit code provided
         if not strategy_code:
@@ -2954,6 +2955,12 @@ async def run_backtest_pipeline(
                     print(f"  ⚠ {len(unknown_blocks)} block(s) could not be parsed - added placeholders for LLM")
                     for ub in unknown_blocks:
                         print(f"    - Unknown: {ub['type']} (params: {ub.get('original_params', {})})")
+                    # Add warning for frontend
+                    pipeline_warnings.append({
+                        "type": "unknown_blocks",
+                        "message": f"{len(unknown_blocks)} block(s) could not be parsed locally and were sent to LLM for implementation",
+                        "blocks": [ub['type'] for ub in unknown_blocks]
+                    })
             else:
                 draft_code = generate_strategy_code_simple(parsed)
             
@@ -3127,6 +3134,10 @@ async def run_backtest_pipeline(
         )
         
         print(f"Backtest complete. Success: {result['success']}")
+        
+        # Add warnings to result if any
+        if pipeline_warnings:
+            result["warnings"] = pipeline_warnings
         
         return result
         
