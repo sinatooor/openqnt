@@ -113,19 +113,40 @@ export const TradingViewChart = ({
     setMounted(true);
     setIsLoading(false);
 
-    // Handle resize
-    const handleResize = () => {
+    // Handle resize with ResizeObserver for modal resize detection
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.target === chartContainerRef.current && chart) {
+          const width = entry.contentRect.width;
+          const height = entry.contentRect.height;
+          if (width > 0 && height > 0) {
+            chart.applyOptions({
+              width: width,
+              height: height,
+            });
+          }
+        }
+      }
+    });
+
+    if (chartContainerRef.current) {
+      resizeObserver.observe(chartContainerRef.current);
+    }
+
+    // Also listen for window resize as fallback
+    const handleWindowResize = () => {
       if (chartContainerRef.current && chart) {
         chart.applyOptions({
           width: chartContainerRef.current.clientWidth,
+          height: chartContainerRef.current.clientHeight,
         });
       }
     };
-
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('resize', handleWindowResize);
 
     return () => {
-      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', handleWindowResize);
       chart.remove();
       chartRef.current = null;
       candlestickSeriesRef.current = null;

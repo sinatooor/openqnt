@@ -1,20 +1,21 @@
 import { useState, useEffect } from "react";
-import Draggable from "react-draggable";
+import { DraggableModal } from "./DraggableModal";
 import { TradingViewChart } from "@/features/chart";
-import { Button } from "./ui/button";
-import { Card, CardContent, CardHeader } from "./ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { X, GripHorizontal } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "./ui/select";
 import { useMarketData } from "@/hooks";
-import { cn } from "@/lib";
+import { fetchAvailableSymbols, SymbolInfo } from "@/services/marketData";
+import { Loader2 } from "lucide-react";
 
-const SYMBOLS = ["AAPL", "MSFT", "GOOGL", "TSLA", "BTC/USD", "ETH/USD", "SPY"];
+// Fallback symbols if database is empty
+const FALLBACK_SYMBOLS = ["AAPL", "MSFT", "GOOGL", "TSLA", "SPY"];
+
 interface FloatingChartModalProps {
   isOpen: boolean;
   onClose: () => void;
   symbol?: string;
   interval?: string;
 }
+
 export const FloatingChartModal = ({
   isOpen,
   onClose,
@@ -23,11 +24,9 @@ export const FloatingChartModal = ({
 }: FloatingChartModalProps) => {
   const [currentSymbol, setCurrentSymbol] = useState(symbol);
   const [currentInterval, setCurrentInterval] = useState(interval);
-  const [isMaximized, setIsMaximized] = useState(false);
-  const [position, setPosition] = useState({
-    x: 100,
-    y: 100,
-  });
+  const [availableSymbols, setAvailableSymbols] = useState<SymbolInfo[]>([]);
+  const [isLoadingSymbols, setIsLoadingSymbols] = useState(true);
+  const [groupedSymbols, setGroupedSymbols] = useState<Record<string, SymbolInfo[]>>({});
 
   const { data: chartData, isLoading } = useMarketData({
     symbol: currentSymbol,
@@ -35,105 +34,119 @@ export const FloatingChartModal = ({
     autoFetch: isOpen,
   });
 
-  // Update data when interval changes
+  // Fetch available symbols from database
+  useEffect(() => {
+    if (isOpen) {
+      setIsLoadingSymbols(true);
+      fetchAvailableSymbols()
+        .then((result) => {
+          if (result.success && result.symbols.length > 0) {
+            setAvailableSymbols(result.symbols);
+            setGroupedSymbols(result.grouped);
+
+            // If current symbol is not in list, switch to first available
+            const symbolExists = result.symbols.some(s => s.symbol === currentSymbol);
+            if (!symbolExists && result.symbols.length > 0) {
+              setCurrentSymbol(result.symbols[0].symbol);
+            }
+          } else {
+            // Use fallback
+            setAvailableSymbols(FALLBACK_SYMBOLS.map(s => ({
+              symbol: s,
+              name: s,
+              asset_type: 'stock',
+              is_active: true,
+              record_count: 0,
+              first_date: null,
+              last_date: null,
+            })));
+          }
+        })
+        .finally(() => setIsLoadingSymbols(false));
+    }
+  }, [isOpen]);
+
   const handleIntervalChange = (newInterval: string) => {
     setCurrentInterval(newInterval);
   };
 
-  // Update data when symbol changes
   const handleSymbolChange = (newSymbol: string) => {
     setCurrentSymbol(newSymbol);
   };
-  const handleMaximize = () => {
-    setIsMaximized(!isMaximized);
-  };
+
   if (!isOpen) return null;
-  return (
-    <>
-      {/* Backdrop - semi-transparent, allows click-through except on modal */}
-      <div className="fixed inset-0 z-40 bg-background/20 backdrop-blur-sm pointer-events-none" />
 
-      {/* Draggable Modal */}
-      <Draggable
-        handle=".drag-handle"
-        bounds="body"
-        position={position}
-        onStop={(e, data) =>
-          setPosition({
-            x: data.x,
-            y: data.y,
-          })
-        }
-        disabled={isMaximized}
-      >
-        <div
-          className={cn(
-            "fixed z-50 pointer-events-auto transition-all duration-300",
-            isMaximized 
-              ? "inset-4" 
-              : "w-full sm:w-[600px] md:w-[750px] lg:w-[900px] h-[400px] sm:h-[500px] md:h-[600px]",
-          )}
-        >
-          <Card className="w-full h-full flex flex-col shadow-2xl border-2 animate-scale-in">
-            {/* Header - Drag Handle */}
-            <CardHeader className="drag-handle cursor-move border-b p-3 bg-card/95 backdrop-blur-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <GripHorizontal className="w-4 h-4 text-muted-foreground" />
-                  <h3 className="font-semibold text-sm">Chart</h3>
-                  <Select value={currentSymbol} onValueChange={handleSymbolChange}>
-                    <SelectTrigger className="h-7 w-[140px] text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SYMBOLS.map((sym) => (
-                        <SelectItem key={sym} value={sym} className="text-xs">
-                          {sym}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleMaximize}
-                    className="h-7 w-7 p-0 hover:bg-accent"
-                    title={isMaximized ? "Restore" : "Maximize"}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      {isMaximized ? (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
-                      ) : (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                      )}
-                    </svg>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={onClose}
-                    className="h-7 w-7 p-0 hover:bg-destructive/20 hover:text-destructive"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
+  // Group symbols for the dropdown
+  const assetTypes = Object.keys(groupedSymbols).filter(type => groupedSymbols[type]?.length > 0);
 
-            {/* Chart Content */}
-            <CardContent className="flex-1 p-4 overflow-hidden">
-              <TradingViewChart
-                data={chartData}
-                symbol={currentSymbol}
-                interval={currentInterval}
-                onIntervalChange={handleIntervalChange}
-              />
-            </CardContent>
-          </Card>
+  const headerActions = (
+    <div className="flex items-center gap-2">
+      {isLoadingSymbols ? (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="w-3 h-3 animate-spin" />
+          Loading symbols...
         </div>
-      </Draggable>
-    </>
+      ) : (
+        <Select value={currentSymbol} onValueChange={handleSymbolChange}>
+          <SelectTrigger className="h-7 w-[180px] text-xs">
+            <SelectValue placeholder="Select symbol" />
+          </SelectTrigger>
+          <SelectContent className="max-h-[300px] z-[9999]">
+            {assetTypes.length > 0 ? (
+              // Show grouped by asset type using SelectGroup
+              assetTypes.map((assetType) => (
+                <SelectGroup key={assetType}>
+                  <SelectLabel className="text-xs font-semibold uppercase">
+                    {assetType} ({groupedSymbols[assetType]?.length || 0})
+                  </SelectLabel>
+                  {groupedSymbols[assetType]?.map((sym) => (
+                    <SelectItem
+                      key={sym.symbol}
+                      value={sym.symbol}
+                      className="text-xs"
+                    >
+                      {sym.symbol} {sym.name && sym.name !== sym.symbol ? `- ${sym.name}` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              ))
+            ) : (
+              // Fallback: show all symbols flat
+              availableSymbols.map((sym) => (
+                <SelectItem key={sym.symbol} value={sym.symbol} className="text-xs">
+                  {sym.symbol}
+                </SelectItem>
+              ))
+            )}
+          </SelectContent>
+        </Select>
+      )}
+
+      {availableSymbols.length > 0 && (
+        <span className="text-[10px] text-muted-foreground">
+          {availableSymbols.length} symbols
+        </span>
+      )}
+    </div>
+  );
+
+  return (
+    <DraggableModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Chart"
+      defaultWidth={900}
+      defaultHeight={600}
+      headerActions={headerActions}
+    >
+      <div className="w-full h-full p-4 flex flex-col">
+        <TradingViewChart
+          data={chartData}
+          symbol={currentSymbol}
+          interval={currentInterval}
+          onIntervalChange={handleIntervalChange}
+        />
+      </div>
+    </DraggableModal>
   );
 };

@@ -1,5 +1,6 @@
 import { CandlestickData } from 'lightweight-charts';
-import { supabase } from '@/integrations/supabase/client';
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
 interface MarketDataCache {
   data: CandlestickData[];
@@ -8,7 +9,7 @@ interface MarketDataCache {
   interval: string;
 }
 
-// Cache market data for 5 minutes to avoid excessive API calls
+// Cache market data for 5 minutes
 const CACHE_DURATION = 5 * 60 * 1000;
 const dataCache = new Map<string, MarketDataCache>();
 
@@ -19,6 +20,67 @@ export interface FetchMarketDataParams {
   useCache?: boolean;
 }
 
+export interface SymbolInfo {
+  symbol: string;
+  name: string;
+  asset_type: string;
+  is_active: boolean;
+  record_count: number;
+  first_date: string | null;
+  last_date: string | null;
+}
+
+export interface SymbolsResponse {
+  success: boolean;
+  total: number;
+  symbols: SymbolInfo[];
+  grouped: {
+    stocks: SymbolInfo[];
+    forex: SymbolInfo[];
+    indices: SymbolInfo[];
+    commodities: SymbolInfo[];
+    crypto: SymbolInfo[];
+    futures: SymbolInfo[];
+    etf: SymbolInfo[];
+  };
+  error?: string;
+}
+
+/**
+ * Fetch available symbols from local database
+ */
+export async function fetchAvailableSymbols(): Promise<SymbolsResponse> {
+  try {
+    const response = await fetch(`${BACKEND_URL}/symbols`);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to fetch symbols:', error);
+    return {
+      success: false,
+      total: 0,
+      symbols: [],
+      grouped: {
+        stocks: [],
+        forex: [],
+        indices: [],
+        commodities: [],
+        crypto: [],
+        futures: [],
+        etf: [],
+      },
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Fetch market data from backend (uses local database first)
+ */
 export async function fetchMarketData({
   symbol,
   interval = 'daily',
@@ -37,22 +99,33 @@ export async function fetchMarketData({
   }
 
   try {
-    console.log(`Fetching fresh data for ${symbol} (${interval})`);
-    
-    const { data, error } = await supabase.functions.invoke('fetch-market-data', {
-      body: { symbol, interval, outputsize },
-    });
+    console.log(`Fetching data for ${symbol} from backend...`);
 
-    if (error) {
-      console.error('Error calling fetch-market-data function:', error);
-      throw new Error(error.message || 'Failed to fetch market data');
+    // Map intervals
+    const backendInterval = interval === 'daily' ? '1d' : interval === 'weekly' ? '1w' : '1d';
+
+    const response = await fetch(
+      `${BACKEND_URL}/market-data?symbol=${encodeURIComponent(symbol)}&interval=${backendInterval}`
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error: ${response.status}`);
     }
 
-    if (!data || !data.data) {
-      throw new Error('Invalid response from market data service');
+    const result = await response.json();
+
+    if (!result.success || !result.data) {
+      throw new Error(result.error || 'Failed to fetch market data');
     }
 
-    const marketData = data.data as CandlestickData[];
+    // Convert to CandlestickData format
+    const marketData: CandlestickData[] = result.data.map((bar: any) => ({
+      time: bar.date || bar.time,
+      open: parseFloat(bar.open),
+      high: parseFloat(bar.high),
+      low: parseFloat(bar.low),
+      close: parseFloat(bar.close),
+    }));
 
     // Update cache
     dataCache.set(cacheKey, {
@@ -62,6 +135,7 @@ export async function fetchMarketData({
       interval,
     });
 
+    console.log(`Fetched ${marketData.length} candles for ${symbol} from ${result.source}`);
     return marketData;
   } catch (error) {
     console.error('Failed to fetch market data:', error);
@@ -71,11 +145,9 @@ export async function fetchMarketData({
 
 export function clearMarketDataCache(symbol?: string) {
   if (symbol) {
-    // Clear cache for specific symbol
     const keys = Array.from(dataCache.keys()).filter(key => key.startsWith(symbol));
     keys.forEach(key => dataCache.delete(key));
   } else {
-    // Clear all cache
     dataCache.clear();
   }
 }
@@ -83,10 +155,10 @@ export function clearMarketDataCache(symbol?: string) {
 export function getCachedData(symbol: string, interval: string, outputsize: string = 'compact'): CandlestickData[] | null {
   const cacheKey = `${symbol}-${interval}-${outputsize}`;
   const cached = dataCache.get(cacheKey);
-  
+
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
     return cached.data;
   }
-  
+
   return null;
 }

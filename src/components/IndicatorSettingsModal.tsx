@@ -1,10 +1,6 @@
 import { useState, useEffect } from "react";
+import { DraggableModal } from "./DraggableModal";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
   Button,
   Input,
   Label,
@@ -14,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui";
-import { IndicatorConfig, getIndicatorConfig } from "@/lib";
+import { getIndicatorConfig } from "@/lib";
 
 interface IndicatorSettingsModalProps {
   open: boolean;
@@ -69,12 +65,17 @@ export function IndicatorSettingsModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>{config.displayName} Settings</DialogTitle>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
+    <DraggableModal
+      isOpen={open}
+      onClose={() => onOpenChange(false)}
+      title={`${config.displayName} Settings`}
+      defaultWidth={425}
+      defaultHeight={350}
+      minWidth={350}
+      minHeight={250}
+    >
+      <div className="flex flex-col h-full">
+        <div className="flex-1 p-4 space-y-4 overflow-auto">
           {config.params.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               This indicator has no configurable parameters.
@@ -117,14 +118,15 @@ export function IndicatorSettingsModal({
             ))
           )}
         </div>
-        <DialogFooter>
+
+        {/* Footer buttons */}
+        <div className="flex justify-end gap-2 p-4 border-t border-border">
           <Button variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
           <Button onClick={handleSave}>Ok</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </DraggableModal>
   );
 }
-
