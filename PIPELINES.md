@@ -114,27 +114,64 @@ Display in Code Panel
 
 ---
 
-## 3. Backtesting Pipeline
+## 3. Python Code Generation Pipeline (PyGenerator)
 
-**Purpose:** Test strategy on historical data and return performance metrics
+**Purpose:** Convert Blockly XML → Executable Python Code (compatible with backtesting.py)
 
 ### Flow Diagram
 ```
+Blockly Workspace XML
+        ↓
+[Frontend: PyGenerator (pyGenerator.ts)]
+        ↓
+Generate Python Source Code (TA-Lib / Numpy)
+        ↓
+Display in Code Panel OR Code Editor
+```
+
+### Step-by-Step
+| Step | Location | Action |
+|------|----------|--------|
+| 1 | `pyGenerator.ts` | Iterates blocks, mapping to `backtesting.py` API |
+| 2 | `pyGenerator.ts` | Adds `try-import-talib` Wrapper for indicators |
+| 3 | `generator.ts` | Returns raw Python string |
+
+### Key Files
+- `src/config/blockly/pyGenerator.ts` (The Engine)
+- `src/config/blockly/generator.ts` (Dispatcher)
+
+---
+
+## 4. Backtesting Pipeline
+
+**Purpose:** Test strategy on historical data and return performance metrics
+
+### Flow Diagram (New PyGenerator Engine)
+```
 User clicks "Run Backtest" (Settings Panel)
         ↓
-[Frontend: SettingsPanel.tsx]
+[Frontend: PyGenerator] Generate Python Code
         ↓
-Backend: POST /backtest
+Backend: POST /backtest-py-code
         ↓
-[xml_evaluator.py] Parse XML → Extract conditions
+[main.py] AST Parse & Security Check
         ↓
-[ig_client.py] Fetch historical data (or use synthetic)
+Fetch Historical Data
         ↓
-[backtest_runner.py] Simulate trades
+[backtesting.py] Execute Strategy.init() / next()
         ↓
 Return metrics, trades, equity curve
+```
+
+### Flow Diagram (Legacy XML Interpreter)
+```
+User clicks "Run Backtest" -> Legacy Mode
         ↓
-Display results in Settings Panel
+[xml_evaluator.py] Regex Parse XML
+        ↓
+[backtest_runner.py] Simple Loop Calculation
+        ↓
+Return metrics
 ```
 
 ### Step-by-Step
@@ -292,7 +329,9 @@ Return deal confirmation
 | Strategy Generation (DeepSeek mode) | **DeepSeek** + DeepSeek Reasoning | `/generate-strategy` + `/validate-strategy` | Toggle enabled |
 | Validation (optional) | **DeepSeek Reasoning** | `/validate-strategy` | Can be disabled via toggle |
 | MQL5 Generation | **DeepSeek** | `/generate-mql` | |
+| Python Generation | **None** (Deterministic) | Client-Side (`pyGenerator`) | **Fastest & Most Reliable** |
 | Chat Q&A | **DeepSeek** | `/chat` | |
-| XML Verification | **DeepSeek** | (internal) | Used in live strategy |
-| Backtest | None (rule-based) | `/backtest` | |
+| XML Verification | **DeepSeek** | (internal) | Used in legacy/live execution |
+| Backtest (New) | None (Python Code) | `/backtest-py-code` | Uses `backtesting.py` + TA-Lib |
+| Backtest (Legacy)| None (Regex) | `/backtest` | Uses `xml_evaluator` |
 | Live Trading | DeepSeek (verification only) | `/strategy/start` | |
