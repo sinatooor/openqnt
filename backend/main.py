@@ -1814,6 +1814,173 @@ Generate the complete MQL5 code."""
 #         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ============================================================
+# PyGenerator Backtest Endpoint - Execute Pre-Generated Python Code
+# ============================================================
+
+class PythonBacktestRequest(BaseModel):
+    """Request model for executing pre-generated Python strategy code."""
+    pythonCode: str
+    symbol: str = "EURUSD"
+    startDate: str = "2024-01-01"
+    endDate: str = "2024-03-31"
+    initialBalance: float = 100000.0
+    commission: float = 0.001
+
+
+@app.post("/backtest-py-code")
+async def run_python_backtest(request: PythonBacktestRequest):
+    """
+    Execute a pre-generated Python strategy (from PyGenerator) via backtesting.py.
+    
+    This endpoint:
+    1. Validates Python code syntax with ast.parse()
+    2. Executes in a sandboxed namespace
+    3. Returns backtest results
+    """
+    import ast
+    import traceback
+    
+    try:
+        print(f"=== PyGenerator Backtest: {request.symbol} ===")
+        
+        # Step 1: Validate Python syntax
+        try:
+            ast.parse(request.pythonCode)
+            print("Python syntax validation: PASSED")
+        except SyntaxError as e:
+            return {
+                "success": False,
+                "error": f"Python syntax error: {e.msg} at line {e.lineno}"
+            }
+        
+        # Step 2: Fetch historical data
+        from backtest_service import fetch_historical_data
+        
+        df = fetch_historical_data(
+            symbol=request.symbol,
+            period="1y",
+            interval="1d",
+            data_source="local",
+            start_date=request.startDate,
+            end_date=request.endDate
+        )
+        
+        if df.empty:
+            return {"success": False, "error": f"No data found for {request.symbol}"}
+        
+        print(f"Fetched {len(df)} bars for {request.symbol}")
+        
+        # Step 3: Execute in sandboxed namespace
+        import numpy as np
+        import pandas as pd
+        from backtesting import Backtest, Strategy
+        from backtesting.lib import crossover
+        
+        exec_namespace = {
+            'np': np,
+            'pd': pd,
+            'Backtest': Backtest,
+            'Strategy': Strategy,
+            'crossover': crossover,
+            '__builtins__': {
+                'range': range,
+                'len': len,
+                'abs': abs,
+                'max': max,
+                'min': min,
+                'sum': sum,
+                'int': int,
+                'float': float,
+                'bool': bool,
+                'str': str,
+                'list': list,
+                'dict': dict,
+                'True': True,
+                'False': False,
+                'None': None,
+                'print': print,
+            }
+        }
+        
+        try:
+            exec(request.pythonCode, exec_namespace)
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Code execution error: {str(e)}"
+            }
+        
+        # Step 4: Get the run_backtest function or GeneratedStrategy class
+        if 'run_backtest' in exec_namespace:
+            stats = exec_namespace['run_backtest'](df, cash=request.initialBalance, commission=request.commission)
+        elif 'GeneratedStrategy' in exec_namespace:
+            bt = Backtest(df, exec_namespace['GeneratedStrategy'], cash=request.initialBalance, commission=request.commission)
+            stats = bt.run()
+        else:
+            return {"success": False, "error": "No GeneratedStrategy class or run_backtest function found"}
+        
+        # Step 5: Format results
+        trades_list = []
+        if hasattr(stats, '_trades') and stats._trades is not None:
+            for _, t in stats._trades.iterrows():
+                trades_list.append({
+                    "side": "buy" if t.get('Size', 0) > 0 else "sell",
+                    "entry_time": str(t.get('EntryTime', '')),
+                    "entry_price": float(t.get('EntryPrice', 0)),
+                    "exit_time": str(t.get('ExitTime', '')),
+                    "exit_price": float(t.get('ExitPrice', 0)),
+                    "profit_loss": float(t.get('PnL', 0)),
+                    "size": abs(float(t.get('Size', 0)))
+                })
+        
+        # Build equity curve
+        equity_curve = []
+        if hasattr(stats, '_equity_curve') and stats._equity_curve is not None:
+            for idx, row in stats._equity_curve.iterrows():
+                equity_curve.append({
+                    "timestamp": str(idx),
+                    "equity": float(row.get('Equity', request.initialBalance))
+                })
+        
+        import math
+        def safe_float(val, default=0.0):
+            try:
+                if val is None or (isinstance(val, float) and math.isnan(val)):
+                    return default
+                return float(val)
+            except:
+                return default
+        
+        metrics = {
+            "total_trades": int(stats.get('# Trades', 0)),
+            "win_rate": safe_float(stats.get('Win Rate [%]', 0)),
+            "net_profit": safe_float(stats.get('Return [%]', 0)),
+            "max_drawdown": safe_float(stats.get('Max. Drawdown [%]', 0)),
+            "sharpe_ratio": safe_float(stats.get('Sharpe Ratio', 0)),
+            "profit_factor": safe_float(stats.get('Profit Factor', 1)),
+            "winning_trades": int(stats.get('# Trades', 0) * safe_float(stats.get('Win Rate [%]', 0)) / 100),
+            "losing_trades": int(stats.get('# Trades', 0) * (1 - safe_float(stats.get('Win Rate [%]', 0)) / 100)),
+        }
+        
+        print(f"Backtest complete: {metrics['total_trades']} trades, {metrics['net_profit']:.2f}% return")
+        
+        return {
+            "success": True,
+            "symbol": request.symbol,
+            "start_date": request.startDate,
+            "end_date": request.endDate,
+            "initial_balance": request.initialBalance,
+            "final_balance": request.initialBalance * (1 + metrics['net_profit'] / 100),
+            "metrics": metrics,
+            "trades": trades_list,
+            "equity_curve": equity_curve
+        }
+        
+    except Exception as e:
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
+
 @app.post("/backtest")
 async def run_backtest_endpoint(request: BacktestRequest):
     """
