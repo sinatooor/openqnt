@@ -200,6 +200,7 @@ class BacktestRequest(BaseModel):
     endDate: str = "2024-03-31"
     initialBalance: float = 100000.0
     tradeSize: int = 100000
+    leverage: float = 1.0  # Account leverage multiplier (1.0 = no leverage, 10.0 = 10:1, etc.)
     engine: str = "backtesting.py"  # "backtesting.py", "simple", "nautilus", "ai_simulation", "frontend"
     optimize: bool = False
     opt_metric: str = "Return [%]"
@@ -2070,6 +2071,12 @@ async def run_backtest_endpoint(request: BacktestRequest):
         else:
             llm_func = call_deepseek
         
+        # Convert leverage to margin (inverse relationship)
+        # leverage = 1 means margin = 1.0 (no leverage)
+        # leverage = 10 means margin = 0.1 (10:1 leverage)
+        margin = 1.0 / request.leverage if request.leverage > 0 else 1.0
+        print(f"Leverage: {request.leverage}:1, Margin: {margin}")
+        
         # Run backtest pipeline
         result = await run_backtest_pipeline(
             xml=request.workspaceXml,
@@ -2077,6 +2084,7 @@ async def run_backtest_endpoint(request: BacktestRequest):
             period=period,
             interval=request.interval,
             cash=request.initialBalance,
+            margin=margin,
             use_llm=False if request.engine == "frontend" else use_llm,
             engine=request.engine,
             call_deepseek=llm_func,
