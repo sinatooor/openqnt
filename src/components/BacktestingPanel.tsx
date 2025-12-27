@@ -60,22 +60,24 @@ interface BacktestingPanelProps {
     leverage?: string;
     onLeverageChange?: (value: string) => void;
     getWorkspaceXml?: () => string | null;
+    getPythonCode?: () => string | null; // For PyGenerator engine
     generatedStrategyId?: string | null;
     loadedTemplateId?: string | null;
 }
 
-export const BacktestingPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1", onLeverageChange, getWorkspaceXml, generatedStrategyId, loadedTemplateId }: BacktestingPanelProps) => {
+export const BacktestingPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1", onLeverageChange, getWorkspaceXml, getPythonCode, generatedStrategyId, loadedTemplateId }: BacktestingPanelProps) => {
     const [mode, setMode] = useState<"backtest" | "live">("backtest");
     const [tradingSymbol, setTradingSymbol] = useState("EURUSD");
     const [isConnected, setIsConnected] = useState(false);
     const [capitalAllocation, setCapitalAllocation] = useState("10000");
-    const [engine, setEngine] = useState<"frontend" | "frontend-ts" | "backtesting.py" | "nautilus" | "ai_simulation">("frontend");
+    const [engine, setEngine] = useState<"frontend" | "frontend-ts" | "backtesting.py" | "nautilus" | "ai_simulation" | "pygenerator">("frontend");
 
     // Optimization state
     const [isOptimization, setIsOptimization] = useState(false);
     const [optMetric, setOptMetric] = useState("Return [%]");
     const [optMethod, setOptMethod] = useState("grid");
     const [aiModel, setAiModel] = useState("deepseek");
+    const [useLLMPolish, setUseLLMPolish] = useState(false); // Hybrid PyGenerator + LLM
 
     // Backtest state
     const [isBacktesting, setIsBacktesting] = useState(false);
@@ -197,6 +199,67 @@ export const BacktestingPanel = ({ onStartTour, onToggleAI, onClose, leverage = 
                 toast.success("Backtest completed!", {
                     description: `Return: ${formatNumber(result.metrics.totalReturn, 4)}% with ${result.metrics.totalTrades} trades`
                 });
+                return;
+            }
+
+            // Handle PyGenerator engine - uses pre-generated Python code
+            if (engine === "pygenerator") {
+                if (!getPythonCode) {
+                    toast.error("PyGenerator not available", {
+                        description: "Python code generation is not connected to this panel."
+                    });
+                    setIsBacktesting(false);
+                    return;
+                }
+                const pythonCode = getPythonCode();
+                if (!pythonCode || pythonCode.includes("Add blocks to your workspace")) {
+                    toast.error("No Python code generated", {
+                        description: "Add blocks to your workspace first."
+                    });
+                    setIsBacktesting(false);
+                    return;
+                }
+
+                toast.info(useLLMPolish ? "Running PyGenerator + LLM Polish..." : "Running PyGenerator backtest...");
+
+                const response = await fetch(`${backendUrl}/backtest-py-code`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        pythonCode,
+                        symbol: tradingSymbol,
+                        startDate,
+                        endDate,
+                        initialBalance: parseFloat(capitalAllocation),
+                        commission: 0.001,
+                        polishWithLLM: useLLMPolish // Enable LLM fix pass
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+                    throw new Error(errorData.detail || `HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    setBacktestResult({
+                        totalReturn: data.metrics.total_return,
+                        winRate: data.metrics.win_rate,
+                        totalTrades: data.metrics.total_trades,
+                        maxDrawdown: data.metrics.max_drawdown,
+                        finalBalance: data.final_balance,
+                        sharpeRatio: data.metrics.sharpe_ratio,
+                        profitFactor: data.metrics.profit_factor,
+                    });
+
+                    toast.success("PyGenerator Backtest completed!", {
+                        description: `Return: ${formatNumber(data.metrics.total_return, 4)}% with ${data.metrics.total_trades} trades`
+                    });
+                } else {
+                    toast.error("Backtest failed", { description: data.error });
+                }
                 return;
             }
             // Create AbortController for timeout (10 minutes for LLM-based backtests)
@@ -533,6 +596,7 @@ export const BacktestingPanel = ({ onStartTour, onToggleAI, onClose, leverage = 
                                 <SelectContent>
                                     <SelectItem value="frontend">Simple (Fast)</SelectItem>
                                     <SelectItem value="frontend-ts">TechnicalIndicators (Browser)</SelectItem>
+                                    <SelectItem value="pygenerator">PyGenerator (Recommended)</SelectItem>
                                     <SelectItem value="backtesting.py">Python (AI-Generated)</SelectItem>
                                     <SelectItem value="nautilus">NautilusTrader (Institutional)</SelectItem>
                                     <SelectItem value="ai_simulation">AI Simulation (LLM)</SelectItem>

@@ -36,6 +36,7 @@ interface BlocklyWorkspaceProps {
   onXmlChange?: (xml: string | null) => void;
   onStrategyGenerated?: (strategyId: string, code?: string) => void;
   onTemplateLoaded?: (templateId: string, templateXml?: string) => void;
+  onWorkspaceRef?: (workspace: Blockly.WorkspaceSvg | null) => void; // Expose workspace for external code generation
 }
 
 export const BlocklyWorkspace = ({
@@ -47,7 +48,8 @@ export const BlocklyWorkspace = ({
   leverage = 1,
   onXmlChange,
   onStrategyGenerated,
-  onTemplateLoaded
+  onTemplateLoaded,
+  onWorkspaceRef
 }: BlocklyWorkspaceProps = {}) => {
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
@@ -296,6 +298,7 @@ export const BlocklyWorkspace = ({
       }
     });
     workspaceRef.current = workspace;
+    onWorkspaceRef?.(workspace);
 
     // Register custom category callback for AI
     workspace.registerToolboxCategoryCallback("AI_CATEGORY", () => {

@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
+import * as Blockly from "blockly";
 import { BlocklyWorkspace } from "@/features/blockly";
 import { SettingsPanel } from "@/components";
 import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
+import { generateCode } from "@/config/blockly/generator";
 
 const Index = () => {
   const [runTour, setRunTour] = useState(false);
@@ -12,6 +14,7 @@ const Index = () => {
   const [currentXml, setCurrentXml] = useState<string | null>(null);
   const [generatedStrategyId, setGeneratedStrategyId] = useState<string | null>(null);
   const [loadedTemplateId, setLoadedTemplateId] = useState<string | null>(null);
+  const [workspaceRefState, setWorkspaceRefState] = useState<Blockly.WorkspaceSvg | null>(null);
 
   useEffect(() => {
     // Check if user has seen the tour before
@@ -102,6 +105,7 @@ const Index = () => {
         onXmlChange={handleXmlChange}
         onStrategyGenerated={handleStrategyGenerated}
         onTemplateLoaded={handleTemplateLoaded}
+        onWorkspaceRef={setWorkspaceRefState}
       />
 
       {/* Right Panel - Settings (toggleable) */}
@@ -114,6 +118,10 @@ const Index = () => {
             leverage={leverage}
             onLeverageChange={setLeverage}
             getWorkspaceXml={() => currentXml}
+            getPythonCode={() => {
+              if (!workspaceRefState) return null;
+              return generateCode(workspaceRefState, 'python', parseFloat(leverage));
+            }}
             generatedStrategyId={generatedStrategyId}
             loadedTemplateId={loadedTemplateId}
           />
