@@ -2872,6 +2872,7 @@ async def run_backtest_pipeline(
     period: str = "1y",
     interval: str = "1d",
     cash: float = 10000,
+    margin: float = 1.0,  # Margin requirement (1.0 = no leverage, 0.1 = 10:1 leverage)
     use_llm: bool = False,
     call_deepseek=None,
     call_gemini=None,  # For parse verification
@@ -3123,7 +3124,7 @@ async def run_backtest_pipeline(
             result = run_nautilus_backtest(generated_code, data, cash=cash, symbol=symbol)
         else:
             # Pass strategy_params for dynamic injection if available
-            result = run_backtest(generated_code, data, cash=cash, strategy_params=strategy_params)
+            result = run_backtest(generated_code, data, cash=cash, margin=margin, strategy_params=strategy_params)
         
         # Add metadata
         result["symbol"] = symbol

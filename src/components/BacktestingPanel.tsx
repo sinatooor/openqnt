@@ -70,6 +70,7 @@ export const BacktestingPanel = ({ onStartTour, onToggleAI, onClose, leverage = 
     const [tradingSymbol, setTradingSymbol] = useState("EURUSD");
     const [isConnected, setIsConnected] = useState(false);
     const [capitalAllocation, setCapitalAllocation] = useState("10000");
+    const [accountLeverage, setAccountLeverage] = useState("1"); // 1:1 leverage by default
     const [engine, setEngine] = useState<"frontend" | "frontend-ts" | "backtesting.py" | "nautilus" | "ai_simulation" | "pygenerator">("frontend");
 
     // Optimization state
@@ -278,6 +279,7 @@ export const BacktestingPanel = ({ onStartTour, onToggleAI, onClose, leverage = 
                     interval: timeframe,
                     initialBalance: parseFloat(capitalAllocation),
                     tradeSize: parseFloat(capitalAllocation),
+                    leverage: parseFloat(accountLeverage),
                     engine: engine,
                     optimize: isOptimization,
                     opt_metric: optMetric,
@@ -543,6 +545,42 @@ export const BacktestingPanel = ({ onStartTour, onToggleAI, onClose, leverage = 
                         value={capitalAllocation}
                         onChange={(e) => setCapitalAllocation(e.target.value)}
                         className="bg-secondary"
+                    />
+                </div>
+
+                <div>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <label className="text-sm font-medium text-muted-foreground mb-2 block cursor-help border-b border-dotted border-muted-foreground/30 w-fit">
+                                Account Leverage (x)
+                            </label>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="max-w-[250px]">
+                            <p>Multiplies your position size. Higher leverage amplifies both gains and losses. Use with caution. Range: 1-100.</p>
+                        </TooltipContent>
+                    </Tooltip>
+                    <Input
+                        type="number"
+                        min="1"
+                        max="100"
+                        step="1"
+                        value={accountLeverage}
+                        onChange={(e) => {
+                            const val = parseFloat(e.target.value);
+                            if (val >= 1 && val <= 100) {
+                                setAccountLeverage(e.target.value);
+                            } else if (e.target.value === "") {
+                                setAccountLeverage("");
+                            }
+                        }}
+                        onBlur={(e) => {
+                            // Reset to 1 if empty or invalid on blur
+                            if (e.target.value === "" || parseFloat(e.target.value) < 1) {
+                                setAccountLeverage("1");
+                            }
+                        }}
+                        className="bg-secondary"
+                        placeholder="1"
                     />
                 </div>
 
