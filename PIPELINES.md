@@ -1,6 +1,62 @@
 # Application Pipelines Reference
 
-This document describes all major pipelines in the PPM trading strategy application, step-by-step.
+This document describes all major pipelines in the PPM trading strategy application with comprehensive flow diagrams.
+
+---
+
+## Complete System Architecture
+
+```mermaid
+flowchart TB
+    subgraph Frontend["🖥️ Frontend (React/TypeScript)"]
+        UI[("User Interface")]
+        BW["BlocklyWorkspace.tsx"]
+        AIC["AIChatPanel.tsx"]
+        SP["BacktestingPanel.tsx"]
+        
+        subgraph Generators["Code Generators"]
+            MQL["mqlGenerator.ts"]
+            PY["pyGenerator.ts"]
+            JS["javascriptGenerator"]
+        end
+    end
+    
+    subgraph Backend["⚙️ Backend (FastAPI/Python)"]
+        MAIN["main.py"]
+        
+        subgraph Engines["Backtest Engines"]
+            E1["Simple (regex)"]
+            E2["backtesting.py"]
+            E3["NautilusTrader"]
+        end
+        
+        subgraph Services["Services"]
+            XML["xml_evaluator.py"]
+            BS["backtest_service.py"]
+            SR["strategy_runner.py"]
+            IG["ig_client.py"]
+        end
+    end
+    
+    subgraph External["☁️ External Services"]
+        DS["DeepSeek API"]
+        GEM["Gemini API"]
+        IGM["IG Markets API"]
+        YF["yfinance / AlphaVantage"]
+    end
+    
+    UI --> BW
+    UI --> AIC
+    UI --> SP
+    BW --> Generators
+    AIC --> MAIN
+    SP --> MAIN
+    MAIN --> Engines
+    MAIN --> Services
+    Services --> External
+    MAIN --> DS
+    AIC -.-> GEM
+```
 
 ---
 
@@ -8,330 +64,313 @@ This document describes all major pipelines in the PPM trading strategy applicat
 
 **Purpose:** Convert natural language → Blockly XML visual strategy
 
-**User Controls:**
-- **⚡ DeepSeek Only Toggle**: OFF (default) = Gemini + DeepSeek | ON = Pure DeepSeek with full block catalog
-- **🛡️ Validation Toggle**: ON (default) = Validate with DeepSeek Reasoning | OFF = Skip validation
-
-### Flow Diagram (Gemini + DeepSeek Mode - Default)
+```mermaid
+flowchart LR
+    subgraph Input
+        U["👤 User Prompt"]
+    end
+    
+    subgraph Frontend
+        AIC["AIChatPanel.tsx"]
+    end
+    
+    subgraph Mode1["Gemini Mode (Default)"]
+        SUP["Supabase Edge Function"]
+        GEM["Gemini/Lovable API"]
+    end
+    
+    subgraph Mode2["DeepSeek Mode"]
+        BE1["/generate-strategy"]
+        DSK1["DeepSeek LLM"]
+    end
+    
+    subgraph Validation
+        VAL["/validate-strategy"]
+        DSR["DeepSeek Reasoning"]
+        FIX["Programmatic Fixes"]
+    end
+    
+    subgraph Output
+        BL["📦 Blockly Workspace"]
+    end
+    
+    U --> AIC
+    AIC -->|"Toggle OFF"| SUP --> GEM --> VAL
+    AIC -->|"Toggle ON"| BE1 --> DSK1 --> VAL
+    VAL --> DSR --> FIX --> BL
 ```
-User Input (natural language)
-        ↓
-[Frontend: AIChatPanel.tsx]
-        ↓
-[Supabase Edge Function: generate-strategy]
-        ↓ (uses Lovable/Gemini API)
-Pass 1: Generate initial XML
-        ↓
-[Backend: POST /validate-strategy] (if validation enabled)
-        ↓
-Pass 2: DeepSeek REASONING validates & polishes
-        ↓
-Pass 3: Check for identical indicators
-        ↓
-Pass 4: Programmatic fallback (swap operators if needed)
-        ↓
-Return validated XML to frontend
-        ↓
-[Frontend: Load blocks into Blockly workspace]
-```
-
-### Flow Diagram (Pure DeepSeek Mode)
-```
-User Input (natural language)
-        ↓
-[Frontend: AIChatPanel.tsx]
-        ↓
-[Backend: POST /generate-strategy]
-        ↓
-DeepSeek with FULL SYSTEM_PROMPT (block catalog + templates)
-        ↓
-Pass 1-4: Generate, validate, fix (all in backend)
-        ↓
-[Backend: POST /validate-strategy] (if validation enabled)
-        ↓
-Return XML to frontend
-        ↓
-[Frontend: Load blocks into Blockly workspace]
-```
-
-### Step-by-Step
-
-| Step | Location | Action |
-|------|----------|--------|
-| 1 | `AIChatPanel.tsx` | User types strategy description |
-| 2a | `AIChatPanel.tsx` | **If Gemini mode**: Calls Supabase `generate-strategy` edge function |
-| 2b | `AIChatPanel.tsx` | **If DeepSeek mode**: Calls backend `/generate-strategy` |
-| 3a | Supabase Function | Gemini/Lovable LLM generates Blockly XML |
-| 3b | `main.py` | DeepSeek generates XML with full block catalog |
-| 4 | `AIChatPanel.tsx` | **If validation ON**: Calls backend `/validate-strategy` with XML |
-| 5 | `main.py` | DeepSeek Reasoning model validates and fixes XML |
-| 6 | `main.py` | Programmatic fix swaps operators if indicators wrong order |
-| 7 | `AIChatPanel.tsx` | Receives validated XML, calls `onBlocksGenerated(xml)` |
-| 8 | Blockly | Renders visual blocks |
 
 ### Key Files
-- `src/features/ai/components/AIChatPanel.tsx` (frontend trigger + toggles)
-- `supabase/functions/generate-strategy/index.ts` (Gemini LLM call)
-- `backend/main.py` → `/generate-strategy` (DeepSeek generation)
-- `backend/main.py` → `/validate-strategy` (DeepSeek Reasoning validation)
+| File | Purpose |
+|------|---------|
+| `src/features/ai/components/AIChatPanel.tsx` | UI + toggle controls |
+| `supabase/functions/generate-strategy/index.ts` | Gemini LLM call |
+| `backend/main.py` → `/generate-strategy` | DeepSeek generation |
+| `backend/main.py` → `/validate-strategy` | DeepSeek Reasoning validation |
 
 ---
 
-## 2. MQL5 Code Generation Pipeline
+## 2. Code Generation Pipelines
 
-**Purpose:** Convert Blockly XML → compilable MQL5 Expert Advisor code
-
-### Flow Diagram
-```
-Blockly Workspace XML
-        ↓
-[Frontend: Code Panel refresh button]
-        ↓
-Backend: POST /generate-mql
-        ↓
-[DeepSeek LLM]
-        ↓
-Clean MQL5 code returned
-        ↓
-Display in Code Panel
+### MQL5 Generation (LLM-Based)
+```mermaid
+flowchart LR
+    BW["Blockly XML"] --> API["/generate-mql"] --> DS["DeepSeek LLM"] --> MQL["MQL5 Code"]
 ```
 
-### Step-by-Step
-
-| Step | Location | Action |
-|------|----------|--------|
-| 1 | `BlocklyWorkspace.tsx` | User clicks Code panel refresh |
-| 2 | Frontend | Extracts workspace XML via `Blockly.Xml.workspaceToDom()` |
-| 3 | Frontend | POST to `backend/generate-mql` |
-| 4 | `backend/main.py` → `generate_mql()` | Sends XML to DeepSeek with MQL5 system prompt |
-| 5 | DeepSeek | Returns complete MQL5 EA code |
-| 6 | `main.py` | Cleans markdown formatting, returns code |
-| 7 | Frontend | Displays in code panel |
+### Python Generation (Deterministic)
+```mermaid
+flowchart LR
+    BW["Blockly Workspace"] --> PG["pyGenerator.ts"] --> PY["Python Code"]
+    PG --> |"Indicators"| TALIB["TA-Lib Wrappers"]
+    PG --> |"Fallback"| NUMPY["NumPy Implementations"]
+```
 
 ### Key Files
-- `src/features/blockly/components/BlocklyWorkspace.tsx` (frontend)
-- `backend/main.py` → `generate_mql()` (backend)
+| Generator | File | Output |
+|-----------|------|--------|
+| MQL5 | `backend/main.py` → `generate_mql()` | MetaTrader EA |
+| Python | `src/config/blockly/pyGenerator.ts` | backtesting.py Strategy |
+| JavaScript | `src/config/blockly/generator.ts` | Browser execution |
 
 ---
 
-## 3. Python Code Generation Pipeline (PyGenerator)
+## 3. Backtest Engine Comparison
 
-**Purpose:** Convert Blockly XML → Executable Python Code (compatible with backtesting.py)
-
-### Flow Diagram
+```mermaid
+flowchart TB
+    subgraph UI["User Selects Engine"]
+        SEL{{"Backtest Engine Dropdown"}}
+    end
+    
+    subgraph Engines
+        E1["🟢 Simple (Fast)"]
+        E2["🟡 TechnicalIndicators"]
+        E3["🔵 PyGenerator ⭐"]
+        E4["🟠 Python AI-Generated"]
+        E5["🟣 NautilusTrader"]
+        E6["⚫ AI Simulation"]
+    end
+    
+    subgraph Processing
+        P1["xml_evaluator.py
+        Regex Parse → Loop"]
+        P2["technicalindicators.js
+        Browser-Only"]
+        P3["pyGenerator.ts → /backtest-py-code
+        backtesting.py + TA-Lib"]
+        P4["DeepSeek → backtesting.py
+        LLM Writes Code"]
+        P5["NautilusTrader Engine
+        Event-Driven C++"]
+        P6["DeepSeek → Simulate
+        LLM Interprets"]
+    end
+    
+    SEL --> E1 --> P1
+    SEL --> E2 --> P2
+    SEL --> E3 --> P3
+    SEL --> E4 --> P4
+    SEL --> E5 --> P5
+    SEL --> E6 --> P6
 ```
-Blockly Workspace XML
-        ↓
-[Frontend: PyGenerator (pyGenerator.ts)]
-        ↓
-Generate Python Source Code (TA-Lib / Numpy)
-        ↓
-Display in Code Panel OR Code Editor
-```
 
-### Step-by-Step
-| Step | Location | Action |
-|------|----------|--------|
-| 1 | `pyGenerator.ts` | Iterates blocks, mapping to `backtesting.py` API |
-| 2 | `pyGenerator.ts` | Adds `try-import-talib` Wrapper for indicators |
-| 3 | `generator.ts` | Returns raw Python string |
+### Engine Details
 
-### Key Files
-- `src/config/blockly/pyGenerator.ts` (The Engine)
-- `src/config/blockly/generator.ts` (Dispatcher)
+| Engine | Speed | Reliability | LLM? | Best For |
+|--------|-------|-------------|------|----------|
+| Simple (Fast) | ⭐⭐⭐⭐ | ⭐⭐ | No | Quick checks |
+| TechnicalIndicators | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | No | Offline testing |
+| **PyGenerator** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | **No** | **Production** |
+| Python (AI-Gen) | ⭐⭐ | ⭐⭐ | Yes | Complex logic |
+| NautilusTrader | ⭐⭐⭐⭐ | ⭐⭐ | Yes | HFT simulation |
+| AI Simulation | ⭐ | ⭐ | Yes | Exploration |
 
 ---
 
-## 4. Backtesting Pipeline
+## 4. PyGenerator Pipeline (Recommended)
 
-**Purpose:** Test strategy on historical data and return performance metrics
-
-### Flow Diagram (New PyGenerator Engine)
+```mermaid
+flowchart TB
+    subgraph Frontend["Frontend (TypeScript)"]
+        WS["Blockly Workspace"]
+        PG["pyGenerator.ts"]
+        CODE["Python Source Code"]
+    end
+    
+    subgraph Backend["Backend (Python)"]
+        EP["/backtest-py-code"]
+        AST["AST Security Check"]
+        FETCH["Fetch Market Data"]
+        BT["backtesting.py"]
+        EXEC["Strategy.init() / next()"]
+    end
+    
+    subgraph Output
+        METRICS["📊 Metrics"]
+        TRADES["📈 Trades"]
+        EQUITY["📉 Equity Curve"]
+    end
+    
+    WS --> PG
+    PG -->|"Block Mapping"| CODE
+    CODE --> EP
+    EP --> AST --> FETCH --> BT --> EXEC
+    EXEC --> METRICS
+    EXEC --> TRADES
+    EXEC --> EQUITY
 ```
-User clicks "Run Backtest" (Settings Panel)
-        ↓
-[Frontend: PyGenerator] Generate Python Code
-        ↓
-Backend: POST /backtest-py-code
-        ↓
-[main.py] AST Parse & Security Check
-        ↓
-Fetch Historical Data
-        ↓
-[backtesting.py] Execute Strategy.init() / next()
-        ↓
-Return metrics, trades, equity curve
+
+### pyGenerator Block Mapping
+```mermaid
+flowchart LR
+    subgraph Blocks["Blockly Blocks"]
+        B1["ta_sma"]
+        B2["ta_ema"]
+        B3["ta_rsi"]
+        B4["trade_order"]
+        B5["operator_greater"]
+    end
+    
+    subgraph Python["Generated Python"]
+        P1["self.I(SMA, Close, n)"]
+        P2["self.I(EMA, Close, n)"]
+        P3["self.I(RSI, Close, n)"]
+        P4["self.buy() / self.sell()"]
+        P5["value_a > value_b"]
+    end
+    
+    B1 --> P1
+    B2 --> P2
+    B3 --> P3
+    B4 --> P4
+    B5 --> P5
 ```
-
-### Flow Diagram (Legacy XML Interpreter)
-```
-User clicks "Run Backtest" -> Legacy Mode
-        ↓
-[xml_evaluator.py] Regex Parse XML
-        ↓
-[backtest_runner.py] Simple Loop Calculation
-        ↓
-Return metrics
-```
-
-### Step-by-Step
-
-| Step | Location | Action |
-|------|----------|--------|
-| 1 | `SettingsPanel.tsx` | User selects symbol, dates, capital, clicks "Run Backtest" |
-| 2 | `SettingsPanel.tsx` | POST to `/backtest` with workspace XML |
-| 3 | `main.py` → `run_backtest_endpoint()` | Receives request |
-| 4 | `xml_evaluator.py` | `BlocklyXMLEvaluator(xml)` parses buy/sell conditions |
-| 5 | `ig_client.py` | Try fetching real data from IG API |
-| 6 | `sample_data.py` | Fallback: generate synthetic OHLCV data |
-| 7 | `backtest_runner.py` → `run_backtest_simple()` | Loop through bars, evaluate conditions, simulate trades |
-| 8 | `backtest_runner.py` | Calculate metrics (win rate, return, drawdown, Sharpe) |
-| 9 | `main.py` | Return `BacktestResponse` with metrics, trades, equity_curve |
-| 10 | `SettingsPanel.tsx` | Display results card |
-
-### Key Files
-- `src/components/SettingsPanel.tsx` (frontend)
-- `backend/main.py` → `run_backtest_endpoint()` (API)
-- `backend/xml_evaluator.py` → `BlocklyXMLEvaluator` (parser)
-- `backend/backtest_runner.py` → `run_backtest_simple()` (simulator)
 
 ---
 
-## 4. Live Strategy Running Pipeline
+## 5. Live Trading Pipeline
 
-**Purpose:** Execute strategy against live market data with real trades
-
-### Flow Diagram
+```mermaid
+flowchart TB
+    subgraph Frontend
+        UI["Settings Panel - Live Tab"]
+    end
+    
+    subgraph Backend
+        START["/strategy/start"]
+        EVAL["LLMVerifiedEvaluator"]
+        RUNNER["StrategyRunner"]
+        LOOP["Polling Loop (60s)"]
+    end
+    
+    subgraph IG["IG Markets"]
+        PRICES["Real-time Prices"]
+        TRADE["Execute Trade"]
+    end
+    
+    UI -->|"Launch"| START
+    START --> EVAL -->|"DeepSeek Verify"| RUNNER
+    RUNNER --> LOOP
+    LOOP -->|"Fetch"| PRICES
+    LOOP -->|"If Signal"| TRADE
+    
+    UI -->|"Stop"| STOP["/strategy/stop"]
+    STOP --> RUNNER
 ```
-User clicks "Launch Strategy" (Settings Panel - Live tab)
-        ↓
-[Frontend: SettingsPanel.tsx]
-        ↓
-Backend: POST /strategy/start
-        ↓
-[xml_evaluator.py] Parse XML → Python logic
-        ↓
-[LLM Verification via DeepSeek] Verify Python matches XML
-        ↓
-[strategy_runner.py] Start polling loop
-        ↓
-Every 60s: Fetch prices → Evaluate conditions → Execute trades
-        ↓
-User clicks "Stop Strategy"
-        ↓
-Backend: POST /strategy/stop
-```
-
-### Step-by-Step
-
-| Step | Location | Action |
-|------|----------|--------|
-| 1 | `SettingsPanel.tsx` | User switches to "Live" tab, clicks "Launch Strategy" |
-| 2 | `SettingsPanel.tsx` | POST to `/strategy/start` with XML, symbol, size |
-| 3 | `main.py` → `start_strategy()` | Get IG client, verify authentication |
-| 4 | `strategy_runner.py` → `start_strategy_runner()` | Create `LLMVerifiedEvaluator` |
-| 5 | `xml_evaluator.py` → `LLMVerifiedEvaluator.verify()` | Generate Python logic, call DeepSeek for verification |
-| 6 | DeepSeek | Verify/correct Python logic |
-| 7 | `strategy_runner.py` | Create `StrategyRunner` with verified evaluator |
-| 8 | `StrategyRunner.start()` | Begin async polling loop |
-| 9 | Every tick (60s): | |
-|  | `_tick()` | Fetch latest prices from IG |
-|  | `evaluator.calculate_indicators()` | Calculate SMA, RSI, etc. |
-|  | `evaluator.should_buy/sell()` | Evaluate conditions |
-|  | `_execute_signals()` | If signal, execute trade via IG API |
-| 10 | User stops | POST `/strategy/stop` → `stop_strategy_runner()` |
 
 ### Key Files
-- `src/components/SettingsPanel.tsx` (frontend)
-- `backend/main.py` → `start_strategy()`, `stop_strategy()` (API)
-- `backend/strategy_runner.py` → `StrategyRunner` (execution loop)
-- `backend/xml_evaluator.py` → `LLMVerifiedEvaluator` (verification)
-- `backend/ig_client.py` → `IGClient` (trading API)
+| File | Purpose |
+|------|---------|
+| `backend/strategy_runner.py` | Async polling loop |
+| `backend/xml_evaluator.py` | LLM-verified evaluator |
+| `backend/ig_client.py` | IG Markets API wrapper |
 
 ---
 
-## 5. Chat/Q&A Pipeline
+## 6. Data Flow Summary
 
-**Purpose:** Answer trading questions without generating blocks
-
-### Flow Diagram
+```mermaid
+flowchart LR
+    subgraph Sources["Data Sources"]
+        YF["yfinance"]
+        AV["AlphaVantage"]
+        IG["IG Markets API"]
+        DB["Local SQLite DB"]
+    end
+    
+    subgraph Backend
+        BS["backtest_service.py"]
+    end
+    
+    subgraph Priority
+        P1["1. Local DB"]
+        P2["2. AlphaVantage"]
+        P3["3. yfinance"]
+    end
+    
+    DB --> P1 --> BS
+    AV --> P2 --> BS
+    YF --> P3 --> BS
+    IG --> BS
 ```
-User types question (in Chat mode)
-        ↓
-[Frontend: AIChatPanel.tsx]
-        ↓
-Backend: POST /chat
-        ↓
-[DeepSeek LLM] Generate response
-        ↓
-Return markdown response
-        ↓
-Display in chat
-```
-
-### Step-by-Step
-
-| Step | Location | Action |
-|------|----------|--------|
-| 1 | `AIChatPanel.tsx` | User switches to "Chat" mode, types question |
-| 2 | `AIChatPanel.tsx` | POST to `/chat` with message history |
-| 3 | `main.py` → `chat()` | Format messages for DeepSeek |
-| 4 | DeepSeek | Generate helpful trading response |
-| 5 | `main.py` | Return response |
-| 6 | `AIChatPanel.tsx` | Display markdown-formatted response |
-
-### Key Files
-- `src/features/ai/components/AIChatPanel.tsx` (frontend)
-- `backend/main.py` → `chat()` (backend)
 
 ---
 
-## 6. IG Trading Pipeline (Direct Trades)
+## API → LLM Mapping
 
-**Purpose:** Execute manual trades via IG Markets API
-
-### Flow Diagram
+```mermaid
+flowchart TB
+    subgraph Endpoints
+        E1["/generate-strategy"]
+        E2["/validate-strategy"]
+        E3["/generate-mql"]
+        E4["/chat"]
+        E5["/backtest"]
+        E6["/backtest-py-code"]
+        E7["/strategy/start"]
+    end
+    
+    subgraph LLMs
+        DS["DeepSeek"]
+        DSR["DeepSeek Reasoning"]
+        GEM["Gemini (Supabase)"]
+        NONE["No LLM"]
+    end
+    
+    E1 --> DS
+    E2 --> DSR
+    E3 --> DS
+    E4 --> DS
+    E5 -->|"ai_simulation"| DS
+    E5 -->|"other engines"| NONE
+    E6 --> NONE
+    E7 -->|"verification"| DS
 ```
-User clicks Buy/Sell in IGTradingPanel
-        ↓
-[Frontend: IGTradingPanel.tsx]
-        ↓
-Backend: POST /ig/trade
-        ↓
-[ig_client.py] Create position via IG REST API
-        ↓
-Return deal confirmation
-```
 
-### Step-by-Step
-
-| Step | Location | Action |
-|------|----------|--------|
-| 1 | `IGTradingPanel.tsx` | User enters size, clicks Buy/Sell |
-| 2 | Frontend | POST to `/ig/trade` or `/ig/position` |
-| 3 | `main.py` → `ig_create_position()` | Get IG client |
-| 4 | `ig_client.py` → `create_position()` | Call IG REST API |
-| 5 | IG API | Create position, return deal reference |
-| 6 | Frontend | Show success/error toast |
-
-### Key Files
-- `src/components/IGTradingPanel.tsx` (frontend)
-- `backend/main.py` (API endpoints)
-- `backend/ig_client.py` → `IGClient` (IG API wrapper)
+| Endpoint | LLM Used | Notes |
+|----------|----------|-------|
+| `/generate-strategy` | DeepSeek | Full block catalog |
+| `/validate-strategy` | DeepSeek Reasoning | Multi-pass validation |
+| `/generate-mql` | DeepSeek | XML → MQL5 |
+| `/chat` | DeepSeek | Q&A mode |
+| `/backtest-py-code` | **None** | PyGenerator (fastest) |
+| `/backtest` (legacy) | Optional | Depends on engine |
+| `/strategy/start` | DeepSeek | Verification only |
 
 ---
 
-## Summary: API → LLM Mapping
+## Quick Reference: File → Function → Purpose
 
-| Pipeline | LLM Used | Endpoint | Notes |
-|----------|----------|----------|-------|
-| Strategy Generation (Gemini mode) | **Supabase (Gemini/Lovable)** + DeepSeek Reasoning | Supabase Edge Function + `/validate-strategy` | Default mode |
-| Strategy Generation (DeepSeek mode) | **DeepSeek** + DeepSeek Reasoning | `/generate-strategy` + `/validate-strategy` | Toggle enabled |
-| Validation (optional) | **DeepSeek Reasoning** | `/validate-strategy` | Can be disabled via toggle |
-| MQL5 Generation | **DeepSeek** | `/generate-mql` | |
-| Python Generation | **None** (Deterministic) | Client-Side (`pyGenerator`) | **Fastest & Most Reliable** |
-| Chat Q&A | **DeepSeek** | `/chat` | |
-| XML Verification | **DeepSeek** | (internal) | Used in legacy/live execution |
-| Backtest (New) | None (Python Code) | `/backtest-py-code` | Uses `backtesting.py` + TA-Lib |
-| Backtest (Legacy)| None (Regex) | `/backtest` | Uses `xml_evaluator` |
-| Live Trading | DeepSeek (verification only) | `/strategy/start` | |
+| Layer | Key File | Main Function | Purpose |
+|-------|----------|--------------|---------|
+| Frontend | `pyGenerator.ts` | `workspaceToCode()` | Blocks → Python |
+| Frontend | `mqlGenerator.ts` | `workspaceToCode()` | Blocks → MQL5 |
+| Frontend | `AIChatPanel.tsx` | `handleSend()` | AI strategy prompt |
+| Frontend | `BacktestingPanel.tsx` | `handleRunBacktest()` | Engine dispatcher |
+| Backend | `main.py` | `backtest_py_code()` | Execute Python |
+| Backend | `main.py` | `generate_strategy()` | DeepSeek generation |
+| Backend | `backtest_service.py` | `run_backtest()` | Backtesting logic |
+| Backend | `xml_evaluator.py` | `BlocklyXMLEvaluator` | XML parser |
+| Backend | `strategy_runner.py` | `StrategyRunner` | Live execution |
+| Backend | `ig_client.py` | `IGClient` | Trading API |
