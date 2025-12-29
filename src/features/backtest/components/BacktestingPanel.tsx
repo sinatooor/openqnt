@@ -259,6 +259,61 @@ export const BacktestingPanel = ({
                       </CardContent>
                     </Card>
                   </div>
+
+                  {/* Secondary Metrics Row */}
+                  {result.trades && result.trades.length > 0 && (() => {
+                    const wins = result.trades.filter((t: any) => (t.profit ?? t.pnl ?? 0) > 0);
+                    const losses = result.trades.filter((t: any) => (t.profit ?? t.pnl ?? 0) < 0);
+                    const avgWin = wins.length > 0
+                      ? wins.reduce((sum: number, t: any) => sum + (t.profit ?? t.pnl ?? 0), 0) / wins.length
+                      : 0;
+                    const avgLoss = losses.length > 0
+                      ? losses.reduce((sum: number, t: any) => sum + (t.profit ?? t.pnl ?? 0), 0) / losses.length
+                      : 0;
+                    const winRate = wins.length / result.trades.length;
+                    const lossRate = losses.length / result.trades.length;
+                    const expectancy = (winRate * avgWin) + (lossRate * avgLoss);
+                    const recoveryFactor = result.metrics.maxDrawdown > 0
+                      ? result.metrics.totalReturn / result.metrics.maxDrawdown
+                      : 0;
+
+                    return (
+                      <div className="grid grid-cols-4 gap-2 mt-2">
+                        <Card className="bg-background/30 animate-scale-in" style={{ animationDelay: '300ms' }}>
+                          <CardContent className="py-2 px-3">
+                            <div className="text-[10px] text-muted-foreground">Avg Win</div>
+                            <div className="text-sm font-bold text-block-environment">
+                              +${avgWin.toFixed(2)}
+                            </div>
+                          </CardContent>
+                        </Card>
+                        <Card className="bg-background/30 animate-scale-in" style={{ animationDelay: '350ms' }}>
+                          <CardContent className="py-2 px-3">
+                            <div className="text-[10px] text-muted-foreground">Avg Loss</div>
+                            <div className="text-sm font-bold text-destructive">
+                              ${avgLoss.toFixed(2)}
+                            </div>
+                          </CardContent>
+                        </Card>
+                        <Card className="bg-background/30 animate-scale-in" style={{ animationDelay: '400ms' }}>
+                          <CardContent className="py-2 px-3">
+                            <div className="text-[10px] text-muted-foreground">Expectancy</div>
+                            <div className={`text-sm font-bold ${expectancy >= 0 ? 'text-block-environment' : 'text-destructive'}`}>
+                              {expectancy >= 0 ? '+' : ''}${expectancy.toFixed(2)}
+                            </div>
+                          </CardContent>
+                        </Card>
+                        <Card className="bg-background/30 animate-scale-in" style={{ animationDelay: '450ms' }}>
+                          <CardContent className="py-2 px-3">
+                            <div className="text-[10px] text-muted-foreground">Recovery Factor</div>
+                            <div className="text-sm font-bold text-foreground">
+                              {recoveryFactor.toFixed(2)}x
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <Separator />
