@@ -14,10 +14,9 @@ import {
     Search,
     Pencil,
     TrendingUp,
-    Loader2,
     History as HistoryIcon,
 } from "lucide-react";
-import { BacktestResult } from "@/features/backtest/logic/engine";
+
 
 export interface WorkspaceToolbarProps {
     // Strategy name
@@ -51,10 +50,9 @@ export interface WorkspaceToolbarProps {
     showIGPanel: boolean;
     onToggleIGPanel: () => void;
 
-    // Strategy/Backtest
-    backtestResult: BacktestResult | null;
-    isBacktesting: boolean;
-    onRunBacktest: () => void;
+    // Strategy/Backtest Panel
+    showStrategyPanel: boolean;
+    onToggleStrategyPanel: () => void;
 }
 
 export const WorkspaceToolbar = ({
@@ -76,9 +74,8 @@ export const WorkspaceToolbar = ({
     onToggleCode,
     showIGPanel,
     onToggleIGPanel,
-    backtestResult,
-    isBacktesting,
-    onRunBacktest,
+    showStrategyPanel,
+    onToggleStrategyPanel,
 }: WorkspaceToolbarProps) => {
     return (
         <div className="h-14 bg-card border-b border-border flex items-center justify-between px-4 gap-3">
@@ -263,26 +260,21 @@ export const WorkspaceToolbar = ({
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button
-                            variant={backtestResult ? "default" : "outline"}
+                            variant={showStrategyPanel ? "default" : "outline"}
                             size="sm"
-                            onClick={onRunBacktest}
-                            disabled={isBacktesting}
+                            onClick={onToggleStrategyPanel}
                             className={cn(
                                 "transition-all duration-200",
-                                backtestResult ? "bg-purple-600 hover:bg-purple-700" : "hover:shadow-[0_0_0_2px_rgba(147,51,234,0.5)]"
+                                showStrategyPanel ? "bg-purple-600 hover:bg-purple-700" : "hover:shadow-[0_0_0_2px_rgba(147,51,234,0.5)]"
                             )}
                         >
-                            {isBacktesting ? (
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            ) : (
-                                <HistoryIcon className="w-4 h-4 mr-2" />
-                            )}
-                            Strategy
+                            <HistoryIcon className="w-4 h-4 mr-2" />
+                            {showStrategyPanel ? "Hide" : "Strategy"}
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>Run Strategy Backtest</p>
-                        <p className="text-xs text-muted-foreground mt-1">Analyze your strategy performance</p>
+                        <p>Open Strategy Panel</p>
+                        <p className="text-xs text-muted-foreground mt-1">Backtest and analyze your strategy</p>
                     </TooltipContent>
                 </Tooltip>
             </div>

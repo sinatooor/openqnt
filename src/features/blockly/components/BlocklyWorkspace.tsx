@@ -5,7 +5,7 @@ import { generateCode } from "@/config/blockly/generator";
 import { Button } from "@/components/ui/button";
 import "@/styles/blockly-custom.css";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Wand2 } from "lucide-react";
+import { Wand2, Check, Copy, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { BacktestingPanel } from "@/features/backtest/components/BacktestingPanel";
 import { StrategyTemplatesDialog } from "@/components/StrategyTemplatesDialog";
@@ -1038,9 +1038,8 @@ export const BlocklyWorkspace = ({
       onToggleCode={() => setShowCode(!showCode)}
       showIGPanel={showIGPanel}
       onToggleIGPanel={() => setShowIGPanel(!showIGPanel)}
-      backtestResult={backtestResult}
-      isBacktesting={isBacktesting}
-      onRunBacktest={() => handlePreviewBacktest('backtesting.py')}
+      showStrategyPanel={showBacktest}
+      onToggleStrategyPanel={() => setShowBacktest(!showBacktest)}
     />
 
     {/* Main Content Area */}
