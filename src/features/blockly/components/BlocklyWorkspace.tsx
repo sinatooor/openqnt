@@ -1212,16 +1212,18 @@ export const BlocklyWorkspace = ({
       </div>}
 
       {/* Backtesting Panel */}
-      <BacktestingPanel
-        result={backtestResult}
-        isLoading={isBacktesting}
-        symbol="EURUSD"
-        onClose={() => {
-          setShowBacktest(false);
-          setBacktestResult(null);
-        }}
-        onRunBacktest={handlePreviewBacktest}
-      />
+      {showBacktest && (
+        <BacktestingPanel
+          result={backtestResult}
+          isLoading={isBacktesting}
+          symbol="EURUSD"
+          onClose={() => {
+            setShowBacktest(false);
+            setBacktestResult(null);
+          }}
+          onRunBacktest={handlePreviewBacktest}
+        />
+      )}
 
       {/* IG Trading Panel */}
       {showIGPanel && (
