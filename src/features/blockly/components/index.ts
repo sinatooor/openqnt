@@ -1,2 +1,3 @@
 export * from './BlocklyWorkspace';
-export * from './workspace/WorkspaceToolbar';
+export * from './WorkspaceToolbar';
+export * from './CodeViewPanel';

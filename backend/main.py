@@ -1009,4 +1009,11 @@ async def generate_python_code_from_xml(xml: str, llm_func) -> Optional[str]:
         return None
 
     cleaned = code.strip()
-    if cleaned.startswith("
+    if cleaned.startswith("```python"):
+        cleaned = cleaned[9:]
+    elif cleaned.startswith("```"):
+        cleaned = cleaned[3:]
+    if cleaned.endswith("```"):
+        cleaned = cleaned[:-3]
+    
+    return cleaned.strip()
