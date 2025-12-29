@@ -18,3 +18,7 @@ yfinance>=0.2.0
 # RAG
 chromadb>=0.4.0
 sentence-transformers>=2.2.2
+
+# Testing and Utils
+pytest>=7.0.0
+pytz>=2023.3
