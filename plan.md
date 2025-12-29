@@ -54,7 +54,7 @@ Implementation requirements:
 
 **id:** 002  
 **title:** Define broker-agnostic strategy intermediate representation (IR)  
-**status:** todo  
+**status:** done  
 
 **details:**
 Create a minimal, explicit strategy IR that represents:
