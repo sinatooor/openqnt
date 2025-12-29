@@ -20,7 +20,29 @@
 
 **id:** 001  
 **title:** Make NautilusTrader the backtesting engine and match `backtesting.py` UI representation  
-**status:** doing  
+**status:** blocked
+
+**notes:** Command failed: python -m pytest tests/test_nautilus_backtest_adapter_contract.py
+Stdout: ============================= test session starts ==============================
+platform darwin -- Python 3.13.2, pytest-9.0.2, pluggy-1.6.0
+rootdir: /Users/sina/project-fire/PPM
+plugins: anyio-4.12.0
+collected 0 items / 1 error
+
+==================================== ERRORS ====================================
+______ ERROR collecting tests/test_nautilus_backtest_adapter_contract.py _______
+tests/test_nautilus_backtest_adapter_contract.py:10: in <module>
+    from backend.nautilus_adapter import run_nautilus_backtest, NAUTILUS_INSTALLED
+backend/nautilus_adapter.py:37: in <module>
+    def _create_instrument(symbol: str) -> Instrument:
+                                           ^^^^^^^^^^
+E   NameError: name 'Instrument' is not defined
+=========================== short test summary info ============================
+ERROR tests/test_nautilus_backtest_adapter_contract.py - NameError: name 'Ins...
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+=============================== 1 error in 1.35s ===============================
+
+Stderr:   
 
 **details:**
 Integrate NautilusTrader as the primary backtesting engine and ensure it outputs the same UI-facing backtest representation currently produced by `backtesting.py`.
@@ -308,7 +330,7 @@ AI may propose improvements, but they must be:
 
 **id:** 011  
 **title:** Integrate risk_controls into IR simulator execution  
-**status:** todo  
+**status:** done  
 
 **details:**
 Connect the `RiskController` from `risk_controls.py` to `IRSimulator` so that:
