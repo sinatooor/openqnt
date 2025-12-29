@@ -20,7 +20,7 @@
 
 **id:** 001  
 **title:** Make NautilusTrader the backtesting engine and match `backtesting.py` UI representation  
-**status:** doing  
+**status:** todo  
 
 **details:**
 Integrate NautilusTrader as the primary backtesting engine and ensure it outputs the same UI-facing backtest representation currently produced by `backtesting.py`.
@@ -54,7 +54,7 @@ Implementation requirements:
 
 **id:** 002  
 **title:** Define broker-agnostic strategy intermediate representation (IR)  
-**status:** done  
+**status:** todo  
 
 **details:**
 Create a minimal, explicit strategy IR that represents:
@@ -81,7 +81,7 @@ Create a minimal, explicit strategy IR that represents:
 
 **id:** 003  
 **title:** Parse rule-based strategies into IR  
-**status:** done  
+**status:** todo  
 
 **details:**
 Implement a rule-based strategy builder that converts human-readable rules into the IR defined in Objective 002.
@@ -101,7 +101,7 @@ Implement a rule-based strategy builder that converts human-readable rules into 
 
 **id:** 004  
 **title:** Implement IR execution simulator (no broker)  
-**status:** done  
+**status:** todo  
 
 **details:**
 Create a pure simulation engine that executes IR strategies against historical price data without broker logic.
@@ -122,7 +122,7 @@ Create a pure simulation engine that executes IR strategies against historical p
 
 **id:** 005  
 **title:** Add basic backtesting framework  
-**status:** todo  
+**status:** done  
 
 **details:**
 Wrap the IR simulator with a backtesting interface that supports:
