@@ -5,10 +5,7 @@ import { generateCode } from "@/config/blockly/generator";
 import { Button } from "@/components/ui/button";
 import "@/styles/blockly-custom.css";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Code2, Copy, Check, Download, Upload, ZoomIn, ZoomOut, Maximize2, Undo2, Redo2, Wand2, FileCode, BarChart3, BookOpen, Search, Pencil, TrendingUp, Loader2, History as HistoryIcon } from "lucide-react";
+import { Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { BacktestingPanel } from "@/features/backtest/components/BacktestingPanel";
 import { StrategyTemplatesDialog } from "@/components/StrategyTemplatesDialog";
@@ -17,6 +14,8 @@ import { AIChatPanel } from "@/features/ai/components/AIChatPanel";
 import { GuidedTour } from "@/components/GuidedTour";
 import { DevLogPanel, LogEntry } from "@/components/DevLogPanel";
 import { BlockSearchDialog } from "@/components/BlockSearchDialog";
+import { WorkspaceToolbar } from "./WorkspaceToolbar";
+import { CodeViewPanel } from "./CodeViewPanel";
 
 import { StrategyTemplate } from "@/features/templates/strategyTemplates";
 import { cn } from "@/lib/utils";
@@ -25,6 +24,7 @@ import { fetchMarketData } from "@/services/marketData";
 import { BacktestResult, runBacktest } from "@/features/backtest/logic/engine";
 import { IndicatorSettingsModal } from "@/components/IndicatorSettingsModal";
 import { IGTradingPanel } from "@/components/IGTradingPanel";
+
 
 interface BlocklyWorkspaceProps {
   runTour?: boolean;
@@ -1019,185 +1019,29 @@ export const BlocklyWorkspace = ({
   };
   return <div className="flex-1 h-full relative flex flex-col">
     {/* Action Bar */}
-    <div className="h-14 bg-card border-b border-border flex items-center justify-between px-4 gap-3">
-      <div className="flex items-center gap-3">
-        {isEditingName ? (
-          <input
-            type="text"
-            value={strategyName}
-            onChange={(e) => setStrategyName(e.target.value)}
-            onBlur={() => setIsEditingName(false)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') setIsEditingName(false);
-            }}
-            autoFocus
-            className="h-8 px-2 py-1 text-lg font-semibold bg-transparent border-b-2 border-primary focus:outline-none w-[200px]"
-          />
-        ) : (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div
-                className="flex items-center gap-2 px-2 py-1 rounded-md cursor-pointer hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200 group"
-                onClick={() => setIsEditingName(true)}
-              >
-                <h2 className="font-semibold text-foreground text-lg max-w-[200px] truncate">
-                  {strategyName}
-                </h2>
-                <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>Rename</TooltipContent>
-          </Tooltip>
-        )}
-      </div>
-
-      <div className="flex items-center gap-2">
-        {/* File Operations Group */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={handleSaveWorkspace} className="save-workspace-trigger hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
-              <Download className="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Save workspace as XML file</p>
-            <p className="text-xs text-muted-foreground mt-1">Ctrl+S</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={handleLoadWorkspace} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
-              <Upload className="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Load workspace from XML file</p>
-            <p className="text-xs text-muted-foreground mt-1">Ctrl+O</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={() => setShowTemplates(true)} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
-              <BookOpen className="w-4 h-4 mr-2" />
-              Templates
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Load pre-built strategy templates</p>
-            <p className="text-xs text-muted-foreground mt-1">Learn from examples</p>
-          </TooltipContent>
-        </Tooltip>
-      </div>
-
-      {/* Search Bar */}
-      <div className="flex-1 max-w-xl mx-4">
-        <Button
-          variant="outline"
-          className="w-full justify-start text-muted-foreground bg-muted/50 hover:bg-muted relative h-9 hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200"
-          onClick={() => setShowSearch(true)}
-        >
-          <Search className="w-4 h-4 mr-2" />
-          Search for blocks...
-          <kbd className="pointer-events-none absolute right-2 top-[50%] translate-y-[-50%] inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-            <span className="text-xs">⌘</span>F
-          </kbd>
-        </Button>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={() => setShowFloatingChart(!showFloatingChart)} className="transition-all duration-200 shadow-indigo hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)]">
-              <BarChart3 className="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Open floating live chart</p>
-            <p className="text-xs text-muted-foreground mt-1">Drag to reposition</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Separator orientation="vertical" className="h-6" />
-
-        {/* Workspace Controls */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={handleUndo} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
-              <Undo2 className="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Undo</p>
-            <p className="text-xs text-muted-foreground mt-1">Ctrl+Z</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={handleRedo} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
-              <Redo2 className="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Redo</p>
-            <p className="text-xs text-muted-foreground mt-1">Ctrl+Y</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Separator orientation="vertical" className="h-6" />
-
-        {/* Zoom Controls */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={handleCenterWorkspace} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
-              <Maximize2 className="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Center workspace</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Separator orientation="vertical" className="h-6" />
-
-        {/* View Group */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={() => setShowCode(!showCode)} className="transition-all duration-200 hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)]">
-              <Code2 className="w-4 h-4 mr-2" />
-              {showCode ? "Hide" : "Code"}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Toggle code view</p>
-            <p className="text-xs text-muted-foreground mt-1">View generated strategy code</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant={showIGPanel ? "default" : "outline"}
-              size="sm"
-              onClick={() => setShowIGPanel(!showIGPanel)}
-              className={cn(
-                "transition-all duration-200",
-                showIGPanel ? "bg-green-600 hover:bg-green-700" : "hover:shadow-[0_0_0_2px_rgba(34,197,94,0.5)]"
-              )}
-            >
-              <TrendingUp className="w-4 h-4 mr-2" />
-              {showIGPanel ? "Hide" : "Trade"}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Live Trading (IG)</p>
-            <p className="text-xs text-muted-foreground mt-1">Connect to IG for live trading</p>
-          </TooltipContent>
-        </Tooltip>
-      </div>
-    </div>
+    <WorkspaceToolbar
+      strategyName={strategyName}
+      isEditingName={isEditingName}
+      onStrategyNameChange={setStrategyName}
+      onEditNameStart={() => setIsEditingName(true)}
+      onEditNameEnd={() => setIsEditingName(false)}
+      onSave={handleSaveWorkspace}
+      onLoad={handleLoadWorkspace}
+      onShowTemplates={() => setShowTemplates(true)}
+      onShowSearch={() => setShowSearch(true)}
+      showFloatingChart={showFloatingChart}
+      onToggleFloatingChart={() => setShowFloatingChart(!showFloatingChart)}
+      onUndo={handleUndo}
+      onRedo={handleRedo}
+      onCenter={handleCenterWorkspace}
+      showCode={showCode}
+      onToggleCode={() => setShowCode(!showCode)}
+      showIGPanel={showIGPanel}
+      onToggleIGPanel={() => setShowIGPanel(!showIGPanel)}
+      backtestResult={backtestResult}
+      isBacktesting={isBacktesting}
+      onRunBacktest={() => handlePreviewBacktest('backtesting.py')}
+    />
 
     {/* Main Content Area */}
     <div className="flex-1 flex min-h-0 relative">
@@ -1397,13 +1241,15 @@ export const BlocklyWorkspace = ({
 
 
     {/* Dev Logs Panel */}
-    {showDevLogs && (
-      <DevLogPanel
-        logs={devLogs}
-        onClear={handleClearLogs}
-        onClose={handleCloseLogs}
-      />
-    )}
+    {
+      showDevLogs && (
+        <DevLogPanel
+          logs={devLogs}
+          onClear={handleClearLogs}
+          onClose={handleCloseLogs}
+        />
+      )
+    }
 
     {/* Confirmation Dialog for Adding AI Blocks */}
     <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
@@ -1443,5 +1289,5 @@ export const BlocklyWorkspace = ({
       onOpenChange={setShowSearch}
       onSelectBlock={handleAddBlock}
     />
-  </div>;
+  </div >;
 };

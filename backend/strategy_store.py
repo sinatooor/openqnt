@@ -72,3 +72,20 @@ def get_history(strategy_id: str) -> List[Dict[str, Any]]:
             history.append({**rec, **content})
         return history
     return []
+
+
+def hash_xml(xml: str) -> str:
+    """Hash XML content for caching/deduplication."""
+    return hashlib.sha256(xml.encode('utf-8')).hexdigest()
+
+
+def hash_xml_structure(xml: str) -> str:
+    """Hash XML structure (alias for hash_xml)."""
+    return hash_xml(xml)
+
+
+def load_latest_by_hash(content_hash: str) -> Optional[Dict[str, Any]]:
+    """Load strategy by content hash."""
+    if content_hash in _content_store:
+        return _content_store[content_hash]
+    return None
