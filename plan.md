@@ -532,7 +532,7 @@ Strategy development is iterative. Without versioning, users lose previous worki
 
 **id:** 018  
 **title:** Add position management rules to IR  
-**status:** todo  
+**status:** blocked  
 
 **details:**
 Extend the IR to support:
@@ -561,7 +561,7 @@ Real trading strategies often include dynamic position management. Without these
 
 **id:** 019  
 **title:** Add trade journaling and tagging  
-**status:** todo  
+**status:** blocked  
 
 **details:**
 Allow trades to be tagged with metadata:
@@ -590,7 +590,7 @@ Understanding why trades happened enables pattern discovery. Tagged journals hel
 
 **id:** 020  
 **title:** Add strategy export to multiple formats  
-**status:** todo  
+**status:** blocked  
 
 **details:**
 Export IR strategies to:

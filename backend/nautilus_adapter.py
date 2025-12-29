@@ -284,58 +284,87 @@ def run_nautilus_backtest(
         engine.run()
         
         # 7. Extract Results
-        fills = list(engine.cache.fills())
+        # Get closed orders to reconstruct trades
+        closed_orders = list(engine.cache.orders_closed())
+        closed_positions = list(engine.cache.positions_closed())
         
-        # Simplified Round-Trip Construction (FIFO)
+        # Build trades from closed positions (each position is a round-trip)
         trades_list = []
-        open_positions: List[Dict] = []
         
-        for fill in fills:
-            qty = float(fill.last_qty)
-            price = float(fill.last_px)
-            ts = pd.Timestamp(fill.ts_event, unit='ns', tz='UTC')
-            side = str(fill.order_side.name)  # "BUY" or "SELL"
+        for position in closed_positions:
+            # Extract position details
+            entry_price = float(position.avg_px_open) if position.avg_px_open else 0.0
+            exit_price = float(position.avg_px_close) if position.avg_px_close else 0.0
+            qty = float(position.quantity)
+            realized_pnl = float(position.realized_pnl) if position.realized_pnl else 0.0
             
-            if side == "BUY":
-                # Check if we have shorts to cover
-                shorts = [p for p in open_positions if p['side'] == "SELL"]
-                if shorts:
-                    matched = shorts[0]
-                    pnl = (matched['price'] - price) * qty
-                    
-                    trades_list.append({
-                        "entry_time": matched['time'].strftime('%Y-%m-%d %H:%M:%S'),
-                        "exit_time": ts.strftime('%Y-%m-%d %H:%M:%S'),
-                        "entry_price": round(matched['price'], 5),
-                        "exit_price": round(price, 5),
-                        "pnl": round(pnl, 2),
-                        "return_pct": round((matched['price'] - price) / matched['price'] * 100, 4),
-                        "size": qty,
-                        "type": "short"
-                    })
-                    open_positions.remove(matched)
-                else:
-                    open_positions.append({'price': price, 'qty': qty, 'time': ts, 'side': "BUY"})
+            # Get timestamps
+            ts_opened = pd.Timestamp(position.ts_opened, unit='ns', tz='UTC')
+            ts_closed = pd.Timestamp(position.ts_closed, unit='ns', tz='UTC')
             
-            elif side == "SELL":
-                longs = [p for p in open_positions if p['side'] == "BUY"]
-                if longs:
-                    matched = longs[0]
-                    pnl = (price - matched['price']) * qty
+            # Determine position type
+            pos_type = "long" if position.is_long else "short"
+            
+            trades_list.append({
+                "entry_time": ts_opened.strftime('%Y-%m-%d %H:%M:%S'),
+                "exit_time": ts_closed.strftime('%Y-%m-%d %H:%M:%S'),
+                "entry_price": round(entry_price, 5),
+                "exit_price": round(exit_price, 5),
+                "pnl": round(realized_pnl, 2),
+                "return_pct": round((exit_price - entry_price) / entry_price * 100, 4) if entry_price > 0 else 0,
+                "size": qty,
+                "type": pos_type
+            })
+        
+        # If no closed positions, try to build trades from orders (FIFO matching)
+        if not trades_list and closed_orders:
+            open_positions_fifo: List[Dict] = []
+            
+            for order in sorted(closed_orders, key=lambda o: o.ts_last):
+                if not order.is_filled:
+                    continue
                     
-                    trades_list.append({
-                        "entry_time": matched['time'].strftime('%Y-%m-%d %H:%M:%S'),
-                        "exit_time": ts.strftime('%Y-%m-%d %H:%M:%S'),
-                        "entry_price": round(matched['price'], 5),
-                        "exit_price": round(price, 5),
-                        "pnl": round(pnl, 2),
-                        "return_pct": round((price - matched['price']) / matched['price'] * 100, 4),
-                        "size": qty,
-                        "type": "long"
-                    })
-                    open_positions.remove(matched)
+                qty = float(order.filled_qty)
+                price = float(order.avg_px) if order.avg_px else 0.0
+                ts = pd.Timestamp(order.ts_last, unit='ns', tz='UTC')
+                side = "BUY" if order.is_buy else "SELL"
+                
+                if side == "BUY":
+                    shorts = [p for p in open_positions_fifo if p['side'] == "SELL"]
+                    if shorts:
+                        matched = shorts[0]
+                        pnl = (matched['price'] - price) * qty
+                        trades_list.append({
+                            "entry_time": matched['time'].strftime('%Y-%m-%d %H:%M:%S'),
+                            "exit_time": ts.strftime('%Y-%m-%d %H:%M:%S'),
+                            "entry_price": round(matched['price'], 5),
+                            "exit_price": round(price, 5),
+                            "pnl": round(pnl, 2),
+                            "return_pct": round((matched['price'] - price) / matched['price'] * 100, 4) if matched['price'] > 0 else 0,
+                            "size": qty,
+                            "type": "short"
+                        })
+                        open_positions_fifo.remove(matched)
+                    else:
+                        open_positions_fifo.append({'price': price, 'qty': qty, 'time': ts, 'side': "BUY"})
                 else:
-                    open_positions.append({'price': price, 'qty': qty, 'time': ts, 'side': "SELL"})
+                    longs = [p for p in open_positions_fifo if p['side'] == "BUY"]
+                    if longs:
+                        matched = longs[0]
+                        pnl = (price - matched['price']) * qty
+                        trades_list.append({
+                            "entry_time": matched['time'].strftime('%Y-%m-%d %H:%M:%S'),
+                            "exit_time": ts.strftime('%Y-%m-%d %H:%M:%S'),
+                            "entry_price": round(matched['price'], 5),
+                            "exit_price": round(price, 5),
+                            "pnl": round(pnl, 2),
+                            "return_pct": round((price - matched['price']) / matched['price'] * 100, 4) if matched['price'] > 0 else 0,
+                            "size": qty,
+                            "type": "long"
+                        })
+                        open_positions_fifo.remove(matched)
+                    else:
+                        open_positions_fifo.append({'price': price, 'qty': qty, 'time': ts, 'side': "SELL"})
 
         # Get final balance
         accounts = list(engine.cache.accounts())

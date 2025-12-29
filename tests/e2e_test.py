@@ -49,7 +49,8 @@ def test_strategy_generation():
     except Exception as e:
         print_result("Generate Strategy Exception", False, str(e))
 
-def test_backtest(xml):
+def _run_backtest(xml):
+    """Internal function to run backtest - not a pytest test."""
     print("\nTesting Backtest...")
     
     # 1 Year period
@@ -109,4 +110,4 @@ if __name__ == "__main__":
     test_health()
     xml = test_strategy_generation()
     if xml:
-        test_backtest(xml)
+        _run_backtest(xml)
