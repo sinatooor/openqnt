@@ -62,10 +62,13 @@ except ImportError:
 
 # Import Nautilus Adapter
 try:
-    from nautilus_adapter import run_nautilus_backtest as run_nautilus_adapter_backtest, NAUTILUS_INSTALLED
+    from backend.nautilus_adapter import run_nautilus_backtest as run_nautilus_adapter_backtest, NAUTILUS_INSTALLED
 except ImportError:
-    NAUTILUS_INSTALLED = False
-    print("Nautilus Adapter not found")
+    try:
+        from nautilus_adapter import run_nautilus_backtest as run_nautilus_adapter_backtest, NAUTILUS_INSTALLED
+    except ImportError:
+        NAUTILUS_INSTALLED = False
+        print("Nautilus Adapter not found")
 
 
 def sanitize_for_json(obj):

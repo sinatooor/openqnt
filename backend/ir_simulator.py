@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from backend.strategy_ir import StrategyIR, Rule, Condition, ActionType, MarketComponent, ComparisonOperator, PositionSizing
+from backend.risk_controls import RiskController, RiskViolation
 
 @dataclass
 class Trade:
@@ -31,14 +32,16 @@ class SimulationResult:
     equity_curve: pd.DataFrame
     metrics: Dict[str, Any]
     processed_data: pd.DataFrame
+    risk_violations: List[RiskViolation] = field(default_factory=list)
 
 class IRSimulator:
-    def __init__(self, initial_equity: float = 10000.0):
+    def __init__(self, initial_equity: float = 10000.0, risk_controller: Optional[RiskController] = None):
         self.initial_equity = initial_equity
         self.equity = initial_equity
         self.trades: List[Trade] = []
         self.position: Optional[Trade] = None
         self.history: List[Dict[str, Any]] = []
+        self.risk_controller = risk_controller
 
     def run(self, strategy: StrategyIR, data: pd.DataFrame) -> SimulationResult:
         self._reset()
@@ -63,6 +66,8 @@ class IRSimulator:
         self.trades = []
         self.position = None
         self.history = []
+        if self.risk_controller:
+            self.risk_controller.reset(initial_equity=self.initial_equity)
 
     def _prepare_data(self, data: pd.DataFrame, strategy: StrategyIR) -> pd.DataFrame:
         # Normalize columns to lowercase for easier access
@@ -166,6 +171,15 @@ class IRSimulator:
         if strategy.position_sizing.method == 'percent_equity':
              size = (self.equity * size) / price
         
+        # Validate entry against Risk Controller
+        if action in [ActionType.ENTER_LONG, ActionType.ENTER_SHORT] and self.risk_controller:
+            validation = self.risk_controller.validate_trade(size, timestamp=time)
+            if not validation['allowed']:
+                # Trade blocked by risk controller
+                return
+            # Use adjusted size (e.g. capped at max_position_size)
+            size = validation.get('adjusted_size', size)
+        
         if action == ActionType.ENTER_LONG:
             if self.position and self.position.direction == 'SHORT':
                 self._close_position(price, time, "REVERSE")
@@ -219,6 +233,10 @@ class IRSimulator:
             multiplier = 1 if self.position.direction == 'LONG' else -1
             unrealized_pnl = (price - self.position.entry_price) * self.position.size * multiplier
             current_equity += unrealized_pnl
+        
+        # Update risk controller with current equity
+        if self.risk_controller:
+            self.risk_controller.update_equity(current_equity, timestamp=time)
             
         self.history.append({
             'timestamp': time,
@@ -244,5 +262,6 @@ class IRSimulator:
             final_equity=self.equity,
             equity_curve=equity_df,
             metrics=metrics,
-            processed_data=df
+            processed_data=df,
+            risk_violations=self.risk_controller.violations if self.risk_controller else []
         )

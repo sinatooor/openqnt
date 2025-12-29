@@ -256,8 +256,8 @@ def run_nautilus_backtest(
                     pnl = (matched['price'] - price) * qty # simplified assuming full match
                     
                     trades_list.append({
-                        "entry_time": matched['time'].isoformat(),
-                        "exit_time": ts.isoformat(),
+                        "entry_time": matched['time'].strftime('%Y-%m-%d %H:%M:%S'),
+                        "exit_time": ts.strftime('%Y-%m-%d %H:%M:%S'),
                         "entry_price": matched['price'],
                         "exit_price": price,
                         "pnl": round(pnl, 2),
@@ -280,8 +280,8 @@ def run_nautilus_backtest(
                     pnl = (price - matched['price']) * qty
                     
                     trades_list.append({
-                        "entry_time": matched['time'].isoformat(),
-                        "exit_time": ts.isoformat(),
+                        "entry_time": matched['time'].strftime('%Y-%m-%d %H:%M:%S'),
+                        "exit_time": ts.strftime('%Y-%m-%d %H:%M:%S'),
                         "entry_price": matched['price'],
                         "exit_price": price,
                         "pnl": round(pnl, 2),
@@ -325,8 +325,8 @@ def run_nautilus_backtest(
         # Equity Curve Placeholder (Start -> End)
         # Ideally we'd log equity at each step
         equity_curve = [
-            {"time": start_date + "T00:00:00", "equity": initial_balance},
-            {"time": end_date + "T23:59:59", "equity": final_balance}
+            {"time": start_date + " 00:00:00", "equity": initial_balance},
+            {"time": end_date + " 23:59:59", "equity": final_balance}
         ]
 
         return {
