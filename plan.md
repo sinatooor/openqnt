@@ -385,7 +385,7 @@ Professional trading strategies often use higher timeframe indicators as filters
 
 **id:** 013  
 **title:** Add strategy performance report generator  
-**status:** todo  
+**status:** done  
 
 **details:**
 Create a `PerformanceReporter` class that takes a `SimulationResult` and generates:
