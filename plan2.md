@@ -295,3 +295,148 @@ Ensembles reduce overfitting and smooth returns. Combining uncorrelated strategi
 * `python -m pytest tests/test_strategy_ensemble.py`
 
 ---
+
+## Objective P2-011
+
+**id:** P2-011  
+**title:** Add live paper trading mode  
+**status:** todo  
+
+**details:**
+Enable paper trading against live market data:
+- Connect to real-time price feeds (websocket)
+- Execute IR strategy in real-time simulation
+- Track hypothetical PnL without real orders
+- Compare to backtest predictions
+
+**why it matters:**
+Paper trading bridges the gap between backtest and live. It validates strategy behavior with real market dynamics before risking capital.
+
+**acceptance_criteria:**
+
+* `PaperTrader` class accepts IR strategy and data feed
+* Runs in real-time, making decisions on each tick
+* Logs all hypothetical trades with timestamps
+* Can run headlessly for automated testing
+
+**validation:**
+
+* `python -m pytest tests/test_paper_trading.py`
+
+---
+
+## Objective P2-012
+
+**id:** P2-012  
+**title:** Add strategy template library  
+**status:** todo  
+
+**details:**
+Create a library of pre-built strategy templates:
+- Classic patterns (MA crossover, RSI mean reversion)
+- Documented with expected behavior
+- Parameterized for easy customization
+- Usable as starting points for new strategies
+
+**why it matters:**
+Most strategies are variations of proven patterns. A template library accelerates development and teaches users strategy design.
+
+**acceptance_criteria:**
+
+* At least 5 distinct strategy templates
+* Each template is a valid IR structure
+* Templates have default parameters that produce trades
+* Documentation includes expected market conditions
+
+**validation:**
+
+* `python -m pytest tests/test_strategy_templates.py`
+
+---
+
+## Objective P2-013
+
+**id:** P2-013  
+**title:** Add indicator calculation caching  
+**status:** todo  
+
+**details:**
+Cache calculated indicators to avoid redundant computation:
+- Hash-based cache key (indicator type + params + data range)
+- Memory and disk cache layers
+- Cache invalidation on data update
+- Significant speedup for repeated backtests
+
+**why it matters:**
+Indicator calculation is the slowest part of backtesting. Caching enables instant re-runs when only parameters change, dramatically improving iteration speed.
+
+**acceptance_criteria:**
+
+* `IndicatorCache` class with get/set methods
+* Cache hit returns identical values
+* At least 10x speedup on cache hit
+* Memory limit configurable
+
+**validation:**
+
+* `python -m pytest tests/test_indicator_cache.py`
+
+---
+
+## Objective P2-014
+
+**id:** P2-014  
+**title:** Add strategy validation rules  
+**status:** todo  
+
+**details:**
+Validate IR strategies before execution:
+- Detect logical contradictions (buy and sell same bar)
+- Warn about missing exit conditions
+- Check for infinite position accumulation
+- Suggest fixes for common issues
+
+**why it matters:**
+Invalid strategies waste compute and confuse users. Pre-validation catches errors early and guides users toward working strategies.
+
+**acceptance_criteria:**
+
+* `StrategyValidator` class with rule registry
+* Returns list of warnings and errors
+* At least 5 distinct validation rules
+* Can suggest auto-fixes for some issues
+
+**validation:**
+
+* `python -m pytest tests/test_strategy_validation.py`
+
+---
+
+## Objective P2-015
+
+**id:** P2-015  
+**title:** Add benchmark comparison  
+**status:** todo  
+
+**details:**
+Compare strategy performance against benchmarks:
+- Buy and hold the same instrument
+- Risk-free rate (for Sharpe ratio)
+- Custom benchmark strategies
+- Relative metrics (alpha, beta, information ratio)
+
+**why it matters:**
+Absolute returns are meaningless without context. A 10% return is poor if buy-and-hold returned 20%. Benchmark comparison reveals true strategy value.
+
+**acceptance_criteria:**
+
+* `BenchmarkComparator` class accepts strategy and benchmark results
+* Calculates alpha and beta
+* Returns relative performance metrics
+* Supports custom benchmark strategies
+
+**validation:**
+
+* `python -m pytest tests/test_benchmark_comparison.py`
+
+---
