@@ -80,18 +80,26 @@ const Index = () => {
     setGeneratedStrategyId(null);
   };
 
+  const handleStartTour = () => {
+    setRunTour(true);
+  };
+
   return (
     <div className="flex h-screen w-full bg-background text-foreground overflow-hidden">
       {/* Center Panel - Blockly Workspace */}
       <BlocklyWorkspace
         runTour={runTour}
+        onStartTour={handleStartTour}
         onTourComplete={handleTourComplete}
         onStepChange={handleStepChange}
         showAIPanelFromParent={showAIPanel}
         onAIPanelChange={setShowAIPanel}
-        leverage={parseFloat(leverage) || 1}
+        leverage={leverage}
+        onLeverageChange={setLeverage}
         onXmlChange={handleXmlChange}
         onStrategyGenerated={handleStrategyGenerated}
+        generatedStrategyId={generatedStrategyId}
+        loadedTemplateId={loadedTemplateId}
         onTemplateLoaded={handleTemplateLoaded}
         onWorkspaceRef={setWorkspaceRefState}
       />
