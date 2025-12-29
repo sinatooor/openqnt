@@ -474,7 +474,7 @@ Standard backtests are prone to overfitting. Walkforward validation is an indust
 
 **id:** 016  
 **title:** Add Monte Carlo simulation for strategy robustness  
-**status:** todo  
+**status:** done  
 
 **details:**
 Implement Monte Carlo analysis that:
