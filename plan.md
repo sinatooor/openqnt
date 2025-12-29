@@ -445,7 +445,7 @@ External API calls (Alpha Vantage, yfinance) are slow and rate-limited. Caching 
 
 **id:** 015  
 **title:** Add walkforward validation to backtester  
-**status:** todo  
+**status:** done  
 
 **details:**
 Implement walkforward analysis in the backtesting framework:
