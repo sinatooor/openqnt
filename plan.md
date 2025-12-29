@@ -54,7 +54,7 @@ Implementation requirements:
 
 **id:** 002  
 **title:** Define broker-agnostic strategy intermediate representation (IR)  
-**status:** done  
+**status:** todo  
 
 **details:**
 Create a minimal, explicit strategy IR that represents:
@@ -81,7 +81,7 @@ Create a minimal, explicit strategy IR that represents:
 
 **id:** 003  
 **title:** Parse rule-based strategies into IR  
-**status:** done  
+**status:** todo  
 
 **details:**
 Implement a rule-based strategy builder that converts human-readable rules into the IR defined in Objective 002.
@@ -101,7 +101,7 @@ Implement a rule-based strategy builder that converts human-readable rules into 
 
 **id:** 004  
 **title:** Implement IR execution simulator (no broker)  
-**status:** todo  
+**status:** done  
 
 **details:**
 Create a pure simulation engine that executes IR strategies against historical price data without broker logic.
