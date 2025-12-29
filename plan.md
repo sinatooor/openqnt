@@ -358,7 +358,7 @@ Currently `risk_controls.py` exists but is not wired into the IR simulator. With
 
 **id:** 012  
 **title:** Add multi-timeframe indicator support to IR  
-**status:** todo  
+**status:** done  
 
 **details:**
 Extend `strategy_ir.py` and `ir_simulator.py` to support indicators calculated on different timeframes than the primary data. For example:

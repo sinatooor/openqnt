@@ -69,6 +69,19 @@ class IRSimulator:
         if self.risk_controller:
             self.risk_controller.reset(initial_equity=self.initial_equity)
 
+    def _normalize_timeframe(self, tf: str) -> str:
+        mapping = {
+            '1m': '1min',
+            '5m': '5min',
+            '15m': '15min',
+            '30m': '30min',
+            '1h': '1h',
+            '4h': '4h',
+            '1d': '1D',
+            '1w': '1W'
+        }
+        return mapping.get(tf, tf)
+
     def _prepare_data(self, data: pd.DataFrame, strategy: StrategyIR) -> pd.DataFrame:
         # Normalize columns to lowercase for easier access
         data.columns = [c.lower() for c in data.columns]
@@ -81,10 +94,55 @@ class IRSimulator:
                     components.append(cond.left)
                 if isinstance(cond.right, MarketComponent):
                     components.append(cond.right)
-                    
-        # Calculate indicators
+        
+        # Group by timeframe
+        # If component timeframe is None, use strategy timeframe (assumed to match data)
+        base_tf = strategy.timeframe
+        components_by_tf = {}
+        
         for comp in components:
-            self._calculate_indicator(data, comp)
+            tf = comp.timeframe if comp.timeframe else base_tf
+            if tf not in components_by_tf:
+                components_by_tf[tf] = []
+            components_by_tf[tf].append(comp)
+
+        # 1. Calculate base timeframe indicators (no resampling needed)
+        # We assume the input data IS the base timeframe data.
+        if base_tf in components_by_tf:
+            for comp in components_by_tf[base_tf]:
+                self._calculate_indicator(data, comp)
+
+        # 2. Calculate other timeframe indicators
+        for tf, comps in components_by_tf.items():
+            if tf == base_tf:
+                continue
+                
+            pandas_tf = self._normalize_timeframe(tf)
+            
+            # Resample data
+            # Use appropriate aggregation
+            resampled = data.resample(pandas_tf).agg({
+                'open': 'first',
+                'high': 'max',
+                'low': 'min',
+                'close': 'last',
+                'volume': 'sum'
+            })
+            resampled = resampled.dropna()
+            
+            # Calculate indicators on resampled data
+            for comp in comps:
+                self._calculate_indicator(resampled, comp)
+            
+            # Identify columns to merge back (indicators)
+            # Exclude OHLCV
+            indicator_cols = [c for c in resampled.columns if c not in ['open', 'high', 'low', 'close', 'volume']]
+            
+            if indicator_cols:
+                # Merge back using ffill (propagating last known value)
+                merged = resampled[indicator_cols].reindex(data.index, method='ffill')
+                for col in indicator_cols:
+                    data[col] = merged[col]
             
         return data
 
@@ -114,15 +172,22 @@ class IRSimulator:
             data[col_name] = 100 - (100 / (1 + rs))
             
         elif comp.type in ['Close', 'Open', 'High', 'Low', 'Volume']:
-            # These should already be in data (normalized to lowercase)
-            pass
+            # For direct access (e.g. Close on 1h), ensure it's copied if name differs
+            src = comp.type.lower()
+            if col_name != src:
+                data[col_name] = data[src]
 
     def _get_component_name(self, comp: MarketComponent) -> str:
-        if comp.type in ['Close', 'Open', 'High', 'Low', 'Volume']:
-            return comp.type.lower()
-        # Create unique name based on params
-        param_str = "_".join([f"{k}{v}" for k,v in sorted(comp.params.items())])
-        return f"{comp.type}_{param_str}".lower()
+        name = comp.type.lower()
+        if comp.type not in ['Close', 'Open', 'High', 'Low', 'Volume']:
+            # Create unique name based on params
+            param_str = "_".join([f"{k}{v}" for k,v in sorted(comp.params.items())])
+            name = f"{comp.type}_{param_str}".lower()
+        
+        if comp.timeframe:
+            name = f"{name}_{comp.timeframe}"
+            
+        return name
 
     def _process_bar(self, row: pd.Series, strategy: StrategyIR):
         # Check Rules
