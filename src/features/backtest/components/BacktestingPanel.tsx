@@ -53,9 +53,7 @@ export const BacktestingPanel = ({
     }
   };
 
-  if (!result && !isLoading) {
-    return null;
-  }
+  // Panel is always visible when rendered - parent controls visibility via showBacktest state
 
   return (
     <div
