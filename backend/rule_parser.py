@@ -78,18 +78,25 @@ class RuleParser:
         right_data = data.get("right")
         right: Union[MarketComponent, float, int]
         
+        # Improved number parsing to handle negative numbers and strings
+        is_numeric_str = False
+        if isinstance(right_data, str):
+            try:
+                float(right_data)
+                is_numeric_str = True
+            except ValueError:
+                is_numeric_str = False
+
         if isinstance(right_data, (int, float)):
             right = right_data
+        elif is_numeric_str:
+            right = float(right_data) # type: ignore
         elif isinstance(right_data, dict):
             right = self._parse_component(right_data)
-        elif isinstance(right_data, str) and right_data.replace('.', '', 1).isdigit():
-             right = float(right_data)
+        elif isinstance(right_data, str):
+             right = self._parse_component(right_data)
         else:
-             # Assume it's a component description if it's a dict or valid string key
-             if isinstance(right_data, str):
-                  right = self._parse_component(right_data)
-             else:
-                  raise ValueError(f"Invalid right-hand operand: {right_data}")
+             raise ValueError(f"Invalid right-hand operand: {right_data}")
             
         return Condition(left=left, operator=operator, right=right)
 

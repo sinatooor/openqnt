@@ -81,7 +81,7 @@ Create a minimal, explicit strategy IR that represents:
 
 **id:** 003  
 **title:** Parse rule-based strategies into IR  
-**status:** todo  
+**status:** done  
 
 **details:**
 Implement a rule-based strategy builder that converts human-readable rules into the IR defined in Objective 002.
