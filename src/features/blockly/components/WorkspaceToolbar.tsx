@@ -11,10 +11,10 @@ import {
     Maximize2,
     BarChart3,
     BookOpen,
-    Search,
     Pencil,
     TrendingUp,
-    History as HistoryIcon,
+    Settings,
+    Search,
 } from "lucide-react";
 
 
@@ -268,13 +268,13 @@ export const WorkspaceToolbar = ({
                                 showStrategyPanel ? "bg-purple-600 hover:bg-purple-700" : "hover:shadow-[0_0_0_2px_rgba(147,51,234,0.5)]"
                             )}
                         >
-                            <HistoryIcon className="w-4 h-4 mr-2" />
-                            {showStrategyPanel ? "Hide" : "Strategy"}
+                            <Settings className="w-4 h-4 mr-2" />
+                            {showStrategyPanel ? "Hide" : "Settings"}
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>Open Strategy Panel</p>
-                        <p className="text-xs text-muted-foreground mt-1">Backtest and analyze your strategy</p>
+                        <p>Open Settings & Backtesting</p>
+                        <p className="text-xs text-muted-foreground mt-1">Configure strategy and backtest</p>
                     </TooltipContent>
                 </Tooltip>
             </div>

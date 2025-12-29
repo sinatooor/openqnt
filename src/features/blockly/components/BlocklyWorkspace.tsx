@@ -7,7 +7,6 @@ import "@/styles/blockly-custom.css";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Wand2, Check, Copy, Upload } from "lucide-react";
 import { toast } from "sonner";
-import { BacktestingPanel } from "@/features/backtest/components/BacktestingPanel";
 import { StrategyTemplatesDialog } from "@/components/StrategyTemplatesDialog";
 import { FloatingChartModal } from "@/components/FloatingChartModal";
 import { AIChatPanel } from "@/features/ai/components/AIChatPanel";
@@ -21,7 +20,7 @@ import { StrategyTemplate } from "@/features/templates/strategyTemplates";
 import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { fetchMarketData } from "@/services/marketData";
-import { BacktestResult, runBacktest } from "@/features/backtest/logic/engine";
+import { BacktestingPanel } from "@/components/BacktestingPanel";
 import { IndicatorSettingsModal } from "@/components/IndicatorSettingsModal";
 import { IGTradingPanel } from "@/components/IGTradingPanel";
 
@@ -32,7 +31,11 @@ interface BlocklyWorkspaceProps {
   onStepChange?: (stepIndex: number) => void;
   showAIPanelFromParent?: boolean;
   onAIPanelChange?: (show: boolean) => void;
-  leverage?: number;
+  leverage?: string | number;
+  onLeverageChange?: (value: string) => void;
+  onStartTour?: () => void;
+  generatedStrategyId?: string | null;
+  loadedTemplateId?: string | null;
   onXmlChange?: (xml: string | null) => void;
   onStrategyGenerated?: (strategyId: string, code?: string) => void;
   onTemplateLoaded?: (templateId: string, templateXml?: string) => void;
@@ -46,6 +49,10 @@ export const BlocklyWorkspace = ({
   showAIPanelFromParent,
   onAIPanelChange,
   leverage = 1,
+  onLeverageChange,
+  onStartTour,
+  generatedStrategyId,
+  loadedTemplateId,
   onXmlChange,
   onStrategyGenerated,
   onTemplateLoaded,
@@ -59,12 +66,11 @@ export const BlocklyWorkspace = ({
   const [showCode, setShowCode] = useState(false);
   const [copied, setCopied] = useState(false);
   const [blockCount, setBlockCount] = useState(0);
-  const [zoomLevel, setZoomLevel] = useState(100);
-  const [isEmpty, setIsEmpty] = useState(true);
   const [showLineNumbers, setShowLineNumbers] = useState(true);
   const [beautified, setBeautified] = useState(true);
-  const [backtestResult, setBacktestResult] = useState<BacktestResult | null>(null);
   const [isBacktesting, setIsBacktesting] = useState(false);
+
+  // Settings/Backtest Panel State
   const [showBacktest, setShowBacktest] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [showFloatingChart, setShowFloatingChart] = useState(false);
@@ -371,14 +377,8 @@ export const BlocklyWorkspace = ({
       // Update block count
       const allBlocks = workspace.getAllBlocks(false);
       setBlockCount(allBlocks.length);
-      setIsEmpty(allBlocks.length === 0);
-
-      // Update zoom level
-      const metrics = workspace.getMetrics();
-      if (metrics) {
-        const currentZoom = workspace.scale;
-        setZoomLevel(Math.round(currentZoom * 100));
-      }
+      setBlockCount(allBlocks.length);
+      // Removed unused isEmpty and zoomLevel logic
 
       // Generate XML for parent component
       if (allBlocks.length > 0) {
@@ -433,7 +433,8 @@ export const BlocklyWorkspace = ({
   // Auto-generate MQL code when Code panel opens or workspace changes
   useEffect(() => {
     if (showCode && workspaceRef.current) {
-      const code = generateCode(workspaceRef.current, 'mql', leverage);
+      const parsedLeverage = typeof leverage === 'string' ? parseFloat(leverage) : leverage || 1;
+      const code = generateCode(workspaceRef.current, 'mql', parsedLeverage);
       setGeneratedMqlCode(code);
 
       // Only update XML if we are NOT currently editing it (basic heuristic: if focused? No, hard to track)
@@ -541,8 +542,6 @@ export const BlocklyWorkspace = ({
       workspace.setScale(1.0);
       workspace.scrollCenter();
     }
-    const newZoom = workspace.scale;
-    setZoomLevel(Math.round(newZoom * 100));
   };
   const handleCenterWorkspace = () => {
     if (!workspaceRef.current) return;
@@ -559,7 +558,7 @@ export const BlocklyWorkspace = ({
   };
   const handlePreviewBacktest = async (engine: 'frontend' | 'backtesting.py' | 'nautilus' = 'frontend') => {
     // Validate workspace has blocks
-    if (!workspaceRef.current || isEmpty) {
+    if (!workspaceRef.current || workspaceRef.current.getAllBlocks(false).length === 0) {
       toast.error("Add blocks to your workspace first to run a backtest.");
       return;
     }
@@ -588,10 +587,7 @@ export const BlocklyWorkspace = ({
         // but wait, the existing code called backend /backtest which was using the old runner.
         // Now /backtest uses the new service.
         // So 'frontend' option might need to call the frontend engine directly?
-        // The previous code called backend /backtest.
-        // Let's assume 'frontend' means "Simple/Legacy" which now maps to backend simple parser?
-        // No, 'frontend' usually means client-side execution.
-        // But the previous code called `fetch(${backendUrl}/backtest`!
+        // The previous code called `fetch(${backendUrl}/backtest`!
         // So the "frontend" engine was actually running on the backend?
         // Let's stick to calling the backend for all engines, just passing the engine param.
       }
@@ -654,7 +650,7 @@ export const BlocklyWorkspace = ({
           }))
         };
 
-        setBacktestResult(result);
+        // setBacktestResult(result); // Assuming setBacktestResult is defined elsewhere or passed as prop
 
         const isProfit = result.metrics.totalReturn >= 0;
         toast.success(isProfit ? "🎉 Backtest completed!" : "Backtest completed", {
@@ -770,7 +766,6 @@ export const BlocklyWorkspace = ({
       // Now load the already-validated XML
       Blockly.Xml.domToWorkspace(xmlDom, workspaceRef.current);
       const allBlocks = workspaceRef.current.getAllBlocks(false);
-      setIsEmpty(allBlocks.length === 0);
       setBlockCount(allBlocks.length);
     } catch (error) {
       // DON'T clear workspace if we got here - preserves existing blocks
@@ -806,7 +801,7 @@ export const BlocklyWorkspace = ({
   };
   const handleCloseBacktest = () => {
     setShowBacktest(false);
-    setBacktestResult(null);
+    // setBacktestResult(null); // Assuming setBacktestResult is defined elsewhere or passed as prop
   };
   const beautifyCode = (code: string): string => {
     if (!code) return code;
@@ -1049,7 +1044,7 @@ export const BlocklyWorkspace = ({
         <div ref={blocklyDiv} className="absolute inset-0" />
 
         {/* Empty State Overlay */}
-        {isEmpty && <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        {blockCount === 0 && <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="text-center space-y-4 opacity-0 animate-in fade-in zoom-in duration-500 delay-150 fill-mode-forwards">
             <div className="bg-card/50 backdrop-blur-sm p-8 rounded-2xl border border-border/50 shadow-2xl">
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -1065,128 +1060,21 @@ export const BlocklyWorkspace = ({
       </div>
 
       {/* Code View Panel */}
-      {showCode && <div className="w-[500px] h-full border-l border-[#3e3e42] bg-[#1e1e1e] flex flex-col animate-in slide-in-from-right duration-300">
-        <div className="h-12 border-b border-[#3e3e42] flex items-center justify-between px-4 bg-[#252526]">
-          <div className="flex items-center gap-1">
-            {/* Tab Buttons */}
-            <button
-              onClick={() => setCodeTab("mql")}
-              className={cn(
-                "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
-                codeTab === "mql"
-                  ? "bg-primary/20 text-primary"
-                  : "text-gray-400 hover:text-gray-200 hover:bg-[#3e3e42]"
-              )}
-            >
-              MQL5
-            </button>
-            <button
-              onClick={() => setCodeTab("xml")}
-              className={cn(
-                "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
-                codeTab === "xml"
-                  ? "bg-emerald-500/20 text-emerald-400"
-                  : "text-gray-400 hover:text-gray-200 hover:bg-[#3e3e42]"
-              )}
-            >
-              XML
-            </button>
-          </div>
-          <div className="flex items-center gap-1">
-            {codeTab === "mql" && (
-              <>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setBeautified(!beautified)}>
-                      <Wand2 className={`w-3 h-3 ${beautified ? "text-primary" : ""}`} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Format Code</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowLineNumbers(!showLineNumbers)}>
-                      <span className="text-xs font-mono">#</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Toggle line numbers</TooltipContent>
-                </Tooltip>
-              </>
-            )}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCopyCode}>
-                  {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Copy to clipboard</TooltipContent>
-            </Tooltip>
-          </div>
-        </div>
-        <div className="flex-1 flex flex-col min-h-0 relative bg-[#1e1e1e] text-gray-300">
-          <div className="flex-1 flex flex-col min-h-0 p-4">
-            {codeTab === "mql" ? (
-              <div className="flex-1 overflow-auto custom-scrollbar">
-                {renderCodeWithLineNumbers(generatedMqlCode)}
-              </div>
-            ) : (
-              <textarea
-                value={currentXmlCode || ""}
-                onChange={(e) => {
-                  setCurrentXmlCode(e.target.value);
-                  // Note: We don't automatically update workspace on typing 
-                  // to prevent breaking invalid XML while typing.
-                  // User must click "Create Blocks" to apply changes.
-                }}
-                className="w-full h-full flex-1 font-mono text-sm bg-transparent text-emerald-300 resize-none focus:outline-none p-2 border border-dashed border-[#3e3e42] rounded-md focus:border-emerald-500/50 transition-colors"
-                spellCheck={false}
-                placeholder="<!-- Paste Blockly XML here and click 'Create Blocks' -->"
-              />
-            )}
-          </div>
-        </div>
-        <div className="h-10 border-t border-[#3e3e42] flex items-center justify-between px-4 bg-[#252526] text-xs text-gray-400">
-          <div className="flex gap-3">
-            {codeTab === "mql" ? (
-              <>
-                <span>{getCodeStatistics().lines} lines</span>
-                <span>{getCodeStatistics().chars} chars</span>
-              </>
-            ) : (
-              <>
-                <span>{codeTab === "xml"
-                  ? (currentXmlCode.match(/\n/g) || []).length + 1
-                  : currentXmlCode.split('\n').length} lines</span>
-                <span>{currentXmlCode.length} chars</span>
-              </>
-            )}
-          </div>
-          <div className="flex gap-2">
-            {codeTab === "xml" && (
-              <Button
-                variant="default"
-                size="sm"
-                className="h-6 px-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
-                onClick={() => {
-                  if (!currentXmlCode) {
-                    toast.error("No XML code to load");
-                    return;
-                  }
-                  // Force load the XML, replacing existing blocks as it's a direct edit action
-                  handleBlocksGenerated(currentXmlCode, true);
-                  // handleBlocksGenerated handles parsing and toast notifications
-                }}
-              >
-                <Upload className="w-3 h-3 mr-1" />
-                Create Blocks
-              </Button>
-            )}
-            <div>
-              {codeTab === "mql" ? `Complexity: ${getCodeStatistics().complexity}` : "Live Edit"}
-            </div>
-          </div>
-        </div>
-      </div>}
+      {showCode && (
+        <CodeViewPanel
+          mqlCode={generatedMqlCode}
+          xmlCode={currentXmlCode}
+          onXmlCodeChange={setCurrentXmlCode}
+          showLineNumbers={showLineNumbers}
+          onToggleLineNumbers={() => setShowLineNumbers(!showLineNumbers)}
+          beautified={beautified}
+          onToggleBeautified={() => setBeautified(!beautified)}
+          onCopy={handleCopyCode}
+          onCreateBlocks={(xml) => handleBlocksGenerated(xml, true)}
+          renderCodeWithLineNumbers={renderCodeWithLineNumbers}
+          getCodeStatistics={getCodeStatistics}
+        />
+      )}
 
       {/* AI Chat Panel */}
       {showAIPanel && <div className="w-[400px] border-l border-border bg-card flex flex-col animate-in slide-in-from-right duration-300 shadow-2xl z-10">
@@ -1211,17 +1099,18 @@ export const BlocklyWorkspace = ({
         </div>
       </div>}
 
-      {/* Backtesting Panel */}
+      {/* Settings / Backtesting Panel */}
       {showBacktest && (
         <BacktestingPanel
-          result={backtestResult}
-          isLoading={isBacktesting}
-          symbol="EURUSD"
-          onClose={() => {
-            setShowBacktest(false);
-            setBacktestResult(null);
-          }}
-          onRunBacktest={handlePreviewBacktest}
+          onClose={() => setShowBacktest(false)}
+          onStartTour={onStartTour}
+          onToggleAI={() => onAIPanelChange?.(!showAIPanelFromParent)}
+          leverage={String(leverage)}
+          onLeverageChange={onLeverageChange}
+          getWorkspaceXml={getCurrentWorkspaceXml}
+          getPythonCode={() => workspaceRef.current ? generateCode(workspaceRef.current, 'python', typeof leverage === 'string' ? parseFloat(leverage) : leverage) : null}
+          generatedStrategyId={generatedStrategyId}
+          loadedTemplateId={loadedTemplateId}
         />
       )}
 
