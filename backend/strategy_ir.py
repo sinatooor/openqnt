@@ -30,6 +30,7 @@ class MarketComponent:
     """Represents a market data derived value (Price or Indicator)"""
     type: str  # e.g., 'RSI', 'SMA', 'Close', 'Open'
     params: Dict[str, Any] = field(default_factory=dict)
+    timeframe: Optional[str] = None
 
 @dataclass
 class Condition:
