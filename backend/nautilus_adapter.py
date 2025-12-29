@@ -96,11 +96,11 @@ def _dataframe_to_bars(df: pd.DataFrame, instrument: Instrument) -> List[Bar]:
         
         bars.append(Bar(
             bar_type=bar_type,
-            open=Decimal(str(row['open'])),
-            high=Decimal(str(row['high'])),
-            low=Decimal(str(row['low'])),
-            close=Decimal(str(row['close'])),
-            volume=Decimal(str(row.get('volume', 0))),
+            open=Decimal(str(row['open'] if 'open' in row else row['Open'])),
+            high=Decimal(str(row['high'] if 'high' in row else row['High'])),
+            low=Decimal(str(row['low'] if 'low' in row else row['Low'])),
+            close=Decimal(str(row['close'] if 'close' in row else row['Close'])),
+            volume=Decimal(str(row.get('volume', row.get('Volume', 0)))),
             ts_event=ts_ns,
             ts_init=ts_ns,
         ))

@@ -65,6 +65,29 @@ def test_parse_nested_component():
     assert cond.right.type == "SMA"
     assert cond.right.params["period"] == 200
 
+def test_parse_negative_number():
+    """Test parsing of negative numbers in conditions"""
+    definition = {
+        "rules": [
+            {
+                "action": "ENTER_SHORT",
+                "conditions": [
+                    {
+                        "left": "MACD",
+                        "operator": "<",
+                        "right": "-0.5"
+                    }
+                ]
+            }
+        ]
+    }
+    
+    parser = RuleParser()
+    ir = parser.parse(definition)
+    
+    cond = ir.rules[0].conditions[0]
+    assert cond.right == -0.5
+
 def test_parse_invalid_action():
     definition = {
         "rules": [{"action": "INVALID_ACTION"}]
