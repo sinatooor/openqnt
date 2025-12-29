@@ -27,20 +27,38 @@ def log(msg):
     except:
         pass
 
-def run_cmd(cmd, cwd=REPO_ROOT):
-    log(f"CMD: {cmd}")
+def run_cmd(cmd, cwd=REPO_ROOT, timeout=300):
+    log(f"CMD START: {cmd}")
     try:
         # Check for pause
         while os.path.exists(PAUSE_FILE):
              log("Paused... (remove .pause_improve_loop to continue)")
              time.sleep(5)
 
-        result = subprocess.run(cmd, shell=True, cwd=cwd, capture_output=True, text=True)
-        return result.returncode == 0, result.stdout, result.stderr
+        process = subprocess.Popen(
+            cmd, shell=True, cwd=cwd,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True
+        )
+        try:
+            stdout, stderr = process.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            log(f"CMD TIMEOUT ({timeout}s): {cmd}")
+            return False, "", "Timeout"
+
+        if process.returncode != 0:
+            log(f"CMD FAILED (Exit {process.returncode})")
+            return False, stdout, stderr
+        
+        log(f"CMD SUCCESS")
+        return True, stdout, stderr
     except Exception as e:
+        log(f"CMD EXCEPTION: {e}")
         return False, "", str(e)
 
 def call_gemini(prompt):
+    log(f"AI: Querying {GEMINI_MODEL}...")
     try:
         cmd = ["gemini", "-m", GEMINI_MODEL, "--output-format", "text"]
         
@@ -58,6 +76,7 @@ def call_gemini(prompt):
         if process.returncode != 0:
             log(f"AI Error: {stderr.strip()}")
             return None
+        log("AI: Response received.")
         return stdout.strip()
     except Exception as e:
         log(f"AI Exception: {e}")

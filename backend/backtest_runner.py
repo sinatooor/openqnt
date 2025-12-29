@@ -15,19 +15,13 @@ from typing import Any, Optional
 import pandas as pd
 import numpy as np
 
-# NautilusTrader imports will be conditional
-NAUTILUS_AVAILABLE = False
+# Import Nautilus adapter
 try:
-    from nautilus_trader.backtest.engine import BacktestEngine
-    from nautilus_trader.backtest.config import BacktestEngineConfig
-    from nautilus_trader.model.currencies import USD
-    from nautilus_trader.model.enums import AccountType, OmsType
-    from nautilus_trader.model.identifiers import TraderId, Venue
-    from nautilus_trader.model.objects import Money
-    from nautilus_trader.test_kit.providers import TestInstrumentProvider
-    NAUTILUS_AVAILABLE = True
+    from nautilus_adapter import run_nautilus_backtest, NAUTILUS_INSTALLED
 except ImportError:
-    pass
+    NAUTILUS_INSTALLED = False
+    def run_nautilus_backtest(*args, **kwargs):
+        return {"success": False, "error": "NautilusAdapter import failed", "fallback": True}
 
 from sample_data import generate_ohlcv_data
 from ig_client import IGClient, get_epic_for_symbol
@@ -139,6 +133,7 @@ def run_backtest_simple(
     trade_list = []
     position = 0
     entry_price = 0
+    entry_time = None
     
     for idx, row in trades.iterrows():
         if row['position_change'] > 0 and position <= 0:
@@ -147,7 +142,7 @@ def run_backtest_simple(
                 # Close short (calculate P&L)
                 pnl = (entry_price - row['close']) * trade_size
                 trade_list.append({
-                    'entry_time': entry_time.isoformat() if 'entry_time' in dir() else str(idx),
+                    'entry_time': entry_time.isoformat() if hasattr(entry_time, 'isoformat') else str(entry_time),
                     'exit_time': row['timestamp'].isoformat() if hasattr(row['timestamp'], 'isoformat') else str(idx),
                     'side': 'short',
                     'entry_price': entry_price,
@@ -249,57 +244,6 @@ def run_backtest_simple(
     }
 
 
-def run_backtest_nautilus(
-    strategy_code: str,
-    symbol: str = "EURUSD",
-    start_date: str = "2024-01-01",
-    end_date: str = "2024-03-31",
-    initial_balance: float = 100000.0
-) -> dict:
-    """
-    Run backtest using full NautilusTrader engine.
-    
-    This requires nautilus_trader to be properly installed.
-    """
-    if not NAUTILUS_AVAILABLE:
-        return {
-            'success': False,
-            'error': 'NautilusTrader not available. Using simplified backtest.',
-            'fallback': True
-        }
-    
-    try:
-        # Configure backtest engine
-        config = BacktestEngineConfig(trader_id=TraderId("BACKTESTER-001"))
-        engine = BacktestEngine(config=config)
-        
-        # Add venue
-        SIM_VENUE = Venue("SIM")
-        engine.add_venue(
-            venue=SIM_VENUE,
-            oms_type=OmsType.NETTING,
-            account_type=AccountType.MARGIN,
-            base_currency=USD,
-            starting_balances=[Money(initial_balance, USD)],
-        )
-        
-        # This would require more setup for full integration
-        # For now, return a placeholder
-        return {
-            'success': False,
-            'error': 'Full NautilusTrader backtest requires additional setup',
-            'fallback': True
-        }
-        
-    except Exception as e:
-        return {
-            'success': False,
-            'error': str(e),
-            'traceback': traceback.format_exc(),
-            'fallback': True
-        }
-
-
 def run_backtest(
     strategy_code: str,
     symbol: str = "EURUSD",
@@ -307,24 +251,29 @@ def run_backtest(
     end_date: str = "2024-03-31",
     initial_balance: float = 100000.0,
     trade_size: int = 100000,
-    use_nautilus: bool = False,
+    use_nautilus: bool = True,
     historical_data: pd.DataFrame = None
 ) -> dict:
     """
     Main entry point for running backtests.
     
-    Tries NautilusTrader first, falls back to simplified simulation.
+    Tries NautilusTrader first if requested, falls back to simplified simulation.
     
     Args:
         historical_data: Optional DataFrame with real OHLCV data from IG
     """
-    if use_nautilus and NAUTILUS_AVAILABLE:
-        result = run_backtest_nautilus(
+    if use_nautilus and NAUTILUS_INSTALLED:
+        # Prepare data if not provided
+        if historical_data is None:
+             historical_data = generate_ohlcv_data(symbol, start_date, end_date, timeframe_minutes=60)
+
+        result = run_nautilus_backtest(
             strategy_code=strategy_code,
             symbol=symbol,
             start_date=start_date,
             end_date=end_date,
-            initial_balance=initial_balance
+            initial_balance=initial_balance,
+            historical_data=historical_data
         )
         if result.get('success') or not result.get('fallback'):
             return result
