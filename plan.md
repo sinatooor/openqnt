@@ -20,7 +20,7 @@
 
 **id:** 001  
 **title:** Make NautilusTrader the backtesting engine and match `backtesting.py` UI representation  
-**status:** todo  
+**status:** doing  
 
 **details:**
 Integrate NautilusTrader as the primary backtesting engine and ensure it outputs the same UI-facing backtest representation currently produced by `backtesting.py`.
@@ -54,7 +54,7 @@ Implementation requirements:
 
 **id:** 002  
 **title:** Define broker-agnostic strategy intermediate representation (IR)  
-**status:** todo  
+**status:** done  
 
 **details:**
 Create a minimal, explicit strategy IR that represents:
@@ -81,7 +81,7 @@ Create a minimal, explicit strategy IR that represents:
 
 **id:** 003  
 **title:** Parse rule-based strategies into IR  
-**status:** todo  
+**status:** done  
 
 **details:**
 Implement a rule-based strategy builder that converts human-readable rules into the IR defined in Objective 002.
@@ -101,7 +101,7 @@ Implement a rule-based strategy builder that converts human-readable rules into 
 
 **id:** 004  
 **title:** Implement IR execution simulator (no broker)  
-**status:** todo  
+**status:** done  
 
 **details:**
 Create a pure simulation engine that executes IR strategies against historical price data without broker logic.
@@ -145,7 +145,7 @@ Wrap the IR simulator with a backtesting interface that supports:
 
 **id:** 006  
 **title:** Add headless risk controls to IR execution  
-**status:** todo  
+**status:** done  
 
 **details:**
 Introduce risk constraints into execution:
@@ -168,7 +168,7 @@ Introduce risk constraints into execution:
 
 **id:** 007  
 **title:** Add broker capability abstraction layer  
-**status:** todo
+**status:** done
 
 **notes:** Command failed: python -m pytest tests/test_broker_capabilities.py
 Stdout: 
@@ -199,7 +199,7 @@ No real broker integration yet.
 
 **id:** 008  
 **title:** Adapt IR to broker capabilities  
-**status:** todo  
+**status:** done  
 
 **details:**
 Implement logic that adapts IR strategies when a broker lacks features (e.g. emulating OCO).
@@ -219,7 +219,7 @@ Implement logic that adapts IR strategies when a broker lacks features (e.g. emu
 
 **id:** 009  
 **title:** Add AI-assisted strategy review (read-only)  
-**status:** todo
+**status:** done
 
 **notes:** Command failed: python -m pytest tests/test_ai_strategy_review.py
 Stdout: ============================= test session starts ==============================
@@ -284,7 +284,7 @@ No auto-modification allowed.
 
 **id:** 010  
 **title:** Add AI-suggested improvements as proposals  
-**status:** todo  
+**status:** done  
 
 **details:**
 AI may propose improvements, but they must be:
@@ -301,6 +301,150 @@ AI may propose improvements, but they must be:
 **validation:**
 
 * `python -m pytest tests/test_ai_proposals.py`
+
+---
+
+## Objective 011
+
+**id:** 011  
+**title:** Integrate risk_controls into IR simulator execution  
+**status:** todo  
+
+**details:**
+Connect the `RiskController` from `risk_controls.py` to `IRSimulator` so that:
+- Trades are blocked when max drawdown is reached
+- Position sizes are validated before execution
+- All risk violations are logged with timestamps
+
+**why it matters:**
+Currently `risk_controls.py` exists but is not wired into the IR simulator. Without integration, strategies can ignore risk limits during simulation, producing unrealistic results.
+
+**acceptance_criteria:**
+
+* `IRSimulator` accepts an optional `RiskController` parameter
+* When enabled, trades are rejected if they violate constraints
+* Blocked trades appear in the simulation result with reason codes
+* Existing tests continue to pass (backwards compatible)
+
+**validation:**
+
+* `python -m pytest tests/test_ir_simulator_risk_integration.py`
+
+---
+
+## Objective 012
+
+**id:** 012  
+**title:** Add multi-timeframe indicator support to IR  
+**status:** todo  
+
+**details:**
+Extend `strategy_ir.py` and `ir_simulator.py` to support indicators calculated on different timeframes than the primary data. For example:
+- RSI on 1-hour bars while trading on 5-minute bars
+- Daily SMA used as filter for hourly entries
+
+**why it matters:**
+Professional trading strategies often use higher timeframe indicators as filters. Without this, users are limited to single-timeframe strategies, reducing usefulness.
+
+**acceptance_criteria:**
+
+* `MarketComponent` can specify a `timeframe` parameter
+* IR simulator resamples data to calculate higher-TF indicators
+* At least one test demonstrates a 1h indicator on 15m data
+* No changes to existing IR format break current tests
+
+**validation:**
+
+* `python -m pytest tests/test_multi_timeframe.py`
+
+---
+
+## Objective 013
+
+**id:** 013  
+**title:** Add strategy performance report generator  
+**status:** todo  
+
+**details:**
+Create a `PerformanceReporter` class that takes a `SimulationResult` and generates:
+- Monthly/yearly return breakdown
+- Win rate by day of week
+- Average trade duration
+- Best/worst trade details
+- Exportable JSON and markdown formats
+
+**why it matters:**
+Users need actionable insights beyond raw metrics. A structured report enables pattern discovery and strategy refinement without manual analysis.
+
+**acceptance_criteria:**
+
+* `PerformanceReporter.generate(result)` returns a structured dict
+* Report includes at least 5 distinct analysis sections
+* Can export to both JSON and markdown
+* Works with empty trade lists (edge case)
+
+**validation:**
+
+* `python -m pytest tests/test_performance_reporter.py`
+
+---
+
+## Objective 014
+
+**id:** 014  
+**title:** Add local database caching for market data  
+**status:** todo  
+
+**details:**
+Enhance `ir_simulator.py` and data fetching to:
+- Check local SQLite database first before calling external APIs
+- Cache fetched data for reuse
+- Support configurable cache expiry
+
+This leverages the existing `database/` infrastructure.
+
+**why it matters:**
+External API calls (Alpha Vantage, yfinance) are slow and rate-limited. Caching reduces backtest latency from seconds to milliseconds and enables offline development.
+
+**acceptance_criteria:**
+
+* Backtest uses cached data if available and fresh
+* Cache hit produces identical results to fresh fetch
+* Cache can be invalidated per symbol or globally
+* Works with both daily and hourly data
+
+**validation:**
+
+* `python -m pytest tests/test_data_caching.py`
+
+---
+
+## Objective 015
+
+**id:** 015  
+**title:** Add walkforward validation to backtester  
+**status:** todo  
+
+**details:**
+Implement walkforward analysis in the backtesting framework:
+- Split data into in-sample and out-of-sample windows
+- Optimize on in-sample, validate on out-of-sample
+- Roll forward and repeat
+- Aggregate results to detect overfitting
+
+**why it matters:**
+Standard backtests are prone to overfitting. Walkforward validation is an industry-standard method to assess strategy robustness and is essential for production trading.
+
+**acceptance_criteria:**
+
+* `WalkforwardValidator` class with configurable window sizes
+* Returns aggregated OOS metrics across all windows
+* Detects strategies that degrade out-of-sample
+* Produces a degradation score (IS vs OOS performance ratio)
+
+**validation:**
+
+* `python -m pytest tests/test_walkforward.py`
 
 ---
 

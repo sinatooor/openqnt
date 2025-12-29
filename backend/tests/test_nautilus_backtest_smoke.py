@@ -5,7 +5,7 @@ Runs a simple strategy to ensure it executes without crashing.
 """
 import pytest
 import pandas as pd
-from nautilus_adapter import run_nautilus_backtest, NAUTILUS_INSTALLED
+from backend.nautilus_adapter import run_nautilus_backtest, NAUTILUS_INSTALLED
 
 @pytest.mark.skipif(not NAUTILUS_INSTALLED, reason="NautilusTrader not installed")
 def test_smoke_strategy_execution():

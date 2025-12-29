@@ -42,9 +42,16 @@ def _create_instrument(symbol: str) -> Instrument:
     if "USD" in symbol and len(symbol) == 6:
         base = symbol[:3]
         quote = symbol[3:]
-        return TestInstrumentProvider.currency_pair(code=symbol, base=base, quote=quote)
+        # Use TestInstrumentProvider if available or manual construction
+        try:
+            return TestInstrumentProvider.currency_pair(code=symbol, base=base, quote=quote)
+        except:
+            pass # Fallback
     
     # Fallback for others (e.g. AAPL) -> Generic
+    # Note: Nautilus requires valid IDs and currencies.
+    # We'll use a generic construction.
+    
     return Instrument(
         id=InstrumentId.from_str(f"{symbol}.SIM"),
         symbol=symbol,
@@ -120,6 +127,8 @@ def _load_strategy_class(strategy_code: str) -> Type[Strategy]:
     
     strategy_cls = None
     for name, obj in local_scope.items():
+        # Check if it's a class and subclass of Strategy (but not Strategy itself)
+        # Note: Depending on how Strategy is imported in the code string, exact check might vary.
         if inspect.isclass(obj) and issubclass(obj, Strategy) and obj.__name__ != 'Strategy':
             strategy_cls = obj
             break

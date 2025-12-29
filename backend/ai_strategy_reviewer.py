@@ -39,4 +39,27 @@ async def review_strategy(xml: str, llm_call: Callable[[List[Dict[str, str]]], A
         # Clean response
         cleaned = response.strip()
         # Handle markdown code blocks
-        if cleaned.startswith("
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[7:]
+        if cleaned.startswith("```"):
+            cleaned = cleaned[3:]
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3]
+        
+        result = json.loads(cleaned.strip())
+        return result
+        
+    except json.JSONDecodeError as e:
+        return {
+            "explanation": "Failed to parse AI response",
+            "weaknesses": [f"Parse error: {str(e)}"],
+            "overfitting_risks": "Unknown",
+            "improvement_suggestions": ["Retry the analysis"]
+        }
+    except Exception as e:
+        return {
+            "explanation": "Error during review",
+            "weaknesses": [str(e)],
+            "overfitting_risks": "Unknown",
+            "improvement_suggestions": []
+        }

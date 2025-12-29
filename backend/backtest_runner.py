@@ -17,14 +17,24 @@ import numpy as np
 
 # Import Nautilus adapter
 try:
-    from nautilus_adapter import run_nautilus_backtest, NAUTILUS_INSTALLED
+    # Try importing as backend module (when run from root)
+    from backend.nautilus_adapter import run_nautilus_backtest, NAUTILUS_INSTALLED
 except ImportError:
-    NAUTILUS_INSTALLED = False
-    def run_nautilus_backtest(*args, **kwargs):
-        return {"success": False, "error": "NautilusAdapter import failed", "fallback": True}
+    try:
+        # Fallback for local run
+        from nautilus_adapter import run_nautilus_backtest, NAUTILUS_INSTALLED
+    except ImportError:
+        NAUTILUS_INSTALLED = False
+        def run_nautilus_backtest(*args, **kwargs):
+            return {"success": False, "error": "NautilusAdapter import failed", "fallback": True}
 
-from sample_data import generate_ohlcv_data
-from ig_client import IGClient, get_epic_for_symbol
+# Adjust these imports as needed based on execution context
+try:
+    from backend.sample_data import generate_ohlcv_data
+    from backend.ig_client import IGClient, get_epic_for_symbol
+except ImportError:
+    from sample_data import generate_ohlcv_data
+    from ig_client import IGClient, get_epic_for_symbol
 
 
 async def fetch_real_data_from_ig(
