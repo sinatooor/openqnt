@@ -415,7 +415,7 @@ Users need actionable insights beyond raw metrics. A structured report enables p
 
 **id:** 014  
 **title:** Add local database caching for market data  
-**status:** todo  
+**status:** done  
 
 **details:**
 Enhance `ir_simulator.py` and data fetching to:

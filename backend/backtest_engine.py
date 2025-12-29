@@ -12,10 +12,12 @@ from dataclasses import dataclass
 from datetime import datetime
 import json
 import sys
+import os
 
 from backend.ir_simulator import IRSimulator, SimulationResult, Trade
 from backend.strategy_ir import StrategyIR, Rule, Condition, ActionType, MarketComponent, ComparisonOperator, PositionSizing
 from backend.sample_data import generate_ohlcv_data
+from backend.data_service import MarketDataService
 
 @dataclass
 class BacktestRequest:
@@ -36,6 +38,9 @@ class BacktestResult:
 class BacktestEngine:
     def __init__(self):
         self.simulator = IRSimulator()
+        # Initialize Data Service
+        api_key = os.getenv("FMP_API_KEY")
+        self.data_service = MarketDataService(fmp_api_key=api_key)
 
     def run_backtest(self, request: BacktestRequest) -> BacktestResult:
         """
@@ -45,12 +50,37 @@ class BacktestEngine:
         if request.data is not None:
             data = request.data.copy()
         else:
-            data = generate_ohlcv_data(
-                symbol=request.symbol,
-                start_date=request.start_date,
-                end_date=request.end_date,
-                timeframe_minutes=request.timeframe_minutes
-            )
+            # Determine timeframe string for service
+            if request.timeframe_minutes >= 1440:
+                tf_str = "1d"
+            else:
+                tf_str = "1h"
+                
+            try:
+                # Try fetching real data with caching
+                data = self.data_service.get_data(
+                    symbol=request.symbol,
+                    start_date=request.start_date,
+                    end_date=request.end_date,
+                    timeframe=tf_str
+                )
+                
+                if data.empty:
+                    print(f"Warning: No data found for {request.symbol}, falling back to synthetic.")
+                    data = generate_ohlcv_data(
+                        symbol=request.symbol,
+                        start_date=request.start_date,
+                        end_date=request.end_date,
+                        timeframe_minutes=request.timeframe_minutes
+                    )
+            except Exception as e:
+                print(f"Error fetching data: {e}, falling back to synthetic.")
+                data = generate_ohlcv_data(
+                    symbol=request.symbol,
+                    start_date=request.start_date,
+                    end_date=request.end_date,
+                    timeframe_minutes=request.timeframe_minutes
+                )
 
         # 2. Run Simulation
         self.simulator.initial_equity = request.initial_equity
@@ -77,12 +107,13 @@ class BacktestEngine:
         Run backtests for multiple strategies on the same data and compare results.
         Returns a DataFrame of metrics.
         """
-        # Generate data once
-        data = generate_ohlcv_data(
-            symbol=symbol,
-            start_date=start_date,
-            end_date=end_date
-        )
+        # Fetch data once
+        try:
+            data = self.data_service.get_data(symbol, start_date, end_date)
+            if data.empty:
+                 data = generate_ohlcv_data(symbol=symbol, start_date=start_date, end_date=end_date)
+        except:
+            data = generate_ohlcv_data(symbol=symbol, start_date=start_date, end_date=end_date)
         
         results = []
         for strategy in strategies:
