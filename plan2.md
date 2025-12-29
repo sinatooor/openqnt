@@ -150,3 +150,148 @@ Drawdown depth alone doesn't capture pain. A 10% drawdown lasting 2 years is wor
 * `python -m pytest tests/test_drawdown_analysis.py`
 
 ---
+
+## Objective P2-006
+
+**id:** P2-006  
+**title:** Add strategy performance attribution  
+**status:** todo  
+
+**details:**
+Break down strategy returns by:
+- Time of day (morning/afternoon sessions)
+- Day of week
+- Long vs Short trades
+- By indicator signal that triggered
+
+**why it matters:**
+Attribution reveals what components drive returns. A strategy might be profitable only on Mondays, or only for long trades. This guides refinement.
+
+**acceptance_criteria:**
+
+* `PerformanceAttribution` class analyzes trade list
+* Returns breakdown dict by each dimension
+* Identifies statistically significant patterns
+* Suggests removing unprofitable segments
+
+**validation:**
+
+* `python -m pytest tests/test_performance_attribution.py`
+
+---
+
+## Objective P2-007
+
+**id:** P2-007  
+**title:** Add strategy stress testing  
+**status:** todo  
+
+**details:**
+Simulate extreme market conditions:
+- Flash crash scenarios (sudden 5%+ moves)
+- Gap opens (overnight jumps)
+- Liquidity crisis (widened spreads)
+- Correlation breakdown
+
+**why it matters:**
+Strategies optimized on normal data often fail catastrophically in crises. Stress testing reveals hidden risks before real money is lost.
+
+**acceptance_criteria:**
+
+* `StressTester` class with scenario templates
+* Injects synthetic extreme events into data
+* Reports performance degradation per scenario
+* Flags strategies with >50% drawdown in stress
+
+**validation:**
+
+* `python -m pytest tests/test_stress_testing.py`
+
+---
+
+## Objective P2-008
+
+**id:** P2-008  
+**title:** Add IR to Blockly XML round-trip converter  
+**status:** todo  
+
+**details:**
+Enable bidirectional conversion:
+- Parse Blockly XML into IR
+- Generate Blockly XML from IR
+- Validate round-trip preserves semantics
+- Support all current block types
+
+**why it matters:**
+The platform uses Blockly for UI. Seamless IR<->Blockly conversion enables AI improvements to be visualized and edited by users.
+
+**acceptance_criteria:**
+
+* `BlocklyConverter` class with `to_ir()` and `from_ir()`
+* Round-trip produces semantically equivalent strategy
+* Handles nested conditions and multiple rules
+* Error messages for unsupported blocks
+
+**validation:**
+
+* `python -m pytest tests/test_blockly_ir_roundtrip.py`
+
+---
+
+## Objective P2-009
+
+**id:** P2-009  
+**title:** Add async backtest execution  
+**status:** todo  
+
+**details:**
+Enable concurrent backtest runs:
+- Run multiple symbol/parameter combos in parallel
+- Progress reporting via callbacks
+- Graceful cancellation
+- Result aggregation
+
+**why it matters:**
+Sequential backtests are slow. Async execution enables parameter sweeps and multi-symbol analysis to complete in minutes instead of hours.
+
+**acceptance_criteria:**
+
+* `AsyncBacktestRunner` using asyncio
+* Configurable parallelism (default: CPU count)
+* Progress callback with estimated time remaining
+* Results returned as list in original order
+
+**validation:**
+
+* `python -m pytest tests/test_async_backtest.py`
+
+---
+
+## Objective P2-010
+
+**id:** P2-010  
+**title:** Add strategy combination/ensemble  
+**status:** todo  
+
+**details:**
+Combine multiple strategies:
+- Voting-based entry (majority agrees)
+- Signal aggregation (average conviction)
+- Allocation by inverse volatility
+- Combined equity curve generation
+
+**why it matters:**
+Ensembles reduce overfitting and smooth returns. Combining uncorrelated strategies is a proven technique for consistent performance.
+
+**acceptance_criteria:**
+
+* `StrategyEnsemble` class accepts list of IR strategies
+* Configurable combination method (vote/average/weighted)
+* Produces combined signal stream
+* Simulates ensemble as single strategy
+
+**validation:**
+
+* `python -m pytest tests/test_strategy_ensemble.py`
+
+---
