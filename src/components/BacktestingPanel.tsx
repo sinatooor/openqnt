@@ -5,8 +5,6 @@ import { TourTriggerButton } from "./GuidedTour";
 import { Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { BacktestVisualizationModal } from "./BacktestVisualizationModal";
-import { runBacktestTS } from "@/features/backtest/logic/engine";
-import type { OHLCVBar } from "@/features/backtest/logic/indicators";
 import { generateCode } from "@/config/blockly/generator";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -15,6 +13,17 @@ const formatNumber = (value: number | undefined, decimals: number = 4): string =
     if (value === undefined || value === null || isNaN(value)) return "N/A";
     return value.toFixed(decimals);
 };
+
+interface Trade {
+    entry_time: string;
+    exit_time: string;
+    entry_price: number;
+    exit_price: number;
+    size: number;
+    pnl: number;
+    return_pct: number;
+    type: string;
+}
 
 interface BacktestResult {
     totalReturn: number;
@@ -51,6 +60,7 @@ interface BacktestResult {
     bestMetricValue?: number;
     visualizationHtml?: string | null;
     rawStats?: string | null;
+    trades?: Trade[];  // List of executed trades
 }
 
 interface BacktestingPanelProps {
@@ -60,18 +70,19 @@ interface BacktestingPanelProps {
     leverage?: string;
     onLeverageChange?: (value: string) => void;
     getWorkspaceXml?: () => string | null;
-    getPythonCode?: () => string | null; // For PyGenerator engine
+    getPythonCode?: () => string | null; // For backtesting.py engine
+    getNautilusCode?: () => string | null; // For NautilusTrader engine
     generatedStrategyId?: string | null;
     loadedTemplateId?: string | null;
 }
 
-export const BacktestingPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1", onLeverageChange, getWorkspaceXml, getPythonCode, generatedStrategyId, loadedTemplateId }: BacktestingPanelProps) => {
+export const BacktestingPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1", onLeverageChange, getWorkspaceXml, getPythonCode, getNautilusCode, generatedStrategyId, loadedTemplateId }: BacktestingPanelProps) => {
     const [mode, setMode] = useState<"backtest" | "live">("backtest");
     const [tradingSymbol, setTradingSymbol] = useState("EURUSD");
     const [isConnected, setIsConnected] = useState(false);
     const [capitalAllocation, setCapitalAllocation] = useState("10000");
     const [accountLeverage, setAccountLeverage] = useState("1"); // 1:1 leverage by default
-    const [engine, setEngine] = useState<"frontend" | "frontend-ts" | "backtesting.py" | "nautilus" | "ai_simulation" | "pygenerator">("frontend");
+    const [engine, setEngine] = useState<"backtesting.py" | "rust" | "nautilus">("backtesting.py");
 
     // Optimization state
     const [isOptimization, setIsOptimization] = useState(false);
@@ -124,7 +135,7 @@ export const BacktestingPanel = ({ onStartTour, onToggleAI, onClose, leverage = 
 
             // Optional: Run Gemini verification via Supabase Edge Function (Lovable gateway)
             // Only verify user-built or modified strategies
-            if (engine !== "frontend-ts" && engine !== "frontend" && !shouldSkipVerification) {
+            if (!shouldSkipVerification) {
                 try {
                     toast.info("Verifying strategy with Gemini...");
                     const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-backtest', {
@@ -166,74 +177,51 @@ export const BacktestingPanel = ({ onStartTour, onToggleAI, onClose, leverage = 
                 }
             }
 
-            // Handle frontend-ts engine locally in browser
-            if (engine === "frontend-ts") {
-                // Fetch historical data from backend
-                const dataResponse = await fetch(`${backendUrl}/market-data?symbol=${tradingSymbol}&start_date=${startDate}&end_date=${endDate}`);
-                if (!dataResponse.ok) {
-                    throw new Error("Failed to fetch market data");
-                }
-                const marketData = await dataResponse.json();
+            // Handle backtesting.py engine - smart detection for template vs blocks
+            if (engine === "backtesting.py") {
+                // Smart logic: if using unmodified template, use pre-built code
+                // Otherwise, generate code from blocks via pyGenerator
+                const isUsingUnmodifiedTemplate = !!loadedTemplateId && !generatedStrategyId;
+                // If using unmodified template, send templateId to backend to use pre-built code
+                // Otherwise, generate Python code from blocks
+                let pythonCode: string | null = null;
 
-                // Convert to OHLCV format
-                const ohlcvData: OHLCVBar[] = marketData.data.map((bar: any) => ({
-                    open: bar.open,
-                    high: bar.high,
-                    low: bar.low,
-                    close: bar.close,
-                    volume: bar.volume || 0,
-                }));
-
-                // Run the TypeScript backtest engine
-                const result = await runBacktestTS(xml, ohlcvData, parseFloat(capitalAllocation));
-
-                setBacktestResult({
-                    totalReturn: result.metrics.totalReturn,
-                    winRate: result.metrics.winRate,
-                    totalTrades: result.metrics.totalTrades,
-                    maxDrawdown: result.metrics.maxDrawdown,
-                    finalBalance: parseFloat(capitalAllocation) * (1 + result.metrics.totalReturn / 100),
-                    sharpeRatio: result.metrics.sharpeRatio,
-                    profitFactor: result.metrics.profitFactor,
-                });
-
-                toast.success("Backtest completed!", {
-                    description: `Return: ${formatNumber(result.metrics.totalReturn, 4)}% with ${result.metrics.totalTrades} trades`
-                });
-                return;
-            }
-
-            // Handle PyGenerator engine - uses pre-generated Python code
-            if (engine === "pygenerator") {
-                if (!getPythonCode) {
-                    toast.error("PyGenerator not available", {
-                        description: "Python code generation is not connected to this panel."
-                    });
-                    setIsBacktesting(false);
-                    return;
-                }
-                const pythonCode = getPythonCode();
-                if (!pythonCode || pythonCode.includes("Add blocks to your workspace")) {
-                    toast.error("No Python code generated", {
-                        description: "Add blocks to your workspace first."
-                    });
-                    setIsBacktesting(false);
-                    return;
+                if (!isUsingUnmodifiedTemplate) {
+                    // Not using template or template was modified - generate code from blocks
+                    if (!getPythonCode) {
+                        toast.error("Code generation not available", {
+                            description: "Python code generation is not connected to this panel."
+                        });
+                        setIsBacktesting(false);
+                        return;
+                    }
+                    pythonCode = getPythonCode();
+                    if (!pythonCode || pythonCode.includes("Add blocks to your workspace")) {
+                        toast.error("No Python code generated", {
+                            description: "Add blocks to your workspace first."
+                        });
+                        setIsBacktesting(false);
+                        return;
+                    }
                 }
 
-                toast.info(useLLMPolish ? "Running PyGenerator + LLM Polish..." : "Running PyGenerator backtest...");
+                const toastMessage = isUsingUnmodifiedTemplate
+                    ? `Running pre-built template: ${loadedTemplateId}...`
+                    : (useLLMPolish ? "Running backtest + LLM Polish..." : "Running backtest...");
+                toast.info(toastMessage);
 
                 const response = await fetch(`${backendUrl}/backtest-py-code`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        pythonCode,
+                        pythonCode: pythonCode || null, // null if using template
                         symbol: tradingSymbol,
                         startDate,
                         endDate,
                         initialBalance: parseFloat(capitalAllocation),
                         commission: 0.001,
-                        polishWithLLM: useLLMPolish // Enable LLM fix pass
+                        polishWithLLM: useLLMPolish,
+                        templateId: isUsingUnmodifiedTemplate ? loadedTemplateId : null // Use pre-built code
                     })
                 });
 
@@ -263,6 +251,20 @@ export const BacktestingPanel = ({ onStartTour, onToggleAI, onClose, leverage = 
                 }
                 return;
             }
+
+            // For Nautilus engine with modified blocks, generate Nautilus code
+            let precompiledNautilusCode: string | null = null;
+            const isUsingUnmodifiedTemplate = !!loadedTemplateId && !generatedStrategyId;
+
+            if (engine === "nautilus" && !isUsingUnmodifiedTemplate && getNautilusCode) {
+                precompiledNautilusCode = getNautilusCode();
+                if (precompiledNautilusCode && !precompiledNautilusCode.includes("Add blocks to your workspace")) {
+                    console.log("[NAUTILUS] Using generated Nautilus code from blocks");
+                } else {
+                    precompiledNautilusCode = null; // Let backend handle via XML parsing
+                }
+            }
+
             // Create AbortController for timeout (10 minutes for LLM-based backtests)
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 600000);
@@ -286,7 +288,8 @@ export const BacktestingPanel = ({ onStartTour, onToggleAI, onClose, leverage = 
                     opt_method: optMethod,
                     ai_model: aiModel,
                     strategyId: generatedStrategyId,
-                    templateId: loadedTemplateId
+                    templateId: isUsingUnmodifiedTemplate ? loadedTemplateId : null,
+                    precompiledCode: precompiledNautilusCode // For Nautilus with modified blocks
                 })
             });
 
@@ -337,7 +340,8 @@ export const BacktestingPanel = ({ onStartTour, onToggleAI, onClose, leverage = 
                     bestParams: data.best_params,
                     bestMetricValue: data.best_metric_value,
                     visualizationHtml: data.visualization_html,
-                    rawStats: data.raw_stats
+                    rawStats: data.raw_stats,
+                    trades: data.trades || []
                 });
 
                 if (data.visualization_html) {
@@ -632,34 +636,16 @@ export const BacktestingPanel = ({ onStartTour, onToggleAI, onClose, leverage = 
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="frontend">Simple (Fast)</SelectItem>
-                                    <SelectItem value="frontend-ts">TechnicalIndicators (Browser)</SelectItem>
-                                    <SelectItem value="pygenerator">PyGenerator (Recommended)</SelectItem>
-                                    <SelectItem value="backtesting.py">Python (AI-Generated)</SelectItem>
+                                    <SelectItem value="backtesting.py">backtesting.py (Recommended)</SelectItem>
+                                    <SelectItem value="rust">🦀 Rust Engine (Fastest)</SelectItem>
                                     <SelectItem value="nautilus">NautilusTrader (Institutional)</SelectItem>
-                                    <SelectItem value="ai_simulation">AI Simulation (LLM)</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
 
-                        {/* AI Model Selection */}
-                        {engine === "ai_simulation" && (
-                            <div className="mt-2">
-                                <label className="text-xs text-muted-foreground mb-1 block">AI Model</label>
-                                <Select value={aiModel} onValueChange={setAiModel}>
-                                    <SelectTrigger className="bg-secondary h-8 text-xs">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="deepseek">DeepSeek (Finance Specialized)</SelectItem>
-                                        <SelectItem value="gemini">Google Gemini 2.0 Flash</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        )}
 
                         {/* Optimization Settings */}
-                        {(engine === "frontend" || engine === "frontend-ts" || engine === "backtesting.py" || engine === "nautilus") && (
+                        {(engine === "backtesting.py" || engine === "nautilus") && (
                             <div className="space-y-2 border-t border-border pt-2 mt-2">
                                 <div className="flex items-center justify-between">
                                     <label className="text-xs font-medium text-muted-foreground">Optimization</label>
@@ -906,6 +892,7 @@ export const BacktestingPanel = ({ onStartTour, onToggleAI, onClose, leverage = 
                 onClose={() => setIsVisModalOpen(false)}
                 htmlContent={visualizationHtml}
                 rawStats={rawStats}
+                trades={backtestResult?.trades}
             />
         </div>
     );

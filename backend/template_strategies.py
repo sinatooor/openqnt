@@ -1,15 +1,337 @@
 """
-Pre-built Python Strategy Templates using TA-Lib
+Pre-built Python Strategy Templates
 
 These strategies match the frontend templates exactly.
 When a user selects a template without modifications, we use this
 pre-compiled code directly instead of parsing XML.
 
-All indicators use TA-Lib for maximum performance and reliability.
-Note: talib is imported inside the code strings, not at module level.
+Supports two execution engines:
+1. backtesting.py - Uses TA-Lib indicators
+2. NautilusTrader - Uses NautilusTrader indicator classes
 """
 
 from typing import Optional, Dict, Tuple
+
+
+# =============================================================================
+# NAUTILUS TEMPLATE STRATEGIES
+# =============================================================================
+
+# --- Nautilus Template 1: RSI Oversold Reversal ---
+NAUTILUS_RSI_OVERSOLD_REVERSAL_CODE = '''
+from decimal import Decimal
+import numpy as np
+from nautilus_trader.trading.strategy import Strategy
+from nautilus_trader.model.data import Bar
+from nautilus_trader.model.enums import OrderSide, TimeInForce
+from nautilus_trader.model.objects import Quantity
+from nautilus_trader.indicators import RelativeStrengthIndex, AverageTrueRange
+
+class GeneratedStrategy(Strategy):
+    """RSI Oversold Reversal Strategy for NautilusTrader"""
+    
+    def __init__(self, config):
+        super().__init__(config)
+        self.rsi = RelativeStrengthIndex(14)
+        self.atr = AverageTrueRange(14)
+        self.instrument_id = None
+        self._position_open = False
+    
+    def on_start(self):
+        self.subscribe_bars(self.bar_type)
+        instruments = self.cache.instruments()
+        self.log.info(f"DEBUG: on_start found {len(instruments)} instruments")
+        if instruments:
+            self.instrument_id = instruments[0].id
+            self.log.info(f"DEBUG: instrument_id set to {self.instrument_id}")
+        else:
+            self.log.info("DEBUG: No instruments found in cache!")
+        self.register_indicator_for_bars(self.bar_type, self.rsi)
+        self.register_indicator_for_bars(self.bar_type, self.atr)
+    
+    def on_bar(self, bar: Bar):
+        if not self.instrument_id or not self.rsi.initialized:
+            # print(f"DEBUG: Waiting for init. Instrument: {self.instrument_id}, RSI init: {self.rsi.initialized}")
+            return
+        
+        rsi_val = self.rsi.value
+        atr_val = self.atr.value
+        price = float(bar.close)
+        
+        # print(f"DEBUG: Bar {bar.ts_event} | Price: {price} | RSI: {rsi_val} | Pos: {self._position_open}")
+        
+        # Long when RSI < 30
+        if rsi_val < 30 and not self._position_open:
+            self.log.info(f"DEBUG: SIGNAL BUY @ {price} (RSI: {rsi_val})")
+            order = self.order_factory.market(
+                instrument_id=self.instrument_id,
+                order_side=OrderSide.BUY,
+                quantity=Quantity.from_str("1000"),
+                time_in_force=TimeInForce.GTC,
+            )
+            self.submit_order(order)
+            self._position_open = True
+        
+        # Exit when RSI > 70
+        elif rsi_val > 70 and self._position_open:
+            self.log.info(f"DEBUG: SIGNAL SELL @ {price} (RSI: {rsi_val})")
+            self.close_all_positions(self.instrument_id)
+            self._position_open = False
+'''
+
+# --- Nautilus Template 2: Simple MA Crossover ---
+NAUTILUS_SIMPLE_MA_CROSSOVER_CODE = '''
+from decimal import Decimal
+import numpy as np
+from nautilus_trader.trading.strategy import Strategy
+from nautilus_trader.model.data import Bar
+from nautilus_trader.model.enums import OrderSide, TimeInForce
+from nautilus_trader.model.objects import Quantity
+from nautilus_trader.indicators import SimpleMovingAverage
+
+class GeneratedStrategy(Strategy):
+    """Simple MA Crossover Strategy for NautilusTrader"""
+    
+    def __init__(self, config):
+        super().__init__(config)
+        self.sma = SimpleMovingAverage(12)
+        self.instrument_id = None
+        self._position_open = False
+        self._prev_close = 0.0
+        self._prev_sma = 0.0
+    
+    def on_start(self):
+        self.subscribe_bars(self.bar_type)
+        instruments = self.cache.instruments()
+        if instruments:
+            self.instrument_id = instruments[0].id
+        self.register_indicator_for_bars(self.bar_type, self.sma)
+    
+    def on_bar(self, bar: Bar):
+        if not self.instrument_id or not self.sma.initialized:
+            return
+        
+        curr_close = float(bar.close)
+        curr_sma = self.sma.value
+        
+        # Bullish crossover
+        if self._prev_close < self._prev_sma and curr_close > curr_sma:
+            if not self._position_open:
+                order = self.order_factory.market(
+                    instrument_id=self.instrument_id,
+                    order_side=OrderSide.BUY,
+                    quantity=Quantity.from_str("1"),
+                    time_in_force=TimeInForce.GTC,
+                )
+                self.submit_order(order)
+                self._position_open = True
+        
+        # Bearish crossover
+        elif self._prev_close > self._prev_sma and curr_close < curr_sma:
+            if self._position_open:
+                self.close_all_positions(self.instrument_id)
+                self._position_open = False
+        
+        self._prev_close = curr_close
+        self._prev_sma = curr_sma
+'''
+
+# --- Nautilus Template 3: Bollinger Breakout ---
+NAUTILUS_BOLLINGER_BREAKOUT_CODE = '''
+from decimal import Decimal
+import numpy as np
+from nautilus_trader.trading.strategy import Strategy
+from nautilus_trader.model.data import Bar
+from nautilus_trader.model.enums import OrderSide, TimeInForce
+from nautilus_trader.model.objects import Quantity
+from nautilus_trader.indicators import BollingerBands, AverageTrueRange
+
+class GeneratedStrategy(Strategy):
+    """Bollinger Band Breakout Strategy for NautilusTrader"""
+    
+    def __init__(self, config):
+        super().__init__(config)
+        self.bb = BollingerBands(20, 2.0)
+        self.atr = AverageTrueRange(14)
+        self.instrument_id = None
+        self._position_open = False
+    
+    def on_start(self):
+        self.subscribe_bars(self.bar_type)
+        instruments = self.cache.instruments()
+        if instruments:
+            self.instrument_id = instruments[0].id
+        self.register_indicator_for_bars(self.bar_type, self.bb)
+        self.register_indicator_for_bars(self.bar_type, self.atr)
+    
+    def on_bar(self, bar: Bar):
+        if not self.instrument_id or not self.bb.initialized:
+            return
+        
+        price = float(bar.close)
+        upper = self.bb.upper
+        
+        # Long on upper band breakout
+        if price > upper and not self._position_open:
+            order = self.order_factory.market(
+                instrument_id=self.instrument_id,
+                order_side=OrderSide.BUY,
+                quantity=Quantity.from_str("1"),
+                time_in_force=TimeInForce.GTC,
+            )
+            self.submit_order(order)
+            self._position_open = True
+'''
+
+# --- Nautilus Template 4: MACD Momentum ---
+NAUTILUS_MACD_MOMENTUM_CODE = '''
+from decimal import Decimal
+import numpy as np
+from nautilus_trader.trading.strategy import Strategy
+from nautilus_trader.model.data import Bar
+from nautilus_trader.model.enums import OrderSide, TimeInForce
+from nautilus_trader.model.objects import Quantity
+from nautilus_trader.indicators import MovingAverageConvergenceDivergence, AverageTrueRange
+
+class GeneratedStrategy(Strategy):
+    """MACD Momentum Strategy for NautilusTrader"""
+    
+    def __init__(self, config):
+        super().__init__(config)
+        self.macd = MovingAverageConvergenceDivergence(12, 26, 9)
+        self.atr = AverageTrueRange(14)
+        self.instrument_id = None
+        self._position_open = False
+    
+    def on_start(self):
+        self.subscribe_bars(self.bar_type)
+        instruments = self.cache.instruments()
+        if instruments:
+            self.instrument_id = instruments[0].id
+        self.register_indicator_for_bars(self.bar_type, self.macd)
+        self.register_indicator_for_bars(self.bar_type, self.atr)
+    
+    def on_bar(self, bar: Bar):
+        if not self.instrument_id or not self.macd.initialized:
+            return
+        
+        macd_val = self.macd.value
+        signal_val = self.macd.signal
+        
+        # Long when MACD > Signal
+        if macd_val > signal_val and not self._position_open:
+            order = self.order_factory.market(
+                instrument_id=self.instrument_id,
+                order_side=OrderSide.BUY,
+                quantity=Quantity.from_str("1"),
+                time_in_force=TimeInForce.GTC,
+            )
+            self.submit_order(order)
+            self._position_open = True
+'''
+
+# --- Nautilus Template 5: VWAP Scalping ---
+NAUTILUS_VWAP_SCALPING_CODE = '''
+from decimal import Decimal
+import numpy as np
+from nautilus_trader.trading.strategy import Strategy
+from nautilus_trader.model.data import Bar
+from nautilus_trader.model.enums import OrderSide, TimeInForce
+from nautilus_trader.model.objects import Quantity
+from nautilus_trader.indicators import RelativeStrengthIndex, SimpleMovingAverage
+
+class GeneratedStrategy(Strategy):
+    """VWAP Scalping Strategy for NautilusTrader (using SMA as VWAP proxy)"""
+    
+    def __init__(self, config):
+        super().__init__(config)
+        self.rsi = RelativeStrengthIndex(9)
+        self.vwap_proxy = SimpleMovingAverage(20)  # VWAP proxy
+        self.instrument_id = None
+        self._position_open = False
+    
+    def on_start(self):
+        self.subscribe_bars(self.bar_type)
+        instruments = self.cache.instruments()
+        if instruments:
+            self.instrument_id = instruments[0].id
+        self.register_indicator_for_bars(self.bar_type, self.rsi)
+        self.register_indicator_for_bars(self.bar_type, self.vwap_proxy)
+    
+    def on_bar(self, bar: Bar):
+        if not self.instrument_id or not self.rsi.initialized:
+            return
+        
+        price = float(bar.close)
+        rsi_val = self.rsi.value
+        vwap = self.vwap_proxy.value
+        
+        # Long when price < VWAP and RSI < 40
+        if price < vwap and rsi_val < 40 and not self._position_open:
+            order = self.order_factory.market(
+                instrument_id=self.instrument_id,
+                order_side=OrderSide.BUY,
+                quantity=Quantity.from_str("1"),
+                time_in_force=TimeInForce.GTC,
+            )
+            self.submit_order(order)
+            self._position_open = True
+'''
+
+# --- Nautilus Template 6: Triple EMA Trend ---
+NAUTILUS_TRIPLE_EMA_TREND_CODE = '''
+from decimal import Decimal
+import numpy as np
+from nautilus_trader.trading.strategy import Strategy
+from nautilus_trader.model.data import Bar
+from nautilus_trader.model.enums import OrderSide, TimeInForce
+from nautilus_trader.model.objects import Quantity
+from nautilus_trader.indicators import ExponentialMovingAverage
+
+class GeneratedStrategy(Strategy):
+    """Triple EMA Trend Strategy for NautilusTrader"""
+    
+    def __init__(self, config):
+        super().__init__(config)
+        self.ema_fast = ExponentialMovingAverage(8)
+        self.ema_medium = ExponentialMovingAverage(21)
+        self.ema_slow = ExponentialMovingAverage(55)
+        self.instrument_id = None
+        self._position_open = False
+    
+    def on_start(self):
+        self.subscribe_bars(self.bar_type)
+        instruments = self.cache.instruments()
+        if instruments:
+            self.instrument_id = instruments[0].id
+        self.register_indicator_for_bars(self.bar_type, self.ema_fast)
+        self.register_indicator_for_bars(self.bar_type, self.ema_medium)
+        self.register_indicator_for_bars(self.bar_type, self.ema_slow)
+    
+    def on_bar(self, bar: Bar):
+        if not self.instrument_id or not self.ema_slow.initialized:
+            return
+        
+        fast = self.ema_fast.value
+        medium = self.ema_medium.value
+        slow = self.ema_slow.value
+        
+        # Aligned uptrend: Fast > Medium > Slow
+        if fast > medium > slow and not self._position_open:
+            order = self.order_factory.market(
+                instrument_id=self.instrument_id,
+                order_side=OrderSide.BUY,
+                quantity=Quantity.from_str("1"),
+                time_in_force=TimeInForce.GTC,
+            )
+            self.submit_order(order)
+            self._position_open = True
+        
+        # Exit when alignment breaks
+        elif not (fast > medium > slow) and self._position_open:
+            self.close_all_positions(self.instrument_id)
+            self._position_open = False
+'''
 
 
 # =============================================================================
@@ -315,6 +637,7 @@ class GeneratedStrategy(Strategy):
 TEMPLATE_STRATEGIES = {
     "rsi-oversold-reversal": {
         "code": RSI_OVERSOLD_REVERSAL_CODE,
+        "nautilus_code": NAUTILUS_RSI_OVERSOLD_REVERSAL_CODE,
         "name": "RSI Oversold Reversal",
         "params": {
             "rsi_period": 14,
@@ -327,6 +650,7 @@ TEMPLATE_STRATEGIES = {
     },
     "simple-ma-crossover": {
         "code": SIMPLE_MA_CROSSOVER_CODE,
+        "nautilus_code": NAUTILUS_SIMPLE_MA_CROSSOVER_CODE,
         "name": "Simple MA Crossover",
         "params": {
             "ma_period": 12
@@ -334,6 +658,7 @@ TEMPLATE_STRATEGIES = {
     },
     "bollinger-breakout": {
         "code": BOLLINGER_BREAKOUT_CODE,
+        "nautilus_code": NAUTILUS_BOLLINGER_BREAKOUT_CODE,
         "name": "Bollinger Band Breakout",
         "params": {
             "bb_period": 20,
@@ -345,6 +670,7 @@ TEMPLATE_STRATEGIES = {
     },
     "macd-momentum": {
         "code": MACD_MOMENTUM_CODE,
+        "nautilus_code": NAUTILUS_MACD_MOMENTUM_CODE,
         "name": "MACD Momentum",
         "params": {
             "macd_fast": 12,
@@ -359,6 +685,7 @@ TEMPLATE_STRATEGIES = {
     },
     "scalping-vwap": {
         "code": VWAP_SCALPING_CODE,
+        "nautilus_code": NAUTILUS_VWAP_SCALPING_CODE,
         "name": "VWAP Scalping",
         "params": {
             "rsi_period": 9,
@@ -370,6 +697,7 @@ TEMPLATE_STRATEGIES = {
     },
     "triple-ema-trend": {
         "code": TRIPLE_EMA_TREND_CODE,
+        "nautilus_code": NAUTILUS_TRIPLE_EMA_TREND_CODE,
         "name": "Triple EMA Trend",
         "params": {
             "ema_fast": 8,
@@ -385,7 +713,7 @@ TEMPLATE_STRATEGIES = {
 
 def get_template_strategy(template_id: str, user_params: dict = None) -> tuple:
     """
-    Get pre-built strategy code for a template.
+    Get pre-built strategy code for a template (backtesting.py version).
     
     Args:
         template_id: The template identifier (e.g., "rsi-oversold-reversal")
@@ -408,6 +736,35 @@ def get_template_strategy(template_id: str, user_params: dict = None) -> tuple:
     return code, params
 
 
+def get_nautilus_template_strategy(template_id: str, user_params: dict = None) -> tuple:
+    """
+    Get pre-built NautilusTrader strategy code for a template.
+    
+    Args:
+        template_id: The template identifier (e.g., "rsi-oversold-reversal")
+        user_params: Optional dict of parameter overrides from user
+        
+    Returns:
+        Tuple of (nautilus_code_string, merged_params) or (None, None) if not found
+    """
+    if template_id not in TEMPLATE_STRATEGIES:
+        return None, None
+    
+    template = TEMPLATE_STRATEGIES[template_id]
+    code = template.get("nautilus_code")
+    
+    if not code:
+        return None, None
+    
+    # Merge user params with defaults
+    params = template["params"].copy()
+    if user_params:
+        params.update(user_params)
+    
+    return code, params
+
+
 def list_templates() -> list:
     """Return list of available template IDs."""
     return list(TEMPLATE_STRATEGIES.keys())
+

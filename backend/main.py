@@ -62,6 +62,18 @@ USE_DEEPSEEK_ONLY = False  # <-- CHANGE THIS TO SWITCH MODES
 DEEPSEEK_MODEL = "deepseek-chat"       # Fast, cheaper - good for code generation (TESTING)
 
 # ============================================================
+# Gemini Model Configuration  
+# ============================================================
+# Change this to switch Gemini models:
+GEMINI_MODEL = "gemini-2.0-flash"  # Fast and capable (RECOMMENDED)
+# GEMINI_MODEL = "gemini-1.5-pro"   # More capable but slower
+# GEMINI_MODEL = "gemini-1.5-flash" # Fastest option
+
+# Primary LLM Provider: "gemini" or "deepseek"
+# This determines which model is used for strategy generation
+PRIMARY_LLM = "gemini"  # <-- CHANGE THIS TO SWITCH PRIMARY MODEL
+
+# ============================================================
 # RAG + GCG Prompts
 # ============================================================
 
@@ -201,7 +213,7 @@ class BacktestRequest(BaseModel):
     initialBalance: float = 100000.0
     tradeSize: int = 100000
     leverage: float = 1.0  # Account leverage multiplier (1.0 = no leverage, 10.0 = 10:1, etc.)
-    engine: str = "backtesting.py"  # "backtesting.py", "simple", "nautilus", "ai_simulation", "frontend"
+    engine: str = "backtesting.py"  # "backtesting.py" (recommended), "rust" (fastest), "nautilus" (institutional)
     optimize: bool = False
     opt_metric: str = "Return [%]"
     opt_method: str = "grid"
@@ -213,6 +225,7 @@ class BacktestRequest(BaseModel):
     codeLanguage: Optional[str] = "python"
     strategyId: Optional[str] = None
     templateId: Optional[str] = None  # Pre-built template ID (e.g., "rsi-oversold-reversal")
+    precompiledCode: Optional[str] = None  # Pre-generated code (e.g., from nautilusGenerator)
 
 
 class BacktestResponse(BaseModel):
@@ -750,7 +763,7 @@ async def call_gemini(
         elif msg["role"] == "assistant":
             contents.append({"role": "model", "parts": [{"text": msg["content"]}]})
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={api_key}"
     
     payload = {
         "contents": contents,
@@ -1820,34 +1833,57 @@ Generate the complete MQL5 code."""
 # ============================================================
 
 class PythonBacktestRequest(BaseModel):
-    """Request model for executing pre-generated Python strategy code."""
-    pythonCode: str
+    """Request model for executing Python strategy code (generated or from template)."""
+    pythonCode: Optional[str] = None  # Generated code from pyGenerator
+    templateId: Optional[str] = None  # Pre-built template ID (if using unmodified template)
     symbol: str = "EURUSD"
     startDate: str = "2024-01-01"
     endDate: str = "2024-03-31"
     initialBalance: float = 100000.0
     commission: float = 0.001
+    polishWithLLM: bool = False
 
 
 @app.post("/backtest-py-code")
 async def run_python_backtest(request: PythonBacktestRequest):
     """
-    Execute a pre-generated Python strategy (from PyGenerator) via backtesting.py.
+    Execute a Python strategy via backtesting.py.
     
-    This endpoint:
-    1. Validates Python code syntax with ast.parse()
-    2. Executes in a sandboxed namespace
-    3. Returns backtest results
+    Smart detection:
+    - If templateId provided: Use pre-built template code
+    - Otherwise: Use pythonCode generated from blocks via pyGenerator
     """
     import ast
     import traceback
+    from backtest_service import TEMPLATE_STRATEGIES, get_template_strategy
     
     try:
-        print(f"=== PyGenerator Backtest: {request.symbol} ===")
+        # Step 0: Determine code source (template or generated)
+        python_code = None
+        code_source = "generated"
+        
+        if request.templateId and request.templateId in TEMPLATE_STRATEGIES:
+            # Use pre-built template code
+            template_code, template_params = get_template_strategy(request.templateId)
+            if template_code:
+                python_code = template_code
+                code_source = f"template:{request.templateId}"
+                print(f"=== Using Template: {request.templateId} ===")
+            else:
+                return {"success": False, "error": f"Template '{request.templateId}' not found"}
+        elif request.pythonCode:
+            # Use generated code from pyGenerator
+            python_code = request.pythonCode
+            code_source = "pyGenerator"
+            print(f"=== Using PyGenerator Code ===")
+        else:
+            return {"success": False, "error": "No code source: provide pythonCode or templateId"}
+        
+        print(f"Backtest: {request.symbol} | Source: {code_source}")
         
         # Step 1: Validate Python syntax
         try:
-            ast.parse(request.pythonCode)
+            ast.parse(python_code)
             print("Python syntax validation: PASSED")
         except SyntaxError as e:
             return {
@@ -1905,7 +1941,7 @@ async def run_python_backtest(request: PythonBacktestRequest):
         }
         
         try:
-            exec(request.pythonCode, exec_namespace)
+            exec(python_code, exec_namespace)
         except Exception as e:
             return {
                 "success": False,
@@ -2010,7 +2046,8 @@ async def run_backtest_endpoint(request: BacktestRequest):
         # For "simple" engine, force local database and enable DeepSeek verification
         data_source = request.data_source
         use_llm = request.use_llm
-        precompiled_code = request.generatedCode
+        # Priority: precompiledCode (from nautilusGenerator) > generatedCode > cache
+        precompiled_code = request.precompiledCode or request.generatedCode
         code_language = request.codeLanguage or "python"
         strategy_id = request.strategyId
 
@@ -2333,6 +2370,149 @@ async def get_strategy_status():
     """Get the status of the currently running strategy."""
     from strategy_runner import get_runner_status
     return get_runner_status()
+
+
+# ============================================================
+# ADK Agent API Endpoints
+# ============================================================
+
+@app.post("/api/adk/chat")
+async def adk_chat(request: dict):
+    """
+    Chat with the ADK trading agent.
+    
+    The agent can:
+    - Search for market news and sentiment
+    - Create custom indicators
+    - Execute trades (with confirmation)
+    - Find relevant blocks from the catalog
+    """
+    try:
+        from adk_agents import trading_agent
+        from google.adk.runners import Runner
+        from google.adk.sessions import InMemorySessionService
+        
+        message = request.get("message", "")
+        session_id = request.get("session_id", "default")
+        
+        if not message:
+            return {"error": "Message is required"}
+        
+        # Create session and runner
+        session_service = InMemorySessionService()
+        runner = Runner(
+            agent=trading_agent,
+            session_service=session_service,
+            app_name="trading_assistant"
+        )
+        
+        # Get or create session
+        session = session_service.get_session(
+            app_name="trading_assistant",
+            user_id="user",
+            session_id=session_id
+        )
+        if not session:
+            session = session_service.create_session(
+                app_name="trading_assistant",
+                user_id="user",
+                session_id=session_id
+            )
+        
+        # Run agent
+        response_text = ""
+        async for event in runner.run_async(
+            user_id="user",
+            session_id=session_id,
+            new_message=message
+        ):
+            if hasattr(event, 'content') and event.content:
+                for part in event.content.parts:
+                    if hasattr(part, 'text'):
+                        response_text += part.text
+        
+        return {
+            "success": True,
+            "response": response_text,
+            "session_id": session_id
+        }
+        
+    except ImportError as e:
+        return {
+            "error": f"ADK not available: {str(e)}",
+            "hint": "Run: pip install google-adk"
+        }
+    except Exception as e:
+        print(f"ADK chat error: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e)}
+
+
+@app.get("/api/adk/custom-blocks")
+async def get_custom_blocks():
+    """Get all user-created custom indicator blocks."""
+    try:
+        from adk_agents.tools.indicator_tools import list_custom_indicators
+        return list_custom_indicators()
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.post("/api/adk/custom-blocks")
+async def create_custom_block(request: dict):
+    """Create a new custom indicator block."""
+    try:
+        from adk_agents.tools.indicator_tools import create_custom_indicator
+        return create_custom_indicator(
+            name=request.get("name"),
+            description=request.get("description"),
+            formula=request.get("formula"),
+            parameters=request.get("parameters", {}),
+            category=request.get("category", "Custom")
+        )
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.delete("/api/adk/custom-blocks/{name}")
+async def delete_custom_block(name: str):
+    """Delete a custom indicator block."""
+    try:
+        from adk_agents.tools.indicator_tools import delete_custom_indicator
+        return delete_custom_indicator(name)
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/adk/market/news/{symbol}")
+async def get_market_news(symbol: str):
+    """Search for market news about a symbol."""
+    try:
+        from adk_agents.tools.search_tools import search_market_news
+        return search_market_news(symbol)
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/adk/market/sentiment")
+async def get_market_sentiment(topic: str):
+    """Analyze market sentiment for a topic."""
+    try:
+        from adk_agents.tools.search_tools import search_sentiment
+        return search_sentiment(topic)
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/adk/blocks/search")
+async def search_blocks(query: str, top_k: int = 5):
+    """Search for blocks matching a query."""
+    try:
+        from adk_agents.tools.rag_tools import find_similar_blocks
+        return find_similar_blocks(query, top_k)
+    except Exception as e:
+        return {"error": str(e)}
 
 
 if __name__ == "__main__":

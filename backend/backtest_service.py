@@ -49,6 +49,15 @@ except ImportError:
     JSON_GENERATOR_AVAILABLE = False
     print("Warning: JSON code generator not available, using legacy generator")
 
+# Import Rust backtest engine (high-performance)
+try:
+    import rust_backtest
+    RUST_BACKTEST_AVAILABLE = True
+    _rust_version = getattr(rust_backtest, '__version__', '0.1.0')
+    print(f"Rust backtest engine available (v{_rust_version})")
+except ImportError:
+    RUST_BACKTEST_AVAILABLE = False
+    print("Warning: Rust backtest engine not available, using Python fallback")
 
 
 def sanitize_for_json(obj):
@@ -94,18 +103,22 @@ def EMA(values, n):
 # NautilusTrader imports (conditional)
 try:
     from nautilus_trader.backtest.engine import BacktestEngine, BacktestEngineConfig
-    from nautilus_trader.model.currencies import USD
-    from nautilus_trader.model.data import Bar, BarType
-    from nautilus_trader.model.enums import AccountType, OmsType, TimeInForce, TriggerType
-    from nautilus_trader.model.identifiers import TraderId, Venue, InstrumentId
-    from nautilus_trader.model.objects import Money, Quantity
+    from nautilus_trader.backtest.node import BacktestNode
+    from nautilus_trader.backtest.config import BacktestRunConfig, BacktestVenueConfig, BacktestDataConfig
+    from nautilus_trader.config import LoggingConfig
+    from nautilus_trader.model.currencies import USD, EUR, GBP, JPY, AUD, CAD, CHF
+    from nautilus_trader.model.data import Bar, BarType, BarSpecification
+    from nautilus_trader.model.enums import AccountType, OmsType, TimeInForce, TriggerType, AggregationSource, BarAggregation, PriceType, OrderSide
+    from nautilus_trader.model.identifiers import TraderId, Venue, InstrumentId, Symbol
+    from nautilus_trader.model.objects import Money, Quantity, Price
     from nautilus_trader.test_kit.providers import TestInstrumentProvider
     from nautilus_trader.config import StrategyConfig
     from nautilus_trader.trading.strategy import Strategy as NautilusStrategy
+    from nautilus_trader.persistence.catalog import ParquetDataCatalog
     NAUTILUS_AVAILABLE = True
-except ImportError:
+except ImportError as e:
     NAUTILUS_AVAILABLE = False
-    print("NautilusTrader not installed or failed to import")
+    print(f"NautilusTrader not installed or failed to import: {e}")
 
 
 # LLM Prompt for XML → Python conversion (Backtesting.py)
@@ -2524,6 +2537,113 @@ def run_backtest(
         }
 
 
+def run_backtest_rust(
+    data: pd.DataFrame,
+    signals: List[int],
+    cash: float = 10000,
+    margin: float = 1.0,
+    commission: float = 0.002,
+) -> Dict[str, Any]:
+    """
+    Run backtest using high-performance Rust engine.
+    
+    Args:
+        data: DataFrame with OHLCV data (must have Open, High, Low, Close, Volume columns)
+        signals: List of signals (1=buy, -1=sell, 0=hold)
+        cash: Initial capital
+        margin: Margin requirement (1.0 = no leverage, 0.1 = 10:1 leverage)
+        commission: Commission rate per trade
+        
+    Returns:
+        Dict with backtest results including metrics, trades, and equity curve
+    """
+    if not RUST_BACKTEST_AVAILABLE:
+        raise ImportError("rust_backtest module not installed. Build with: cd rust_backtest && maturin develop")
+    
+    try:
+        # Create backtester
+        bt = rust_backtest.Backtester(cash, margin, commission)
+        
+        # Convert DataFrame index to Unix timestamps
+        if hasattr(data.index, 'astype'):
+            timestamps = (data.index.astype('int64') // 10**9).tolist()
+        else:
+            timestamps = list(range(len(data)))
+        
+        # Load data
+        bt.load_data(
+            timestamps=timestamps,
+            opens=data['Open'].tolist(),
+            highs=data['High'].tolist(),
+            lows=data['Low'].tolist(),
+            closes=data['Close'].tolist(),
+            volumes=data['Volume'].tolist() if 'Volume' in data.columns else [0.0] * len(data),
+        )
+        
+        # Convert signals to int8
+        signals_i8 = [int(s) for s in signals]
+        
+        # Run backtest
+        result = bt.run(signals_i8)
+        
+        if not result.success:
+            return {"success": False, "error": result.error or "Unknown error", "metrics": None, "trades": []}
+        
+        # Convert Rust result to Python dict
+        metrics = result.metrics
+        return sanitize_for_json({
+            "success": True,
+            "metrics": {
+                "total_return": metrics.total_return,
+                "cagr": metrics.cagr,
+                "net_profit": metrics.net_profit,
+                "profit_factor": metrics.profit_factor,
+                "expectancy": metrics.expectancy,
+                "payoff_ratio": metrics.payoff_ratio,
+                "max_drawdown": metrics.max_drawdown,
+                "max_drawdown_duration": str(timedelta(seconds=int(metrics.max_drawdown_duration))),
+                "calmar_ratio": metrics.calmar_ratio,
+                "sharpe_ratio": metrics.sharpe_ratio,
+                "sortino_ratio": metrics.sortino_ratio,
+                "var_95": metrics.var_95,
+                "cvar_95": metrics.cvar_95,
+                "sqn": metrics.sqn,
+                "kelly_criterion": metrics.kelly_criterion,
+                "win_rate": metrics.win_rate,
+                "loss_rate": metrics.loss_rate,
+                "total_trades": metrics.total_trades,
+                "avg_holding_time": str(timedelta(seconds=int(metrics.avg_holding_time))),
+                "return_volatility": metrics.return_volatility,
+                "skewness": metrics.skewness,
+                "kurtosis": metrics.kurtosis,
+                "equity_final": metrics.equity_final,
+                "equity_peak": metrics.equity_peak,
+            },
+            "trades": [
+                {
+                    "entry_time": str(datetime.fromtimestamp(t.entry_time)),
+                    "exit_time": str(datetime.fromtimestamp(t.exit_time)),
+                    "entry_price": t.entry_price,
+                    "exit_price": t.exit_price,
+                    "size": t.size,
+                    "pnl": t.pnl,
+                    "return_pct": t.return_pct,
+                    "type": t.trade_type,
+                }
+                for t in result.trades
+            ],
+            "equity_curve": [
+                {"time": str(datetime.fromtimestamp(ts)), "equity": eq}
+                for ts, eq in result.equity_curve
+            ],
+            "engine": "rust",
+        })
+        
+    except Exception as e:
+        print(f"Rust backtest error: {e}")
+        traceback.print_exc()
+        return {"success": False, "error": str(e), "metrics": None, "trades": []}
+
 
 def run_optimization(
     strategy_code: str,
@@ -2712,39 +2832,281 @@ def run_nautilus_backtest(
     symbol: str = "EURUSD"
 ) -> Dict[str, Any]:
     """
-    Execute backtest using NautilusTrader
+    Execute backtest using NautilusTrader with real execution.
+    
+    This function:
+    1. Creates a forex instrument for the symbol
+    2. Converts OHLCV DataFrame to NautilusTrader Bar format
+    3. Dynamically loads the generated strategy code
+    4. Runs the backtest via BacktestEngine
+    5. Extracts real performance metrics
     """
     if not NAUTILUS_AVAILABLE:
         return {"success": False, "error": "NautilusTrader not installed"}
-        
+    
+    import tempfile
+    import importlib.util
+    import sys
+    
     try:
-        # Placeholder for Nautilus execution
-        # In a real implementation, we would:
-        # 1. Create BacktestEngine
-        # 2. Add venue/instrument
-        # 3. Load data
-        # 4. Run strategy
+        print(f"[NAUTILUS] Starting real backtest for {symbol} with ${cash} capital...")
+        print(f"[NAUTILUS] Data shape: {data.shape}, Date range: {data.index[0]} to {data.index[-1]}")
         
-        # For now, return a mock result to prove integration
-        print("Running NautilusTrader backtest (simulated)...")
+        # 1. Create forex instrument
+        # Map common symbols to NautilusTrader format
+        symbol_map = {
+            "EURUSD": ("EUR/USD", EUR, USD),
+            "GBPUSD": ("GBP/USD", GBP, USD),
+            "USDJPY": ("USD/JPY", USD, JPY),
+            "AUDUSD": ("AUD/USD", AUD, USD),
+            "USDCAD": ("USD/CAD", USD, CAD),
+            "USDCHF": ("USD/CHF", USD, CHF),
+        }
+        
+        # Default to EUR/USD if symbol not found
+        pair_name, base_ccy, quote_ccy = symbol_map.get(symbol.upper().replace("=X", "").replace("-", ""), ("EUR/USD", EUR, USD))
+        
+        # Create a simple forex instrument using TestInstrumentProvider
+        try:
+            instrument = TestInstrumentProvider.default_fx_ccy(pair_name)
+        except Exception as inst_err:
+            print(f"[NAUTILUS] Could not create instrument via TestInstrumentProvider: {inst_err}")
+            # Fallback: create a basic forex pair
+            instrument = TestInstrumentProvider.default_fx_ccy("EUR/USD")
+        
+        instrument_id = instrument.id
+        print(f"[NAUTILUS] Created instrument: {instrument_id}")
+        
+        # 2. Configure BacktestEngine
+        engine_config = BacktestEngineConfig(
+            trader_id=TraderId("BACKTESTER-001"),
+            logging=LoggingConfig(log_level="INFO"),  # Enable info logging
+        )
+        
+        engine = BacktestEngine(config=engine_config)
+        
+        # 3. Add venue
+        engine.add_venue(
+            venue=Venue("SIM"),
+            oms_type=OmsType.NETTING,
+            account_type=AccountType.MARGIN,
+            base_currency=USD,
+            starting_balances=[Money(cash, USD)],
+        )
+        
+        # 4. Add instrument
+        engine.add_instrument(instrument)
+        
+        # 5. Convert DataFrame to NautilusTrader Bars
+        bar_type = BarType(
+            instrument_id=instrument_id,
+            bar_spec=BarSpecification(
+                step=1,
+                aggregation=BarAggregation.DAY,
+                price_type=PriceType.LAST,
+            ),
+            aggregation_source=AggregationSource.EXTERNAL,
+        )
+        
+        bars = []
+        for idx, row in data.iterrows():
+            try:
+                ts = pd.Timestamp(idx)
+                ts_ns = int(ts.timestamp() * 1e9)
+                
+                bar = Bar(
+                    bar_type=bar_type,
+                    open=Price.from_str(f"{row['Open']:.5f}"),
+                    high=Price.from_str(f"{row['High']:.5f}"),
+                    low=Price.from_str(f"{row['Low']:.5f}"),
+                    close=Price.from_str(f"{row['Close']:.5f}"),
+                    volume=Quantity.from_int(int(row.get('Volume', 1000000))),
+                    ts_event=ts_ns,
+                    ts_init=ts_ns,
+                )
+                bars.append(bar)
+            except Exception as bar_err:
+                print(f"[NAUTILUS] Error creating bar for {idx}: {bar_err}")
+                continue
+        
+        if not bars:
+            return {"success": False, "error": "Failed to convert data to NautilusTrader bars"}
+        
+        print(f"[NAUTILUS] Converted {len(bars)} bars")
+        
+        # Add bars to engine
+        engine.add_data(bars)
+        
+        # 6. Dynamically load strategy from code string
+        # Write strategy code to a temporary file
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+            f.write(strategy_code)
+            temp_strategy_path = f.name
+        
+        try:
+            # Import the strategy module
+            spec = importlib.util.spec_from_file_location("generated_strategy", temp_strategy_path)
+            strategy_module = importlib.util.module_from_spec(spec)
+            sys.modules["generated_strategy"] = strategy_module
+            spec.loader.exec_module(strategy_module)
+            
+            # Find the strategy class (should be named GeneratedStrategy)
+            if hasattr(strategy_module, 'GeneratedStrategy'):
+                StrategyClass = strategy_module.GeneratedStrategy
+            else:
+                # Find any class that inherits from Strategy
+                for name, obj in vars(strategy_module).items():
+                    if isinstance(obj, type) and issubclass(obj, NautilusStrategy) and obj is not NautilusStrategy:
+                        StrategyClass = obj
+                        break
+                else:
+                    return {"success": False, "error": "No strategy class found in generated code"}
+            
+            # Create strategy config if available
+            if hasattr(strategy_module, 'create_strategy_config'):
+                config = strategy_module.create_strategy_config()
+            elif hasattr(strategy_module, 'GeneratedStrategyConfig'):
+                config = strategy_module.GeneratedStrategyConfig()
+            else:
+                # Create a basic config dynamically
+                # We need to create the class without a default that references local variables
+                config = StrategyConfig()
+            
+            # Instantiate strategy
+            strategy = StrategyClass(config=config)
+            strategy.instrument_id = instrument_id
+            strategy.instrument = instrument
+            strategy.bar_type = bar_type
+            
+            # Add strategy to engine
+            engine.add_strategy(strategy)
+            
+        finally:
+            # Clean up temp file
+            import os
+            try:
+                os.unlink(temp_strategy_path)
+            except:
+                pass
+        
+        # 7. Run the backtest
+        print("[NAUTILUS] Running backtest...")
+        engine.run()
+        
+        # 8. Extract results
+        print("[NAUTILUS] Extracting results...")
+        
+        # Get reports
+        try:
+            positions_report = engine.trader.generate_positions_report()
+            orders_report = engine.trader.generate_order_fills_report()
+            account_report = engine.trader.generate_account_report(Venue("SIM"))
+        except Exception as report_err:
+            print(f"[NAUTILUS] Error generating reports: {report_err}")
+            positions_report = pd.DataFrame()
+            orders_report = pd.DataFrame()
+            account_report = pd.DataFrame()
+        
+        # Calculate metrics
+        total_trades = len(positions_report) if not positions_report.empty else 0
+        
+        if total_trades > 0:
+            # Parse P&L values
+            def parse_pnl(val):
+                if isinstance(val, str):
+                    return float(val.replace(" USD", "").replace(",", ""))
+                return float(val) if val else 0.0
+            
+            positions_report["pnl_numeric"] = positions_report["realized_pnl"].apply(parse_pnl)
+            
+            total_pnl = positions_report["pnl_numeric"].sum()
+            winning_trades = positions_report[positions_report["pnl_numeric"] > 0]
+            losing_trades = positions_report[positions_report["pnl_numeric"] < 0]
+            
+            win_rate = (len(winning_trades) / total_trades) * 100 if total_trades > 0 else 0
+            
+            # Profit factor
+            gross_profit = winning_trades["pnl_numeric"].sum() if len(winning_trades) > 0 else 0
+            gross_loss = abs(losing_trades["pnl_numeric"].sum()) if len(losing_trades) > 0 else 1
+            profit_factor = gross_profit / gross_loss if gross_loss > 0 else 0
+            
+            # Max drawdown (simple calculation from P&L)
+            cumulative_pnl = positions_report["pnl_numeric"].cumsum()
+            peak = cumulative_pnl.cummax()
+            drawdown = (cumulative_pnl - peak)
+            max_drawdown = drawdown.min() / cash * 100 if cash > 0 else 0
+            
+            # Sharpe ratio (simplified - annualized)
+            returns = positions_report["pnl_numeric"] / cash
+            if len(returns) > 1:
+                sharpe = (returns.mean() / returns.std()) * np.sqrt(252) if returns.std() > 0 else 0
+            else:
+                sharpe = 0
+            
+            final_equity = cash + total_pnl
+            total_return = (total_pnl / cash) * 100
+            
+        else:
+            # No trades executed
+            total_pnl = 0
+            win_rate = 0
+            profit_factor = 0
+            max_drawdown = 0
+            sharpe = 0
+            final_equity = cash
+            total_return = 0
+        
+        # Build trades list
+        trades = []
+        if not positions_report.empty:
+            for _, row in positions_report.iterrows():
+                try:
+                    trades.append({
+                        "entry_time": str(row.get("opened_ts", "")),
+                        "exit_time": str(row.get("closed_ts", "")),
+                        "type": "long" if str(row.get("side", "")).upper() == "BUY" else "short",
+                        "entry_price": float(row.get("avg_px_open", 0)),
+                        "exit_price": float(row.get("avg_px_close", 0)),
+                        "pnl": parse_pnl(row.get("realized_pnl", 0)),
+                        "size": float(row.get("quantity", 0)),
+                    })
+                except Exception as trade_err:
+                    print(f"[NAUTILUS] Error parsing trade: {trade_err}")
+        
+        # Build equity curve
+        equity_curve = []
+        if not positions_report.empty:
+            cumulative = cash
+            for _, row in positions_report.iterrows():
+                cumulative += parse_pnl(row.get("realized_pnl", 0))
+                equity_curve.append({
+                    "timestamp": str(row.get("closed_ts", "")),
+                    "equity": cumulative
+                })
+        
+        # Dispose engine
+        engine.dispose()
+        
+        print(f"[NAUTILUS] Backtest complete. Trades: {total_trades}, Return: {total_return:.2f}%")
         
         return {
             "success": True,
             "metrics": {
-                "total_return": 5.5,
-                "win_rate": 60.0,
-                "max_drawdown": -2.1,
-                "sharpe_ratio": 1.8,
-                "total_trades": 10,
-                "profit_factor": 1.5,
-                "equity_final": cash * 1.055,
+                "total_return": round(total_return, 2),
+                "win_rate": round(win_rate, 2),
+                "max_drawdown": round(max_drawdown, 2),
+                "sharpe_ratio": round(sharpe, 2),
+                "total_trades": total_trades,
+                "profit_factor": round(profit_factor, 2),
+                "equity_final": round(final_equity, 2),
             },
-            "trades": [],
-            "equity_curve": []
+            "trades": trades,
+            "equity_curve": equity_curve
         }
         
     except Exception as e:
-        print(f"Nautilus execution error: {e}")
+        print(f"[NAUTILUS] Execution error: {e}")
+        traceback.print_exc()
         return {"success": False, "error": str(e)}
 
 
@@ -2927,7 +3289,7 @@ async def run_backtest_pipeline(
             save_strategy_version, load_by_id
         )
         from json_code_generator import get_strategy_parameters, generate_strategy_from_json
-        from template_strategies import get_template_strategy, TEMPLATE_STRATEGIES
+        from template_strategies import get_template_strategy, get_nautilus_template_strategy, TEMPLATE_STRATEGIES
         
         # parse_xml_simple is defined locally in this file
 
@@ -2940,13 +3302,24 @@ async def run_backtest_pipeline(
         
         # 0. Check for pre-built template strategy (HIGHEST PRIORITY)
         if template_id and template_id in TEMPLATE_STRATEGIES:
-            template_code, template_params = get_template_strategy(template_id)
-            if template_code:
-                generated_code = template_code
-                strategy_params = template_params
-                from_template = True
-                print(f"[TEMPLATE] Using pre-built code for '{template_id}'")
-                print(f"[TEMPLATE] Default params: {template_params}")
+            # Use Nautilus-specific code for nautilus engine
+            if engine == "nautilus":
+                template_code, template_params = get_nautilus_template_strategy(template_id)
+                if template_code:
+                    generated_code = template_code
+                    strategy_params = template_params
+                    from_template = True
+                    print(f"[TEMPLATE] Using NautilusTrader pre-built code for '{template_id}'")
+                    print(f"[TEMPLATE] Default params: {template_params}")
+            else:
+                # Use backtesting.py code for other engines
+                template_code, template_params = get_template_strategy(template_id)
+                if template_code:
+                    generated_code = template_code
+                    strategy_params = template_params
+                    from_template = True
+                    print(f"[TEMPLATE] Using backtesting.py pre-built code for '{template_id}'")
+                    print(f"[TEMPLATE] Default params: {template_params}")
         
         # 1. Try to load pre-compiled code explicitly provided (from AI generation or API)
         if not generated_code and precompiled_code:
