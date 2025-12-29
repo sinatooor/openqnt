@@ -448,6 +448,151 @@ Standard backtests are prone to overfitting. Walkforward validation is an indust
 
 ---
 
+## Objective 016
+
+**id:** 016  
+**title:** Add Monte Carlo simulation for strategy robustness  
+**status:** todo  
+
+**details:**
+Implement Monte Carlo analysis that:
+- Randomly reshuffles trade order to test sequence dependency
+- Runs 1000+ simulated equity curves
+- Calculates confidence intervals for drawdown and return
+- Identifies fragile strategies
+
+**why it matters:**
+A strategy that looks profitable may rely on lucky trade sequencing. Monte Carlo reveals the probability distribution of outcomes, essential for realistic risk assessment.
+
+**acceptance_criteria:**
+
+* `MonteCarloSimulator` class with configurable iteration count
+* Returns 5th/50th/95th percentile metrics
+* Produces a distribution of max drawdowns
+* Works with any `SimulationResult`
+
+**validation:**
+
+* `python -m pytest tests/test_monte_carlo.py`
+
+---
+
+## Objective 017
+
+**id:** 017  
+**title:** Add strategy cloning and versioning  
+**status:** todo  
+
+**details:**
+Enable users to:
+- Clone an existing strategy IR to a new version
+- Track version history with timestamps
+- Compare two strategy versions side by side
+- Rollback to previous versions
+
+**why it matters:**
+Strategy development is iterative. Without versioning, users lose previous working versions and cannot track what changes improved or degraded performance.
+
+**acceptance_criteria:**
+
+* `StrategyVersionManager` class for CRUD operations
+* Versions stored with hash-based deduplication
+* Diff function shows changes between versions
+* At least 3 versions can be maintained per strategy
+
+**validation:**
+
+* `python -m pytest tests/test_strategy_versioning.py`
+
+---
+
+## Objective 018
+
+**id:** 018  
+**title:** Add position management rules to IR  
+**status:** todo  
+
+**details:**
+Extend the IR to support:
+- Pyramiding (adding to winning positions)
+- Partial exits (scale out)
+- Break-even stop moves
+- Time-based exits (e.g., close after N bars)
+
+**why it matters:**
+Real trading strategies often include dynamic position management. Without these primitives, the IR cannot express professional-grade strategies.
+
+**acceptance_criteria:**
+
+* New `PositionManagement` dataclass in strategy_ir.py
+* IR simulator respects pyramid limits
+* Partial exits reduce position size correctly
+* Time-based exit closes after specified bars
+
+**validation:**
+
+* `python -m pytest tests/test_position_management.py`
+
+---
+
+## Objective 019
+
+**id:** 019  
+**title:** Add trade journaling and tagging  
+**status:** todo  
+
+**details:**
+Allow trades to be tagged with metadata:
+- Entry reason (which rule triggered)
+- Market regime at entry (trending/ranging)
+- Custom user tags
+- Exportable trade journal
+
+**why it matters:**
+Understanding why trades happened enables pattern discovery. Tagged journals help identify which setups work best and in what conditions.
+
+**acceptance_criteria:**
+
+* `Trade` dataclass extended with `tags: Dict[str, str]`
+* Rules can attach metadata to trades they generate
+* Journal export includes all tags
+* Filter trades by tag in reports
+
+**validation:**
+
+* `python -m pytest tests/test_trade_journaling.py`
+
+---
+
+## Objective 020
+
+**id:** 020  
+**title:** Add strategy export to multiple formats  
+**status:** todo  
+
+**details:**
+Export IR strategies to:
+- Python (for backtesting.py)
+- JSON (for storage/transfer)
+- Markdown (for documentation)
+- Pine Script (for TradingView, best-effort)
+
+**why it matters:**
+Portability is a core principle. Users should be able to take their strategies to other platforms without lock-in.
+
+**acceptance_criteria:**
+
+* `StrategyExporter` class with format plugins
+* Python export produces executable backtesting.py code
+* JSON export is round-trip compatible with IR
+* Markdown includes human-readable strategy description
+
+**validation:**
+
+* `python -m pytest tests/test_strategy_export.py`
+
+---
+
 ## Improve Loop Rules (Hard Constraints)
 
 * Never modify the Vision section
