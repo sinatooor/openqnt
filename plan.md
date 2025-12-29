@@ -503,7 +503,7 @@ A strategy that looks profitable may rely on lucky trade sequencing. Monte Carlo
 
 **id:** 017  
 **title:** Add strategy cloning and versioning  
-**status:** todo  
+**status:** done  
 
 **details:**
 Enable users to:
