@@ -452,7 +452,6 @@ def run_nautilus_backtest(
             )
             print(f"[NAUTILUS] Generated visualization HTML ({len(visualization_html)} bytes)")
         except Exception as e:
-            import traceback
             print(f"[NAUTILUS] Visualization generation failed: {e}")
             traceback.print_exc()
 

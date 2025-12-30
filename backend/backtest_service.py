@@ -176,9 +176,18 @@ def generate_strategy_code_simple(parsed: Dict[str, Any]) -> str:
     """
     if JSON_GENERATOR_AVAILABLE:
         try:
-            return generate_strategy_from_json(parsed)
+            # generate_strategy_from_json returns (code, unknown_blocks) tuple
+            result = generate_strategy_from_json(parsed)
+            if isinstance(result, tuple):
+                code, unknown_blocks = result
+                if unknown_blocks:
+                    print(f"[CODE_GEN] Warning: {len(unknown_blocks)} unknown blocks")
+                return code if code else ""
+            return result if isinstance(result, str) else ""
         except Exception as e:
             print(f"JSON generation failed: {e}")
+            import traceback
+            traceback.print_exc()
             
     return ""
 
@@ -187,12 +196,25 @@ async def run_backtest_pipeline(
     symbol: str,
     data_source: str = "local",
     start_date: str = "2024-01-01",
-    end_date: str = "2024-03-31"
+    end_date: str = "2024-03-31",
+    engine: str = "nautilus",
+    initial_balance: float = 100000.0
 ) -> Dict[str, Any]:
     """
     Run the full backtest pipeline: XML -> Code -> Backtest (Nautilus/Simple).
+    
+    Args:
+        xml: Blockly XML strategy
+        symbol: Trading symbol
+        data_source: Data source (local, yfinance, etc.)
+        start_date: Backtest start date
+        end_date: Backtest end date
+        engine: Backtest engine ("nautilus", "rust", "backtesting.py")
+        initial_balance: Starting account balance
     """
     try:
+        print(f"[PIPELINE] Running backtest pipeline for {symbol} with engine: {engine}")
+        
         # 1. Parse
         parsed = parse_xml_simple(xml)
         
@@ -209,14 +231,17 @@ async def run_backtest_pipeline(
             # Fallback or error
             strategy_code = "# Generated strategy code placeholder"
 
-        # 3. Execute
-        # Force use_nautilus=True to meet the objective
+        # 3. Execute based on engine
+        use_nautilus = engine in ["nautilus", "rust"]
+        print(f"[PIPELINE] use_nautilus={use_nautilus}, engine={engine}")
+        
         return run_backtest(
             strategy_code=strategy_code,
             symbol=symbol,
             start_date=start_date,
             end_date=end_date,
-            use_nautilus=True
+            initial_balance=initial_balance,
+            use_nautilus=use_nautilus
         )
         
     except Exception as e:
