@@ -439,6 +439,33 @@ def run_nautilus_backtest(
         if equity_curve[-1]['equity'] != final_balance:
             equity_curve.append({"timestamp": end_date + " 23:59:59", "equity": round(final_balance, 2)})
 
+        # Generate HTML Visualization
+        visualization_html = None
+        try:
+            from backend.nautilus_visualizer import generate_nautilus_chart
+            visualization_html = generate_nautilus_chart(
+                ohlcv_data=historical_data,
+                trades=trades_list,
+                equity_curve=equity_curve,
+                metrics=metrics,
+                symbol=symbol
+            )
+        except ImportError:
+            try:
+                # Try fallback import if running from different context
+                from nautilus_visualizer import generate_nautilus_chart
+                visualization_html = generate_nautilus_chart(
+                    ohlcv_data=historical_data,
+                    trades=trades_list,
+                    equity_curve=equity_curve,
+                    metrics=metrics,
+                    symbol=symbol
+                )
+            except Exception as viz_err:
+                print(f"Visualization generation failed: {viz_err}")
+        except Exception as e:
+            print(f"Visualization generation failed: {e}")
+
         return {
             "success": True,
             "engine": "nautilus",
@@ -449,7 +476,8 @@ def run_nautilus_backtest(
             "final_balance": round(final_balance, 2),
             "metrics": metrics,
             "trades": trades_list,
-            "equity_curve": equity_curve
+            "equity_curve": equity_curve,
+            "visualization_html": visualization_html
         }
 
     except Exception as e:
