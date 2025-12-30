@@ -1,0 +1,1025 @@
+=== MOVING AVERAGES ===
+
+ta_sma: Simple Moving Average
+Components: N/A (single value)
+Mutation params: ma_period="14", shift="0", applied_price="0"
+applied_price options: 0=Close, 1=Open, 2=High, 3=Low, 4=Median, 5=Typical, 6=Weighted
+XML:
+<block type="ta_sma">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="14" shift="0" applied_price="0"></mutation>
+  <field name="NAME">SMA</field>
+</block>
+
+ta_ema: Exponential Moving Average
+Components: N/A (single value)
+Mutation params: ma_period="12", shift="0", applied_price="0"
+XML:
+<block type="ta_ema">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="12" shift="0" applied_price="0"></mutation>
+  <field name="NAME">EMA</field>
+</block>
+
+ta_smma: Smoothed Moving Average
+Components: N/A (single value)
+Mutation params: ma_period="14", shift="0", applied_price="0"
+XML:
+<block type="ta_smma">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="14" shift="0" applied_price="0"></mutation>
+  <field name="NAME">SMMA</field>
+</block>
+
+ta_lwma: Linear Weighted Moving Average
+Components: N/A (single value)
+Mutation params: ma_period="14", shift="0", applied_price="0"
+XML:
+<block type="ta_lwma">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="14" shift="0" applied_price="0"></mutation>
+  <field name="NAME">LWMA</field>
+</block>
+
+ta_dema: Double Exponential Moving Average
+Components: N/A (single value)
+Mutation params: ma_period="14", shift="0", applied_price="0"
+XML:
+<block type="ta_dema">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="14" shift="0" applied_price="0"></mutation>
+  <field name="NAME">DEMA</field>
+</block>
+
+ta_tema: Triple Exponential Moving Average
+Components: N/A (single value)
+Mutation params: ma_period="14", shift="0", applied_price="0"
+XML:
+<block type="ta_tema">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="14" shift="0" applied_price="0"></mutation>
+  <field name="NAME">TEMA</field>
+</block>
+
+ta_frama: Fractal Adaptive Moving Average
+Components: N/A (single value)
+Mutation params: ma_period="14", shift="0", applied_price="0"
+XML:
+<block type="ta_frama">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="14" shift="0" applied_price="0"></mutation>
+  <field name="NAME">FRAMA</field>
+</block>
+
+ta_vidya: Variable Index Dynamic Average
+Components: N/A (single value)
+Mutation params: cmo_period="9", ma_period="14", shift="0", applied_price="0"
+XML:
+<block type="ta_vidya">
+  <field name="PERIOD">60</field>
+  <mutation cmo_period="9" ma_period="14" shift="0" applied_price="0"></mutation>
+  <field name="NAME">VIDYA</field>
+</block>
+
+ta_ama: Adaptive Moving Average
+Components: N/A (single value)
+Mutation params: ma_period="9", fast_period="2", slow_period="30", shift="0", applied_price="0"
+XML:
+<block type="ta_ama">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="9" fast_period="2" slow_period="30" shift="0" applied_price="0"></mutation>
+  <field name="NAME">AMA</field>
+</block>
+
+=== OSCILLATORS ===
+
+ta_rsi: Relative Strength Index
+Components: N/A (single value, range 0-100)
+Mutation params: ma_period="14", applied_price="0"
+XML:
+<block type="ta_rsi">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="14" applied_price="0"></mutation>
+  <field name="NAME">RSI</field>
+</block>
+
+ta_cci: Commodity Channel Index
+Components: N/A (single value)
+Mutation params: ma_period="20", applied_price="5"
+XML:
+<block type="ta_cci">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="20" applied_price="5"></mutation>
+  <field name="NAME">CCI</field>
+</block>
+
+ta_williams_r: Williams Percent Range
+Components: N/A (single value, range -100 to 0)
+Mutation params: ma_period="14"
+XML:
+<block type="ta_williams_r">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="14"></mutation>
+  <field name="NAME">Williams %R</field>
+</block>
+
+ta_mfi: Money Flow Index
+Components: N/A (single value, range 0-100)
+Mutation params: ma_period="14", applied_volume="0"
+XML:
+<block type="ta_mfi">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="14" applied_volume="0"></mutation>
+  <field name="NAME">MFI</field>
+</block>
+
+ta_momentum: Momentum Indicator
+Components: N/A (single value)
+Mutation params: ma_period="14", applied_price="0"
+XML:
+<block type="ta_momentum">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="14" applied_price="0"></mutation>
+  <field name="NAME">Momentum</field>
+</block>
+
+ta_osma: Moving Average of Oscillator
+Components (COMPONENT field): main | signal
+Mutation params: fast_period="12", slow_period="26", signal_period="9", applied_price="0"
+XML for main:
+<block type="ta_osma">
+  <field name="PERIOD">60</field>
+  <mutation fast_period="12" slow_period="26" signal_period="9" applied_price="0"></mutation>
+  <field name="NAME">OsMA</field>
+  <field name="COMPONENT">main</field>
+</block>
+
+ta_rvi: Relative Vigor Index
+Components (COMPONENT field): main | signal
+Mutation params: ma_period="10"
+XML for main:
+<block type="ta_rvi">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="10"></mutation>
+  <field name="NAME">RVI</field>
+  <field name="COMPONENT">main</field>
+</block>
+
+ta_stochastic: Stochastic Oscillator
+Components (COMPONENT field): main | signal
+Mutation params: k_period="5", d_period="3", slowing="3", ma_method="0", price_field="0"
+ma_method options: 0=SMA, 1=EMA, 2=SMMA, 3=LWMA
+XML for main (%K):
+<block type="ta_stochastic">
+  <field name="PERIOD">60</field>
+  <mutation k_period="5" d_period="3" slowing="3" ma_method="0" price_field="0"></mutation>
+  <field name="NAME">Stochastic</field>
+  <field name="COMPONENT">main</field>
+</block>
+XML for signal (%D):
+<block type="ta_stochastic">
+  <field name="PERIOD">60</field>
+  <mutation k_period="5" d_period="3" slowing="3" ma_method="0" price_field="0"></mutation>
+  <field name="NAME">Stochastic</field>
+  <field name="COMPONENT">signal</field>
+</block>
+
+ta_trix: Triple Exponential Average
+Components: N/A (single value)
+Mutation params: ma_period="14", applied_price="0"
+XML:
+<block type="ta_trix">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="14" applied_price="0"></mutation>
+  <field name="NAME">TRIX</field>
+</block>
+
+ta_ac: Accelerator Oscillator
+Components: N/A (single value)
+Mutation params: (none)
+XML:
+<block type="ta_ac">
+  <field name="PERIOD">60</field>
+  <field name="NAME">AC</field>
+</block>
+
+ta_ao: Awesome Oscillator
+Components: N/A (single value)
+Mutation params: (none)
+XML:
+<block type="ta_ao">
+  <field name="PERIOD">60</field>
+  <field name="NAME">AO</field>
+</block>
+
+ta_chaikin: Chaikin Oscillator
+Components: N/A (single value)
+Mutation params: fast_period="3", slow_period="10", ma_method="1", applied_volume="0"
+XML:
+<block type="ta_chaikin">
+  <field name="PERIOD">60</field>
+  <mutation fast_period="3" slow_period="10" ma_method="1" applied_volume="0"></mutation>
+  <field name="NAME">Chaikin</field>
+</block>
+
+ta_demarker: DeMarker
+Components: N/A (single value, range 0-1)
+Mutation params: ma_period="14"
+XML:
+<block type="ta_demarker">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="14"></mutation>
+  <field name="NAME">DeMarker</field>
+</block>
+
+ta_force: Force Index
+Components: N/A (single value)
+Mutation params: ma_period="13", ma_method="0", applied_volume="0"
+XML:
+<block type="ta_force">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="13" ma_method="0" applied_volume="0"></mutation>
+  <field name="NAME">Force</field>
+</block>
+
+=== MACD ===
+
+macd_value: MACD (Moving Average Convergence Divergence)
+Components (COMPONENT field): line | signal | histogram
+Mutation params: fast_period="12", slow_period="26", signal_period="9", applied_price="0"
+XML for MACD Line:
+<block type="macd_value">
+  <field name="PERIOD">60</field>
+  <mutation fast_period="12" slow_period="26" signal_period="9" applied_price="0"></mutation>
+  <field name="NAME">MACD</field>
+  <field name="COMPONENT">line</field>
+</block>
+XML for Signal Line:
+<block type="macd_value">
+  <field name="PERIOD">60</field>
+  <mutation fast_period="12" slow_period="26" signal_period="9" applied_price="0"></mutation>
+  <field name="NAME">MACD</field>
+  <field name="COMPONENT">signal</field>
+</block>
+XML for Histogram:
+<block type="macd_value">
+  <field name="PERIOD">60</field>
+  <mutation fast_period="12" slow_period="26" signal_period="9" applied_price="0"></mutation>
+  <field name="NAME">MACD</field>
+  <field name="COMPONENT">histogram</field>
+</block>
+
+=== BANDS & CHANNELS ===
+
+ta_bb: Bollinger Bands
+Components (COMPONENT field): upper | middle | lower
+Mutation params: ma_period="20", deviation="2.0", shift="0", applied_price="0"
+XML for Upper Band:
+<block type="ta_bb">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="20" deviation="2.0" shift="0" applied_price="0"></mutation>
+  <field name="NAME">BB</field>
+  <field name="COMPONENT">upper</field>
+</block>
+XML for Middle Band:
+<block type="ta_bb">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="20" deviation="2.0" shift="0" applied_price="0"></mutation>
+  <field name="NAME">BB</field>
+  <field name="COMPONENT">middle</field>
+</block>
+XML for Lower Band:
+<block type="ta_bb">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="20" deviation="2.0" shift="0" applied_price="0"></mutation>
+  <field name="NAME">BB</field>
+  <field name="COMPONENT">lower</field>
+</block>
+
+ta_envelopes: Envelopes
+Components (COMPONENT field): upper | lower
+Mutation params: ma_period="14", deviation="0.1", shift="0", ma_method="0", applied_price="0"
+XML for Upper:
+<block type="ta_envelopes">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="14" deviation="0.1" shift="0" ma_method="0" applied_price="0"></mutation>
+  <field name="NAME">Envelopes</field>
+  <field name="COMPONENT">upper</field>
+</block>
+
+ta_donchian: Donchian Channel
+Components (COMPONENT field): upper | middle | lower
+Mutation params: ma_period="20"
+XML for Upper:
+<block type="ta_donchian">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="20"></mutation>
+  <field name="NAME">Donchian</field>
+  <field name="COMPONENT">upper</field>
+</block>
+
+ta_keltner: Keltner Channel
+Components (COMPONENT field): upper | middle | lower
+Mutation params: ma_period="20", atr_period="10", atr_multiplier="2.0"
+XML for Upper:
+<block type="ta_keltner">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="20" atr_period="10" atr_multiplier="2.0"></mutation>
+  <field name="NAME">Keltner</field>
+  <field name="COMPONENT">upper</field>
+</block>
+
+=== COMPLEX INDICATORS ===
+
+ta_ichimoku: Ichimoku Kinko Hyo
+Components (COMPONENT field): tenkan | kijun | chikou | senkouA | senkouB
+Mutation params: tenkanSen="9", kijunSen="26", senkouSpanB="52"
+XML for Tenkan-sen (Conversion Line):
+<block type="ta_ichimoku">
+  <field name="PERIOD">60</field>
+  <mutation tenkanSen="9" kijunSen="26" senkouSpanB="52"></mutation>
+  <field name="NAME">Ichimoku</field>
+  <field name="COMPONENT">tenkan</field>
+</block>
+XML for Kijun-sen (Base Line):
+<block type="ta_ichimoku">
+  <field name="PERIOD">60</field>
+  <mutation tenkanSen="9" kijunSen="26" senkouSpanB="52"></mutation>
+  <field name="NAME">Ichimoku</field>
+  <field name="COMPONENT">kijun</field>
+</block>
+XML for Chikou Span (Lagging Span):
+<block type="ta_ichimoku">
+  <field name="PERIOD">60</field>
+  <mutation tenkanSen="9" kijunSen="26" senkouSpanB="52"></mutation>
+  <field name="NAME">Ichimoku</field>
+  <field name="COMPONENT">chikou</field>
+</block>
+XML for Senkou Span A (Leading Span A):
+<block type="ta_ichimoku">
+  <field name="PERIOD">60</field>
+  <mutation tenkanSen="9" kijunSen="26" senkouSpanB="52"></mutation>
+  <field name="NAME">Ichimoku</field>
+  <field name="COMPONENT">senkouA</field>
+</block>
+XML for Senkou Span B (Leading Span B):
+<block type="ta_ichimoku">
+  <field name="PERIOD">60</field>
+  <mutation tenkanSen="9" kijunSen="26" senkouSpanB="52"></mutation>
+  <field name="NAME">Ichimoku</field>
+  <field name="COMPONENT">senkouB</field>
+</block>
+
+alligator: Bill Williams Alligator
+Components (COMPONENT field): jaw | teeth | lips
+Mutation params: jaw_period="13", jaw_shift="8", teeth_period="8", teeth_shift="5", lips_period="5", lips_shift="3", ma_method="2", applied_price="4"
+XML for Jaw (Blue, 13-period):
+<block type="alligator">
+  <field name="PERIOD">60</field>
+  <mutation jaw_period="13" jaw_shift="8" teeth_period="8" teeth_shift="5" lips_period="5" lips_shift="3" ma_method="2" applied_price="4"></mutation>
+  <field name="NAME">Alligator</field>
+  <field name="COMPONENT">jaw</field>
+</block>
+XML for Teeth (Red, 8-period):
+<block type="alligator">
+  <field name="PERIOD">60</field>
+  <mutation jaw_period="13" jaw_shift="8" teeth_period="8" teeth_shift="5" lips_period="5" lips_shift="3" ma_method="2" applied_price="4"></mutation>
+  <field name="NAME">Alligator</field>
+  <field name="COMPONENT">teeth</field>
+</block>
+XML for Lips (Green, 5-period):
+<block type="alligator">
+  <field name="PERIOD">60</field>
+  <mutation jaw_period="13" jaw_shift="8" teeth_period="8" teeth_shift="5" lips_period="5" lips_shift="3" ma_method="2" applied_price="4"></mutation>
+  <field name="NAME">Alligator</field>
+  <field name="COMPONENT">lips</field>
+</block>
+
+gator: Gator Oscillator (Bill Williams)
+Components (COMPONENT field): upper | lower
+Mutation params: jaw_period="13", jaw_shift="8", teeth_period="8", teeth_shift="5", lips_period="5", lips_shift="3", ma_method="2", applied_price="4"
+XML for Upper:
+<block type="gator">
+  <field name="PERIOD">60</field>
+  <mutation jaw_period="13" jaw_shift="8" teeth_period="8" teeth_shift="5" lips_period="5" lips_shift="3" ma_method="2" applied_price="4"></mutation>
+  <field name="NAME">Gator</field>
+  <field name="COMPONENT">upper</field>
+</block>
+
+ta_dmi: Directional Movement Index
+Components (COMPONENT field): plusDI | minusDI | adx
+Mutation params: ma_period="14", applied_price="0"
+XML for +DI:
+<block type="ta_dmi">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="14" applied_price="0"></mutation>
+  <field name="NAME">DMI</field>
+  <field name="COMPONENT">plusDI</field>
+</block>
+XML for -DI:
+<block type="ta_dmi">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="14" applied_price="0"></mutation>
+  <field name="NAME">DMI</field>
+  <field name="COMPONENT">minusDI</field>
+</block>
+XML for ADX (via DMI):
+<block type="ta_dmi">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="14" applied_price="0"></mutation>
+  <field name="NAME">DMI</field>
+  <field name="COMPONENT">adx</field>
+</block>
+
+ta_adx: Average Directional Index (standalone)
+Components: N/A (single value)
+Mutation params: ma_period="14", applied_price="0"
+XML:
+<block type="ta_adx">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="14" applied_price="0"></mutation>
+  <field name="NAME">ADX</field>
+</block>
+
+ta_adxwilder: ADX Wilder
+Components: N/A (single value)
+Mutation params: ma_period="14"
+XML:
+<block type="ta_adxwilder">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="14"></mutation>
+  <field name="NAME">ADX Wilder</field>
+</block>
+
+=== VOLATILITY ===
+
+ta_atr: Average True Range
+Components: N/A (single value)
+Mutation params: ma_period="14"
+XML:
+<block type="ta_atr">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="14"></mutation>
+  <field name="NAME">ATR</field>
+</block>
+
+ta_stddev: Standard Deviation
+Components: N/A (single value)
+Mutation params: ma_period="20", deviation="1", shift="0", applied_price="0"
+XML:
+<block type="ta_stddev">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="20" deviation="1" shift="0" applied_price="0"></mutation>
+  <field name="NAME">StdDev</field>
+</block>
+
+=== TREND ===
+
+ta_sar: Parabolic SAR
+Components: N/A (single value)
+Mutation params: step="0.02", maximum="0.2"
+XML:
+<block type="ta_sar">
+  <field name="PERIOD">60</field>
+  <mutation step="0.02" maximum="0.2"></mutation>
+  <field name="NAME">SAR</field>
+</block>
+
+=== VOLUME ===
+
+ta_obv: On Balance Volume
+Components: N/A (single value)
+Mutation params: applied_volume="0"
+XML:
+<block type="ta_obv">
+  <field name="PERIOD">60</field>
+  <mutation applied_volume="0"></mutation>
+  <field name="NAME">OBV</field>
+</block>
+
+ta_volumes: Volumes
+Components (COMPONENT field): real | tick
+Mutation params: applied_volume="0"
+XML for Real Volume:
+<block type="ta_volumes">
+  <field name="PERIOD">60</field>
+  <mutation applied_volume="0"></mutation>
+  <field name="NAME">Volume</field>
+  <field name="COMPONENT">real</field>
+</block>
+
+ta_bwmfi: Bill Williams Market Facilitation Index
+Components (COMPONENT field): main | plus | minus
+Mutation params: applied_volume="0"
+XML for main:
+<block type="ta_bwmfi">
+  <field name="PERIOD">60</field>
+  <mutation applied_volume="0"></mutation>
+  <field name="NAME">BW MFI</field>
+  <field name="COMPONENT">main</field>
+</block>
+
+ta_ad: Accumulation/Distribution
+Components: N/A (single value)
+Mutation params: applied_volume="0"
+XML:
+<block type="ta_ad">
+  <field name="PERIOD">60</field>
+  <mutation applied_volume="0"></mutation>
+  <field name="NAME">A/D</field>
+</block>
+
+ta_vwap: Volume Weighted Average Price
+Components: N/A (single value)
+Mutation params: (none)
+XML:
+<block type="ta_vwap">
+  <field name="PERIOD">60</field>
+  <field name="NAME">VWAP</field>
+</block>
+
+=== POWER ===
+
+ta_bearspower: Bears Power
+Components: N/A (single value)
+Mutation params: ma_period="13"
+XML:
+<block type="ta_bearspower">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="13"></mutation>
+  <field name="NAME">Bears Power</field>
+</block>
+
+ta_bullspower: Bulls Power
+Components: N/A (single value)
+Mutation params: ma_period="13"
+XML:
+<block type="ta_bullspower">
+  <field name="PERIOD">60</field>
+  <mutation ma_period="13"></mutation>
+  <field name="NAME">Bulls Power</field>
+</block>
+
+=== OTHER INDICATORS ===
+
+ta_fractals: Fractals
+Components (COMPONENT field): upper | lower
+Mutation params: (none)
+XML for Upper Fractal:
+<block type="ta_fractals">
+  <field name="PERIOD">60</field>
+  <field name="NAME">Fractals</field>
+  <field name="COMPONENT">upper</field>
+</block>
+
+ta_highest: Highest Price
+Components: N/A (single value)
+Mutation params: count="14", start="0"
+XML:
+<block type="ta_highest">
+  <field name="PERIOD">60</field>
+  <mutation count="14" start="0"></mutation>
+  <field name="NAME">Highest</field>
+</block>
+
+ta_lowest: Lowest Price
+Components: N/A (single value)
+Mutation params: count="14", start="0"
+XML:
+<block type="ta_lowest">
+  <field name="PERIOD">60</field>
+  <mutation count="14" start="0"></mutation>
+  <field name="NAME">Lowest</field>
+</block>
+
+=== CONTROL BLOCKS ===
+
+control_forever: Main trading loop (REQUIRED)
+XML:
+<block type="control_forever" x="50" y="50">
+  <statement name="DO">
+    <!-- inner blocks here -->
+  </statement>
+</block>
+
+control_if: Conditional execution
+XML:
+<block type="control_if">
+  <value name="CONDITION">
+    <!-- condition block here -->
+  </value>
+  <statement name="DO">
+    <!-- action blocks here -->
+  </statement>
+</block>
+
+control_if_else: Conditional with else branch
+XML:
+<block type="control_if_else">
+  <value name="CONDITION">
+    <!-- condition block here -->
+  </value>
+  <statement name="DO">
+    <!-- if-true blocks here -->
+  </statement>
+  <statement name="ELSE">
+    <!-- if-false blocks here -->
+  </statement>
+</block>
+
+control_repeat: Repeat N times
+Fields: TIMES (number of iterations)
+XML:
+<block type="control_repeat">
+  <field name="TIMES">10</field>
+  <statement name="DO">
+    <!-- inner blocks here -->
+  </statement>
+</block>
+
+control_repeat_until: Repeat until condition
+XML:
+<block type="control_repeat_until">
+  <value name="CONDITION">
+    <!-- condition block here -->
+  </value>
+  <statement name="DO">
+    <!-- inner blocks here -->
+  </statement>
+</block>
+
+control_wait: Wait for duration
+Fields: DURATION (seconds)
+XML:
+<block type="control_wait">
+  <field name="DURATION">1</field>
+</block>
+
+control_wait_until: Wait until condition
+XML:
+<block type="control_wait_until">
+  <value name="CONDITION">
+    <!-- condition block here -->
+  </value>
+</block>
+
+control_stop: Stop execution
+XML:
+<block type="control_stop"></block>
+
+=== OPERATOR BLOCKS ===
+
+Comparison operators:
+operator_equals: A == B
+operator_not_equals: A != B
+operator_greater: A > B
+operator_less: A < B
+operator_greater_equals: A >= B
+operator_less_equals: A <= B
+
+XML format for all comparison operators:
+<block type="operator_greater">
+  <value name="LEFT">
+    <!-- left operand block -->
+  </value>
+  <value name="RIGHT">
+    <!-- right operand block -->
+  </value>
+</block>
+
+Math operators:
+operator_add: A + B
+operator_subtract: A - B
+operator_multiply: A * B
+operator_divide: A / B
+
+XML format for all math operators:
+<block type="operator_add">
+  <value name="LEFT">
+    <!-- left operand block -->
+  </value>
+  <value name="RIGHT">
+    <!-- right operand block -->
+  </value>
+</block>
+
+Logic operators:
+operator_and: A AND B
+operator_or: A OR B
+operator_not: NOT A
+
+XML for operator_and/operator_or:
+<block type="operator_and">
+  <value name="LEFT">
+    <!-- left condition -->
+  </value>
+  <value name="RIGHT">
+    <!-- right condition -->
+  </value>
+</block>
+
+XML for operator_not:
+<block type="operator_not">
+  <value name="OPERAND">
+    <!-- condition to negate -->
+  </value>
+</block>
+
+operator_advanced_math: Advanced math functions
+Dropdown OPTIONS: abs | sqrt | sin | cos | tan | log | ln | exp | round | floor | ceil
+XML:
+<block type="operator_advanced_math">
+  <field name="OP">abs</field>
+  <value name="NUM">
+    <!-- number block -->
+  </value>
+</block>
+
+=== ENVIRONMENT BLOCKS ===
+
+environment_price: Current price
+Dropdown TYPE options: close | open | high | low | median | typical | weighted
+XML:
+<block type="environment_price">
+  <field name="TYPE">close</field>
+</block>
+
+environment_spread: Current spread
+XML:
+<block type="environment_spread"></block>
+
+environment_time: Current time
+Fields: COMPONENT (hour | minute | second | day | month | year)
+XML:
+<block type="environment_time">
+  <field name="COMPONENT">hour</field>
+</block>
+
+environment_day_of_week: Day of week (0=Sunday, 6=Saturday)
+XML:
+<block type="environment_day_of_week"></block>
+
+environment_is_market_open: Check if market is open
+XML:
+<block type="environment_is_market_open"></block>
+
+environment_prev_open_price: Previous candle open
+Fields: SHIFT (bars back, default 1)
+XML:
+<block type="environment_prev_open_price">
+  <field name="SHIFT">1</field>
+</block>
+
+environment_prev_close_price: Previous candle close
+Fields: SHIFT (bars back, default 1)
+XML:
+<block type="environment_prev_close_price">
+  <field name="SHIFT">1</field>
+</block>
+
+environment_prev_high_price: Previous candle high
+Fields: SHIFT (bars back, default 1)
+XML:
+<block type="environment_prev_high_price">
+  <field name="SHIFT">1</field>
+</block>
+
+environment_prev_low_price: Previous candle low
+Fields: SHIFT (bars back, default 1)
+XML:
+<block type="environment_prev_low_price">
+  <field name="SHIFT">1</field>
+</block>
+
+environment_new_candle_open: Detect new candle opened
+Fields: TIMEFRAME (in minutes: 1, 5, 15, 30, 60, 240, 1440, 10080)
+XML:
+<block type="environment_new_candle_open">
+  <field name="TIMEFRAME">60</field>
+</block>
+
+environment_new_candle_close: Detect new candle closed
+Fields: TIMEFRAME (in minutes)
+XML:
+<block type="environment_new_candle_close">
+  <field name="TIMEFRAME">60</field>
+</block>
+
+=== TRADING BLOCKS ===
+
+trade_order: Place a trade order
+Fields:
+  - TRADE_ID: unique identifier for the trade
+  - DIRECTION: long | short
+  - SIZE_TYPE (implicit via SIZE value): lots | usd | percent
+  - ORDER_TYPE: market | limit
+  - LEVERAGE: multiplier (default 1)
+XML:
+<block type="trade_order">
+  <field name="TRADE_ID">my_trade</field>
+  <field name="DIRECTION">long</field>
+  <value name="SIZE">
+    <shadow type="math_number">
+      <field name="NUM">0.1</field>
+    </shadow>
+  </value>
+  <field name="LEVERAGE">1</field>
+  <field name="ORDER_TYPE">market</field>
+</block>
+
+trade_close_all: Close all open positions
+XML:
+<block type="trade_close_all"></block>
+
+trade_close: Close specific trade
+Fields: TRADE_ID
+XML:
+<block type="trade_close">
+  <field name="TRADE_ID">my_trade</field>
+</block>
+
+trade_stop_loss: Set stop loss for trade
+Fields:
+  - CLOSE_TYPE: full | partial
+  - TRADE_ID: trade identifier
+Value: PRICE (the stop loss price level)
+XML:
+<block type="trade_stop_loss">
+  <field name="CLOSE_TYPE">full</field>
+  <field name="TRADE_ID">my_trade</field>
+  <value name="PRICE">
+    <!-- price calculation block -->
+  </value>
+</block>
+
+trade_take_profit: Set take profit for trade
+Fields:
+  - CLOSE_TYPE: full | partial
+  - TRADE_ID: trade identifier
+Value: PRICE (the take profit price level)
+XML:
+<block type="trade_take_profit">
+  <field name="CLOSE_TYPE">full</field>
+  <field name="TRADE_ID">my_trade</field>
+  <value name="PRICE">
+    <!-- price calculation block -->
+  </value>
+</block>
+
+trade_pnl_of: Get P&L of a trade
+Fields: TRADE_ID
+XML:
+<block type="trade_pnl_of">
+  <field name="TRADE_ID">my_trade</field>
+</block>
+
+trade_entry_price: Get entry price of a trade
+Fields: TRADE_ID
+XML:
+<block type="trade_entry_price">
+  <field name="TRADE_ID">my_trade</field>
+</block>
+
+trade_position_size: Get position size of a trade
+Fields: TRADE_ID
+XML:
+<block type="trade_position_size">
+  <field name="TRADE_ID">my_trade</field>
+</block>
+
+=== RISK MANAGEMENT BLOCKS ===
+
+risk_position_percent: Calculate position size by risk percentage
+Fields: PERCENT (e.g., 1 for 1% risk)
+XML:
+<block type="risk_position_percent">
+  <value name="PERCENT">
+    <shadow type="math_number">
+      <field name="NUM">1</field>
+    </shadow>
+  </value>
+</block>
+
+risk_kelly_criterion: Kelly Criterion position sizing
+Fields: WIN_RATE, WIN_LOSS_RATIO
+XML:
+<block type="risk_kelly_criterion">
+  <value name="WIN_RATE">
+    <shadow type="math_number">
+      <field name="NUM">0.55</field>
+    </shadow>
+  </value>
+  <value name="WIN_LOSS_RATIO">
+    <shadow type="math_number">
+      <field name="NUM">1.5</field>
+    </shadow>
+  </value>
+</block>
+
+risk_fixed_amount: Fixed dollar amount position sizing
+Fields: AMOUNT
+XML:
+<block type="risk_fixed_amount">
+  <value name="AMOUNT">
+    <shadow type="math_number">
+      <field name="NUM">100</field>
+    </shadow>
+  </value>
+</block>
+
+risk_trailing_stop: Set trailing stop
+Fields: TRADE_ID, DISTANCE (in points/pips)
+XML:
+<block type="risk_trailing_stop">
+  <field name="TRADE_ID">my_trade</field>
+  <value name="DISTANCE">
+    <shadow type="math_number">
+      <field name="NUM">50</field>
+    </shadow>
+  </value>
+</block>
+
+risk_scale_in: Add to position
+Fields: TRADE_ID, SIZE
+XML:
+<block type="risk_scale_in">
+  <field name="TRADE_ID">my_trade</field>
+  <value name="SIZE">
+    <shadow type="math_number">
+      <field name="NUM">0.1</field>
+    </shadow>
+  </value>
+</block>
+
+risk_scale_out: Reduce position
+Fields: TRADE_ID, PERCENT
+XML:
+<block type="risk_scale_out">
+  <field name="TRADE_ID">my_trade</field>
+  <value name="PERCENT">
+    <shadow type="math_number">
+      <field name="NUM">50</field>
+    </shadow>
+  </value>
+</block>
+
+risk_max_drawdown: Set maximum drawdown limit
+Fields: PERCENT
+XML:
+<block type="risk_max_drawdown">
+  <value name="PERCENT">
+    <shadow type="math_number">
+      <field name="NUM">10</field>
+    </shadow>
+  </value>
+</block>
+
+risk_daily_loss_limit: Set daily loss limit
+Fields: PERCENT
+XML:
+<block type="risk_daily_loss_limit">
+  <value name="PERCENT">
+    <shadow type="math_number">
+      <field name="NUM">5</field>
+    </shadow>
+  </value>
+</block>
+
+=== VARIABLE BLOCKS ===
+
+variables_set: Set variable value
+Fields: VAR (variable name)
+XML:
+<block type="variables_set">
+  <field name="VAR">myVariable</field>
+  <value name="VALUE">
+    <!-- value block -->
+  </value>
+</block>
+
+variables_get: Get variable value
+Fields: VAR (variable name)
+XML:
+<block type="variables_get">
+  <field name="VAR">myVariable</field>
+</block>
+
+variables_change: Change variable by amount
+Fields: VAR (variable name), VALUE (amount)
+XML:
+<block type="variables_change">
+  <field name="VAR">counter</field>
+  <value name="DELTA">
+    <shadow type="math_number">
+      <field name="NUM">1</field>
+    </shadow>
+  </value>
+</block>
+
+=== MATH BLOCKS ===
+
+math_number: Numeric value (used as shadow in VALUE inputs)
+XML:
+<shadow type="math_number">
+  <field name="NUM">14</field>
+</shadow>

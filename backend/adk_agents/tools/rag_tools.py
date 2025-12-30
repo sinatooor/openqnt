@@ -11,11 +11,30 @@ from typing import Optional
 # Add parent directory for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+# Lazy load VectorRAG to avoid import issues
+_vector_rag = None
+RAG_AVAILABLE = False
+
+def _get_vector_rag():
+    """Lazy load VectorRAG singleton."""
+    global _vector_rag, RAG_AVAILABLE
+    if _vector_rag is None:
+        try:
+            from vector_rag import get_vector_rag, BLOCK_DESCRIPTIONS as _BD
+            _vector_rag = get_vector_rag()
+            if not _vector_rag.initialized:
+                _vector_rag.initialize()
+            RAG_AVAILABLE = True
+            print("[RAG-TOOLS] VectorRAG initialized successfully")
+        except Exception as e:
+            print(f"[RAG-TOOLS] Failed to load VectorRAG: {e}")
+            RAG_AVAILABLE = False
+    return _vector_rag
+
+# Load block descriptions for fallback
 try:
-    from vector_rag import search_relevant_blocks, BLOCK_DESCRIPTIONS
-    RAG_AVAILABLE = True
+    from vector_rag import BLOCK_DESCRIPTIONS
 except ImportError:
-    RAG_AVAILABLE = False
     BLOCK_DESCRIPTIONS = {}
 
 
@@ -38,12 +57,19 @@ def find_similar_blocks(query: str, top_k: int = 5) -> dict:
         >>> find_similar_blocks("RSI overbought signal")
         {"status": "success", "blocks": [{"name": "ta_rsi", "description": "..."}]}
     """
-    if not RAG_AVAILABLE:
+    vector_rag = _get_vector_rag()
+    
+    if not RAG_AVAILABLE or vector_rag is None:
         # Fallback to simple keyword matching
         return _fallback_search(query, top_k)
     
     try:
-        results = search_relevant_blocks(query, top_k=top_k)
+        # Use VectorRAG's search_blocks method
+        results = vector_rag.search_blocks(
+            query=query,
+            n_results=top_k,
+            use_reranker=True
+        )
         
         return {
             "status": "success",
@@ -52,18 +78,16 @@ def find_similar_blocks(query: str, top_k: int = 5) -> dict:
             "blocks": [
                 {
                     "block_type": r.get("block_type"),
-                    "description": r.get("description"),
-                    "category": r.get("category", "Unknown"),
-                    "relevance_score": r.get("score", 0)
+                    "description": r.get("metadata", {}).get("raw_description", r.get("description", "")),
+                    "category": r.get("metadata", {}).get("category", "Unknown"),
+                    "relevance_score": r.get("re_rank_score", 1 - r.get("distance", 0))
                 }
                 for r in results
             ]
         }
     except Exception as e:
-        return {
-            "status": "error",
-            "error_message": str(e)
-        }
+        print(f"[RAG-TOOLS] Search error: {e}")
+        return _fallback_search(query, top_k)
 
 
 def _fallback_search(query: str, top_k: int) -> dict:
