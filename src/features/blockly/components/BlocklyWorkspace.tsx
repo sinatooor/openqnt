@@ -7,13 +7,14 @@ import { Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
 // Components
-import { AIChatPanel } from "@/features/ai/components/AIChatPanel";
+import { AIChatPanel } from "@/components/AIChatPanel";
 import { LogEntry } from "@/components/DevLogPanel";
 import { WorkspaceToolbar } from "./WorkspaceToolbar";
 import { CodeViewPanel } from "./CodeViewPanel";
 import { BacktestingPanel } from "@/components/BacktestingPanel";
 import { IGTradingPanel } from "@/components/IGTradingPanel";
 import { WorkspaceDialogs } from "./WorkspaceDialogs";
+import { ProfileModal } from "@/components/ProfileModal";
 
 // Utils & Hooks
 import { StrategyTemplate } from "@/features/templates/strategyTemplates";
@@ -57,6 +58,23 @@ export const BlocklyWorkspace = ({
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
   const aiPanelRef = useRef<HTMLDivElement>(null);
 
+  // Listen for external requests to open AI chat (e.g. from ProfileModal)
+  useEffect(() => {
+    const handleOpenAIChat = (e: any) => {
+      const message = e.detail?.message;
+      setShowAIPanel(true);
+      if (message) {
+        toast.info("Action Copied via Clipboard", {
+          description: `Paste "${message}" in the chat to start setup.`,
+          duration: 5000,
+        });
+      }
+    };
+
+    window.addEventListener('openAIChat', handleOpenAIChat);
+    return () => window.removeEventListener('openAIChat', handleOpenAIChat);
+  }, []);
+
   // Workspace State
   const [generatedMqlCode, setGeneratedMqlCode] = useState<string>("");
   const [currentXmlCode, setCurrentXmlCode] = useState<string>("");
@@ -72,6 +90,7 @@ export const BlocklyWorkspace = ({
   const [showBacktest, setShowBacktest] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [showIGPanel, setShowIGPanel] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   // Dialog Visibility
   const [showTemplates, setShowTemplates] = useState(false);
@@ -419,10 +438,12 @@ export const BlocklyWorkspace = ({
         onCenter={handleCenterWorkspace}
         showCode={showCode}
         onToggleCode={() => setShowCode(!showCode)}
-        showIGPanel={showIGPanel}
-        onToggleIGPanel={() => setShowIGPanel(!showIGPanel)}
+        showAIPanel={showAIPanel}
+        onToggleAIPanel={() => setShowAIPanel(!showAIPanel)}
         showStrategyPanel={showBacktest}
         onToggleStrategyPanel={() => setShowBacktest(!showBacktest)}
+        showProfileModal={showProfileModal}
+        onToggleProfileModal={() => setShowProfileModal(!showProfileModal)}
       />
 
       <div className="flex-1 flex min-h-0 relative">
@@ -451,36 +472,22 @@ export const BlocklyWorkspace = ({
           onToggleBeautified={() => setBeautified(!beautified)}
           onCopy={handleCopyCode}
           onCreateBlocks={(xml) => handleBlocksGenerated(xml, true)}
+          onClose={() => setShowCode(false)}
           renderCodeWithLineNumbers={renderCodeWithLineNumbers}
           getCodeStatistics={getCodeStatistics}
         />}
 
-        {showAIPanel && <div className="w-[400px] border-l border-border bg-card flex flex-col animate-in slide-in-from-right duration-300 shadow-2xl z-10">
-          <div className="h-12 border-b border-border flex items-center justify-between px-4 bg-muted/30">
-            <div className="flex items-center gap-2">
-              <Wand2 className="w-4 h-4 text-primary" />
-              <span className="font-medium text-sm">AI Assistant</span>
-            </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowAIPanel(false)}>
-              <span className="sr-only">Close</span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
-            </Button>
-          </div>
-          <div className="flex-1 overflow-auto" ref={aiPanelRef}>
-            <AIChatPanel
-              onBlocksGenerated={handleBlocksGenerated}
-              onStrategyGenerated={onStrategyGenerated}
-              getCurrentWorkspaceXml={getCurrentWorkspaceXml}
-              getSelectedBlocksXml={getSelectedBlocksXml}
-              onLog={handleLog}
-            />
-          </div>
-        </div>}
+        {showAIPanel && <AIChatPanel
+          onBlocksGenerated={handleBlocksGenerated}
+          getCurrentWorkspaceXml={getCurrentWorkspaceXml}
+          getSelectedBlocksXml={getSelectedBlocksXml}
+          onLog={handleLog}
+          onClose={() => setShowAIPanel(false)}
+        />}
 
         {showBacktest && <BacktestingPanel
           onClose={() => setShowBacktest(false)}
           onStartTour={onStartTour}
-          onToggleAI={() => onAIPanelChange?.(!showAIPanelFromParent)}
           leverage={String(leverage)}
           onLeverageChange={onLeverageChange}
           getWorkspaceXml={getCurrentWorkspaceXml}
@@ -490,6 +497,19 @@ export const BlocklyWorkspace = ({
         />}
 
         {showIGPanel && <IGTradingPanel onClose={() => setShowIGPanel(false)} getWorkspaceXml={() => currentXmlCode || null} />}
+
+        {/* Profile Modal */}
+        <ProfileModal
+          isOpen={showProfileModal}
+          onClose={() => setShowProfileModal(false)}
+          currentXml={getCurrentWorkspaceXml() || ''}
+          currentStrategyName={strategyName}
+          onLoadStrategy={(xml, name) => {
+            loadXmlToWorkspace(xml, true);
+            setStrategyName(name);
+            toast.success(`Loaded: ${name}`);
+          }}
+        />
       </div>
 
       <WorkspaceDialogs

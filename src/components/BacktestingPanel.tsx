@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel, Input, Label, Tooltip, TooltipContent, TooltipTrigger, Separator, Badge, Card, CardContent } from "@/components/ui";
 import { X, TrendingUp, History, Zap, AlertCircle, CheckCircle2, Play, Square, Loader2, BarChart3, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { TourTriggerButton } from "./GuidedTour";
-import { Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { BacktestVisualizationModal } from "./BacktestVisualizationModal";
 import { generateCode } from "@/config/blockly/generator";
@@ -65,7 +64,6 @@ interface BacktestResult {
 
 interface BacktestingPanelProps {
     onStartTour?: () => void;
-    onToggleAI?: () => void;
     onClose?: () => void;
     leverage?: string;
     onLeverageChange?: (value: string) => void;
@@ -76,7 +74,7 @@ interface BacktestingPanelProps {
     loadedTemplateId?: string | null;
 }
 
-export const BacktestingPanel = ({ onStartTour, onToggleAI, onClose, leverage = "1", onLeverageChange, getWorkspaceXml, getPythonCode, getNautilusCode, generatedStrategyId, loadedTemplateId }: BacktestingPanelProps) => {
+export const BacktestingPanel = ({ onStartTour, onClose, leverage = "1", onLeverageChange, getWorkspaceXml, getPythonCode, getNautilusCode, generatedStrategyId, loadedTemplateId }: BacktestingPanelProps) => {
     const [mode, setMode] = useState<"backtest" | "live">("backtest");
     const [tradingSymbol, setTradingSymbol] = useState("EURUSD");
     const [isConnected, setIsConnected] = useState(false);
@@ -241,7 +239,17 @@ export const BacktestingPanel = ({ onStartTour, onToggleAI, onClose, leverage = 
                         finalBalance: data.final_balance,
                         sharpeRatio: data.metrics.sharpe_ratio,
                         profitFactor: data.metrics.profit_factor,
+                        visualizationHtml: data.visualization_html,
+                        rawStats: data.raw_stats,
                     });
+
+                    // Set visualization state for modal
+                    if (data.visualization_html) {
+                        setVisualizationHtml(data.visualization_html);
+                    }
+                    if (data.raw_stats) {
+                        setRawStats(data.raw_stats);
+                    }
 
                     toast.success("PyGenerator Backtest completed!", {
                         description: `Return: ${formatNumber(data.metrics.total_return, 4)}% with ${data.metrics.total_trades} trades`
@@ -449,6 +457,7 @@ export const BacktestingPanel = ({ onStartTour, onToggleAI, onClose, leverage = 
         </div>
     );
 
+
     return (
         <div className="w-80 bg-card border-l border-border flex flex-col overflow-hidden animate-fade-in">
             {/* Header */}
@@ -456,16 +465,6 @@ export const BacktestingPanel = ({ onStartTour, onToggleAI, onClose, leverage = 
                 <div className="flex items-center justify-between mb-3 gap-2">
                     <h2 className="font-semibold text-foreground text-sm">Strategy</h2>
                     <div className="flex items-center gap-1">
-                        {onToggleAI && (
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button onClick={onToggleAI} variant="outline" size="icon" className="h-7 w-7">
-                                        <Wand2 className="w-4 h-4" />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent><p>AI Assistant</p></TooltipContent>
-                            </Tooltip>
-                        )}
                         {onStartTour && (
                             <TourTriggerButton onClick={onStartTour} className="h-7 w-7" />
                         )}

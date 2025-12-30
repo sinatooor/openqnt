@@ -15,6 +15,8 @@ import {
     TrendingUp,
     Settings,
     Search,
+    Sparkles,
+    User,
 } from "lucide-react";
 
 
@@ -47,12 +49,16 @@ export interface WorkspaceToolbarProps {
     showCode: boolean;
     onToggleCode: () => void;
 
-    showIGPanel: boolean;
-    onToggleIGPanel: () => void;
+    showAIPanel: boolean;
+    onToggleAIPanel: () => void;
 
     // Strategy/Backtest Panel
     showStrategyPanel: boolean;
     onToggleStrategyPanel: () => void;
+
+    // Profile Modal
+    showProfileModal: boolean;
+    onToggleProfileModal: () => void;
 }
 
 export const WorkspaceToolbar = ({
@@ -72,10 +78,12 @@ export const WorkspaceToolbar = ({
     onCenter,
     showCode,
     onToggleCode,
-    showIGPanel,
-    onToggleIGPanel,
+    showAIPanel,
+    onToggleAIPanel,
     showStrategyPanel,
     onToggleStrategyPanel,
+    showProfileModal,
+    onToggleProfileModal,
 }: WorkspaceToolbarProps) => {
     return (
         <div className="h-14 bg-card border-b border-border flex items-center justify-between px-4 gap-3">
@@ -225,9 +233,17 @@ export const WorkspaceToolbar = ({
                 {/* View Group */}
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button variant="outline" size="sm" onClick={onToggleCode} className="transition-all duration-200 hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)]">
+                        <Button
+                            variant={showCode ? "default" : "outline"}
+                            size="sm"
+                            onClick={onToggleCode}
+                            className={cn(
+                                "transition-all duration-200",
+                                showCode ? "bg-red-600 hover:bg-red-700" : "hover:shadow-[0_0_0_2px_rgba(239,68,68,0.5)]"
+                            )}
+                        >
                             <Code2 className="w-4 h-4 mr-2" />
-                            {showCode ? "Hide" : "Code"}
+                            Code
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -239,21 +255,42 @@ export const WorkspaceToolbar = ({
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button
-                            variant={showIGPanel ? "default" : "outline"}
+                            variant={showAIPanel ? "default" : "outline"}
                             size="sm"
-                            onClick={onToggleIGPanel}
+                            onClick={onToggleAIPanel}
                             className={cn(
                                 "transition-all duration-200",
-                                showIGPanel ? "bg-green-600 hover:bg-green-700" : "hover:shadow-[0_0_0_2px_rgba(34,197,94,0.5)]"
+                                showAIPanel ? "bg-red-600 hover:bg-red-700" : "hover:shadow-[0_0_0_2px_rgba(239,68,68,0.5)]"
                             )}
                         >
-                            <TrendingUp className="w-4 h-4 mr-2" />
-                            {showIGPanel ? "Hide" : "Trade"}
+                            <Sparkles className="w-4 h-4 mr-2" />
+                            AI Chat
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>Live Trading (IG)</p>
-                        <p className="text-xs text-muted-foreground mt-1">Connect to IG for live trading</p>
+                        <p>AI Strategy Assistant</p>
+                        <p className="text-xs text-muted-foreground mt-1">Chat with AI to generate strategies</p>
+                    </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant={showProfileModal ? "default" : "outline"}
+                            size="sm"
+                            onClick={onToggleProfileModal}
+                            className={cn(
+                                "transition-all duration-200",
+                                showProfileModal ? "bg-blue-600 hover:bg-blue-700" : "hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)]"
+                            )}
+                        >
+                            <User className="w-4 h-4 mr-2" />
+                            Profile
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>User Profile</p>
+                        <p className="text-xs text-muted-foreground mt-1">Manage account, saved strategies & settings</p>
                     </TooltipContent>
                 </Tooltip>
 
@@ -265,16 +302,16 @@ export const WorkspaceToolbar = ({
                             onClick={onToggleStrategyPanel}
                             className={cn(
                                 "transition-all duration-200",
-                                showStrategyPanel ? "bg-purple-600 hover:bg-purple-700" : "hover:shadow-[0_0_0_2px_rgba(147,51,234,0.5)]"
+                                showStrategyPanel ? "bg-green-600 hover:bg-green-700" : "hover:shadow-[0_0_0_2px_rgba(34,197,94,0.5)]"
                             )}
                         >
-                            <Settings className="w-4 h-4 mr-2" />
-                            {showStrategyPanel ? "Hide" : "Settings"}
+                            <TrendingUp className="w-4 h-4 mr-2" />
+                            Run & Test
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>Open Settings & Backtesting</p>
-                        <p className="text-xs text-muted-foreground mt-1">Configure strategy and backtest</p>
+                        <p>Run & Test Strategy</p>
+                        <p className="text-xs text-muted-foreground mt-1">Backtest or deploy live</p>
                     </TooltipContent>
                 </Tooltip>
             </div>
