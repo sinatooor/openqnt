@@ -1,4 +1,4 @@
-import { useState, useEffect, ReactNode, useRef } from "react";
+import { useState, useEffect, ReactNode, useRef, useCallback } from "react";
 import {
     DndContext,
     useSensor,
@@ -12,6 +12,10 @@ import { useDraggable } from "@dnd-kit/core";
 import { Button } from "./ui/button";
 import { X, Maximize2, Minimize2, GripHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// Global z-index manager for modals
+let globalZIndex = 9000;
+const getNextZIndex = () => ++globalZIndex;
 
 // Corner zones for snapping
 type CornerZone = "top-left" | "top-right" | "bottom-left" | "bottom-right" | null;
@@ -154,6 +158,13 @@ export const DraggableModal = ({
     const [hoverCorner, setHoverCorner] = useState<CornerZone>(null);
     const [isDragging, setIsDragging] = useState(false);
 
+    // Dynamic z-index for active modal management
+    const [currentZIndex, setCurrentZIndex] = useState(zIndex);
+
+    // Track pre-snap position for smooth unsnap
+    const preSnapPositionRef = useRef({ x: 100, y: 100 });
+    const dragStartMouseRef = useRef({ x: 0, y: 0 });
+
     // Resize state
     const [isResizing, setIsResizing] = useState(false);
     const [resizeHandle, setResizeHandle] = useState<ResizeHandle>(null);
@@ -168,26 +179,54 @@ export const DraggableModal = ({
         })
     );
 
-    // Reset position when modal opens
+    // Center modal when it opens
     useEffect(() => {
         if (isOpen) {
-            setBasePosition({ x: 100, y: 100 });
+            // Calculate centered position
+            const centerX = Math.max(50, (window.innerWidth - defaultWidth) / 2);
+            const centerY = Math.max(50, (window.innerHeight - defaultHeight) / 2);
+
+            setBasePosition({ x: centerX, y: centerY });
+            preSnapPositionRef.current = { x: centerX, y: centerY };
             setDragDelta({ x: 0, y: 0 });
             setSize({ width: defaultWidth, height: defaultHeight });
             setCornerSnap(null);
             setIsMaximized(false);
+            setCurrentZIndex(getNextZIndex());
         }
     }, [isOpen, defaultWidth, defaultHeight]);
+
+    // Bring modal to front when clicked
+    const bringToFront = useCallback(() => {
+        setCurrentZIndex(getNextZIndex());
+        onFocus?.();
+    }, [onFocus]);
 
     // Handle drag start
     const handleDragStart = (event: DragStartEvent) => {
         setIsDragging(true);
         setDragDelta({ x: 0, y: 0 });
+        bringToFront();
+
+        // Store mouse position at drag start for smooth unsnap
+        const pointerEvent = event.activatorEvent as PointerEvent;
+        dragStartMouseRef.current = { x: pointerEvent.clientX, y: pointerEvent.clientY };
 
         if (isMaximized || cornerSnap) {
+            // Calculate where the modal should appear based on mouse position
+            // Place the modal so the mouse is at the center-top of the header
+            const newX = pointerEvent.clientX - size.width / 2;
+            const newY = pointerEvent.clientY - 20; // 20px below mouse for header grab
+
+            setBasePosition({ x: Math.max(0, newX), y: Math.max(0, newY) });
+            preSnapPositionRef.current = { x: Math.max(0, newX), y: Math.max(0, newY) };
+
             // Exit maximized/corner snap mode on drag
             setIsMaximized(false);
             setCornerSnap(null);
+        } else {
+            // Save current position in case we snap later
+            preSnapPositionRef.current = { ...basePosition };
         }
     };
 
@@ -321,7 +360,7 @@ export const DraggableModal = ({
 
     // Handle click to bring to front
     const handleModalClick = () => {
-        onFocus?.();
+        bringToFront();
     };
 
     if (!isOpen) return null;
@@ -343,7 +382,7 @@ export const DraggableModal = ({
                 bottom: 4,
                 width: "calc(100vw - 8px)",
                 height: "calc(100vh - 8px)",
-                zIndex,
+                zIndex: currentZIndex,
             };
         }
 
@@ -351,7 +390,7 @@ export const DraggableModal = ({
             return {
                 position: "fixed",
                 ...getCornerStyles(cornerSnap),
-                zIndex,
+                zIndex: currentZIndex,
             };
         }
 
@@ -361,7 +400,7 @@ export const DraggableModal = ({
             top: currentPosition.y,
             width: size.width,
             height: size.height,
-            zIndex,
+            zIndex: currentZIndex,
         };
     };
 
@@ -382,7 +421,7 @@ export const DraggableModal = ({
                                 ? "border-primary bg-primary/20 scale-110"
                                 : "border-muted-foreground/30 bg-muted/10"
                         )}
-                        style={{ zIndex: zIndex - 1 }}
+                        style={{ zIndex: currentZIndex - 1 }}
                     />
                     <div
                         className={cn(
@@ -391,7 +430,7 @@ export const DraggableModal = ({
                                 ? "border-primary bg-primary/20 scale-110"
                                 : "border-muted-foreground/30 bg-muted/10"
                         )}
-                        style={{ zIndex: zIndex - 1 }}
+                        style={{ zIndex: currentZIndex - 1 }}
                     />
                     <div
                         className={cn(
@@ -400,7 +439,7 @@ export const DraggableModal = ({
                                 ? "border-primary bg-primary/20 scale-110"
                                 : "border-muted-foreground/30 bg-muted/10"
                         )}
-                        style={{ zIndex: zIndex - 1 }}
+                        style={{ zIndex: currentZIndex - 1 }}
                     />
                     <div
                         className={cn(
@@ -409,7 +448,7 @@ export const DraggableModal = ({
                                 ? "border-primary bg-primary/20 scale-110"
                                 : "border-muted-foreground/30 bg-muted/10"
                         )}
-                        style={{ zIndex: zIndex - 1 }}
+                        style={{ zIndex: currentZIndex - 1 }}
                     />
                 </>
             )}
