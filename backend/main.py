@@ -15,17 +15,24 @@ import asyncio
 from typing import List, Optional, Dict, Any, Tuple
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from datetime import datetime
+from pathlib import Path
 
 # RAG & GCG Imports
 from rag_system import block_library
 from vector_rag import get_vector_rag, two_stage_retrieve, STRATEGY_TYPES
 from strategy_compiler import strategy_compiler
-from backtest_service import XML_TO_PYTHON_PROMPT
+from backtest_service import XML_TO_PYTHON_PROMPT, run_backtest_pipeline
+from backtest_runner import run_backtest, run_backtest_simple
 from strategy_store import hash_xml, save_strategy_version, load_by_id, load_latest_by_hash
 from ai_strategy_reviewer import review_strategy
+
+# Google ADK Agent
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+from adk_agents.trading_agent import trading_agent
 
 # Logging
 from llm_logger import (
@@ -34,8 +41,23 @@ from llm_logger import (
     log_api_request, get_log_stats
 )
 
+# Initialize ADK session service
+adk_session_service = InMemorySessionService()
+adk_runner = Runner(
+    agent=trading_agent,
+    app_name="trading_chat",
+    session_service=adk_session_service
+)
+
 # Load environment variables
 load_dotenv()
+
+# Start Market Data Scheduler (auto-refresh every 5 minutes)
+try:
+    from market_data_scheduler import start_scheduler
+    start_scheduler()
+except Exception as e:
+    print(f"Warning: Market data scheduler failed to start: {e}")
 
 # ============================================================
 # LLM PROVIDER CONFIGURATION
@@ -170,14 +192,86 @@ async def log_llm_config():
     print("=" * 60)
     print(f"  USE_DEEPSEEK_ONLY: {USE_DEEPSEEK_ONLY}")
     print(f"  DEEPSEEK_MODEL: {DEEPSEEK_MODEL}")
+    print(f"  USE_RAG_FOR_BLOCKS: {USE_RAG_FOR_BLOCKS}")
     if USE_DEEPSEEK_ONLY:
         print("  ⚠️  ALL LLM calls will use DeepSeek (Gemini disabled)")
     else:
         print("  ✓ Using DeepSeek + Gemini (normal mode)")
+    if USE_RAG_FOR_BLOCKS:
+        print("  ✓ RAG Mode: Selective block retrieval enabled")
+    else:
+        print("  ✓ All Blocks Mode: Full block reference sent to LLM")
     print("=" * 60)
 
 # DeepSeek API configuration
 DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions"
+
+# ============================================================
+# RAG CONFIGURATION
+# ============================================================
+# Toggle between RAG (selective blocks) and ALL BLOCKS mode
+# Set USE_RAG_FOR_BLOCKS=true in .env to enable RAG
+# Default: False (send all blocks to LLM for guaranteed coverage)
+USE_RAG_FOR_BLOCKS = os.getenv("USE_RAG_FOR_BLOCKS", "false").lower() == "true"
+
+# Lazy load VectorRAG to avoid startup overhead if not used
+_vector_rag = None
+_block_library = None
+
+def get_rag_system():
+    """Lazy load RAG system components."""
+    global _vector_rag, _block_library
+    if _vector_rag is None:
+        from vector_rag import get_vector_rag, VectorRAG
+        from rag_system import block_library
+        _vector_rag = get_vector_rag()
+        _block_library = block_library
+        print("[RAG] Initialized VectorRAG and BlockLibrary")
+    return _vector_rag, _block_library
+
+async def get_rag_blocks(query: str, n_results: int = 20) -> str:
+    """Retrieve relevant block reference using RAG."""
+    vector_rag, block_library = get_rag_system()
+    
+    # Initialize if needed
+    if not vector_rag.initialized:
+        vector_rag.initialize()
+    
+    # Search for relevant blocks
+    search_results = vector_rag.search_blocks(
+        query=query,
+        n_results=n_results,
+        use_reranker=True
+    )
+    
+    # Build block reference from search results
+    block_xml_parts = []
+    retrieved_types = set()
+    
+    for result in search_results:
+        block_type = result["block_type"]
+        if block_type not in retrieved_types:
+            xml = block_library.get_block_xml(block_type)
+            if xml:
+                block_xml_parts.append(f"<!-- {block_type} -->\n{xml}")
+                retrieved_types.add(block_type)
+    
+    # Always include core blocks
+    core_blocks = ["control_forever", "control_if", "control_if_else", 
+                   "trade_order", "trade_stop_loss", "trade_take_profit",
+                   "environment_new_candle_open", "environment_price",
+                   "operator_greater", "operator_less", "operator_and",
+                   "math_number"]
+    
+    for core_block in core_blocks:
+        if core_block not in retrieved_types:
+            xml = block_library.get_block_xml(core_block)
+            if xml:
+                block_xml_parts.append(f"<!-- {core_block} (core) -->\n{xml}")
+                retrieved_types.add(core_block)
+    
+    print(f"[RAG] Retrieved {len(retrieved_types)} blocks for query: {query[:50]}...")
+    return "\n\n".join(block_xml_parts)
 
 
 class StrategyRequest(BaseModel):
@@ -190,7 +284,8 @@ class StrategyRequest(BaseModel):
 
 class StrategyResponse(BaseModel):
     xml: str
-    ai_fixed: bool = False  # True if programmatic fix was applied
+    ai_fixed: bool = Field(default=False, serialization_alias="autoFixed")
+    was_rationalized: bool = Field(default=False, serialization_alias="wasRationalized")
     code: Optional[str] = None
     code_language: Optional[str] = None
     strategy_id: Optional[str] = None
@@ -276,278 +371,129 @@ class ReviewRequest(BaseModel):
 # PROMPTS (copied from Supabase Edge Functions)
 # ============================================================
 
-SYSTEM_PROMPT = """You are a trading strategy expert that creates Blockly XML code for visual programming.
+# Load prompts from external files
+PROMPTS_DIR = Path(__file__).parent / "prompts"
 
-CRITICAL RULES:
-1. You MUST ONLY use blocks listed below - NO OTHER BLOCKS EXIST
-2. You MUST follow the EXACT XML structure shown for each block
-3. Block IDs must only contain: letters, numbers, underscores, hyphens (NO special characters like (){}[]/#!)
-4. All value inputs MUST use <shadow type="math_number"><field name="NUM">value</field></shadow>
-5. NEVER invent new block types or modify existing block structures
-6. For Stop Loss and Take Profit, ALWAYS use trade_entry_price block with ATR-based offsets for proper risk management
-7. Stop Loss pattern: operator_subtract(trade_entry_price, ATR * multiplier) - Use ATR for volatility-adjusted stops
-8. Take Profit pattern: operator_add(trade_entry_price, ATR * multiplier * risk_reward_ratio) - Use 2:1 or 3:1 risk-reward ratios
-9. INDUSTRY STANDARD: Use ATR (Average True Range) with 14-period for dynamic stop losses that adapt to market volatility
-10. RISK MANAGEMENT: Stop Loss = 1.5-2.5x ATR from entry | Take Profit = Stop Loss distance * 2-3 (risk-reward ratio)
-11. NEVER use control_wait, control_wait_until, or control_repeat_until blocks. These cause infinite loops in the Strategy Tester. ALWAYS use control_if with environment_new_candle_open for timing logic.
-12. ALWAYS set the "SIZE" field to 0.1 in trade_order blocks unless explicitly instructed otherwise. THIS IS CRITICAL. NEVER USE 100.
-13. TIMEFRAME: ALL timeframe fields (for both environment blocks and indicators) MUST use minute values. NEVER use string codes like '1h' or '1d'.
-    USE THIS MAPPING TABLE:
-    - "1 Minute"   -> "1"
-    - "5 Minutes"  -> "5"
-    - "15 Minutes" -> "15"
-    - "30 Minutes" -> "30"
-    - "1 Hour"     -> "60"
-    - "4 Hours"    -> "240"
-    - "1 Day"      -> "1440"
-    - "1 Week"     -> "10080"
-    - "1 Month"    -> "43200"
-    ALWAYS set this to the user's requested timeframe (default to 60 if unspecified).
-14. Use ta_highest and ta_lowest blocks for finding highest/lowest values over a period.
-15. For Donchian and Keltner blocks, the 'shift' attribute in mutation MUST be a positive integer (>= 1). NEVER use 0.
-16. For ALL indicator blocks (including VidYa, AMA, etc.), you MUST explicitly set the 'PERIOD' field to the requested timeframe (in minutes). DO NOT rely on defaults.
-17. CROSSOVER STRATEGIES: When comparing two indicators of the SAME type (e.g., SMA vs SMA, EMA vs EMA):
-    - ALWAYS use DIFFERENT settings in the <mutation> element (ma_period, shift, etc.)
-    - For moving average crossovers: use Fast (shorter period) vs Slow (longer period)
-    - Standard patterns: Fast SMA (ma_period="10") vs Slow SMA (ma_period="20")
-    - Standard patterns: Fast EMA (ma_period="12") vs Slow EMA (ma_period="26")
-    - Set the NAME field to reflect the difference: "Fast SMA" vs "Slow SMA"
-    - NEVER compare two identical indicators - this makes NO logical sense for trading
+def load_prompt(filename: str, replacements: Optional[Dict[str, str]] = None) -> str:
+    """Load a prompt file from the prompts directory and apply replacements."""
+    try:
+        if not PROMPTS_DIR.exists():
+            print(f"Warning: Prompts directory not found at {PROMPTS_DIR}")
+            return ""
+        
+        file_path = PROMPTS_DIR / filename
+        if not file_path.exists():
+            print(f"Warning: Prompt file {filename} not found at {file_path}")
+            return ""
+            
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+            
+        if replacements:
+            for key, value in replacements.items():
+                content = content.replace(f"{{{{{key}}}}}", value)
+                
+        return content
+    except Exception as e:
+        print(f"Error loading prompt {filename}: {e}")
+        return ""
 
-=== AVAILABLE BLOCK TYPES ===
-
-CONTROL BLOCKS:
-- control_forever: Main loop block. XML: <block type="control_forever" x="50" y="50"><statement name="DO">...</statement></block>
-- control_if: Conditional block. XML: <block type="control_if"><value name="CONDITION">...</value><statement name="DO">...</statement></block>
-
-ENVIRONMENT BLOCKS:
-- environment_price: Current price. XML: <block type="environment_price"><field name="TYPE">close</field></block>
-- environment_new_candle_open: New candle check. XML: <block type="environment_new_candle_open"><field name="TIMEFRAME">60</field></block>
-
-INDICATOR BLOCKS:
-- ta_sma: SMA. XML: <block type="ta_sma"><field name="PERIOD">60</field><mutation ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">SMA</field></block>
-- ta_ema: EMA. XML: <block type="ta_ema"><field name="PERIOD">60</field><mutation ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">EMA</field></block>
-- ta_rsi: RSI. XML: <block type="ta_rsi"><field name="PERIOD">60</field><mutation ma_period="14" applied_price="0"></mutation><field name="NAME">RSI</field></block>
-- ta_atr: ATR. XML: <block type="ta_atr"><field name="PERIOD">60</field><mutation ma_period="14"></mutation><field name="NAME">ATR</field></block>
-- ta_macd: MACD. XML: <block type="ta_macd"><field name="PERIOD">60</field><mutation fastEMA="12" slowEMA="26" signalSMA="9" applied_price="0"></mutation><field name="NAME">MACD</field><field name="COMPONENT">line</field></block>
-- ta_bb: Bollinger Bands. XML: <block type="ta_bb"><field name="PERIOD">60</field><mutation ma_period="20" deviation="2" shift="0" applied_price="0"></mutation><field name="NAME">BB</field><field name="COMPONENT">upper</field></block>
-
-OPERATOR BLOCKS:
-- operator_greater: Greater than. XML: <block type="operator_greater"><value name="LEFT">...</value><value name="RIGHT">...</value></block>
-- operator_less: Less than. XML: <block type="operator_less"><value name="LEFT">...</value><value name="RIGHT">...</value></block>
-- operator_add: Addition. XML: <block type="operator_add"><value name="LEFT">...</value><value name="RIGHT">...</value></block>
-- operator_subtract: Subtraction. XML: <block type="operator_subtract"><value name="LEFT">...</value><value name="RIGHT">...</value></block>
-- operator_multiply: Multiplication. XML: <block type="operator_multiply"><value name="LEFT">...</value><value name="RIGHT">...</value></block>
-
-TRADE BLOCKS:
-- trade_order: Place order. XML: <block type="trade_order"><field name="TRADE_ID">my_trade</field><field name="DIRECTION">long</field><value name="SIZE"><shadow type="math_number"><field name="NUM">0.1</field></shadow></value><field name="LEVERAGE">1</field><field name="ORDER_TYPE">market</field></block>
-- trade_stop_loss: Set SL. XML: <block type="trade_stop_loss"><field name="CLOSE_TYPE">full</field><field name="TRADE_ID">my_trade</field><value name="PRICE">...</value></block>
-- trade_take_profit: Set TP. XML: <block type="trade_take_profit"><field name="CLOSE_TYPE">full</field><field name="TRADE_ID">my_trade</field><value name="PRICE">...</value></block>
-- trade_entry_price: Entry price. XML: <block type="trade_entry_price"><field name="TRADE_ID">my_trade</field></block>
-
-MATH BLOCKS:
-- math_number: Number. XML: <shadow type="math_number"><field name="NUM">14</field></shadow>
-
-IMPORTANT: Return ONLY the XML wrapped in <xml></xml> tags. NO explanations."""
+BLOCK_REFERENCE = load_prompt("block_reference.txt")
+SYSTEM_PROMPT = load_prompt("system_prompt.txt", {"BLOCK_REFERENCE": BLOCK_REFERENCE})
+RATIONALIZATION_PROMPT = load_prompt("rationalization_prompt.txt", {"BLOCK_REFERENCE": BLOCK_REFERENCE})
 
 
-VALIDATION_PROMPT = """You are a Blockly XML validator and fixer for trading strategies.
 
-VALIDATION CHECKLIST:
-1. BLOCK TYPES - Only these block types are valid:
-   - Control: control_if, control_if_else, control_repeat, control_wait, control_forever, control_repeat_until, control_wait_until, control_stop
-   - Environment: environment_price, environment_spread, environment_prev_candle_open, environment_prev_ticker_close, environment_is_market_open, environment_time, environment_day_of_week, environment_new_candle_open
-   - Operators: operator_equals, operator_greater, operator_less, operator_greater_equals, operator_less_equals, operator_add, operator_subtract, operator_multiply, operator_divide, operator_and, operator_or, operator_not, operator_not_equals, operator_advanced_math
-   - Technical Analysis: ac, ad, ta_adx, adxWilder, alligator, ama, ao, ta_atr, bearsPower, ta_bb, bullsPower, bwmfi, ta_cci, chaikin, dema, deMarker, envelopes, force, fractals, gator, ichimoku, ta_ma, ta_macd, mfi, momentum, obv, osma, rvi, parabolicSar, ta_rsi, stddev, stochastic, tema, trix, vidya, volumes, wpr
-   - Trade: trade_open, trade_close, trade_stop_loss, trade_take_profit, trade_entry_price, trade_is_open, trade_profit, trade_modify_sl, trade_modify_tp
-   - Math: math_number
+# ============================================================
+# VALIDATION UTILITIES
+# ============================================================
 
-2. XML STRUCTURE - Verify:
-   - All <block> tags have matching </block>
-   - All <value> tags have matching </value>
-   - All <field> tags have matching </field>
-   - Proper nesting (no overlapping tags)
-   - First block has x="50" y="50" positioning
-
-3. TRADE_IDs - Must contain only: letters, numbers, underscores, hyphens (NO special characters like (){}[]/#!)
-
-4. RISK MANAGEMENT - Stop Loss and Take Profit should use:
-   - trade_entry_price block as base
-   - ATR-based offsets for volatility adjustment
-   - Pattern: operator_subtract(trade_entry_price, ATR * multiplier) for SL
-   - Pattern: operator_add(trade_entry_price, ATR * multiplier * RR) for TP
-
-5. VALUE INPUTS - All numeric inputs must use: <shadow type="math_number"><field name="NUM">value</field></shadow>
-
-6. CROSSOVER LOGIC - When two indicators of the SAME type are compared (inside operator_greater, operator_less, etc.):
-   - Check the <mutation> attributes (ma_period, shift, applied_price, etc.)
-   - If BOTH indicators have IDENTICAL mutation attributes, this is an ERROR - FIX IT
-   - Standard crossover patterns to use:
-     * SMA crossover: Fast SMA (ma_period="10") vs Slow SMA (ma_period="20")
-     * EMA crossover: Fast EMA (ma_period="12") vs Slow EMA (ma_period="26")
-     * RSI dual: Fast RSI (ma_period="7") vs Slow RSI (ma_period="14")
-   - Update the NAME field to reflect the difference: "Fast SMA" vs "Slow SMA"
-   - Two identical indicators compared makes NO trading sense and must be fixed
-
-INSTRUCTIONS:
-- If you find ANY errors, FIX THEM and return the corrected XML
-- If the XML is correct, return it unchanged
-- Return ONLY the XML wrapped in <xml></xml> tags
-- NO explanations, NO comments, ONLY the XML"""
-
-
-PARAMETER_FIX_PROMPT = """You are analyzing a Blockly XML trading strategy for INDICATOR PARAMETER issues.
-
-YOUR TASK: Find comparison blocks (operator_greater, operator_less, operator_greater_equals, operator_less_equals) 
-that compare TWO indicators of the SAME TYPE with IDENTICAL settings.
-
-For example: SMA vs SMA where both have ma_period="14" - this is WRONG for a crossover strategy.
-
-HOW TO FIX:
-1. Identify the FIRST indicator in each comparison → Make it "Fast" with SHORTER period
-2. Identify the SECOND indicator → Make it "Slow" with LONGER period
-
-STANDARD CROSSOVER PERIODS:
-- SMA: Fast ma_period="10", Slow ma_period="20"
-- EMA: Fast ma_period="12", Slow ma_period="26"  
-- RSI: Fast ma_period="7", Slow ma_period="14"
-
-ALSO UPDATE THE NAME FIELD:
-- First indicator: NAME="Fast SMA" (or Fast EMA, etc.)
-- Second indicator: NAME="Slow SMA" (or Slow EMA, etc.)
-
-Return ONLY the corrected XML wrapped in <xml></xml> tags. NO explanations."""
-
-# DeepSeek Reasoning validation prompt (for Pass 2)
-DEEPSEEK_REASONING_VALIDATION_PROMPT = """You are validating a Blockly XML trading strategy generated by another AI.
-
-=== VALID BLOCK STRUCTURES ===
-
-CONTROL BLOCKS:
-- control_forever: <block type="control_forever" x="50" y="50"><statement name="DO">...</statement></block>
-- control_if: <block type="control_if"><value name="CONDITION">...</value><statement name="DO">...</statement></block>
-- control_if_else: <block type="control_if_else"><value name="CONDITION">...</value><statement name="DO">...</statement><statement name="ELSE">...</statement></block>
-
-COMPARISON OPERATORS:
-- operator_greater: <block type="operator_greater"><value name="LEFT">...</value><value name="RIGHT">...</value></block>
-- operator_less: <block type="operator_less"><value name="LEFT">...</value><value name="RIGHT">...</value></block>
-- operator_greater_equals: <block type="operator_greater_equals"><value name="LEFT">...</value><value name="RIGHT">...</value></block>
-- operator_less_equals: <block type="operator_less_equals"><value name="LEFT">...</value><value name="RIGHT">...</value></block>
-- operator_and: <block type="operator_and"><value name="LEFT">...</value><value name="RIGHT">...</value></block>
-- operator_or: <block type="operator_or"><value name="LEFT">...</value><value name="RIGHT">...</value></block>
-
-MATH OPERATORS:
-- operator_add: <block type="operator_add"><value name="LEFT">...</value><value name="RIGHT">...</value></block>
-- operator_subtract: <block type="operator_subtract"><value name="LEFT">...</value><value name="RIGHT">...</value></block>
-- operator_multiply: <block type="operator_multiply"><value name="LEFT">...</value><value name="RIGHT">...</value></block>
-- operator_divide: <block type="operator_divide"><value name="LEFT">...</value><value name="RIGHT">...</value></block>
-- math_number: <shadow type="math_number"><field name="NUM">value</field></shadow>
-
-INDICATOR BLOCKS:
-- ta_sma: <block type="ta_sma"><mutation ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">SMA</field><field name="PERIOD">60</field></block>
-- ta_ema: <block type="ta_ema"><mutation ma_period="14" shift="0" applied_price="0"></mutation><field name="NAME">EMA</field><field name="PERIOD">60</field></block>
-- ta_rsi: <block type="ta_rsi"><mutation ma_period="14" applied_price="0"></mutation><field name="NAME">RSI</field><field name="PERIOD">60</field></block>
-- ta_atr: <block type="ta_atr"><mutation ma_period="14"></mutation><field name="NAME">ATR</field><field name="PERIOD">60</field></block>
-- ta_macd: <block type="ta_macd"><mutation fastEMA="12" slowEMA="26" signalSMA="9" applied_price="0"></mutation><field name="NAME">MACD</field><field name="PERIOD">60</field><field name="COMPONENT">line|signal|histogram</field></block>
-- ta_bb: <block type="ta_bb"><mutation ma_period="20" deviation="2" shift="0" applied_price="0"></mutation><field name="NAME">BB</field><field name="PERIOD">60</field><field name="COMPONENT">upper|middle|lower</field></block>
-- ta_cci: <block type="ta_cci"><mutation ma_period="14" applied_price="0"></mutation><field name="NAME">CCI</field><field name="PERIOD">60</field></block>
-- ta_adx: <block type="ta_adx"><mutation ma_period="14"></mutation><field name="NAME">ADX</field><field name="PERIOD">60</field></block>
-
-ENVIRONMENT BLOCKS:
-- environment_price: <block type="environment_price"><field name="TYPE">close|open|high|low</field></block>
-- environment_new_candle_open: <block type="environment_new_candle_open"><field name="TIMEFRAME">60</field></block>
-
-TRADE BLOCKS:
-- trade_order: <block type="trade_order"><field name="TRADE_ID">my_trade</field><field name="DIRECTION">long|short</field><value name="SIZE"><shadow type="math_number"><field name="NUM">0.1</field></shadow></value><field name="LEVERAGE">1</field><field name="ORDER_TYPE">market</field><next>...</next></block>
-- trade_stop_loss: <block type="trade_stop_loss"><field name="CLOSE_TYPE">full</field><field name="TRADE_ID">my_trade</field><value name="PRICE">...</value><next>...</next></block>
-- trade_take_profit: <block type="trade_take_profit"><field name="CLOSE_TYPE">full</field><field name="TRADE_ID">my_trade</field><value name="PRICE">...</value></block>
-- trade_entry_price: <block type="trade_entry_price"><field name="TRADE_ID">my_trade</field></block>
-
-=== VALIDATION TASKS ===
-
-1. IDENTICAL INDICATORS: Find comparison blocks where TWO indicators of the SAME TYPE have IDENTICAL mutation parameters.
-   - This is an ERROR for crossover strategies (e.g., SMA(ma_period="14") > SMA(ma_period="14") makes no sense)
-   - FIX: Make one Fast (shorter period) and one Slow (longer period)
-   - Standard periods: SMA Fast=10/Slow=20, EMA Fast=12/Slow=26, RSI Fast=7/Slow=14
-   - for example: it should NOT be like this (mutation ma_period="14" shift="0") for every indicator
-
-2. COMPARISON LOGIC: Ensure crossover comparisons are logical:
-   - For bullish crossover (Fast crossing above Slow): Fast > Slow with operator_greater
-   - For bearish crossover (Fast crossing below Slow): Fast < Slow with operator_less
-   - If indicators are in wrong order (Slow on LEFT, Fast on RIGHT), swap the comparison operator
-
-3. BLOCK STRUCTURE: Verify all blocks follow the structure above:
-   - Correct nesting of <value>, <statement>, <next>, <field>
-   - Proper mutation attributes for indicators
-   - All TRADE_ID fields match between order and SL/TP blocks
-
-4. POLISH:
-   - Ensure NAME fields reflect Fast/Slow: "Fast SMA", "Slow SMA"
-   - Timeframe fields should be in minutes (60 for 1 hour)
-   - SIZE should be 0.1 (not 100)
-
-Return ONLY the corrected XML wrapped in <xml></xml> tags. NO explanations, NO reasoning visible."""
-
-
-def check_crossover_valid(xml: str) -> tuple[bool, list[str]]:
-    """
-    Check if comparison blocks have different indicator settings.
-    
-    Returns:
-        (is_valid, list of issues found)
-    """
+def validate_xml_structure(xml: str) -> Tuple[bool, List[str]]:
+    """Verify basic XML structure and required blocks."""
     issues = []
     
-    # Find all ta_sma, ta_ema, ta_rsi blocks and their ma_period values
-    indicator_pattern = r'<block type="(ta_sma|ta_ema|ta_rsi)"[^>]*>.*?<mutation ma_period="(\d+)"'
+    # Check for root XML tags
+    if not re.search(r'<xml[\s\S]*?>', xml) or not re.search(r'</xml>', xml):
+        issues.append("Missing <xml>...</xml> root tags")
+        
+    # Check for at least one block
+    if not re.search(r'<block', xml):
+        issues.append("No blocks found in XML")
+        
+    # Check for required main loop
+    if not re.search(r'type="control_forever"', xml):
+        issues.append("High Severity: Missing 'control_forever' main loop block")
+        
+    # Check for basic tag balance (rough check)
+    open_tags = len(re.findall(r'<block', xml))
+    close_tags = len(re.findall(r'</block>', xml))
+    if open_tags != close_tags:
+        issues.append(f"Block tag mismatch: {open_tags} opened, {close_tags} closed")
+        
+    return (len(issues) == 0, issues)
+
+def apply_common_fixes(xml: str) -> str:
+    """Apply common programmatic fixes to XML."""
+    fixed_xml = xml
     
-    # Find comparison blocks
-    comparison_pattern = r'<block type="(operator_greater|operator_less|operator_greater_equals|operator_less_equals)"[^>]*>(.*?)</block>'
+    # 1. Fix Timeframes: "1h" -> "60", "4h" -> "240", "1d" -> "1440"
+    timeframe_map = {
+        '1m': '1', '5m': '5', '15m': '15', '30m': '30',
+        '1h': '60', '4h': '240', '1d': '1440', '1w': '10080'
+    }
     
-    import re
-    comparisons = re.findall(comparison_pattern, xml, re.DOTALL)
+    def replace_timeframe(match):
+        tf = match.group(2)
+        if tf in timeframe_map:
+            return f'{match.group(1)}"{timeframe_map[tf]}"{match.group(3)}'
+        return match.group(0)
+
+    # Regex for TIMEFRAME fields
+    fixed_xml = re.sub(r'(<field name="TIMEFRAME">)([^<]+)(</field>)', replace_timeframe, fixed_xml)
+    # Regex for PERIOD fields (sometimes used)
+    fixed_xml = re.sub(r'(<field name="PERIOD">)([^<]+)(</field>)', replace_timeframe, fixed_xml)
     
-    for op_type, content in comparisons:
-        # Find indicators in LEFT and RIGHT values
-        left_match = re.search(r'<value name="LEFT">(.*?)</value>', content, re.DOTALL)
-        right_match = re.search(r'<value name="RIGHT">(.*?)</value>', content, re.DOTALL)
+    # 2. Fix generic 'ta_ma' -> 'ta_sma' (common hallucination)
+    fixed_xml = fixed_xml.replace('type="ta_ma"', 'type="ta_sma"')
+    
+    # 3. Fix 'ta_macd' -> 'macd_value' (common hallucination)
+    fixed_xml = fixed_xml.replace('type="ta_macd"', 'type="macd_value"')
+    
+    return fixed_xml
+
+def check_crossover_valid(xml: str) -> Tuple[bool, List[str]]:
+    """Check for identical indicators in comparisons."""
+    issues = []
+    comparison_pattern = r'<block type="(operator_greater|operator_less|operator_greater_equals|operator_less_equals)"[^>]*>([\s\S]*?)</block>'
+    
+    for match in re.finditer(comparison_pattern, xml):
+        content = match.group(2)
+        
+        # Extract LEFT and RIGHT
+        left_match = re.search(r'<value name="LEFT">([\s\S]*?)</value>', content)
+        right_match = re.search(r'<value name="RIGHT">([\s\S]*?)</value>', content)
         
         if left_match and right_match:
             left_content = left_match.group(1)
             right_content = right_match.group(1)
             
-            # Check if both are same indicator type
-            left_indicator = re.search(r'<block type="(ta_sma|ta_ema|ta_rsi)"', left_content)
-            right_indicator = re.search(r'<block type="(ta_sma|ta_ema|ta_rsi)"', right_content)
+            # Check for same indicator type
+            left_ind = re.search(r'<block type="(ta_sma|ta_ema|ta_rsi|ta_cci|ta_adx|ta_atr)"', left_content)
+            right_ind = re.search(r'<block type="(ta_sma|ta_ema|ta_rsi|ta_cci|ta_adx|ta_atr)"', right_content)
             
-            if left_indicator and right_indicator:
-                if left_indicator.group(1) == right_indicator.group(1):
-                    # Same indicator type - check if periods are identical
-                    left_period = re.search(r'ma_period="(\d+)"', left_content)
-                    right_period = re.search(r'ma_period="(\d+)"', right_content)
+            if left_ind and right_ind and left_ind.group(1) == right_ind.group(1):
+                # Check periods
+                left_p = re.search(r'ma_period="(\d+)"', left_content)
+                right_p = re.search(r'ma_period="(\d+)"', right_content)
+                
+                if left_p and right_p and left_p.group(1) == right_p.group(1):
+                    issues.append(f"Identical {left_ind.group(1)} indicators with ma_period={left_p.group(1)}")
                     
-                    if left_period and right_period:
-                        if left_period.group(1) == right_period.group(1):
-                            issues.append(f"Identical {left_indicator.group(1)} indicators with ma_period={left_period.group(1)}")
-    
     return (len(issues) == 0, issues)
 
 
-def fix_crossover_indicators(xml: str) -> tuple[str, bool]:
-    """
-    Programmatically fix identical indicators in comparison blocks.
-    
-    Enhanced to:
-    1. Fix indicator periods (Fast vs Slow)
-    2. Swap comparison operators if indicators are in wrong order
-    3. Support more indicator types
-    
-    Returns:
-        (fixed_xml, was_fixed)
-    """
-    import re
-    
-    # Default periods for fast/slow
+def fix_crossover_indicators(xml: str) -> Tuple[str, bool]:
+    """Fix identical indicators by assigning fast/slow periods."""
     FAST_SLOW_PERIODS = {
         'ta_sma': ('10', '20'),
         'ta_ema': ('12', '26'),
@@ -557,89 +503,55 @@ def fix_crossover_indicators(xml: str) -> tuple[str, bool]:
         'ta_atr': ('7', '14'),
     }
     
-    # Operator swap mapping
-    OPERATOR_SWAP = {
-        'operator_greater': 'operator_less',
-        'operator_less': 'operator_greater',
-        'operator_greater_equals': 'operator_less_equals',
-        'operator_less_equals': 'operator_greater_equals',
-    }
-    
     was_fixed = False
-    fixed_xml = xml
     
-    # Find comparison blocks
-    comparison_pattern = r'(<block type="(operator_greater|operator_less|operator_greater_equals|operator_less_equals)"[^>]*>)(.*?)(</block>)'
-    
-    def fix_comparison(match):
+    def replacer(match):
         nonlocal was_fixed
-        opening_tag = match.group(1)
-        operator_type = match.group(2)
+        full_block = match.group(0)
+        open_tag = match.group(1)
         content = match.group(3)
-        closing_tag = match.group(4)
+        close_tag = match.group(4)
         
-        # Find LEFT and RIGHT values
-        left_match = re.search(r'(<value name="LEFT">)(.*?)(</value>)', content, re.DOTALL)
-        right_match = re.search(r'(<value name="RIGHT">)(.*?)(</value>)', content, re.DOTALL)
+        left_match = re.search(r'(<value name="LEFT">)([\s\S]*?)(</value>)', content)
+        right_match = re.search(r'(<value name="RIGHT">)([\s\S]*?)(</value>)', content)
         
         if not left_match or not right_match:
-            return match.group(0)
-        
+            return full_block
+            
         left_content = left_match.group(2)
         right_content = right_match.group(2)
         
-        # Check if both are same indicator type with same period
-        for indicator_type, (fast_period, slow_period) in FAST_SLOW_PERIODS.items():
-            left_indicator = re.search(rf'<block type="{indicator_type}"', left_content)
-            right_indicator = re.search(rf'<block type="{indicator_type}"', right_content)
-            
-            if left_indicator and right_indicator:
-                left_period_match = re.search(r'ma_period="(\d+)"', left_content)
-                right_period_match = re.search(r'ma_period="(\d+)"', right_content)
-                
-                if left_period_match and right_period_match:
-                    left_period = int(left_period_match.group(1))
-                    right_period = int(right_period_match.group(1))
-                    
-                    # Case 1: Identical periods - fix them
-                    if left_period == right_period:
-                        indicator_name = indicator_type.replace('ta_', '').upper()
-                        
-                        # Update LEFT (Fast)
-                        new_left = re.sub(r'ma_period="\d+"', f'ma_period="{fast_period}"', left_content)
-                        new_left = re.sub(r'<field name="NAME">[^<]*</field>', f'<field name="NAME">Fast {indicator_name}</field>', new_left)
-                        
-                        # Update RIGHT (Slow)
-                        new_right = re.sub(r'ma_period="\d+"', f'ma_period="{slow_period}"', right_content)
-                        new_right = re.sub(r'<field name="NAME">[^<]*</field>', f'<field name="NAME">Slow {indicator_name}</field>', new_right)
-                        
-                        # Rebuild content
-                        new_content = content.replace(left_content, new_left).replace(right_content, new_right)
-                        was_fixed = True
-                        return opening_tag + new_content + closing_tag
-                    
-                    # Case 2: LEFT period > RIGHT period (backwards for crossover)
-                    # For bullish crossover with operator_greater, Fast should be on LEFT
-                    # If LEFT has larger period, swap the operator
-                    elif left_period > right_period:
-                        indicator_name = indicator_type.replace('ta_', '').upper()
-                        
-                        # Swap operator type
-                        swapped_operator = OPERATOR_SWAP.get(operator_type, operator_type)
-                        new_opening_tag = opening_tag.replace(f'type="{operator_type}"', f'type="{swapped_operator}"')
-                        
-                        # Also update names to reflect Fast/Slow
-                        new_left = re.sub(r'<field name="NAME">[^<]*</field>', f'<field name="NAME">Slow {indicator_name}</field>', left_content)
-                        new_right = re.sub(r'<field name="NAME">[^<]*</field>', f'<field name="NAME">Fast {indicator_name}</field>', right_content)
-                        
-                        new_content = content.replace(left_content, new_left).replace(right_content, new_right)
-                        was_fixed = True
-                        return new_opening_tag + new_content + closing_tag
+        left_ind = re.search(r'<block type="(ta_sma|ta_ema|ta_rsi|ta_cci|ta_adx|ta_atr)"', left_content)
+        right_ind = re.search(r'<block type="(ta_sma|ta_ema|ta_rsi|ta_cci|ta_adx|ta_atr)"', right_content)
         
-        return match.group(0)
+        if not left_ind or not right_ind or left_ind.group(1) != right_ind.group(1):
+            return full_block
+            
+        indicator = left_ind.group(1)
+        left_p = re.search(r'ma_period="(\d+)"', left_content)
+        right_p = re.search(r'ma_period="(\d+)"', right_content)
+        
+        if not left_p or not right_p or left_p.group(1) != right_p.group(1):
+            return full_block
+            
+        # They are identical - FIX THEM
+        fast, slow = FAST_SLOW_PERIODS.get(indicator, ('10', '20'))
+        ind_name = indicator.replace('ta_', '').upper()
+        
+        # Update Left (Fast)
+        new_left = re.sub(r'ma_period="\d+"', f'ma_period="{fast}"', left_content)
+        new_left = re.sub(r'<field name="NAME">[^<]*</field>', f'<field name="NAME">Fast {ind_name}</field>', new_left)
+        
+        # Update Right (Slow)
+        new_right = re.sub(r'ma_period="\d+"', f'ma_period="{slow}"', right_content)
+        new_right = re.sub(r'<field name="NAME">[^<]*</field>', f'<field name="NAME">Slow {ind_name}</field>', new_right)
+        
+        was_fixed = True
+        return f'{open_tag}{left_match.group(1)}{new_left}{left_match.group(3)}{right_match.group(1)}{new_right}{right_match.group(3)}{close_tag}'
+
+    comparison_pattern = r'(<block type="(operator_greater|operator_less|operator_greater_equals|operator_less_equals)"[^>]*>)([\s\S]*?)(</block>)'
     
-    fixed_xml = re.sub(comparison_pattern, fix_comparison, xml, flags=re.DOTALL)
-    
+    fixed_xml = re.sub(comparison_pattern, replacer, xml)
     return (fixed_xml, was_fixed)
 
 
@@ -805,7 +717,8 @@ async def call_gemini(
 async def call_lovable_gemini(
     messages: list[dict],
     temperature: float = 0.3,
-    max_tokens: int = 8000
+    max_tokens: int = 8000,
+    model: str = "google/gemini-3-pro"
 ) -> str:
     """
     Call Lovable Gateway (proxies to Gemini) - matches original Supabase Edge Function.
@@ -825,7 +738,7 @@ async def call_lovable_gemini(
     url = "https://ai.gateway.lovable.dev/v1/chat/completions"
     
     payload = {
-        "model": "google/gemini-3-pro",
+        "model": model,
         "messages": messages,
         "temperature": temperature,
         "max_tokens": max_tokens
@@ -979,19 +892,33 @@ async def call_deepseek_reasoning(
 
 
 def extract_xml(content: str) -> str:
-    """Extract XML content from response."""
-    content = content.strip()
+    """Extract XML content from response, handling markdown blocks."""
+    if not content:
+        return ""
+        
+    cleaned = content.strip()
+    
+    # Remove markdown code blocks if present
+    if cleaned.startswith("```xml"):
+        cleaned = re.sub(r'^```xml\n?', '', cleaned)
+        cleaned = re.sub(r'\n?```$', '', cleaned)
+    elif cleaned.startswith("```"):
+        cleaned = re.sub(r'^```\n?', '', cleaned)
+        cleaned = re.sub(r'\n?```$', '', cleaned)
+        
+    cleaned = cleaned.strip()
     
     # Try to extract <xml>...</xml>
-    xml_match = re.search(r'<xml[^>]*>[\s\S]*</xml>', content, re.IGNORECASE)
+    # logic: find first <xml...> and last </xml>
+    xml_match = re.search(r'<xml[\s\S]*?>[\s\S]*?</xml>', cleaned, re.IGNORECASE | re.DOTALL)
     if xml_match:
         return xml_match.group(0)
     
-    # If no xml tags, try to find any content that looks like XML
-    if content.startswith('<'):
-        return content
+    # If no xml tags but starts with <, might be raw XML
+    if cleaned.startswith('<'):
+        return cleaned
     
-    return content
+    return cleaned
 
 
 async def generate_python_code_from_xml(xml: str, llm_func) -> Optional[str]:
@@ -1017,3 +944,880 @@ async def generate_python_code_from_xml(xml: str, llm_func) -> Optional[str]:
         cleaned = cleaned[:-3]
     
     return cleaned.strip()
+
+
+# ============================================================
+# API ROUTES
+# ============================================================
+
+class ConversationalChatRequest(BaseModel):
+    messages: list
+    blockXml: Optional[str] = None
+    currentWorkspace: Optional[str] = None
+
+
+class ConversationalChatResponse(BaseModel):
+    response: str
+
+
+class GenerateStrategyRequest(BaseModel):
+    message: str
+    currentWorkspace: Optional[str] = None
+    blockXml: Optional[str] = None
+    mode: str = "fast"  # "fast" or "slow"
+
+
+class ValidateStrategyRequest(BaseModel):
+    xml: str
+    mode: str = "fast"
+
+
+CONVERSATIONAL_SYSTEM_PROMPT = """You are a helpful trading strategy assistant with expertise in technical analysis, trading strategies, and financial markets. You provide clear, educational responses about trading concepts, indicators, and strategies.
+
+You help users understand:
+- Technical indicators (RSI, MACD, Moving Averages, Bollinger Bands, etc.)
+- Trading strategies and their applications
+- Risk management principles
+- Market analysis concepts
+- Best practices for algorithmic trading
+
+Be conversational, friendly, and educational. If users ask about implementing strategies, remind them they can switch to "Generate" mode to create actual trading blocks."""
+
+
+@app.post("/conversational-chat", response_model=ConversationalChatResponse)
+async def conversational_chat(request: ConversationalChatRequest):
+    """
+    Conversational AI chat for trading questions using Google ADK.
+    Uses the trading_agent as the orchestrator with access to tools.
+    """
+    try:
+        # Build the user message with context
+        user_content = request.messages[-1]["content"] if request.messages else ""
+        
+        # Add block context if provided
+        if request.blockXml:
+            user_content += f"\n\n[CONTEXT: User shared a Blockly block]\n{request.blockXml}"
+        
+        # Add workspace context if provided
+        if request.currentWorkspace:
+            block_count = request.currentWorkspace.count("<block ")
+            user_content += f"\n\n[CONTEXT: Current workspace has {block_count} blocks]"
+        
+        # Use ADK trading_agent as orchestrator
+        print(f"[ADK CHAT] Processing: {user_content[:100]}...")
+        
+        # Get or create session
+        session_id = "default_session"  # TODO: Use user-specific sessions
+        
+        try:
+            session = await adk_session_service.get_session(
+                app_name="trading_chat",
+                user_id="default_user",
+                session_id=session_id
+            )
+        except:
+            session = await adk_session_service.create_session(
+                app_name="trading_chat",
+                user_id="default_user",
+                session_id=session_id
+            )
+        
+        # Run the agent
+        response_text = ""
+        async for event in adk_runner.run_async(
+            user_id="default_user",
+            session_id=session_id,
+            new_message=user_content
+        ):
+            if hasattr(event, 'content') and event.content:
+                if hasattr(event.content, 'parts'):
+                    for part in event.content.parts:
+                        if hasattr(part, 'text') and part.text:
+                            response_text += part.text
+        
+        if not response_text:
+            # Fallback to direct LLM if ADK returns empty
+            print("[ADK CHAT] Empty response, falling back to direct LLM")
+            messages = [
+                {"role": "system", "content": CONVERSATIONAL_SYSTEM_PROMPT},
+                {"role": "user", "content": user_content}
+            ]
+            response_text = await call_gemini(messages, temperature=0.7)
+        
+        print(f"[ADK CHAT] Response: {len(response_text)} chars")
+        return ConversationalChatResponse(response=response_text)
+        
+    except Exception as e:
+        print(f"Error in ADK conversational chat: {e}")
+        # Fallback to direct LLM call on any ADK error
+        try:
+            user_content = request.messages[-1]["content"] if request.messages else ""
+            messages = [
+                {"role": "system", "content": CONVERSATIONAL_SYSTEM_PROMPT},
+                {"role": "user", "content": user_content}
+            ]
+            response_text = await call_gemini(messages, temperature=0.7)
+            return ConversationalChatResponse(response=response_text)
+        except Exception as fallback_e:
+            print(f"Fallback also failed: {fallback_e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/generate-strategy", response_model=StrategyResponse)
+async def generate_strategy(request: GenerateStrategyRequest):
+    """
+    Generate Blockly XML from natural language description.
+    Ported from Supabase Edge Function: generate-strategy-validated
+    """
+    try:
+        block_count = request.currentWorkspace.count("<block ") if request.currentWorkspace else 0
+        print(f"[GENERATE] Message: {request.message[:100]}...")
+        print(f"[GENERATE] Workspace: {block_count} blocks, Mode: {request.mode}")
+        
+        # 1. Build prompts (conditionally use RAG or all blocks)
+        if USE_RAG_FOR_BLOCKS:
+            # RAG Mode: Retrieve only relevant blocks
+            print("[GENERATE] Using RAG mode (selective blocks)")
+            rag_blocks = await get_rag_blocks(request.message, n_results=25)
+            # Load template without full block reference
+            system_prompt_template = load_prompt("system_prompt.txt", {"BLOCK_REFERENCE": ""})
+            # Inject RAG-retrieved blocks
+            system_prompt = system_prompt_template + f"\n\n=== AVAILABLE BLOCKS (Retrieved via RAG) ===\n{rag_blocks}\n"
+        else:
+            # All Blocks Mode: Send complete block reference
+            print("[GENERATE] Using ALL BLOCKS mode (full reference)")
+            system_prompt = SYSTEM_PROMPT
+            
+        if request.blockXml:
+            system_prompt += f"\n\nThe user has shared a specific Blockly block with you. Here is the XML structure:\n\n{request.blockXml}\n\nPlease focus on this block when generating or modifying the strategy. Analyze what this block does and incorporate it or provide context about it in your response."
+        
+        if request.currentWorkspace:
+            user_prompt = f"""Here is my current trading strategy workspace:
+
+{request.currentWorkspace}
+
+Please modify it according to this request: {request.message}
+
+IMPORTANT: You MUST only use blocks from the list provided in the system prompt. Do not invent new blocks. Return ONLY the complete updated XML wrapped in <xml></xml> tags. No explanations."""
+        else:
+            user_prompt = f"""Generate Blockly XML for this trading strategy: {request.message}
+
+IMPORTANT: You MUST only use the blocks listed in the system prompt. Do not invent new blocks. Return ONLY the XML wrapped in <xml></xml> tags. No explanations.
+
+BEFORE GENERATING XML, THINK STEP-BY-STEP:
+1. What is the requested timeframe? (Set 'period' attribute to this value in minutes, e.g., 60 for 1h)
+2. What is the trade size? (Set 'SIZE' to 0.1 unless specified)
+3. What indicators are needed?"""
+        
+        
+        # Determine model based on mode
+        model_name = "google/gemini-2.5-flash" if request.mode == "fast" else "google/gemini-2.5-pro"
+        print(f"[GENERATE] Using model: {model_name}")
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+        
+        # 2. Generate (Pass 1)
+        response_text = await call_lovable_gemini(messages, temperature=0.3, model=model_name)
+        xml_content = extract_xml(response_text)
+        
+        # 3. Apply Common Programmatic Fixes (Pass 1)
+        xml_content = apply_common_fixes(xml_content)
+        
+        # 4. Validate Structure (Pass 1)
+        is_structure_valid, struct_issues = validate_xml_structure(xml_content)
+        if not is_structure_valid:
+            print(f"[GENERATE] Structural issues found (Pass 1): {struct_issues}")
+            
+        # 5. Fix Crossovers (Pass 1)
+        was_fixed = False
+        is_crossover_valid, crossover_issues = check_crossover_valid(xml_content)
+        if not is_crossover_valid:
+            print(f"[GENERATE] Crossover issues found: {crossover_issues}")
+            xml_content, was_fixed = fix_crossover_indicators(xml_content)
+            if was_fixed:
+                print("[GENERATE] Applied programmatic fix for crossover indicators")
+        
+        # 6. Rationalization (Pass 2 - Slow Mode Only)
+        was_rationalized = False
+        if request.mode == "slow":
+            print("[GENERATE] Slow mode active - Rationalizing...")
+            validation_messages = [
+                {"role": "system", "content": RATIONALIZATION_PROMPT},
+                {"role": "user", "content": f"Validate and fix this XML:\n\n{xml_content}"}
+            ]
+            
+            # Use lower temperature for validation, use Pro model for reasoning
+            validated_content = await call_lovable_gemini(validation_messages, temperature=0.1, model="google/gemini-2.5-pro")
+            validated_xml = extract_xml(validated_content)
+            
+            if validated_xml and "<block" in validated_xml:
+                 validated_xml = apply_common_fixes(validated_xml)
+                 is_struct_valid_2, _ = validate_xml_structure(validated_xml)
+                 
+                 if is_struct_valid_2:
+                     xml_content = validated_xml
+                     was_rationalized = True
+                     print("[GENERATE] LLM rationalization applied")
+                     
+                     # Check crossover fixes AGAIN on rationalized output
+                     is_cross_valid_2, _ = check_crossover_valid(xml_content)
+                     if not is_cross_valid_2:
+                          xml_content, fixed_again = fix_crossover_indicators(xml_content)
+                          if fixed_again:
+                               was_fixed = True
+                               print("[GENERATE] Applied crossover fix after rationalization")
+                 else:
+                     print("[GENERATE] Rationalized XML had invalid structure, discarded")
+        
+        generated_block_count = xml_content.count("<block ")
+        print(f"[GENERATE] Result: {generated_block_count} blocks, {len(xml_content)} chars, fixed={was_fixed}, rationalized={was_rationalized}")
+        
+        return StrategyResponse(
+            xml=xml_content, 
+            ai_fixed=was_fixed,
+            was_rationalized=was_rationalized
+        )
+        
+    except Exception as e:
+        print(f"Error in generate strategy: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/validate-strategy")
+async def validate_strategy(request: ValidateStrategyRequest):
+    """
+    Validate and optionally rationalize Blockly XML strategy.
+    Ported from Supabase Edge Function: validate-strategy
+    """
+    try:
+        print(f"[VALIDATE] Mode: {request.mode}")
+        
+        # Step 1: Programmatic validation (Pass 1)
+        # Apply common fixes first
+        xml_content = apply_common_fixes(request.xml)
+        
+        # Validate structure
+        is_struct_valid, struct_issues = validate_xml_structure(xml_content)
+        if not is_struct_valid:
+            print(f"[VALIDATE] Structural issues found: {struct_issues}")
+            
+        # Check crossovers
+        is_valid, issues = check_crossover_valid(xml_content)
+        auto_fixed = False
+        
+        if not is_valid:
+            print(f"[VALIDATE] Issues found: {issues}")
+            xml_content, auto_fixed = fix_crossover_indicators(xml_content)
+            if auto_fixed:
+                print("[VALIDATE] Applied programmatic fix")
+        
+        # Step 2: LLM rationalization (slow mode only)
+        was_rationalized = False
+        if request.mode == "slow":
+            print("[VALIDATE] Slow mode active - Rationalizing...")
+            messages = [
+                {"role": "system", "content": RATIONALIZATION_PROMPT},
+                {"role": "user", "content": f"Validate and fix this XML:\n\n{xml_content}"}
+            ]
+            
+            # Use Pro model for reasoning/validation
+            validated_content = await call_lovable_gemini(messages, temperature=0.1, model="google/gemini-2.5-pro")
+            validated_xml = extract_xml(validated_content)
+            
+            if validated_xml and "<block" in validated_xml:
+                validated_xml = apply_common_fixes(validated_xml)
+                is_struct_valid_2, _ = validate_xml_structure(validated_xml)
+                
+                if is_struct_valid_2:
+                    xml_content = validated_xml
+                    was_rationalized = True
+                    print("[VALIDATE] LLM rationalization applied")
+                    
+                    # Check crossover fixes AGAIN
+                    is_cross_valid_2, _ = check_crossover_valid(xml_content)
+                    if not is_cross_valid_2:
+                        xml_content, fixed_again = fix_crossover_indicators(xml_content)
+                        if fixed_again:
+                            auto_fixed = True
+                            print("[VALIDATE] Applied crossover fix after rationalization")
+                else:
+                    print("[VALIDATE] Rationalized XML had invalid structure, discarded")
+        
+        block_count = xml_content.count("<block ")
+        
+        return {
+            "xml": xml_content,
+            "blockCount": block_count,
+            "autoFixed": auto_fixed,
+            "wasRationalized": was_rationalized,
+            "valid": True
+        }
+        
+    except Exception as e:
+        print(f"Error in validate strategy: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Legacy endpoint for backward compatibility
+@app.post("/strategy/legacy", response_model=StrategyResponse)
+async def generate_strategy_legacy(request: StrategyRequest):
+    """Legacy endpoint - redirects to /generate-strategy"""
+    return await generate_strategy(GenerateStrategyRequest(
+        message=request.message,
+        currentWorkspace=request.existingXml,
+        blockXml=request.blockXml,
+        mode="fast" if request.ai_model == "deepseek" else "slow"
+    ))
+
+
+# ============================================================
+# MARKET DATA ENDPOINTS
+# ============================================================
+
+import sqlite3
+from pathlib import Path
+
+MARKET_DATA_DB = Path(__file__).parent / "data" / "market_data.db"
+
+
+def get_db_connection():
+    """Get a connection to the market data SQLite database."""
+    if not MARKET_DATA_DB.exists():
+        raise HTTPException(status_code=500, detail="Market data database not found")
+    conn = sqlite3.connect(str(MARKET_DATA_DB))
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+@app.get("/symbols")
+async def get_symbols():
+    """
+    Get all available symbols from the local database.
+    Returns grouped by asset type.
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Get unique symbols with their asset info
+        cursor.execute("""
+            SELECT DISTINCT 
+                a.symbol,
+                a.name,
+                a.asset_type,
+                a.is_active,
+                (SELECT COUNT(*) FROM daily_prices WHERE symbol = a.symbol) as record_count,
+                (SELECT MIN(date) FROM daily_prices WHERE symbol = a.symbol) as first_date,
+                (SELECT MAX(date) FROM daily_prices WHERE symbol = a.symbol) as last_date
+            FROM assets a
+            WHERE a.is_active = 1
+            ORDER BY a.symbol
+        """)
+        
+        rows = cursor.fetchall()
+        conn.close()
+        
+        symbols = []
+        grouped = {
+            "stocks": [],
+            "forex": [],
+            "indices": [],
+            "commodities": [],
+            "crypto": [],
+            "futures": [],
+            "etf": []
+        }
+        
+        for row in rows:
+            symbol_info = {
+                "symbol": row["symbol"],
+                "name": row["name"],
+                "asset_type": row["asset_type"],
+                "is_active": row["is_active"],
+                "record_count": row["record_count"],
+                "first_date": row["first_date"],
+                "last_date": row["last_date"]
+            }
+            symbols.append(symbol_info)
+            
+            # Group by asset type
+            asset_type = (row["asset_type"] or "stocks").lower()
+            if asset_type in grouped:
+                grouped[asset_type].append(symbol_info)
+            else:
+                grouped["stocks"].append(symbol_info)
+        
+        return {
+            "success": True,
+            "total": len(symbols),
+            "symbols": symbols,
+            "grouped": grouped
+        }
+        
+    except Exception as e:
+        log_error("get_symbols", str(e))
+        return {
+            "success": False,
+            "total": 0,
+            "symbols": [],
+            "grouped": {"stocks": [], "forex": [], "indices": [], "commodities": [], "crypto": [], "futures": [], "etf": []},
+            "error": str(e)
+        }
+
+
+@app.get("/market-data")
+async def get_market_data(
+    symbol: str,
+    interval: str = "1d",
+    limit: int = 500,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None
+):
+    """
+    Get historical market data for a symbol from the local database.
+    
+    Args:
+        symbol: Stock/forex symbol (e.g., "AAPL", "EURUSD")
+        interval: "1d" for daily, "1h" for hourly
+        limit: Maximum number of candles to return
+        start_date: Optional start date (YYYY-MM-DD)
+        end_date: Optional end date (YYYY-MM-DD)
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Choose table based on interval
+        if interval == "1h" or interval == "hourly":
+            table = "hourly_prices"
+            date_col = "datetime"
+        else:
+            table = "daily_prices"
+            date_col = "date"
+        
+        # Build query
+        query = f"""
+            SELECT {date_col}, open, high, low, close, volume
+            FROM {table}
+            WHERE symbol = ?
+        """
+        params = [symbol.upper()]
+        
+        if start_date:
+            query += f" AND {date_col} >= ?"
+            params.append(start_date)
+        if end_date:
+            query += f" AND {date_col} <= ?"
+            params.append(end_date)
+        
+        query += f" ORDER BY {date_col} DESC LIMIT ?"
+        params.append(limit)
+        
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+        conn.close()
+        
+        if not rows:
+            return {
+                "success": False,
+                "symbol": symbol,
+                "error": f"No data found for {symbol}",
+                "data": []
+            }
+        
+        # Convert to list and reverse to ascending order
+        data = []
+        for row in reversed(rows):
+            data.append({
+                "date": row[date_col],
+                "open": float(row["open"]),
+                "high": float(row["high"]),
+                "low": float(row["low"]),
+                "close": float(row["close"]),
+                "volume": row["volume"]
+            })
+        
+        return {
+            "success": True,
+            "symbol": symbol,
+            "interval": interval,
+            "count": len(data),
+            "source": "local_database",
+            "data": data
+        }
+        
+    except Exception as e:
+        log_error("get_market_data", f"Error fetching {symbol}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch market data: {str(e)}")
+
+
+# ============================================================
+# CUSTOM BLOCKS ENDPOINT
+# ============================================================
+
+@app.get("/custom-blocks")
+async def get_custom_blocks():
+    """
+    Get all custom block definitions for frontend registration.
+    These are blocks created by users via the ADK agent.
+    """
+    try:
+        from adk_agents.tools.custom_block_tools import _load_blocks
+        blocks = _load_blocks()
+        
+        return {
+            "success": True,
+            "count": len(blocks),
+            "blocks": blocks
+        }
+    except Exception as e:
+        log_error("get_custom_blocks", f"Error loading blocks: {str(e)}")
+        return {
+            "success": False,
+            "count": 0,
+            "blocks": [],
+            "error": str(e)
+        }
+
+
+# ============================================================
+# ADK AGENT CHAT ENDPOINT
+# ============================================================
+
+class AgentChatRequest(BaseModel):
+    message: str
+    session_id: Optional[str] = None
+    current_workspace: Optional[str] = None
+
+class AgentChatResponse(BaseModel):
+    response: str
+    session_id: str
+    tool_calls: Optional[List[Dict[str, Any]]] = None
+
+@app.post("/agent/chat", response_model=AgentChatResponse)
+async def agent_chat(request: AgentChatRequest):
+    """
+    Chat endpoint that uses the ADK trading_agent.
+    This agent can create custom blocks, search market news, execute trades, etc.
+    """
+    try:
+        # Use provided session_id or create new one
+        session_id = request.session_id or f"session_{datetime.now().strftime('%Y%m%d%H%M%S%f')}"
+        user_id = "default_user"
+        
+        # Create or get session using async methods
+        session = await adk_session_service.get_session(
+            app_name="trading_chat",
+            user_id=user_id,
+            session_id=session_id
+        )
+        
+        if session is None:
+            session = await adk_session_service.create_session(
+                app_name="trading_chat",
+                user_id=user_id,
+                session_id=session_id
+            )
+        
+        # Add workspace context to message if provided
+        user_message = request.message
+        if request.current_workspace:
+            block_count = len(re.findall(r'<block ', request.current_workspace))
+            if block_count > 0:
+                user_message = f"[Context: User has {block_count} blocks in workspace]\n\n{request.message}"
+        
+        # Run the agent
+        response_text = ""
+        tool_calls = []
+        
+        # Import Content and Part for message formatting
+        from google.genai import types
+        user_content = types.Content(
+            role="user",
+            parts=[types.Part(text=user_message)]
+        )
+        
+        async for event in adk_runner.run_async(
+            user_id=user_id,
+            session_id=session_id,
+            new_message=user_content
+        ):
+            # Collect response parts
+            if hasattr(event, 'content') and event.content:
+                if hasattr(event.content, 'parts'):
+                    for part in event.content.parts:
+                        if hasattr(part, 'text') and part.text:
+                            response_text += part.text
+                        if hasattr(part, 'function_call') and part.function_call:
+                            fc = part.function_call
+                            if hasattr(fc, 'name') and fc.name:
+                                tool_calls.append({
+                                    "name": fc.name,
+                                    "args": dict(fc.args) if hasattr(fc, 'args') and fc.args else {}
+                                })
+        
+        if not response_text:
+            response_text = "I'm ready to help! You can ask me to create custom blocks, search market news, or help with trading strategies."
+        
+        return AgentChatResponse(
+            response=response_text,
+            session_id=session_id,
+            tool_calls=tool_calls if tool_calls else None
+        )
+        
+    except Exception as e:
+        log_error("agent_chat", f"Error in agent chat: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================
+# BACKTEST ENDPOINTS
+# ============================================================
+
+class BacktestPyCodeRequest(BaseModel):
+    """Request for backtesting.py engine with pre-generated Python code."""
+    pythonCode: Optional[str] = None
+    symbol: str = "EURUSD"
+    startDate: str = "2024-01-01"
+    endDate: str = "2024-03-31"
+    initialBalance: float = 10000.0
+    commission: float = 0.001
+    polishWithLLM: bool = False
+    templateId: Optional[str] = None
+
+
+@app.post("/backtest-py-code")
+async def run_backtest_py_code(request: BacktestPyCodeRequest):
+    """
+    Run backtest using backtesting.py engine with pre-generated Python code.
+    
+    This endpoint expects Python code compatible with backtesting.py library.
+    """
+    try:
+        log_api_request("/backtest-py-code", request.model_dump())
+        
+        # Get Python code (from request or template)
+        python_code = request.pythonCode
+        
+        if not python_code and request.templateId:
+            # Load pre-built code from template
+            from strategy_templates import get_template_code
+            python_code = get_template_code(request.templateId)
+            if not python_code:
+                raise HTTPException(status_code=400, detail=f"Template not found: {request.templateId}")
+        
+        if not python_code:
+            raise HTTPException(status_code=400, detail="No Python code provided and no template specified")
+        
+        # Execute backtest using backtesting.py
+        from backtesting import Backtest, Strategy
+        from backtesting.lib import crossover
+        from backtesting.test import SMA
+        import pandas as pd
+        import yfinance as yf
+        
+        # Fetch historical data
+        print(f"[BACKTEST-PY] Fetching data for {request.symbol}...")
+        ticker = yf.Ticker(request.symbol)
+        df = ticker.history(start=request.startDate, end=request.endDate)
+        
+        if df.empty:
+            raise HTTPException(status_code=400, detail=f"No data available for {request.symbol}")
+        
+        # Prepare data for backtesting.py
+        df = df.rename(columns={"Open": "Open", "High": "High", "Low": "Low", "Close": "Close", "Volume": "Volume"})
+        
+        # Execute the strategy code to get the Strategy class
+        local_namespace = {
+            "Strategy": Strategy,
+            "crossover": crossover,
+            "SMA": SMA,
+        }
+        try:
+            exec(python_code, local_namespace)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to execute strategy code: {str(e)}")
+        
+        # Find the Strategy subclass
+        strategy_class = None
+        for name, obj in local_namespace.items():
+            if isinstance(obj, type) and issubclass(obj, Strategy) and obj != Strategy:
+                strategy_class = obj
+                break
+        
+        if not strategy_class:
+            raise HTTPException(status_code=400, detail="No Strategy class found in provided code")
+        
+        # Run backtest
+        bt = Backtest(df, strategy_class, cash=request.initialBalance, commission=request.commission)
+        stats = bt.run()
+        
+        # Extract metrics
+        metrics = {
+            "total_return": float(stats["Return [%]"]) if pd.notna(stats["Return [%]"]) else 0,
+            "win_rate": float(stats["Win Rate [%]"]) if pd.notna(stats.get("Win Rate [%]", 0)) else 0,
+            "total_trades": int(stats["# Trades"]) if pd.notna(stats["# Trades"]) else 0,
+            "max_drawdown": float(stats["Max. Drawdown [%]"]) if pd.notna(stats["Max. Drawdown [%]"]) else 0,
+            "sharpe_ratio": float(stats["Sharpe Ratio"]) if pd.notna(stats.get("Sharpe Ratio", 0)) else 0,
+            "profit_factor": float(stats.get("Profit Factor", 0)) if pd.notna(stats.get("Profit Factor", 0)) else 0,
+        }
+        
+        # Generate HTML visualization
+        visualization_html = None
+        raw_stats = None
+        try:
+            import tempfile
+            import os as temp_os
+            
+            # Create temp file for HTML output
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False) as tmp:
+                tmp_path = tmp.name
+            
+            # Generate plot to file (don't open browser)
+            bt.plot(filename=tmp_path, open_browser=False)
+            
+            # Read the HTML content
+            with open(tmp_path, 'r', encoding='utf-8') as f:
+                visualization_html = f.read()
+            
+            # Clean up temp file
+            temp_os.unlink(tmp_path)
+            
+            # Generate raw stats string
+            raw_stats = str(stats)
+            print(f"[BACKTEST-PY] Generated HTML visualization ({len(visualization_html)} chars)")
+            
+        except Exception as viz_error:
+            print(f"[BACKTEST-PY] Warning: Could not generate visualization: {viz_error}")
+            # Continue without visualization - it's optional
+        
+        return {
+            "success": True,
+            "metrics": metrics,
+            "final_balance": request.initialBalance * (1 + metrics["total_return"] / 100),
+            "symbol": request.symbol,
+            "start_date": request.startDate,
+            "end_date": request.endDate,
+            "visualization_html": visualization_html,
+            "raw_stats": raw_stats
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        log_error("run_backtest_py_code", str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/backtest", response_model=BacktestResponse)
+async def run_backtest_endpoint(request: BacktestRequest):
+    """
+    Run backtest using the specified engine (NautilusTrader, Rust, or backtesting.py).
+    
+    This endpoint handles the full pipeline: XML -> Code -> Backtest.
+    """
+    try:
+        log_api_request("/backtest", request.model_dump())
+        print(f"[BACKTEST] Starting backtest for {request.symbol} using engine: {request.engine}")
+        
+        # Check for pre-compiled code (from frontend)
+        if request.precompiledCode:
+            strategy_code = request.precompiledCode
+            print(f"[BACKTEST] Using precompiled code ({len(strategy_code)} chars)")
+        elif request.generatedCode:
+            strategy_code = request.generatedCode
+            print(f"[BACKTEST] Using generated code ({len(strategy_code)} chars)")
+        else:
+            # Generate code from XML using the pipeline
+            print("[BACKTEST] Generating strategy code from XML...")
+            
+            # Use the pipeline to convert XML to code
+            result = await run_backtest_pipeline(
+                xml=request.workspaceXml,
+                symbol=request.symbol,
+                data_source=request.data_source,
+                start_date=request.startDate,
+                end_date=request.endDate
+            )
+            
+            if not result.get("success"):
+                return BacktestResponse(
+                    success=False,
+                    symbol=request.symbol,
+                    start_date=request.startDate,
+                    end_date=request.endDate,
+                    metrics={"error": result.get("error", "Unknown error")},
+                    trades=[],
+                    equity_curve=[]
+                )
+            
+            # Return the pipeline result directly if it succeeded
+            return BacktestResponse(
+                success=True,
+                symbol=request.symbol,
+                start_date=request.startDate,
+                end_date=request.endDate,
+                initial_balance=request.initialBalance,
+                final_balance=result.get("final_balance", request.initialBalance),
+                metrics=result.get("metrics", {}),
+                trades=result.get("trades", []),
+                equity_curve=result.get("equity_curve", []),
+                visualization_html=result.get("visualization_html"),
+                raw_stats=result.get("raw_stats")
+            )
+        
+        # Run backtest with pre-compiled code
+        use_nautilus = request.engine in ["nautilus", "rust"]
+        
+        result = run_backtest(
+            strategy_code=strategy_code,
+            symbol=request.symbol,
+            start_date=request.startDate,
+            end_date=request.endDate,
+            initial_balance=request.initialBalance,
+            trade_size=request.tradeSize,
+            use_nautilus=use_nautilus
+        )
+        
+        log_backtest(
+            request.symbol,
+            request.engine,
+            result.get("success", False),
+            result.get("metrics", {})
+        )
+        
+        return BacktestResponse(
+            success=result.get("success", False),
+            symbol=result.get("symbol", request.symbol),
+            start_date=result.get("start_date", request.startDate),
+            end_date=result.get("end_date", request.endDate),
+            initial_balance=result.get("initial_balance", request.initialBalance),
+            final_balance=result.get("final_balance"),
+            best_params=result.get("best_params"),
+            best_metric_value=result.get("best_metric_value"),
+            params_tested=result.get("params_tested"),
+            metrics=result.get("metrics", {}),
+            trades=result.get("trades", []),
+            equity_curve=result.get("equity_curve", []),
+            visualization_html=result.get("visualization_html"),
+            raw_stats=result.get("raw_stats")
+        )
+        
+    except Exception as e:
+        log_error("run_backtest_endpoint", str(e))
+        import traceback
+        traceback.print_exc()
+        return BacktestResponse(
+            success=False,
+            symbol=request.symbol,
+            start_date=request.startDate,
+            end_date=request.endDate,
+            metrics={"error": str(e)},
+            trades=[],
+            equity_curve=[]
+        )
