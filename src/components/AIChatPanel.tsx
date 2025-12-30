@@ -2,13 +2,12 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Loader2, Send, Sparkles, MessageSquare, Code, Blocks, X, Eye, Zap, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
-import { LogEntry } from "@/components/DevLogPanel";
+import { LogEntry } from "./DevLogPanel";
 
 interface Message {
     role: "user" | "assistant";
@@ -22,6 +21,7 @@ interface AIChatPanelProps {
     getCurrentWorkspaceXml: () => string | null;
     getSelectedBlocksXml: () => { xml: string; name: string } | null;
     onLog?: (log: LogEntry) => void;
+    onClose?: () => void;
 }
 
 interface GenerationProgress {
@@ -32,7 +32,8 @@ interface GenerationProgress {
     blocksGenerated?: number;
 }
 
-export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSelectedBlocksXml, onLog }: AIChatPanelProps) => {
+// AIChatPanel component
+export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSelectedBlocksXml, onLog, onClose }: AIChatPanelProps) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -170,12 +171,11 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
                 }, 15000) : null;
 
                 const response = await fetch(
-                    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-strategy-validated`,
+                    `http://localhost:8000/generate-strategy`,
                     {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
-                            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
                         },
                         body: JSON.stringify({
                             message: input,
@@ -297,17 +297,16 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
                 }
 
                 const response = await fetch(
-                    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/conversational-chat`,
+                    `http://localhost:8000/agent/chat`,
                     {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
-                            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
                         },
                         body: JSON.stringify({
-                            messages: [...messages, userMessage],
-                            blockXml: attachedBlock?.xml,
-                            currentWorkspace: currentXml
+                            message: input,
+                            current_workspace: currentXml,
+                            session_id: undefined // Let backend create new session
                         }),
                     }
                 );
@@ -381,36 +380,46 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
     };
 
     return (
-        <Card className="flex flex-col h-full bg-background/95 backdrop-blur border-border">
-            <div className="p-4 border-b border-border">
-                <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="w-5 h-5 text-pink-500" />
-                    <h3 className="font-semibold text-foreground">AI Strategy Generator</h3>
+        <div className="w-80 bg-card border-l border-border flex flex-col overflow-hidden animate-fade-in h-full">
+            {/* Header */}
+            <div className="px-3 py-2 border-b border-border">
+                <div className="flex items-center justify-between mb-3 gap-2">
+                    <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-pink-500" />
+                        <h2 className="font-semibold text-foreground text-sm">AI Assistant</h2>
+                    </div>
+                    {onClose && (
+                        <Button onClick={onClose} variant="ghost" size="icon" className="h-7 w-7 hover:bg-destructive/10">
+                            <X className="w-4 h-4" />
+                        </Button>
+                    )}
                 </div>
-                <div className="flex gap-2 mb-3">
+
+                {/* Mode Selector */}
+                <div className="flex gap-2">
                     <Button
-                        onClick={() => setIsGenerateMode(true)}
-                        variant={isGenerateMode ? "default" : "outline"}
+                        variant={isGenerateMode ? "secondary" : "ghost"}
                         size="sm"
-                        className={isGenerateMode ? "bg-pink-500 hover:bg-pink-600 text-white" : ""}
+                        onClick={() => setIsGenerateMode(true)}
+                        className="flex-1"
                     >
                         <Code className="w-4 h-4 mr-2" />
-                        Generate Blocks
+                        Generate
                     </Button>
                     <Button
-                        onClick={() => setIsGenerateMode(false)}
-                        variant={!isGenerateMode ? "default" : "outline"}
+                        variant={!isGenerateMode ? "secondary" : "ghost"}
                         size="sm"
-                        className={!isGenerateMode ? "bg-pink-500 hover:bg-pink-600 text-white" : ""}
+                        onClick={() => setIsGenerateMode(false)}
+                        className="flex-1"
                     >
                         <MessageSquare className="w-4 h-4 mr-2" />
-                        Chat Only
+                        Chat
                     </Button>
                 </div>
 
                 {/* Mode Toggle: Fast vs Slow (Precise) */}
                 {isGenerateMode && (
-                    <div className="flex items-center gap-4 text-xs">
+                    <div className="flex items-center gap-4 text-xs mt-2">
                         <div className="flex items-center gap-2">
                             <Switch
                                 id="slow-mode"
@@ -466,8 +475,8 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
                             >
                                 <div
                                     className={`max-w-[80%] rounded-lg p-3 ${msg.role === "user"
-                                            ? "bg-pink-500/20 text-foreground"
-                                            : "bg-muted text-foreground"
+                                        ? "bg-pink-500/20 text-foreground"
+                                        : "bg-muted text-foreground"
                                         }`}
                                 >
                                     {msg.role === "assistant" ? (
@@ -605,6 +614,6 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
                     </Button>
                 </div>
             </div>
-        </Card>
+        </div>
     );
 };
