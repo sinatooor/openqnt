@@ -230,27 +230,47 @@ def run_backtest_simple(
             'equity': round(row['equity'], 2)
         })
     
+    # Prepare metrics for visualization
+    metrics = {
+        'total_trades': total_trades,
+        'winning_trades': len([t for t in trade_list if t['pnl'] > 0]),
+        'losing_trades': len([t for t in trade_list if t['pnl'] < 0]),
+        'win_rate': round(win_rate, 2),
+        'total_pnl': round(total_pnl, 2),
+        'profit_factor': round(profit_factor, 2) if profit_factor != float('inf') else 999.99,
+        'max_drawdown': round(max_dd, 2),
+        'sharpe_ratio': round(sharpe, 2),
+        'avg_win': round(avg_win, 2),
+        'avg_loss': round(avg_loss, 2)
+    }
+    
+    # Generate visualization HTML  
+    visualization_html = None
+    try:
+        from nautilus_visualizer import generate_nautilus_chart
+        visualization_html = generate_nautilus_chart(
+            ohlcv_data=data,
+            trades=trade_list,
+            equity_curve=equity_curve,
+            metrics=metrics,
+            symbol=symbol
+        )
+        print(f"[SIMPLE_BT] Generated visualization HTML ({len(visualization_html)} chars)")
+    except Exception as e:
+        print(f"[SIMPLE_BT] Visualization generation failed: {e}")
+    
     return {
         'success': True,
+        'engine': 'simple',
         'symbol': symbol,
         'start_date': start_date,
         'end_date': end_date,
         'initial_balance': initial_balance,
         'final_balance': round(data['equity'].iloc[-1], 2) if len(data) > 0 else initial_balance,
-        'metrics': {
-            'total_trades': total_trades,
-            'winning_trades': len([t for t in trade_list if t['pnl'] > 0]),
-            'losing_trades': len([t for t in trade_list if t['pnl'] < 0]),
-            'win_rate': round(win_rate, 2),
-            'total_pnl': round(total_pnl, 2),
-            'profit_factor': round(profit_factor, 2) if profit_factor != float('inf') else 999.99,
-            'max_drawdown': round(max_dd, 2),
-            'sharpe_ratio': round(sharpe, 2),
-            'avg_win': round(avg_win, 2),
-            'avg_loss': round(avg_loss, 2)
-        },
+        'metrics': metrics,
         'trades': trade_list[:50],  # Limit to 50 trades for response size
-        'equity_curve': equity_curve
+        'equity_curve': equity_curve,
+        'visualization_html': visualization_html
     }
 
 
