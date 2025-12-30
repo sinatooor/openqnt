@@ -442,7 +442,7 @@ def run_nautilus_backtest(
         # Generate HTML Visualization
         visualization_html = None
         try:
-            from backend.nautilus_visualizer import generate_nautilus_chart
+            from nautilus_visualizer import generate_nautilus_chart
             visualization_html = generate_nautilus_chart(
                 ohlcv_data=historical_data,
                 trades=trades_list,
@@ -450,21 +450,11 @@ def run_nautilus_backtest(
                 metrics=metrics,
                 symbol=symbol
             )
-        except ImportError:
-            try:
-                # Try fallback import if running from different context
-                from nautilus_visualizer import generate_nautilus_chart
-                visualization_html = generate_nautilus_chart(
-                    ohlcv_data=historical_data,
-                    trades=trades_list,
-                    equity_curve=equity_curve,
-                    metrics=metrics,
-                    symbol=symbol
-                )
-            except Exception as viz_err:
-                print(f"Visualization generation failed: {viz_err}")
+            print(f"[NAUTILUS] Generated visualization HTML ({len(visualization_html)} bytes)")
         except Exception as e:
-            print(f"Visualization generation failed: {e}")
+            import traceback
+            print(f"[NAUTILUS] Visualization generation failed: {e}")
+            traceback.print_exc()
 
         return {
             "success": True,
