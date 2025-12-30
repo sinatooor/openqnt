@@ -17,6 +17,9 @@ interface Trade {
     pnl: number;
     return_pct: number;
     type: string;
+    // Optional properties for Nautilus engine compatibility
+    side?: string;
+    profit_loss?: number;
 }
 
 interface BacktestVisualizationModalProps {
@@ -76,8 +79,6 @@ export const BacktestVisualizationModal = ({
 }: BacktestVisualizationModalProps) => {
     const [activeTab, setActiveTab] = useState<"chart" | "trades" | "summary" | "stats">("chart");
     const [tradeFilter, setTradeFilter] = useState<"all" | "wins" | "losses">("all");
-
-    if (!isOpen) return null;
 
     const hasTrades = trades && trades.length > 0;
     const hasChart = htmlContent !== null;
@@ -330,13 +331,13 @@ export const BacktestVisualizationModal = ({
                                                             {isWorst && <span className="ml-1 text-red-500">★</span>}
                                                         </TableCell>
                                                         <TableCell>
-                                                            <Badge variant={trade.type === "long" ? "default" : "secondary"} className="text-[10px]">
-                                                                {trade.type === "long" ? (
+                                                            <Badge variant={(trade.type || trade.side) === "long" || (trade.type || trade.side) === "buy" ? "default" : "secondary"} className="text-[10px]">
+                                                                {(trade.type || trade.side) === "long" || (trade.type || trade.side) === "buy" ? (
                                                                     <ArrowUpRight className="w-3 h-3 mr-1" />
                                                                 ) : (
                                                                     <ArrowDownRight className="w-3 h-3 mr-1" />
                                                                 )}
-                                                                {trade.type.toUpperCase()}
+                                                                {(trade.type || trade.side || "unknown").toUpperCase()}
                                                             </Badge>
                                                         </TableCell>
                                                         <TableCell className="font-mono text-muted-foreground text-[11px]">
@@ -354,11 +355,11 @@ export const BacktestVisualizationModal = ({
                                                         <TableCell className="text-right font-mono">
                                                             {formatNumber(trade.exit_price, 4)}
                                                         </TableCell>
-                                                        <TableCell className={`text-right font-mono font-medium ${trade.pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                                            {trade.pnl >= 0 ? '+' : ''}{formatNumber(trade.pnl, 2)}
+                                                        <TableCell className={`text-right font-mono font-medium ${(trade.pnl ?? trade.profit_loss ?? 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                                            {(trade.pnl ?? trade.profit_loss ?? 0) >= 0 ? '+' : ''}{formatNumber(trade.pnl ?? trade.profit_loss ?? 0, 2)}
                                                         </TableCell>
-                                                        <TableCell className={`text-right font-mono font-medium ${trade.cumulativePnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                            {trade.cumulativePnl >= 0 ? '+' : ''}{formatNumber(trade.cumulativePnl, 2)}
+                                                        <TableCell className={`text-right font-mono font-medium ${(trade.cumulativePnl ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                            {(trade.cumulativePnl ?? 0) >= 0 ? '+' : ''}{formatNumber(trade.cumulativePnl ?? 0, 2)}
                                                         </TableCell>
                                                     </TableRow>
                                                 );
