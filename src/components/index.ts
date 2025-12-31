@@ -11,4 +11,6 @@ export * from './BacktestingPanel';
 export * from './StrategyTemplatesDialog';
 // Deprecated: Use @/features/chart instead
 export * from './TradingViewChart';
+export * from './TradingViewAdvancedChart';
+export * from './TradingViewMarketOverview';
 export * from './ui';
