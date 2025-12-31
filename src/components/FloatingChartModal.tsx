@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { DraggableModal } from "./DraggableModal";
 import { TradingViewAdvancedChart } from "./TradingViewAdvancedChart";
 import { TradingViewMarketOverview } from "./TradingViewMarketOverview";
+import { TradingViewMarketSummary } from "./TradingViewMarketSummary";
 import { Model, Layout, IJsonModel, TabNode } from "flexlayout-react";
 import "flexlayout-react/style/dark.css";
 
@@ -102,66 +103,75 @@ export const FloatingChartModal = ({
       onClose={onClose}
       title="Live Trading Dashboard"
       defaultWidth={1200}
-      defaultHeight={700}
+      defaultHeight={750}
     >
-      <div className="w-full h-full relative">
-        {/* Custom FlexLayout styling */}
-        <style>{`
-          .flexlayout__layout {
-            --color-1: #0f0f0f;
-            --color-2: #1a1a1a;
-            --color-3: #2a2a2a;
-            --color-4: #3a3a3a;
-            --color-5: #4a4a4a;
-            --color-tabset-header-background: transparent;
-            --color-tabset-background: transparent;
-            --color-tab-selected-background: rgba(59, 130, 246, 0.15);
-            --color-tab-unselected-background: transparent;
-            --color-tab-selected: #fff;
-            --color-tab-unselected: #888;
-            --color-splitter: rgba(255, 255, 255, 0.1);
-            --color-splitter-drag: rgba(59, 130, 246, 0.5);
-            --color-drag-rect: rgba(59, 130, 246, 0.3);
-            --color-drag-rect-border: rgba(59, 130, 246, 0.8);
-            --font-size: 12px;
-            background: transparent !important;
-          }
-          .flexlayout__tabset {
-            background: rgba(15, 15, 15, 0.5) !important;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-          }
-          .flexlayout__tabset_header {
-            background: rgba(0, 0, 0, 0.3) !important;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-          }
-          .flexlayout__tab {
-            background: transparent !important;
-          }
-          .flexlayout__tab_button {
-            padding: 4px 12px !important;
-            border-radius: 4px !important;
-            margin: 2px !important;
-            font-weight: 500;
-          }
-          .flexlayout__tab_button--selected {
-            background: rgba(59, 130, 246, 0.2) !important;
-          }
-          .flexlayout__splitter {
-            background: rgba(255, 255, 255, 0.05) !important;
-          }
-          .flexlayout__splitter:hover {
-            background: rgba(59, 130, 246, 0.3) !important;
-          }
-        `}</style>
+      <div className="w-full h-full flex flex-col relative">
+        {/* Market Summary Ticker Bar */}
+        <div className="flex-shrink-0 border-b border-white/5">
+          <TradingViewMarketSummary direction="horizontal" theme="dark" />
+        </div>
 
-        <Layout
-          model={modelRef.current}
-          factory={factory}
-          realtimeResize={true}
-        />
+        {/* FlexLayout panels */}
+        <div className="flex-1 relative">
+          {/* Custom FlexLayout styling */}
+          <style>{`
+            .flexlayout__layout {
+              --color-1: #0f0f0f;
+              --color-2: #1a1a1a;
+              --color-3: #2a2a2a;
+              --color-4: #3a3a3a;
+              --color-5: #4a4a4a;
+              --color-tabset-header-background: transparent;
+              --color-tabset-background: transparent;
+              --color-tab-selected-background: rgba(59, 130, 246, 0.15);
+              --color-tab-unselected-background: transparent;
+              --color-tab-selected: #fff;
+              --color-tab-unselected: #888;
+              --color-splitter: rgba(255, 255, 255, 0.1);
+              --color-splitter-drag: rgba(59, 130, 246, 0.5);
+              --color-drag-rect: rgba(59, 130, 246, 0.3);
+              --color-drag-rect-border: rgba(59, 130, 246, 0.8);
+              --font-size: 12px;
+              background: transparent !important;
+            }
+            .flexlayout__tabset {
+              background: rgba(15, 15, 15, 0.5) !important;
+              border-radius: 8px;
+              overflow: hidden;
+              border: 1px solid rgba(255, 255, 255, 0.05);
+            }
+            .flexlayout__tabset_header {
+              background: rgba(0, 0, 0, 0.3) !important;
+              border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            }
+            .flexlayout__tab {
+              background: transparent !important;
+            }
+            .flexlayout__tab_button {
+              padding: 4px 12px !important;
+              border-radius: 4px !important;
+              margin: 2px !important;
+              font-weight: 500;
+            }
+            .flexlayout__tab_button--selected {
+              background: rgba(59, 130, 246, 0.2) !important;
+            }
+            .flexlayout__splitter {
+              background: rgba(255, 255, 255, 0.05) !important;
+            }
+            .flexlayout__splitter:hover {
+              background: rgba(59, 130, 246, 0.3) !important;
+            }
+          `}</style>
+
+          <Layout
+            model={modelRef.current}
+            factory={factory}
+            realtimeResize={true}
+          />
+        </div>
       </div>
     </DraggableModal>
   );
 };
+

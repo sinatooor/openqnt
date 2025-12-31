@@ -1742,7 +1742,9 @@ async def run_backtest_endpoint(request: BacktestRequest):
                 symbol=request.symbol,
                 data_source=request.data_source,
                 start_date=request.startDate,
-                end_date=request.endDate
+                end_date=request.endDate,
+                engine=request.engine,
+                initial_balance=request.initialBalance
             )
             
             if not result.get("success"):
