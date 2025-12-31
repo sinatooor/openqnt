@@ -13,4 +13,5 @@ export * from './StrategyTemplatesDialog';
 export * from './TradingViewChart';
 export * from './TradingViewAdvancedChart';
 export * from './TradingViewMarketOverview';
+export * from './TradingViewMarketSummary';
 export * from './ui';

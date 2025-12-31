@@ -186,3 +186,8 @@ The AI chat uses Google ADK with a `trading_agent` that has access to:
 ## 📄 License
 Distributed under the MIT License. See `LICENSE` for more information.
 
+
+
+## server setup
+
+http://localhost:8000/docs
