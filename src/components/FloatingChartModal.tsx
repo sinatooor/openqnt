@@ -1,150 +1,198 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { DraggableModal } from "./DraggableModal";
-import { TradingViewChart } from "@/features/chart";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "./ui/select";
-import { useMarketData } from "@/hooks";
-import { fetchAvailableSymbols, SymbolInfo } from "@/services/marketData";
-import { Loader2 } from "lucide-react";
-
-// Fallback symbols if database is empty
-const FALLBACK_SYMBOLS = ["AAPL", "MSFT", "GOOGL", "TSLA", "SPY"];
+import { TradingViewAdvancedChart } from "./TradingViewAdvancedChart";
+import { TradingViewMarketOverview } from "./TradingViewMarketOverview";
+import { Model, Layout, IJsonModel, TabNode } from "flexlayout-react";
+import "flexlayout-react/style/dark.css";
 
 interface FloatingChartModalProps {
   isOpen: boolean;
   onClose: () => void;
   symbol?: string;
-  interval?: string;
 }
+
+// FlexLayout model configuration
+const defaultLayoutModel: IJsonModel = {
+  global: {
+    tabEnableClose: false,
+    tabEnableRename: false,
+    borderSize: 0,
+    tabSetEnableMaximize: true,
+    tabSetEnableDivide: true,
+    splitterSize: 4,
+    splitterExtra: 4,
+  },
+  borders: [],
+  layout: {
+    type: "row",
+    weight: 100,
+    children: [
+      {
+        type: "tabset",
+        weight: 70,
+        children: [
+          {
+            type: "tab",
+            name: "Advanced Chart",
+            component: "advancedChart",
+          },
+        ],
+      },
+      {
+        type: "tabset",
+        weight: 30,
+        children: [
+          {
+            type: "tab",
+            name: "Market Overview",
+            component: "marketOverview",
+          },
+        ],
+      },
+    ],
+  },
+};
 
 export const FloatingChartModal = ({
   isOpen,
   onClose,
-  symbol = "AAPL",
-  interval = "1D",
+  symbol = "NASDAQ:AAPL",
 }: FloatingChartModalProps) => {
   const [currentSymbol, setCurrentSymbol] = useState(symbol);
-  const [currentInterval, setCurrentInterval] = useState(interval);
-  const [availableSymbols, setAvailableSymbols] = useState<SymbolInfo[]>([]);
-  const [isLoadingSymbols, setIsLoadingSymbols] = useState(true);
-  const [groupedSymbols, setGroupedSymbols] = useState<Record<string, SymbolInfo[]>>({});
+  const modelRef = useRef<Model | null>(null);
 
-  const { data: chartData, isLoading } = useMarketData({
-    symbol: currentSymbol,
-    interval: currentInterval,
-    autoFetch: isOpen,
-  });
-
-  // Fetch available symbols from database
+  // Initialize model once
   useEffect(() => {
-    if (isOpen) {
-      setIsLoadingSymbols(true);
-      fetchAvailableSymbols()
-        .then((result) => {
-          if (result.success && result.symbols.length > 0) {
-            setAvailableSymbols(result.symbols);
-            setGroupedSymbols(result.grouped);
-
-            // If current symbol is not in list, switch to first available
-            const symbolExists = result.symbols.some(s => s.symbol === currentSymbol);
-            if (!symbolExists && result.symbols.length > 0) {
-              setCurrentSymbol(result.symbols[0].symbol);
-            }
-          } else {
-            // Use fallback
-            setAvailableSymbols(FALLBACK_SYMBOLS.map(s => ({
-              symbol: s,
-              name: s,
-              asset_type: 'stock',
-              is_active: true,
-              record_count: 0,
-              first_date: null,
-              last_date: null,
-            })));
-          }
-        })
-        .finally(() => setIsLoadingSymbols(false));
+    if (!modelRef.current) {
+      modelRef.current = Model.fromJson(defaultLayoutModel);
     }
-  }, [isOpen]);
+  }, []);
 
-  const handleIntervalChange = (newInterval: string) => {
-    setCurrentInterval(newInterval);
-  };
+  // Component factory for FlexLayout
+  const factory = useCallback((node: TabNode) => {
+    const component = node.getComponent();
 
-  const handleSymbolChange = (newSymbol: string) => {
-    setCurrentSymbol(newSymbol);
-  };
+    switch (component) {
+      case "advancedChart":
+        return (
+          <div className="w-full h-full bg-[#0f0f0f] rounded-lg overflow-hidden">
+            <TradingViewAdvancedChart
+              symbol={currentSymbol}
+              interval="D"
+              theme="dark"
+            />
+          </div>
+        );
+      case "marketOverview":
+        return (
+          <div className="w-full h-full bg-[#0f0f0f]/80 rounded-lg overflow-hidden">
+            <TradingViewMarketOverview colorTheme="dark" />
+          </div>
+        );
+      default:
+        return <div className="p-4 text-muted-foreground">Unknown component: {component}</div>;
+    }
+  }, [currentSymbol]);
 
-  if (!isOpen) return null;
-
-  // Group symbols for the dropdown
-  const assetTypes = Object.keys(groupedSymbols).filter(type => groupedSymbols[type]?.length > 0);
-
-  const headerActions = (
-    <div className="flex items-center gap-2">
-      {isLoadingSymbols ? (
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Loader2 className="w-3 h-3 animate-spin" />
-          Loading symbols...
-        </div>
-      ) : (
-        <Select value={currentSymbol} onValueChange={handleSymbolChange}>
-          <SelectTrigger className="h-7 w-[180px] text-xs">
-            <SelectValue placeholder="Select symbol" />
-          </SelectTrigger>
-          <SelectContent className="max-h-[300px] z-[9999]">
-            {assetTypes.length > 0 ? (
-              // Show grouped by asset type using SelectGroup
-              assetTypes.map((assetType) => (
-                <SelectGroup key={assetType}>
-                  <SelectLabel className="text-xs font-semibold uppercase">
-                    {assetType} ({groupedSymbols[assetType]?.length || 0})
-                  </SelectLabel>
-                  {groupedSymbols[assetType]?.map((sym) => (
-                    <SelectItem
-                      key={sym.symbol}
-                      value={sym.symbol}
-                      className="text-xs"
-                    >
-                      {sym.symbol} {sym.name && sym.name !== sym.symbol ? `- ${sym.name}` : ''}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              ))
-            ) : (
-              // Fallback: show all symbols flat
-              availableSymbols.map((sym) => (
-                <SelectItem key={sym.symbol} value={sym.symbol} className="text-xs">
-                  {sym.symbol}
-                </SelectItem>
-              ))
-            )}
-          </SelectContent>
-        </Select>
-      )}
-
-      {availableSymbols.length > 0 && (
-        <span className="text-[10px] text-muted-foreground">
-          {availableSymbols.length} symbols
-        </span>
-      )}
-    </div>
-  );
+  if (!isOpen || !modelRef.current) return null;
 
   return (
     <DraggableModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Chart"
-      defaultWidth={900}
-      defaultHeight={600}
-      headerActions={headerActions}
+      title="Live Trading Dashboard"
+      defaultWidth={1200}
+      defaultHeight={700}
+      headerActions={
+        <div className="flex items-center gap-2">
+          <select
+            value={currentSymbol}
+            onChange={(e) => setCurrentSymbol(e.target.value)}
+            className="h-7 px-2 text-xs bg-background/50 border border-border/50 rounded text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          >
+            <optgroup label="Stocks">
+              <option value="NASDAQ:AAPL">AAPL - Apple</option>
+              <option value="NASDAQ:MSFT">MSFT - Microsoft</option>
+              <option value="NASDAQ:GOOGL">GOOGL - Google</option>
+              <option value="NASDAQ:TSLA">TSLA - Tesla</option>
+              <option value="NASDAQ:NVDA">NVDA - NVIDIA</option>
+              <option value="NASDAQ:META">META - Meta</option>
+              <option value="NYSE:JPM">JPM - JP Morgan</option>
+            </optgroup>
+            <optgroup label="Indices">
+              <option value="SP:SPX">SPX - S&P 500</option>
+              <option value="NASDAQ:NDX">NDX - NASDAQ 100</option>
+              <option value="DJ:DJI">DJI - Dow Jones</option>
+            </optgroup>
+            <optgroup label="Forex">
+              <option value="FX:EURUSD">EUR/USD</option>
+              <option value="FX:GBPUSD">GBP/USD</option>
+              <option value="FX:USDJPY">USD/JPY</option>
+            </optgroup>
+            <optgroup label="Crypto">
+              <option value="BINANCE:BTCUSDT">BTC/USDT</option>
+              <option value="BINANCE:ETHUSDT">ETH/USDT</option>
+            </optgroup>
+          </select>
+        </div>
+      }
     >
-      <div className="w-full h-full p-4 flex flex-col">
-        <TradingViewChart
-          data={chartData}
-          symbol={currentSymbol}
-          interval={currentInterval}
-          onIntervalChange={handleIntervalChange}
+      <div className="w-full h-full relative">
+        {/* Custom FlexLayout styling */}
+        <style>{`
+          .flexlayout__layout {
+            --color-1: #0f0f0f;
+            --color-2: #1a1a1a;
+            --color-3: #2a2a2a;
+            --color-4: #3a3a3a;
+            --color-5: #4a4a4a;
+            --color-tabset-header-background: transparent;
+            --color-tabset-background: transparent;
+            --color-tab-selected-background: rgba(59, 130, 246, 0.15);
+            --color-tab-unselected-background: transparent;
+            --color-tab-selected: #fff;
+            --color-tab-unselected: #888;
+            --color-splitter: rgba(255, 255, 255, 0.1);
+            --color-splitter-drag: rgba(59, 130, 246, 0.5);
+            --color-drag-rect: rgba(59, 130, 246, 0.3);
+            --color-drag-rect-border: rgba(59, 130, 246, 0.8);
+            --font-size: 12px;
+            background: transparent !important;
+          }
+          .flexlayout__tabset {
+            background: rgba(15, 15, 15, 0.5) !important;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+          }
+          .flexlayout__tabset_header {
+            background: rgba(0, 0, 0, 0.3) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          }
+          .flexlayout__tab {
+            background: transparent !important;
+          }
+          .flexlayout__tab_button {
+            padding: 4px 12px !important;
+            border-radius: 4px !important;
+            margin: 2px !important;
+            font-weight: 500;
+          }
+          .flexlayout__tab_button--selected {
+            background: rgba(59, 130, 246, 0.2) !important;
+          }
+          .flexlayout__splitter {
+            background: rgba(255, 255, 255, 0.05) !important;
+          }
+          .flexlayout__splitter:hover {
+            background: rgba(59, 130, 246, 0.3) !important;
+          }
+        `}</style>
+
+        <Layout
+          model={modelRef.current}
+          factory={factory}
+          realtimeResize={true}
         />
       </div>
     </DraggableModal>
