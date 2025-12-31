@@ -103,39 +103,6 @@ export const FloatingChartModal = ({
       title="Live Trading Dashboard"
       defaultWidth={1200}
       defaultHeight={700}
-      headerActions={
-        <div className="flex items-center gap-2">
-          <select
-            value={currentSymbol}
-            onChange={(e) => setCurrentSymbol(e.target.value)}
-            className="h-7 px-2 text-xs bg-background/50 border border-border/50 rounded text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-          >
-            <optgroup label="Stocks">
-              <option value="NASDAQ:AAPL">AAPL - Apple</option>
-              <option value="NASDAQ:MSFT">MSFT - Microsoft</option>
-              <option value="NASDAQ:GOOGL">GOOGL - Google</option>
-              <option value="NASDAQ:TSLA">TSLA - Tesla</option>
-              <option value="NASDAQ:NVDA">NVDA - NVIDIA</option>
-              <option value="NASDAQ:META">META - Meta</option>
-              <option value="NYSE:JPM">JPM - JP Morgan</option>
-            </optgroup>
-            <optgroup label="Indices">
-              <option value="SP:SPX">SPX - S&P 500</option>
-              <option value="NASDAQ:NDX">NDX - NASDAQ 100</option>
-              <option value="DJ:DJI">DJI - Dow Jones</option>
-            </optgroup>
-            <optgroup label="Forex">
-              <option value="FX:EURUSD">EUR/USD</option>
-              <option value="FX:GBPUSD">GBP/USD</option>
-              <option value="FX:USDJPY">USD/JPY</option>
-            </optgroup>
-            <optgroup label="Crypto">
-              <option value="BINANCE:BTCUSDT">BTC/USDT</option>
-              <option value="BINANCE:ETHUSDT">ETH/USDT</option>
-            </optgroup>
-          </select>
-        </div>
-      }
     >
       <div className="w-full h-full relative">
         {/* Custom FlexLayout styling */}
