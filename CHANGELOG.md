@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Blockly Sidebar**: Resolved block overlap issue in "My Blocks" by moving custom blocks to a dedicated "Custom" category.
+- **Category Navigation**: Fixed bug where clicking other categories after "Custom" stopped working by only showing "Custom" when blocks exist.
 
 ## [1.5.0] - 2025-12-31
 
