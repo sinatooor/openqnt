@@ -160,7 +160,7 @@ export async function registerAllCustomBlocks(): Promise<CustomBlockDef[]> {
  */
 export function getCustomBlocksToolboxItems(blocks: CustomBlockDef[]): any[] {
     if (!blocks || blocks.length === 0) {
-        return [{ kind: 'label', text: 'No custom blocks yet' }];
+        return [];  // Return empty - no orphan label
     }
 
     const items: any[] = [

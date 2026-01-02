@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-01-02
+
+### Added
+- **Nordnet Integration**: Support for connecting to Nordnet broker for live trading.
+- **Nordnet Client**: Dedicated Python client (`nordnet_client.py`) with Ed25519 authentication.
+- **Broker Modals**: Updated `BrokerConnectModal` to handle Nordnet credentials (UUID, Private Key).
+- **Backend API**: New `/api/live/nordnet/login` endpoint for secure authentication.
+
+### Changed
+- **Strategy Runner**: Refactored `StrategyRunner` to use an adapter pattern, supporting multiple brokers (IG, Nordnet) dynamically.
+- **Profile Modal**: Added Nordnet to the list of available brokers and integrated the connection flow.
+- **Live Trading Router**: Updated `/api/live/start` to accept a `broker` parameter for selecting the execution client.
+
 ## [1.5.0] - 2025-12-31
 
 ### Added

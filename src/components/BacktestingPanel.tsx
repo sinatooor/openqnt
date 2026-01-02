@@ -136,21 +136,32 @@ export const BacktestingPanel = ({ onStartTour, onClose, leverage = "1", onLever
             if (!shouldSkipVerification) {
                 try {
                     toast.info("Verifying strategy with Gemini...");
-                    const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-backtest', {
-                        body: {
-                            type: 'parse',
-                            parsed: { xml: xml.substring(0, 2000) }, // Send truncated XML for parse check
-                            xml_snippet: xml.substring(0, 1000)
+
+                    let pythonCodeForVerification = null;
+                    if (engine === "nautilus" && getNautilusCode) {
+                        try {
+                            pythonCodeForVerification = getNautilusCode();
+                        } catch (genErr) {
+                            console.warn("Could not generate Nautilus code for verification:", genErr);
                         }
+                    }
+
+                    const response = await fetch('http://localhost:8000/verify-backtest', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            xml: xml.substring(0, 2000),
+                            python_code: pythonCodeForVerification
+                        })
                     });
 
-                    if (verifyError) {
-                        console.warn("[VERIFY] Gemini verification failed:", verifyError);
-                        // Non-blocking: show error toast but continue with backtest
-                        toast.error("Verification failed", {
-                            description: "Could not verify strategy, proceeding anyway..."
-                        });
-                    } else if (verifyData && !verifyData.valid) {
+                    if (!response.ok) {
+                        throw new Error(`Server error: ${response.status}`);
+                    }
+
+                    const verifyData = await response.json();
+
+                    if (!verifyData.valid) {
                         console.warn("[VERIFY] Gemini found issues:", verifyData.issues);
                         // Non-blocking: show warning toast but continue with backtest
                         toast.warning("Strategy may have issues", {
@@ -163,7 +174,7 @@ export const BacktestingPanel = ({ onStartTour, onClose, leverage = "1", onLever
                     console.warn("[VERIFY] Verification step skipped:", verifyErr);
                     // Non-blocking: show error toast but continue with backtest
                     toast.error("Verification skipped", {
-                        description: "Could not reach verification service, proceeding..."
+                        description: "Could not reach local verification service, proceeding..."
                     });
                 }
             } else if (shouldSkipVerification) {

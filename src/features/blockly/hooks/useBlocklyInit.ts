@@ -171,7 +171,6 @@ export const useBlocklyInit = ({
                         colour: "#ef4444",
                         contents: [
                             ...myBlocksToolbox,
-                            { kind: 'sep' },
                             ...getCustomBlocksToolboxItems(customBlocksRef.current)
                         ]
                     }]

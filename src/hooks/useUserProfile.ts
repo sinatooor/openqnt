@@ -41,92 +41,145 @@ const DEFAULT_SETTINGS: UserSettings = {
     autoSave: true,
 };
 
+const BACKEND_URL = "http://localhost:8000";
+
 export const useUserProfile = () => {
     const [user, setUser] = useState<UserProfile | null>(null);
     const [savedStrategies, setSavedStrategies] = useState<SavedStrategy[]>([]);
     const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Load from localStorage on mount
+    // Initial load
     useEffect(() => {
-        try {
-            const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
-            const storedStrategies = localStorage.getItem(STORAGE_KEYS.STRATEGIES);
-            const storedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-
-            if (storedUser) {
-                setUser(JSON.parse(storedUser));
-            }
-            if (storedStrategies) {
-                setSavedStrategies(JSON.parse(storedStrategies));
-            }
-            if (storedSettings) {
-                setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(storedSettings) });
-            }
-        } catch (error) {
-            console.error('Error loading user data:', error);
-        } finally {
-            setIsLoading(false);
+        const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
+        if (storedUser) {
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+            fetchStrategies(parsedUser.id);
         }
+
+        const storedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+        if (storedSettings) {
+            setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(storedSettings) });
+        }
+        setIsLoading(false);
     }, []);
 
+    const fetchStrategies = async (userId: string) => {
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/strategies?user_id=${userId}`);
+            if (res.ok) {
+                const data = await res.json();
+                // Map DB fields to frontend interface if needed
+                // DB: id, user_id, name, xml, python_code, block_count, saved_at
+                // Frontend: id, name, xml, savedAt, blockCount
+                const strategies: SavedStrategy[] = data.map((s: any) => ({
+                    id: s.id,
+                    name: s.name,
+                    xml: s.xml,
+                    savedAt: s.saved_at,
+                    blockCount: s.block_count
+                }));
+                setSavedStrategies(strategies);
+            }
+        } catch (e) {
+            console.error("Failed to fetch strategies", e);
+        }
+    };
+
     // Save user to localStorage
-    const saveUser = useCallback((userData: UserProfile | null) => {
+    const saveUserToStorage = (userData: UserProfile | null) => {
         if (userData) {
             localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
         } else {
             localStorage.removeItem(STORAGE_KEYS.USER);
+            setSavedStrategies([]);
         }
         setUser(userData);
-    }, []);
+    };
 
-    // Login (mock for MVP)
-    const login = useCallback((name: string, email: string) => {
-        const newUser: UserProfile = {
-            id: `user_${Date.now()}`,
-            name,
-            email,
-            createdAt: new Date().toISOString(),
-        };
-        saveUser(newUser);
-        return newUser;
-    }, [saveUser]);
+    // Login
+    const login = useCallback(async (email: string, password: string) => {
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                const userProfile: UserProfile = {
+                    id: data.user.id,
+                    name: data.user.name,
+                    email: data.user.email,
+                    createdAt: data.user.created_at
+                };
+                saveUserToStorage(userProfile);
+                fetchStrategies(userProfile.id);
+                return userProfile;
+            } else {
+                throw new Error("Invalid credentials");
+            }
+        } catch (err) {
+            console.error(err);
+            throw err;
+        }
+    }, []);
 
     // Logout
     const logout = useCallback(() => {
-        saveUser(null);
-    }, [saveUser]);
+        saveUserToStorage(null);
+    }, []);
 
-    // Update user profile
+    // Update user profile (Mock for now, or add endpoint later)
     const updateProfile = useCallback((updates: Partial<UserProfile>) => {
         if (!user) return;
         const updatedUser = { ...user, ...updates };
-        saveUser(updatedUser);
-    }, [user, saveUser]);
+        saveUserToStorage(updatedUser);
+    }, [user]);
 
     // Save a strategy
-    const saveStrategy = useCallback((name: string, xml: string) => {
-        const blockCount = (xml.match(/<block /g) || []).length;
-        const newStrategy: SavedStrategy = {
-            id: `strategy_${Date.now()}`,
-            name,
-            xml,
-            savedAt: new Date().toISOString(),
-            blockCount,
-        };
+    const saveStrategy = useCallback(async (name: string, xml: string, python_code?: string) => {
+        if (!user) return null;
 
-        const updatedStrategies = [newStrategy, ...savedStrategies];
-        setSavedStrategies(updatedStrategies);
-        localStorage.setItem(STORAGE_KEYS.STRATEGIES, JSON.stringify(updatedStrategies));
-        return newStrategy;
-    }, [savedStrategies]);
+        const blockCount = (xml.match(/<block /g) || []).length;
+
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/strategies`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: user.id,
+                    name,
+                    xml,
+                    python_code: python_code || "",
+                    block_count: blockCount
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                // Refresh list
+                await fetchStrategies(user.id);
+                return { id: data.id };
+            }
+        } catch (e) {
+            console.error("Failed to save strategy", e);
+            throw e;
+        }
+    }, [user]);
 
     // Delete a strategy
-    const deleteStrategy = useCallback((id: string) => {
-        const updatedStrategies = savedStrategies.filter(s => s.id !== id);
-        setSavedStrategies(updatedStrategies);
-        localStorage.setItem(STORAGE_KEYS.STRATEGIES, JSON.stringify(updatedStrategies));
-    }, [savedStrategies]);
+    const deleteStrategy = useCallback(async (id: string) => {
+        if (!user) return;
+        try {
+            await fetch(`${BACKEND_URL}/api/strategies/${id}?user_id=${user.id}`, { method: 'DELETE' });
+            await fetchStrategies(user.id);
+        } catch (e) {
+            console.error("Failed to delete", e);
+        }
+    }, [user]);
 
     // Update settings
     const updateSettings = useCallback((updates: Partial<UserSettings>) => {
@@ -136,22 +189,15 @@ export const useUserProfile = () => {
     }, [settings]);
 
     return {
-        // User state
         user,
         isLoggedIn: !!user,
         isLoading,
-
-        // Auth actions
         login,
         logout,
         updateProfile,
-
-        // Strategies
         savedStrategies,
         saveStrategy,
         deleteStrategy,
-
-        // Settings
         settings,
         updateSettings,
     };

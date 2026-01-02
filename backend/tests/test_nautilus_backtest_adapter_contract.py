@@ -7,7 +7,7 @@ matching the backtesting.py UI representation.
 import pytest
 import pandas as pd
 from unittest.mock import MagicMock, patch
-from backend.nautilus_adapter import run_nautilus_backtest, NAUTILUS_INSTALLED
+from nautilus_adapter import run_nautilus_backtest, NAUTILUS_INSTALLED
 
 # Skip if Nautilus not installed
 @pytest.mark.skipif(not NAUTILUS_INSTALLED, reason="NautilusTrader not installed")

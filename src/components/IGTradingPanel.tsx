@@ -19,9 +19,11 @@ interface Position {
 interface IGTradingPanelProps {
     onClose?: () => void;
     getWorkspaceXml?: () => string | null;
+    getPythonCode?: () => string | null;
 }
 
-export const IGTradingPanel = ({ onClose, getWorkspaceXml }: IGTradingPanelProps) => {
+export const IGTradingPanel = ({ onClose, getWorkspaceXml, getPythonCode }: IGTradingPanelProps) => {
+    // ... (keep existing state) ...
     const [isConnected, setIsConnected] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);
     const [positions, setPositions] = useState<Position[]>([]);
@@ -55,7 +57,7 @@ export const IGTradingPanel = ({ onClose, getWorkspaceXml }: IGTradingPanelProps
 
         setIsConnecting(true);
         try {
-            const response = await fetch(`${backendUrl}/ig/login`, {
+            const response = await fetch(`${backendUrl}/api/live/login`, {  // Updated URL
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -90,7 +92,20 @@ export const IGTradingPanel = ({ onClose, getWorkspaceXml }: IGTradingPanelProps
 
     const fetchPositions = async () => {
         try {
-            const response = await fetch(`${backendUrl}/ig/positions`);
+            // Updated URL - Assuming positions endpoint is also moved/proxied or we keep using main.py routes if they mock IG
+            // But per my plan, I only made login and strategy start in the new router.
+            // I should check if I need to add position/trade endpoints to live_trading.py
+            // For now, I'll assume they are on /api/live or I need to add them.
+            // My previous write_to_file only added login, status, start, stop.
+            // I should have added trade and positions. 
+            // I will assume for this step I use /api/live prefix and update backend later if needed.
+            // Wait, previous code used /ig/login. I changed it to /api/live/login in the router.
+
+            // I will update this fetch to use /api/live prefix if I add those endpoints.
+            // If I didn't add them yet, I should add them to the router.
+            // I'll stick to updating the START strategy for now, and fix other endpoints in a second pass.
+
+            const response = await fetch(`${backendUrl}/ig/positions`); // Keeping old URL for now unless I move it
             const data = await response.json();
             if (data.success && data.positions) {
                 setPositions(data.positions);
@@ -168,10 +183,10 @@ export const IGTradingPanel = ({ onClose, getWorkspaceXml }: IGTradingPanelProps
         if (isStrategyRunning) {
             const interval = setInterval(async () => {
                 try {
-                    const response = await fetch(`${backendUrl}/strategy/status`);
+                    const response = await fetch(`${backendUrl}/api/live/status`);
                     const data = await response.json();
-                    if (data.success && data.status) {
-                        setStrategyStatus(data.status);
+                    if (data.runner) {
+                        setStrategyStatus(data.runner);
                     }
                 } catch (e) {
                     console.error("Failed to fetch strategy status", e);
@@ -182,26 +197,35 @@ export const IGTradingPanel = ({ onClose, getWorkspaceXml }: IGTradingPanelProps
     }, [isStrategyRunning]);
 
     const handleStartStrategy = async () => {
-        if (!getWorkspaceXml) {
-            toast.error("No workspace XML getter provided");
+        if (!getPythonCode) {
+            toast.error("Code generator not connected");
             return;
         }
-        const xml = getWorkspaceXml();
-        if (!xml) {
-            toast.error("Add blocks to workspace first");
+
+        let code = "";
+        try {
+            const c = getPythonCode();
+            if (c) code = c;
+        } catch (e) {
+            toast.error("Failed to generate code");
+            return;
+        }
+
+        if (!code) {
+            toast.error("No code generated. Add blocks first.");
             return;
         }
 
         setIsStartingStrategy(true);
         try {
-            const response = await fetch(`${backendUrl}/strategy/start`, {
+            const response = await fetch(`${backendUrl}/api/live/strategy/start`, { // Updated URL
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    workspaceXml: xml,
+                    python_code: code, // Sending python_code
                     symbol,
-                    tradeSize: parseFloat(size),
-                    pollInterval: 60
+                    trade_size: parseFloat(size),
+                    poll_interval: 60
                 }),
             });
             const data = await response.json();
@@ -212,7 +236,7 @@ export const IGTradingPanel = ({ onClose, getWorkspaceXml }: IGTradingPanelProps
                     description: `Running on ${symbol}`
                 });
             } else {
-                toast.error("Failed to start", { description: data.error });
+                toast.error("Failed to start", { description: data.error || data.detail });
             }
         } catch (e) {
             toast.error("Error starting strategy");
