@@ -15,18 +15,49 @@ from typing import Any, Optional
 import pandas as pd
 import numpy as np
 
-# Import Nautilus adapter
-try:
-    # Try importing as backend module (when run from root)
-    from backend.nautilus_adapter import run_nautilus_backtest, NAUTILUS_INSTALLED
-except ImportError:
+# LAZY Import Nautilus adapter - to avoid heavy imports slowing down server startup
+# The heavy NautilusTrader imports happen inside nautilus_adapter.py
+# We delay checking if it's installed until it's actually needed
+_nautilus_loaded = False
+_run_nautilus_backtest = None
+_NAUTILUS_INSTALLED = None
+
+def get_nautilus_backtest():
+    """Lazy loader for Nautilus backtest to avoid slow startup."""
+    global _nautilus_loaded, _run_nautilus_backtest, _NAUTILUS_INSTALLED
+    
+    if _nautilus_loaded:
+        return _run_nautilus_backtest, _NAUTILUS_INSTALLED
+    
+    print("[NAUTILUS_RUNNER] Loading NautilusTrader (this may take a moment)...")
     try:
-        # Fallback for local run
-        from nautilus_adapter import run_nautilus_backtest, NAUTILUS_INSTALLED
-    except ImportError:
-        NAUTILUS_INSTALLED = False
-        def run_nautilus_backtest(*args, **kwargs):
-            return {"success": False, "error": "NautilusAdapter import failed", "fallback": True}
+        try:
+            from backend.nautilus_adapter import run_nautilus_backtest, NAUTILUS_INSTALLED
+        except ImportError:
+            from nautilus_adapter import run_nautilus_backtest, NAUTILUS_INSTALLED
+        
+        _run_nautilus_backtest = run_nautilus_backtest
+        _NAUTILUS_INSTALLED = NAUTILUS_INSTALLED
+        print(f"[NAUTILUS_RUNNER] Loaded successfully (INSTALLED={_NAUTILUS_INSTALLED})")
+    except ImportError as e:
+        _NAUTILUS_INSTALLED = False
+        _run_nautilus_backtest = lambda *args, **kwargs: {"success": False, "error": f"NautilusAdapter import failed: {e}", "fallback": True}
+        print(f"[NAUTILUS_RUNNER] Adapter not found: {e}")
+    
+    _nautilus_loaded = True
+    return _run_nautilus_backtest, _NAUTILUS_INSTALLED
+
+# For backward compatibility - these will trigger lazy load when accessed
+def run_nautilus_backtest(*args, **kwargs):
+    """Wrapper that lazy-loads the Nautilus adapter."""
+    fn, _ = get_nautilus_backtest()
+    return fn(*args, **kwargs)
+
+# Property-like access for NAUTILUS_INSTALLED
+def is_nautilus_installed():
+    """Check if Nautilus is installed (triggers lazy load)."""
+    _, installed = get_nautilus_backtest()
+    return installed
 
 # Adjust these imports as needed based on execution context
 try:
@@ -292,7 +323,7 @@ def run_backtest(
     Args:
         historical_data: Optional DataFrame with real OHLCV data from IG
     """
-    if use_nautilus and NAUTILUS_INSTALLED:
+    if use_nautilus and is_nautilus_installed():
         # Prepare data if not provided
         if historical_data is None:
              historical_data = generate_ohlcv_data(symbol, start_date, end_date, timeframe_minutes=60)

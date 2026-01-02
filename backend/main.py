@@ -12,6 +12,7 @@ import re
 import json
 import httpx
 import asyncio
+from google import genai
 from typing import List, Optional, Dict, Any, Tuple
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,10 +25,12 @@ from pathlib import Path
 from rag_system import block_library
 from vector_rag import get_vector_rag, two_stage_retrieve, STRATEGY_TYPES
 from strategy_compiler import strategy_compiler
-from backtest_service import XML_TO_PYTHON_PROMPT, run_backtest_pipeline
+from backtest_service import XML_TO_PYTHON_PROMPT, run_backtest_pipeline, validate_nautilus_code
 from backtest_runner import run_backtest, run_backtest_simple
 from strategy_store import hash_xml, save_strategy_version, load_by_id, load_latest_by_hash
 from ai_strategy_reviewer import review_strategy
+import database # Local DB module
+from routers import live_trading # Live Trading Router
 
 # Google ADK Agent
 from google.adk.runners import Runner
@@ -51,6 +54,12 @@ adk_runner = Runner(
 
 # Load environment variables
 load_dotenv()
+
+# Initialize Database
+try:
+    database.init_db()
+except Exception as e:
+    print(f"DB Init Error: {e}")
 
 # Start Market Data Scheduler (auto-refresh every 5 minutes)
 try:
@@ -88,7 +97,7 @@ DEEPSEEK_MODEL = "deepseek-chat"       # Fast, cheaper - good for code generatio
 # Gemini Model Configuration  
 # ============================================================
 # Change this to switch Gemini models:
-GEMINI_MODEL = "gemini-2.0-flash"  # Fast and capable (RECOMMENDED)
+GEMINI_MODEL = "gemini-3-flash-preview"  # Fast and capable (RECOMMENDED)
 # GEMINI_MODEL = "gemini-1.5-pro"   # More capable but slower
 # GEMINI_MODEL = "gemini-1.5-flash" # Fastest option
 
@@ -174,6 +183,9 @@ OUTPUT: Valid JSON only, no markdown."""
 
 
 app = FastAPI(title="Strategy Generator API", version="1.0.0")
+
+# Include Live Trading Router
+app.include_router(live_trading.router)
 
 # CORS configuration
 app.add_middleware(
@@ -318,10 +330,18 @@ class BacktestRequest(BaseModel):
     data_source: str = "alphavantage"  # "local" (database), "alphavantage", or "yfinance"
     interval: str = "1d"  # "1d" (daily) or "1h" (hourly)
     generatedCode: Optional[str] = None
-    codeLanguage: Optional[str] = "python"
+    codeLanguage: Optional[str] = None
     strategyId: Optional[str] = None
     templateId: Optional[str] = None  # Pre-built template ID (e.g., "rsi-oversold-reversal")
     precompiledCode: Optional[str] = None  # Pre-generated code (e.g., from nautilusGenerator)
+
+class VerifyRequest(BaseModel):
+    xml: str
+    python_code: Optional[str] = None  # Added for code-level verification
+
+class VerifyResponse(BaseModel):
+    valid: bool
+    issues: List[str]
 
 
 class BacktestResponse(BaseModel):
@@ -651,7 +671,8 @@ async def call_deepseek(
 async def call_gemini(
     messages: list[dict],
     temperature: float = 0.3,
-    max_tokens: int = 4000
+    max_tokens: int = 4000,
+    model: str = None
 ) -> str:
     """Call Google Gemini API and return the response content.
     
@@ -669,49 +690,46 @@ async def call_gemini(
             detail="GEMINI_API_KEY not configured. Add your key to backend/.env"
         )
 
-    # Convert OpenAI-style messages to Gemini format
-    contents = []
-    system_instruction = None
-    
-    for msg in messages:
-        if msg["role"] == "system":
-            system_instruction = {"parts": [{"text": msg["content"]}]}
-        elif msg["role"] == "user":
-            contents.append({"role": "user", "parts": [{"text": msg["content"]}]})
-        elif msg["role"] == "assistant":
-            contents.append({"role": "model", "parts": [{"text": msg["content"]}]})
+    # Use provided model or fall back to global default
+    target_model = model or GEMINI_MODEL
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={api_key}"
-    
-    payload = {
-        "contents": contents,
-        "generationConfig": {
-            "temperature": temperature,
-            "maxOutputTokens": max_tokens
-        }
-    }
-    
-    if system_instruction:
-        payload["systemInstruction"] = system_instruction
-
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        response = await client.post(
-            url,
-            headers={"Content-Type": "application/json"},
-            json=payload
+    try:
+        client = genai.Client(api_key=api_key)
+        
+        # Convert OpenAI-style messages to Gemini format (string concatenation for simplicity)
+        # The SDK supports list of messages but string prompt is often more robust for simple generation
+        # Let's reconstruct the conversation for the SDK
+        
+        # Simple approach: concatenate system + user messages
+        # (For advanced chat, we should use client.chats.create, but here safe to just prompt)
+        full_prompt = ""
+        for msg in messages:
+            role = msg["role"]
+            content = msg["content"]
+            if role == "system":
+                full_prompt += f"System: {content}\n\n"
+            elif role == "user":
+                full_prompt += f"User: {content}\n\n"
+            elif role == "assistant":
+                full_prompt += f"Model: {content}\n\n"
+        
+        response = client.models.generate_content(
+            model=target_model,
+            contents=full_prompt,
+            config={
+                "temperature": temperature,
+                "max_output_tokens": max_tokens
+            }
         )
+        
+        return response.text
 
-        if response.status_code != 200:
-            raise HTTPException(
-                status_code=response.status_code,
-                detail=f"Gemini API error: {response.text}"
-            )
-
-        data = response.json()
-        try:
-            return data["candidates"][0]["content"]["parts"][0]["text"]
-        except (KeyError, IndexError):
-            return "Error: No content generated by Gemini"
+    except Exception as e:
+        log_error(e, "call_gemini")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Gemini API error: {str(e)}"
+        )
 
 
 async def call_lovable_gemini(
@@ -1111,7 +1129,8 @@ BEFORE GENERATING XML, THINK STEP-BY-STEP:
         
         
         # Determine model based on mode
-        model_name = "google/gemini-2.5-flash" if request.mode == "fast" else "google/gemini-2.5-pro"
+        # User requested gemini-3 models
+        model_name = "gemini-3-flash-preview" if request.mode == "fast" else "gemini-3-pro-preview"
         print(f"[GENERATE] Using model: {model_name}")
 
         messages = [
@@ -1119,8 +1138,11 @@ BEFORE GENERATING XML, THINK STEP-BY-STEP:
             {"role": "user", "content": user_prompt}
         ]
         
-        # 2. Generate (Pass 1)
-        response_text = await call_lovable_gemini(messages, temperature=0.3, model=model_name)
+        # 2. Generate (Pass 1) - Use PRIMARY_LLM setting
+        if PRIMARY_LLM == "gemini":
+            response_text = await call_gemini(messages, temperature=0.3, model=model_name)
+        else:
+            response_text = await call_deepseek(messages, temperature=0.3)
         xml_content = extract_xml(response_text)
         
         # 3. Apply Common Programmatic Fixes (Pass 1)
@@ -1149,8 +1171,11 @@ BEFORE GENERATING XML, THINK STEP-BY-STEP:
                 {"role": "user", "content": f"Validate and fix this XML:\n\n{xml_content}"}
             ]
             
-            # Use lower temperature for validation, use Pro model for reasoning
-            validated_content = await call_lovable_gemini(validation_messages, temperature=0.1, model="google/gemini-2.5-pro")
+            # Use lower temperature for validation. Use PRO model for reasoning.
+            if PRIMARY_LLM == "gemini":
+                validated_content = await call_gemini(validation_messages, temperature=0.1, model="gemini-3-pro-preview")
+            else:
+                validated_content = await call_deepseek(validation_messages, temperature=0.1)
             validated_xml = extract_xml(validated_content)
             
             if validated_xml and "<block" in validated_xml:
@@ -1366,6 +1391,117 @@ async def get_symbols():
             "grouped": {"stocks": [], "forex": [], "indices": [], "commodities": [], "crypto": [], "futures": [], "etf": []},
             "error": str(e)
         }
+
+
+@app.post("/verify-backtest", response_model=VerifyResponse)
+async def verify_backtest_endpoint(request: VerifyRequest):
+    """
+    Verify strategy XML using LLM (Gemini/DeepSeek)
+    Returns { valid: bool, issues: [] }
+    """
+    try:
+        if request.python_code:
+            # Code-level verification (More strict)
+            log_api_request("verify-backtest", {"type": "code", "len": len(request.python_code)})
+            system_prompt = """You are an expert Python Developer specializing in NautilusTrader.
+            Verify the provided Python strategy code for:
+            1. Syntax errors
+            2. Correct NautilusTrader API usage (on_bar, on_quote methods)
+            3. Logical flaws (infinite loops, invalid order logic)
+            
+            Return JSON: { "valid": boolean, "issues": ["issue 1"] }
+            """
+            user_prompt = f"Verify this NautilusTrader Strategy Code:\n\n{request.python_code}"
+        else:
+            # XML-level verification
+            log_api_request("verify-backtest", {"type": "xml", "len": len(request.xml)})
+            system_prompt = """You are an expert trading strategy validator. 
+            Analyze the provided Blockly XML snippet for a trading strategy.
+            Check for:
+            1. Logical completeness
+            2. Missing parameters
+            3. Potential logical errors
+            
+            Return JSON: { "valid": boolean, "issues": ["issue 1", "issue 2"] }
+            """
+            
+        user_prompt = f"Verify this strategy XML:\n\n{request.xml}"
+        
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+        
+        # Use PRIMARY_LLM choice
+        if PRIMARY_LLM == "gemini":
+            # Using fast model for quick verification
+            response_text = await call_gemini(messages, temperature=0.1, model="gemini-3-flash-preview")
+        else:
+            response_text = await call_deepseek(messages, temperature=0.1)
+            
+        # Parse JSON from response
+        try:
+            # Clean markdown code blocks if present
+            cleaned = response_text.strip()
+            if cleaned.startswith("```json"):
+                cleaned = cleaned[7:]
+            if cleaned.startswith("```"):
+                cleaned = cleaned[3:]
+            if cleaned.endswith("```"):
+                cleaned = cleaned[:-3]
+                
+            data = json.loads(cleaned.strip())
+            return VerifyResponse(valid=data.get("valid", False), issues=data.get("issues", []))
+        except json.JSONDecodeError:
+            log_error(ValueError(f"Failed to parse LLM verification response: {response_text}"), "verify_backtest")
+            # Fallback to invalid with raw text as issue
+            return VerifyResponse(valid=False, issues=["Could not parse validation response"])
+            
+    except Exception as e:
+        log_error(e, "verify_backtest")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ==========================================
+# AUTH & PERSISTENCE ENDPOINTS
+# ==========================================
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class StrategySaveRequest(BaseModel):
+    user_id: str
+    name: str
+    xml: str
+    python_code: Optional[str] = ""
+    block_count: int = 0
+
+@app.post("/api/login")
+async def login_endpoint(creds: LoginRequest):
+    user = database.get_user_by_credentials(creds.email, creds.password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    return {"user": user}
+
+@app.get("/api/strategies")
+async def list_strategies_endpoint(user_id: str):
+    return database.get_user_strategies(user_id)
+
+@app.post("/api/strategies")
+async def save_strategy_endpoint(req: StrategySaveRequest):
+    try:
+        sid = database.save_user_strategy(
+            req.user_id, req.name, req.xml, req.python_code, req.block_count
+        )
+        return {"success": True, "id": sid}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/strategies/{strategy_id}")
+async def delete_strategy_endpoint(strategy_id: str, user_id: str):
+    database.delete_user_strategy(strategy_id, user_id)
+    return {"success": True}
+
 
 
 @app.get("/market-data")
@@ -1775,6 +1911,16 @@ async def run_backtest_endpoint(request: BacktestRequest):
         
         # Run backtest with pre-compiled code
         use_nautilus = request.engine in ["nautilus", "rust"]
+        
+        # Validate Nautilus code via LLM if using Nautilus engine
+        if use_nautilus and strategy_code:
+            print("[BACKTEST] Validating Nautilus code via LLM...")
+            strategy_code, was_fixed = await validate_nautilus_code(
+                strategy_code, 
+                llm_caller=call_gemini
+            )
+            if was_fixed:
+                print("[BACKTEST] Nautilus code was fixed by LLM")
         
         result = run_backtest(
             strategy_code=strategy_code,

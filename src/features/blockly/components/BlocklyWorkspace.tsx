@@ -12,7 +12,6 @@ import { LogEntry } from "@/components/DevLogPanel";
 import { WorkspaceToolbar } from "./WorkspaceToolbar";
 import { CodeViewPanel } from "./CodeViewPanel";
 import { BacktestingPanel } from "@/components/BacktestingPanel";
-import { IGTradingPanel } from "@/components/IGTradingPanel";
 import { WorkspaceDialogs } from "./WorkspaceDialogs";
 import { ProfileModal } from "@/components/ProfileModal";
 
@@ -20,6 +19,8 @@ import { ProfileModal } from "@/components/ProfileModal";
 import { StrategyTemplate } from "@/features/templates/strategyTemplates";
 import { useBlocklyInit } from "../hooks/useBlocklyInit";
 import { beautifyCode, highlightSyntax } from "../utils/blocklyUtils";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { nautilusGenerator } from "@/config/blockly/nautilusGenerator";
 
 interface BlocklyWorkspaceProps {
   runTour?: boolean;
@@ -89,7 +90,6 @@ export const BlocklyWorkspace = ({
   // Panel Visibility
   const [showBacktest, setShowBacktest] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
-  const [showIGPanel, setShowIGPanel] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
 
   // Dialog Visibility
@@ -141,6 +141,8 @@ export const BlocklyWorkspace = ({
       setShowIndicatorSettings(true);
     }
   };
+
+  const { isLoggedIn, saveStrategy } = useUserProfile();
 
   // Initialization Hook
   useBlocklyInit({
@@ -248,20 +250,38 @@ export const BlocklyWorkspace = ({
     toast.success("MQL Code copied");
   };
 
-  const handleSaveWorkspace = () => {
+  const handleSaveWorkspace = async () => {
     if (!workspaceRef.current) return;
     const xml = Blockly.Xml.workspaceToDom(workspaceRef.current);
     const xmlText = Blockly.Xml.domToText(xml);
-    const blob = new Blob([xmlText], { type: "application/xml" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "trading-strategy-blocks.xml";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success("Workspace saved successfully!");
+
+    if (isLoggedIn) {
+      try {
+        let nautilusCode = "";
+        try {
+          nautilusCode = nautilusGenerator.workspaceToCode(workspaceRef.current);
+        } catch (err) {
+          console.warn("Nautilus code generation failed:", err);
+        }
+
+        await saveStrategy(strategyName, xmlText, nautilusCode);
+        toast.success("Strategy saved to database!");
+      } catch (e) {
+        toast.error("Failed to save strategy");
+        console.error(e);
+      }
+    } else {
+      const blob = new Blob([xmlText], { type: "application/xml" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "trading-strategy-blocks.xml";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.info("Saved to file. Log in to save to cloud!", { duration: 4000 });
+    }
   };
 
   const handleLoadWorkspace = () => {
@@ -496,7 +516,6 @@ export const BlocklyWorkspace = ({
           loadedTemplateId={loadedTemplateId}
         />}
 
-        {showIGPanel && <IGTradingPanel onClose={() => setShowIGPanel(false)} getWorkspaceXml={() => currentXmlCode || null} />}
 
         {/* Profile Modal */}
         <ProfileModal
