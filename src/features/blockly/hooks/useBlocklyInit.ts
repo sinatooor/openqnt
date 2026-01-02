@@ -117,65 +117,81 @@ export const useBlocklyInit = ({
             });
 
             // Initialize workspace with configuration
+            // Build toolbox contents dynamically
+            const toolboxContents: any[] = [
+                {
+                    kind: "category",
+                    name: "AI",
+                    colour: "#ec4899",
+                    custom: "AI_CATEGORY"
+                },
+                { kind: "sep" },
+                {
+                    kind: "category",
+                    name: "Environment",
+                    colour: "#10b981",
+                    contents: environmentBlocksToolbox
+                },
+                {
+                    kind: "category",
+                    name: "Control",
+                    colour: "#f59e0b",
+                    contents: controlBlocksToolbox
+                },
+                {
+                    kind: "category",
+                    name: "Operators",
+                    colour: "#3b82f6",
+                    contents: operatorBlocksToolbox
+                },
+                {
+                    kind: "category",
+                    name: "TA Tools",
+                    colour: "#8b5cf6",
+                    contents: taBlocksToolbox
+                },
+                {
+                    kind: "category",
+                    name: "Values",
+                    colour: "#64748b",
+                    contents: [{
+                        kind: "block",
+                        type: "math_number",
+                        fields: { NUM: 0 }
+                    }]
+                },
+                {
+                    kind: "category",
+                    name: "Trade",
+                    colour: "#06b6d4",
+                    contents: tradeBlocksToolbox
+                },
+                {
+                    kind: "category",
+                    name: "My Blocks",
+                    colour: "#ef4444",
+                    contents: myBlocksToolbox
+                }
+            ];
+
+            // Only add Custom category if there are custom blocks
+            const customItems = getCustomBlocksToolboxItems(customBlocksRef.current);
+            if (customItems.length > 0) {
+                toolboxContents.push({
+                    kind: "category",
+                    name: "Custom",
+                    colour: "#a855f7",
+                    contents: customItems
+                });
+            }
+
+            // Initialize workspace with configuration
             const workspace = Blockly.inject(containerRef.current, {
                 renderer: 'zelos',
                 theme: darkTheme,
                 toolbox: {
                     kind: "categoryToolbox",
-                    contents: [{
-                        kind: "category",
-                        name: "AI",
-                        colour: "#ec4899",
-                        custom: "AI_CATEGORY"
-                    }, {
-                        kind: "sep"
-                    }, {
-                        kind: "category",
-                        name: "Environment",
-                        colour: "#10b981",
-                        contents: environmentBlocksToolbox
-                    }, {
-                        kind: "category",
-                        name: "Control",
-                        colour: "#f59e0b",
-                        contents: controlBlocksToolbox
-                    }, {
-                        kind: "category",
-                        name: "Operators",
-                        colour: "#3b82f6",
-                        contents: operatorBlocksToolbox
-                    }, {
-                        kind: "category",
-                        name: "TA Tools",
-                        colour: "#8b5cf6",
-                        contents: taBlocksToolbox
-                    }, {
-                        kind: "category",
-                        name: "Values",
-                        colour: "#64748b",
-                        contents: [{
-                            kind: "block",
-                            type: "math_number",
-                            fields: {
-                                NUM: 0
-                            }
-                        }]
-                    }, {
-                        kind: "category",
-                        name: "Trade",
-                        colour: "#06b6d4",
-                        contents: tradeBlocksToolbox
-                    }, {
-                        kind: "category",
-                        name: "My Blocks",
-                        colour: "#ef4444",
-                        contents: myBlocksToolbox
-                    }, {
-                        kind: "category",
-                        name: "Custom",
-                        colour: "#a855f7",
-                        contents: getCustomBlocksToolboxItems(customBlocksRef.current)
-                    }]
+                    contents: toolboxContents
                 },
                 grid: {
                     spacing: 20,
