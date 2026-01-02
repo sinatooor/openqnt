@@ -169,10 +169,12 @@ export const useBlocklyInit = ({
                         kind: "category",
                         name: "My Blocks",
                         colour: "#ef4444",
-                        contents: [
-                            ...myBlocksToolbox,
-                            ...getCustomBlocksToolboxItems(customBlocksRef.current)
-                        ]
+                        contents: myBlocksToolbox
+                    }, {
+                        kind: "category",
+                        name: "Custom",
+                        colour: "#a855f7",
+                        contents: getCustomBlocksToolboxItems(customBlocksRef.current)
                     }]
                 },
                 grid: {
