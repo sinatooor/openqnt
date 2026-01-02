@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Profile Modal**: Added Nordnet to the list of available brokers and integrated the connection flow.
 - **Live Trading Router**: Updated `/api/live/start` to accept a `broker` parameter for selecting the execution client.
 
+### Fixed
+- **Blockly Sidebar**: Resolved block overlap issue in "My Blocks" by moving custom blocks to a dedicated "Custom" category.
+
 ## [1.5.0] - 2025-12-31
 
 ### Added
