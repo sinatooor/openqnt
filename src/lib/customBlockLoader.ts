@@ -72,14 +72,23 @@ export function registerCustomBlock(blockDef: CustomBlockDef): void {
         return;
     }
 
-    // Create the block definition
+    // Validate required fields
+    if (!blockType || !blockDef.display_name) {
+        console.warn(`Skipping invalid custom block: missing id or display_name`, blockDef);
+        return;
+    }
+
+    // Create the block definition with defensive checks
     Blockly.Blocks[blockType] = {
         init: function () {
+            // Use inputs array if available, otherwise empty array
+            const inputs = blockDef.inputs || [];
+
             // Build message with inputs
             let messageArr = [blockDef.display_name];
             const args: any[] = [];
 
-            blockDef.inputs.forEach((input, idx) => {
+            inputs.forEach((input, idx) => {
                 messageArr.push(`%${idx + 1}`);
 
                 if (input.type === 'number') {
@@ -109,30 +118,34 @@ export function registerCustomBlock(blockDef: CustomBlockDef): void {
                     message0: messageArr.join(' '),
                     args0: args,
                     colour: blockDef.color || '#ef4444',
-                    tooltip: blockDef.description,
+                    tooltip: blockDef.description || '',
                     helpUrl: ''
                 });
             } else {
                 this.appendDummyInput()
                     .appendField(blockDef.display_name);
                 this.setColour(blockDef.color || '#ef4444');
-                this.setTooltip(blockDef.description);
+                this.setTooltip(blockDef.description || '');
             }
 
-            // Set output/connection based on block type
-            if (blockDef.block_type === 'value') {
+            // Set output/connection based on block type (default to 'value' if not specified)
+            const blockCategory = blockDef.block_type || 'value';
+            if (blockCategory === 'value') {
                 this.setOutput(true, blockDef.output_type || 'Number');
-            } else if (blockDef.block_type === 'condition') {
+            } else if (blockCategory === 'condition') {
                 this.setOutput(true, 'Boolean');
-            } else if (blockDef.block_type === 'action') {
+            } else if (blockCategory === 'action') {
                 this.setPreviousStatement(true, null);
                 this.setNextStatement(true, null);
+            } else {
+                // Default fallback: output a Number
+                this.setOutput(true, 'Number');
             }
 
-            // Store metadata for code generation
+            // Store metadata for code generation (handle legacy 'formula' field)
             (this as any).customBlockData = {
-                python_code: blockDef.python_code,
-                block_type: blockDef.block_type
+                python_code: blockDef.python_code || (blockDef as any).formula || '',
+                block_type: blockCategory
             };
         }
     };
@@ -163,11 +176,18 @@ export function getCustomBlocksToolboxItems(blocks: CustomBlockDef[]): any[] {
         return [];  // Return empty - no orphan label
     }
 
+    // Filter to only include valid blocks with required fields
+    const validBlocks = blocks.filter(block => block.id && block.display_name);
+
+    if (validBlocks.length === 0) {
+        return [];  // Return empty if no valid blocks
+    }
+
     const items: any[] = [
         { kind: 'label', text: 'Custom Blocks' }
     ];
 
-    blocks.forEach(block => {
+    validBlocks.forEach(block => {
         items.push({
             kind: 'block',
             type: block.id
