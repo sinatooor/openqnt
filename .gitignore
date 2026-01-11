@@ -31,4 +31,8 @@ docs/*
 prompts.docsbackend/.env
 backend/.env
 backend/venv/
-backend/__pycache__/
+__pycache__/
+*.pyc
+*.db
+*.sqlite
+
