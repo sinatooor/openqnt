@@ -84,7 +84,9 @@ class StrategyRunner:
         symbol: str = "EURUSD",
         trade_size: float = 0.5,
         poll_interval: int = 60,
-        lookback_bars: int = 100
+        lookback_bars: int = 100,
+        live_mode: bool = False,
+        safety_config: Dict[str, Any] = None
     ):
         self.broker_client = broker_client
         self.broker_type = broker_type
@@ -95,12 +97,13 @@ class StrategyRunner:
         if self.broker_type == 'ig':
             self.instrument_id = get_epic_for_symbol(symbol)
         elif self.broker_type == 'nordnet':
-            self.instrument_id = symbol # For Nordnet, user typically provides 'ID' directly for now? Or we need mapping.
-            # Assuming 'symbol' passed is the ID.
+            self.instrument_id = symbol 
             
         self.trade_size = trade_size
         self.poll_interval = poll_interval
         self.lookback_bars = lookback_bars
+        self.live_mode = live_mode
+        self.safety_config = safety_config or {"max_size": 2.0, "max_drawdown": 500}
         
         self.is_running = False
         self.strategy_instance = None
@@ -115,16 +118,13 @@ class StrategyRunner:
         
         self.execution_db_id: Optional[int] = None
 
+    # ... _compile_and_load_strategy preserved ...
     def _compile_and_load_strategy(self):
-        # ... (same as before) ...
+        # Using existing implementation but patched for context
         try:
-            # Create a new module to execute code in
             module = types.ModuleType("dynamic_strategy")
-            
-            # Execute the code in the module's namespace
             exec(self.strategy_code, module.__dict__)
             
-            # Find the Strategy class
             target_class = None
             if hasattr(module, "GeneratedStrategy"):
                 target_class = getattr(module, "GeneratedStrategy")
@@ -137,17 +137,14 @@ class StrategyRunner:
             if not target_class:
                 raise Exception("Could not find 'GeneratedStrategy' class in code")
 
-            # Instantiate
             instance = target_class(config=None)
             
-            # Inject Mock Environment
             instance.log = MockLogger()
             instance.cache = MockCache(self.symbol)
             instance.order_factory = MockOrderFactory()
             instance.portfolio = MockPortfolio(self.symbol)
             instance.clock = type("MockClock", (), {"utc_now": lambda: datetime.utcnow()})()
             
-            # Patch submit_order
             instance.submit_order = self._handle_order
             instance.close_all_positions = self._handle_close_all
             
@@ -168,16 +165,31 @@ class StrategyRunner:
         
         size = self.trade_size
         
-        if self.broker_type == 'ig':
-            asyncio.create_task(self._execute_ig_trade(direction, size))
-        elif self.broker_type == 'nordnet':
-            asyncio.create_task(self._execute_nordnet_trade(direction, size))
+        # SAFETY CHECK
+        if size > self.safety_config.get("max_size", 2.0):
+            print(f"[SAFETY] Order size {size} exceeds max {self.safety_config['max_size']}. Rejected.")
+            return
+
+        if self.live_mode:
+            print(f"[LIVE EXECUTION] Sending {direction} {size} to {self.broker_type}")
+            if self.broker_type == 'ig':
+                asyncio.create_task(self._execute_ig_trade(direction, size))
+            elif self.broker_type == 'nordnet':
+                asyncio.create_task(self._execute_nordnet_trade(direction, size))
+        else:
+            print(f"[PAPER EXECUTION] Simulate {direction} {size}")
+            # Simulate fill immediately
+            self._record_trade(direction, size, f"PAPER_{int(datetime.now().timestamp())}")
 
     def _handle_close_all(self, instrument_id):
         print("[STRATEGY EXECUTOR] Intercepted Close All")
-        if self.broker_type == 'ig':
-            asyncio.create_task(self._close_ig_position())
-        # Nordnet close logic TODO
+        if self.live_mode:
+            if self.broker_type == 'ig':
+                asyncio.create_task(self._close_ig_position())
+            # Nordnet close logic TODO
+        else:
+             print("[PAPER EXECUTION] Simulate Close All")
+             self.strategy_instance.portfolio.positions[self.symbol] = 0
 
     # ... IG Execution Methods (preserved) ...
     async def _execute_ig_trade(self, direction, size):
@@ -205,30 +217,23 @@ class StrategyRunner:
 
     # ... Nordnet Execution Methods ...
     async def _execute_nordnet_trade(self, direction, size):
+        # Preserved but guarded by live_mode check in _handle_order
         print(f"[NORDNET EXECUTION] executing {direction} {size}...")
         try:
-            # Need account ID. Assuming client manages one default account or we pick first?
             accounts = self.broker_client.get_accounts()
             if not accounts:
                 print("[NORDNET ERROR] No accounts found")
                 return
             
-            acc_id = accounts[0]['accid'] # Pick first
-            
-            # place_order(self, account_id, market_id, identifier, side, volume, price, currency="SEK")
-            # For LIMIT. But standard strat often uses MARKET or simple entry.
-            # Nordnet might require LIMIT price even for "market"?
-            # If API supports 'MARKET' order_type, fine.
-            # Our client defaults to LIMIT.
-            # We need a price.
+            acc_id = accounts[0]['accid'] 
             price = self.last_price
             
             result = self.broker_client.place_order(
                 account_id=acc_id,
-                market_id=1, # Hack? Need proper market lookup
+                market_id=1, 
                 identifier=self.instrument_id, 
                 side=direction,
-                volume=int(size) if size >= 1 else 1, # Nordnet usually integer shares?
+                volume=int(size) if size >= 1 else 1,
                 price=price
             )
             
@@ -271,12 +276,12 @@ class StrategyRunner:
 
     async def start(self):
         try:
-            # Check auth
-            if self.broker_type == 'ig' and not self.broker_client.is_authenticated:
-                await self.broker_client.login()
-            elif self.broker_type == 'nordnet' and not self.broker_client.session_key:
-                # Login handled outside?
-                pass
+            # Check auth ONLY if LIVE
+            if self.live_mode:
+                if self.broker_type == 'ig' and not self.broker_client.is_authenticated:
+                    await self.broker_client.login()
+                elif self.broker_type == 'nordnet' and not self.broker_client.session_key:
+                    pass
             
             self.strategy_instance = self._compile_and_load_strategy()
             self.strategy_instance.on_start()
@@ -287,9 +292,9 @@ class StrategyRunner:
             try:
                 with session_scope() as session:
                     execution = StrategyExecution(
-                        strategy_name="PythonStrategy", # Could extract from code
+                        strategy_name="PythonStrategy", 
                         symbol=self.symbol,
-                        status="running",
+                        status="running" if self.live_mode else "running_paper",
                         configuration=str(self.trade_size)
                     )
                     session.add(execution)
@@ -298,7 +303,7 @@ class StrategyRunner:
             except Exception as e:
                 print(f"[PERSIST ERROR] Failed to create execution record: {e}")
             
-            print(f"[RUNNER] Started Python Strategy for {self.symbol} ({self.broker_type})")
+            print(f"[RUNNER] Started Python Strategy for {self.symbol} ({self.broker_type}) [LIVE={self.live_mode}]")
             
             while self.is_running:
                 await self._tick()
@@ -330,6 +335,7 @@ class StrategyRunner:
     def get_status(self) -> Dict[str, Any]:
         return {
             'is_running': self.is_running,
+            'live_mode': self.live_mode,
             'symbol': self.symbol,
             'broker': self.broker_type,
             'last_price': self.last_price,
@@ -340,25 +346,20 @@ class StrategyRunner:
 
     async def _tick(self):
         # Fetch Data
+        # Even in Paper mode, we need Live Data to generate signals
         if self.broker_type == 'ig':
             hist = await self.broker_client.get_historical_prices(self.instrument_id, resolution="MINUTE_1", num_points=self.lookback_bars)
             if not hist.get("success"): return
             prices = hist.get("prices", [])
             if not prices: return
             last_price_data = prices[-1]
-            # Construct mock data dict
-            data = last_price_data # already has open, high, low, close...
+            data = last_price_data 
             
         elif self.broker_type == 'nordnet':
-            # Use get_market_price implementation
-            # We assume polling last trade
             trade = self.broker_client.get_market_price(market_id=11, identifier=self.instrument_id) 
             if not trade: 
                  print("No Nordnet trade data")
                  return
-            
-            # Construct pseudo-candle from last trade price
-            # This is NOT perfect but "works" for functional connectivity testing
             price = trade['price']
             data = {
                 'open': price, 'high': price, 'low': price, 'close': price, 'volume': trade['volume']
@@ -391,7 +392,8 @@ async def start_strategy_runner(
     symbol: str = "EURUSD",
     trade_size: float = 0.5,
     poll_interval: int = 60,
-    broker_type: str = "ig"
+    broker_type: str = "ig",
+    live_mode: bool = False
 ) -> Dict[str, Any]:
     global _active_runner, _runner_task
     
@@ -399,7 +401,7 @@ async def start_strategy_runner(
         _active_runner.stop()
         if _runner_task: _runner_task.cancel()
     
-    print("=== Starting Python Strategy Runner ===")
+    print(f"=== Starting Python Strategy Runner (LIVE={live_mode}) ===")
     
     _active_runner = StrategyRunner(
         broker_client=broker_client,
@@ -407,14 +409,15 @@ async def start_strategy_runner(
         strategy_code=python_code,
         symbol=symbol,
         trade_size=trade_size,
-        poll_interval=poll_interval
+        poll_interval=poll_interval,
+        live_mode=live_mode
     )
     
     _runner_task = asyncio.create_task(_active_runner.start())
     
     return {
         'success': True,
-        'message': f'Strategy started on {symbol} via {broker_type}',
+        'message': f'Strategy started on {symbol} via {broker_type} (Mode: {"LIVE" if live_mode else "PAPER"})',
         'status': _active_runner.get_status()
     }
     
@@ -432,4 +435,5 @@ def get_runner_status():
     if _active_runner:
         return _active_runner.get_status()
     return {'success': False, 'active': False}
+
 
