@@ -198,6 +198,54 @@ async def trigger_panic_endpoint():
     result = await PanicService.trigger_panic()
     return result
 
+
+class ExportRequest(BaseModel):
+    format: str  # "python", "json", "markdown", "pinescript"
+    workspaceXml: str
+
+
+@app.post("/api/export")
+async def export_strategy(req: ExportRequest):
+    """
+    Export strategy to various formats (Python, JSON, Markdown, Pine Script).
+    """
+    from strategy_exporter import StrategyExporter
+    from xml_evaluator import xml_to_strategy_ir  # We need to create this bridge
+
+    try:
+        # Parse XML to IR (placeholder - in a real impl, parse Blockly XML to IR)
+        # For now, we'll create a dummy IR if no proper parser exists
+        from strategy_ir import StrategyIR, Rule, Condition, MarketComponent, ActionType, ComparisonOperator, PositionSizing
+
+        # TODO: Implement proper XML to IR parsing.
+        # For now, create a placeholder IR from XML
+        ir = StrategyIR(
+            name="Exported Strategy",
+            timeframe="1d",
+            position_sizing=PositionSizing(),
+            rules=[]
+        )
+
+        exporter = StrategyExporter()
+
+        if req.format == "python":
+            content = exporter.export_python(ir)
+            return {"success": True, "content": content, "filename": "strategy.py"}
+        elif req.format == "json":
+            content = exporter.export_json(ir)
+            return {"success": True, "content": content, "filename": "strategy.json"}
+        elif req.format == "markdown":
+            content = exporter.export_markdown(ir)
+            return {"success": True, "content": content, "filename": "strategy.md"}
+        elif req.format == "pinescript":
+            content = exporter.export_pinescript(ir)
+            return {"success": True, "content": content, "filename": "strategy.pine"}
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported format: {req.format}")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
