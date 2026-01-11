@@ -7,7 +7,8 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  ExternalLink
+  ExternalLink,
+  Download
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -79,6 +80,12 @@ const Journal = () => {
       : <ArrowDown className="ml-2 h-4 w-4" />;
   };
 
+  const handleExport = () => {
+    // Trigger download
+    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+    window.location.href = `${apiUrl}/api/export/trades/csv`;
+  };
+
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -90,15 +97,26 @@ const Journal = () => {
             </Button>
             <h1 className="text-3xl font-bold tracking-tight">Trade Journal</h1>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isLoading || isFetching}
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${(isLoading || isFetching) ? 'animate-spin' : ''}`} />
-            {isFetching ? 'Refreshing...' : 'Refresh'}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              disabled={isLoading || trades.length === 0}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isLoading || isFetching}
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${(isLoading || isFetching) ? 'animate-spin' : ''}`} />
+              {isFetching ? 'Refreshing...' : 'Refresh'}
+            </Button>
+          </div>
         </div>
 
         {/* Performance Dashboard */}
