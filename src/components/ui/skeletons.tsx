@@ -1,15 +1,18 @@
 import { cn } from "@/lib/utils";
+import { CSSProperties } from "react";
 
 interface SkeletonProps {
     className?: string;
+    style?: CSSProperties;
 }
 
-export const Skeleton = ({ className }: SkeletonProps) => (
+export const Skeleton = ({ className, style }: SkeletonProps) => (
     <div
         className={cn(
             "animate-pulse rounded-md bg-muted",
             className
         )}
+        style={style}
     />
 );
 
