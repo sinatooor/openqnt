@@ -100,6 +100,9 @@ from .tools.strategy_control_tools import (
     adjust_trade_size,
     emergency_stop_strategy,
 )
+from .tools.screener_tools import (
+    run_market_screen,
+)
 
 # Main Trading Agent
 trading_agent = Agent(
@@ -162,7 +165,12 @@ trading_agent = Agent(
 - MANAGE RISK: Tighten stops or drawdowns with `update_strategy_risk_settings`
 - EMERGENCY: Stop everything with `emergency_stop_strategy` if data is bad
 
-### 12. Research Notebook (Persistent Memory)
+### 12. Market Screening (New)
+- Scan a universe of symbols for technical setups using `run_market_screen`
+- Find "uptrend_sma200", "rsi_oversold", "macd_bullish_crossover", "bollinger_squeeze" etc.
+- Use this to filter down a large list of symbols (e.g. SPY, QQQ, Forex pairs) BEFORE doing deep analysis
+
+### 13. Research Notebook (Persistent Memory)
 - Save important findings and plans with `save_note`
 - Retrieve past research with `read_note`
 - Keep a running log of market observations using `append_to_note`
@@ -295,6 +303,8 @@ User: "Buy 0.1 lots of EURUSD"
         update_strategy_risk_settings,
         adjust_trade_size,
         emergency_stop_strategy,
+        # Screener tools (New)
+        run_market_screen,
     ],
 )
 
