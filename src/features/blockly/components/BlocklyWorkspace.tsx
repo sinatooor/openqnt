@@ -15,6 +15,7 @@ import { BacktestingPanel } from "@/components/BacktestingPanel";
 import { WorkspaceDialogs } from "./WorkspaceDialogs";
 import { ProfileModal } from "@/components/ProfileModal";
 import { JournalModal } from "@/components/JournalModal";
+import { StatusBar } from "@/components/StatusBar";
 
 // Utils & Hooks
 import { StrategyTemplate } from "@/features/templates/strategyTemplates";
@@ -540,6 +541,15 @@ export const BlocklyWorkspace = ({
           onClose={() => setShowJournalModal(false)}
         />
       </div>
+
+      <StatusBar
+        currentStrategyName={strategyName}
+        onLoadStrategy={(xml, name) => {
+          loadXmlToWorkspace(xml, true);
+          setStrategyName(name);
+          toast.success(`Loaded: ${name}`);
+        }}
+      />
 
       <WorkspaceDialogs
         showTemplates={showTemplates}
