@@ -7,6 +7,8 @@ import {
     BarChart3, Activity, Calendar, Percent
 } from "lucide-react";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
 interface TradeSummary {
     total_trades: number;
     win_rate: number;
