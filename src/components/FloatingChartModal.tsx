@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { DraggableModal } from "./DraggableModal";
 import { TradingViewAdvancedChart } from "./TradingViewAdvancedChart";
+import { TradingViewMarketOverview } from "./TradingViewMarketOverview";
 import { ScreenerPanel } from "./ScreenerPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart3, TrendingUp } from "lucide-react";
@@ -47,12 +48,17 @@ export const FloatingChartModal = ({
           </div>
 
           <TabsContent value="chart" className="flex-1 mt-0 relative min-h-0 m-0 p-0 border-0">
-            <div className="w-full h-full bg-[#0f0f0f] relative">
-              <TradingViewAdvancedChart
-                symbol={currentSymbol}
-                interval="D"
-                theme="dark"
-              />
+            <div className="flex w-full h-full">
+              <div className="flex-1 min-w-0 bg-[#0f0f0f] relative border-r border-white/10">
+                <TradingViewAdvancedChart
+                  symbol={currentSymbol}
+                  interval="D"
+                  theme="dark"
+                />
+              </div>
+              <div className="w-[320px] shrink-0 bg-[#0f0f0f] relative hidden md:block">
+                <TradingViewMarketOverview colorTheme="dark" />
+              </div>
             </div>
           </TabsContent>
 
