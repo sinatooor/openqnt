@@ -213,6 +213,22 @@ class MarketScreener:
         rs = gain / loss
         return 100 - (100 / (1 + rs))
 
+    @staticmethod
+    def calculate_macd(series: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9) -> pd.DataFrame:
+        exp1 = series.ewm(span=fast, adjust=False).mean()
+        exp2 = series.ewm(span=slow, adjust=False).mean()
+        macd = exp1 - exp2
+        signal_line = macd.ewm(span=signal, adjust=False).mean()
+        return pd.DataFrame({'macd': macd, 'signal': signal_line})
+
+    @staticmethod
+    def calculate_bollinger_bands(series: pd.Series, window: int = 20, num_std: float = 2.0) -> pd.DataFrame:
+        rolling_mean = series.rolling(window=window).mean()
+        rolling_std = series.rolling(window=window).std()
+        upper_band = rolling_mean + (rolling_std * num_std)
+        lower_band = rolling_mean - (rolling_std * num_std)
+        return pd.DataFrame({'upper': upper_band, 'middle': rolling_mean, 'lower': lower_band})
+
     # --- Preset Filters ---
     
     @staticmethod
@@ -239,6 +255,39 @@ class MarketScreener:
         rsi = MarketScreener.calculate_rsi(df['Close'], 14)
         return rsi.iloc[-1] > 70
 
+    @staticmethod
+    def filter_macd_bullish(df: pd.DataFrame) -> bool:
+        if len(df) < 26: return False
+        macd_df = MarketScreener.calculate_macd(df['Close'])
+        # Crossover: MACD > Signal AND prev MACD < prev Signal
+        return macd_df['macd'].iloc[-1] > macd_df['signal'].iloc[-1] and \
+               macd_df['macd'].iloc[-2] <= macd_df['signal'].iloc[-2]
+
+    @staticmethod
+    def filter_macd_bearish(df: pd.DataFrame) -> bool:
+        if len(df) < 26: return False
+        macd_df = MarketScreener.calculate_macd(df['Close'])
+        return macd_df['macd'].iloc[-1] < macd_df['signal'].iloc[-1] and \
+               macd_df['macd'].iloc[-2] >= macd_df['signal'].iloc[-2]
+
+    @staticmethod
+    def filter_bb_squeeze(df: pd.DataFrame) -> bool:
+        if len(df) < 20: return False
+        bb = MarketScreener.calculate_bollinger_bands(df['Close'])
+        bandwidth = (bb['upper'] - bb['lower']) / bb['middle']
+        # Simple definition: Bandwidth is in the lowest 20th percentile of last 6 months (approx 126 days)
+        lookback = min(len(bandwidth), 126)
+        recent_bandwidth = bandwidth.tail(lookback)
+        current_bw = bandwidth.iloc[-1]
+        return current_bw <= recent_bandwidth.quantile(0.2)
+
+    @staticmethod
+    def filter_volume_breakout(df: pd.DataFrame) -> bool:
+        if len(df) < 20: return False
+        vol_sma20 = df['Volume'].rolling(20).mean()
+        # Volume > 200% of average
+        return df['Volume'].iloc[-1] > (vol_sma20.iloc[-1] * 2)
+
     def screen(self, symbols: List[str], filter_name: str, days_back: int = 365) -> List[Dict[str, Any]]:
         """
         High-level screening method.
@@ -248,10 +297,19 @@ class MarketScreener:
             "downtrend_sma200": self.filter_downtrend_sma200,
             "rsi_oversold": self.filter_rsi_oversold,
             "rsi_overbought": self.filter_rsi_overbought,
+            "macd_bullish_crossover": self.filter_macd_bullish,
+            "macd_bearish_crossover": self.filter_macd_bearish,
+            "bollinger_squeeze": self.filter_bb_squeeze,
+            "volume_breakout": self.filter_volume_breakout,
         }
         
         criteria_func = FILTERS.get(filter_name)
-        if not criteria_func:
+        
+        # If no filter matches, maybe return all (or handle None gracefully) -> For now, return empty if invalid
+        # But maybe user wants "No Filter" just to get data?
+        if filter_name == "all":
+            criteria_func = lambda x: True
+        elif not criteria_func:
             logger.warning(f"Unknown filter: {filter_name}")
             return []
 
@@ -270,12 +328,26 @@ class MarketScreener:
             
             change_pct = ((latest['Close'] - prev['Close']) / prev['Close']) * 100
             
+            # Determine "Signal" (Basic algo)
+            signal = "Neutral"
+            rsi = self.calculate_rsi(df['Close']).iloc[-1] if len(df) > 15 else 50
+            if rsi < 30: signal = "Strong Buy"
+            elif rsi > 70: signal = "Strong Sell"
+            elif change_pct > 2: signal = "Buy"
+            elif change_pct < -2: signal = "Sell"
+
+            # Prepare Sparkline Data (Last 20 closes, normalized)
+            sparkline_data = df['Close'].tail(20).tolist()
+            
             results.append({
                 "symbol": sym,
                 "close": round(latest['Close'], 5),
                 "change_pct": round(change_pct, 2),
                 "volume": int(latest['Volume']),
-                "date": str(latest.name.date()) if hasattr(latest.name, 'date') else str(latest.name)
+                "market_cap": "N/A", # Placeholder, yfinance history doesn't provide this easily in bulk
+                "sector": "Unknown", # Would need metadata fetch
+                "signal": signal,
+                "sparkline": sparkline_data
             })
             
         return results
