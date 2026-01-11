@@ -15,7 +15,6 @@ import { BacktestingPanel } from "@/components/BacktestingPanel";
 import { WorkspaceDialogs } from "./WorkspaceDialogs";
 import { ProfileModal } from "@/components/ProfileModal";
 import { JournalModal } from "@/components/JournalModal";
-import { ScreenerModal } from "@/components/ScreenerModal";
 import { StatusBar } from "@/components/StatusBar";
 
 // Utils & Hooks
@@ -95,7 +94,6 @@ export const BlocklyWorkspace = ({
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showJournalModal, setShowJournalModal] = useState(false);
-  const [showScreenerModal, setShowScreenerModal] = useState(false);
 
   // Dialog Visibility
   const [showTemplates, setShowTemplates] = useState(false);
@@ -471,8 +469,6 @@ export const BlocklyWorkspace = ({
         onToggleProfileModal={() => setShowProfileModal(!showProfileModal)}
         showJournalModal={showJournalModal}
         onToggleJournalModal={() => setShowJournalModal(!showJournalModal)}
-        showScreenerModal={showScreenerModal}
-        onToggleScreenerModal={() => setShowScreenerModal(!showScreenerModal)}
       />
 
       <div className="flex-1 flex min-h-0 relative">
@@ -545,11 +541,7 @@ export const BlocklyWorkspace = ({
           onClose={() => setShowJournalModal(false)}
         />
 
-        {/* Screener Modal */}
-        <ScreenerModal
-          isOpen={showScreenerModal}
-          onClose={() => setShowScreenerModal(false)}
-        />
+
       </div>
 
       <StatusBar
