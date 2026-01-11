@@ -647,7 +647,7 @@ The file `backend/ai_strategy_reviewer.py` contains a syntax error (unterminated
 ## Objective 104
 **id:** 104
 **title:** Integrate Rust Backtest Engine
-**status:** todo
+**status:** blocked
 **details:**
 A Rust-based backtesting core exists in `backend/rust_backtest` but is currently dormant. Enabling this will provide significant performance improvements over the Python-based `IRSimulator`.
 
@@ -677,3 +677,27 @@ Strategy blocks are defined in TypeScript (`src/features/**/blocks/*.ts`) and ma
 
 **validation:**
 `python backend/verify_blocks.py`
+
+---
+
+## Objective 106
+**id:** 106
+**title:** Advanced Market Screener with Parallel Fetching
+**status:** done
+**details:**
+Implement a robust `MarketScreener` class to replace ad-hoc scripts. It should support:
+- Parallel data fetching using `ThreadPoolExecutor` and `yfinance`.
+- Generic filtering logic (e.g. "SMA(50) > SMA(200)") using the existing evaluation engine or pandas.
+- Database caching optimization (screen cached data first, update only if needed).
+- Support for Stocks, Forex, and Crypto.
+
+**acceptance_criteria:**
+* `backend/market_screener.py` created with `MarketScreener` class.
+* `fetch_data` method uses parallel threads for speed.
+* `screen` method accepts a list of criteria/conditions.
+* Integrated with existing `database` module for caching.
+* Demonstrable speedup over sequential fetching.
+
+**validation:**
+`python -m pytest tests/test_market_screener.py`
+
