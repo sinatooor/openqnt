@@ -192,3 +192,51 @@ class HourlyPrice(Base):
             "close": float(self.close) if self.close else None,
             "volume": self.volume,
         }
+
+
+class StrategyExecution(Base):
+    """
+    Records a strategy execution session.
+    """
+    __tablename__ = "strategy_executions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    strategy_name = Column(String(100), nullable=False)
+    symbol = Column(String(20), nullable=False)
+    start_time = Column(DateTime, default=dt.datetime.utcnow)
+    end_time = Column(DateTime, nullable=True)
+    status = Column(String(20), default="running")  # running, stopped, error
+    configuration = Column(Text, nullable=True)  # JSON string of params
+
+    trades = relationship("Trade", back_populates="execution", cascade="all, delete-orphan")
+
+
+class Trade(Base):
+    """
+    Records an executed trade.
+    """
+    __tablename__ = "trades"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    execution_id = Column(Integer, ForeignKey("strategy_executions.id", ondelete="CASCADE"), nullable=True)
+    asset_id = Column(Integer, ForeignKey("assets.id"), nullable=True) # Optional link to asset table
+    symbol = Column(String(20), nullable=False)
+    
+    direction = Column(String(10), nullable=False)  # BUY, SELL
+    entry_time = Column(DateTime, nullable=False)
+    entry_price = Column(Numeric(20, 8), nullable=False)
+    size = Column(Numeric(20, 8), nullable=False)
+    
+    exit_time = Column(DateTime, nullable=True)
+    exit_price = Column(Numeric(20, 8), nullable=True)
+    
+    pnl = Column(Numeric(20, 8), nullable=True)
+    pnl_percent = Column(Numeric(10, 6), nullable=True)
+    
+    broker_ref = Column(String(100), nullable=True)  # Deal ID from broker
+    status = Column(String(20), default="OPEN")  # OPEN, CLOSED
+    
+    created_at = Column(DateTime, default=dt.datetime.utcnow)
+    updated_at = Column(DateTime, default=dt.datetime.utcnow, onupdate=dt.datetime.utcnow)
+
+    execution = relationship("StrategyExecution", back_populates="trades")

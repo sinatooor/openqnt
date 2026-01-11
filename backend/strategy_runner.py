@@ -13,7 +13,14 @@ import importlib
 import sys
 import types
 
-from ig_client import IGClient, get_epic_for_symbol
+try:
+    from backend.ig_client import IGClient, get_epic_for_symbol
+    from backend.database.connection import session_scope
+    from backend.database.models import StrategyExecution, Trade
+except ImportError:
+    from ig_client import IGClient, get_epic_for_symbol
+    from database.connection import session_scope
+    from database.models import StrategyExecution, Trade
 # We don't use xml_evaluator anymore for execution, only for validation if needed
 # from xml_evaluator import ...
 
@@ -105,6 +112,8 @@ class StrategyRunner:
         # Callbacks
         self.on_trade: Optional[Callable] = None
         self.on_error: Optional[Callable] = None
+        
+        self.execution_db_id: Optional[int] = None
 
     def _compile_and_load_strategy(self):
         # ... (same as before) ...
@@ -240,6 +249,24 @@ class StrategyRunner:
             'deal_ref': ref
         }
         self.trades.append(trade)
+        
+        # Persist to DB
+        try:
+             with session_scope() as session:
+                db_trade = Trade(
+                    execution_id=self.execution_db_id,
+                    symbol=self.symbol,
+                    direction=direction,
+                    entry_time=datetime.now(),
+                    entry_price=self.last_price or 0,
+                    size=size,
+                    broker_ref=str(ref),
+                    status="OPEN"
+                )
+                session.add(db_trade)
+        except Exception as e:
+            print(f"[PERSIST ERROR] Failed to save trade: {e}")
+            
         if self.on_trade: self.on_trade(trade)
 
     async def start(self):
@@ -255,6 +282,22 @@ class StrategyRunner:
             self.strategy_instance.on_start()
             
             self.is_running = True
+            
+            # Create Execution Record
+            try:
+                with session_scope() as session:
+                    execution = StrategyExecution(
+                        strategy_name="PythonStrategy", # Could extract from code
+                        symbol=self.symbol,
+                        status="running",
+                        configuration=str(self.trade_size)
+                    )
+                    session.add(execution)
+                    session.flush()
+                    self.execution_db_id = execution.id
+            except Exception as e:
+                print(f"[PERSIST ERROR] Failed to create execution record: {e}")
+            
             print(f"[RUNNER] Started Python Strategy for {self.symbol} ({self.broker_type})")
             
             while self.is_running:
@@ -269,6 +312,18 @@ class StrategyRunner:
 
     def stop(self):
         self.is_running = False
+        
+        # Update Execution Record
+        if self.execution_db_id:
+            try:
+                with session_scope() as session:
+                    execution = session.query(StrategyExecution).get(self.execution_db_id)
+                    if execution:
+                        execution.end_time = datetime.utcnow()
+                        execution.status = "stopped"
+            except Exception as e:
+                print(f"[PERSIST ERROR] Failed to close execution: {e}")
+
         if self.strategy_instance:
             self.strategy_instance.on_stop()
 
