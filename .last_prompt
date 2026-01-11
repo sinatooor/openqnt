@@ -1,146 +1,613 @@
 
-You are an Autonomous Developer.
-Objective: Repair AI Strategy Reviewer Syntax
-Details:
+Analyze this repository and propose 3–5 high-impact improvements.
+Project Files:
+.env
+.gitignore
+.last_ai_response
+.last_prompt
+.playwright-mcp/backtest_results_aapl.png
+BLOCK_CATALOG.xml
+CHANGELOG.md
+IMPROVEMENT_PLAN.md
+LLM_PROMPTS.md
+PIPELINES.md
+RAG_PIPELINE.md
+README.md
+SIMPLE_BACKTEST_ENGINE.md
+STRATEGY_GENERATOR.md
+WALKTHROUGH_2025-12-29.md
+app_architecture.html
+app_architecture.md
+app_architecture2.html
+backend/.env.example
+backend/FULL_SYSTEM_PROMPT.txt
+backend/README.md
+backend/__init__.py
+backend/adk_agents/__init__.py
+backend/adk_agents/__pycache__/__init__.cpython-312.pyc
+backend/adk_agents/__pycache__/__init__.cpython-313.pyc
+backend/adk_agents/__pycache__/trading_agent.cpython-312.pyc
+backend/adk_agents/__pycache__/trading_agent.cpython-313.pyc
+backend/adk_agents/agent_orchestrator.py
+backend/adk_agents/custom_blocks/saved_blocks.json
+backend/adk_agents/developer_agent.py
+backend/adk_agents/exploratory_agent.py
+backend/adk_agents/tools/__init__.py
+backend/adk_agents/tools/__pycache__/__init__.cpython-313.pyc
+backend/adk_agents/tools/__pycache__/broker_discovery.cpython-313.pyc
+backend/adk_agents/tools/__pycache__/broker_tools.cpython-313.pyc
+backend/adk_agents/tools/__pycache__/connector_tools.cpython-313.pyc
+backend/adk_agents/tools/__pycache__/custom_block_tools.cpython-313.pyc
+backend/adk_agents/tools/__pycache__/exploration_tools.cpython-312.pyc
+backend/adk_agents/tools/__pycache__/file_tools.cpython-313.pyc
+backend/adk_agents/tools/__pycache__/indicator_tools.cpython-313.pyc
+backend/adk_agents/tools/__pycache__/market_data_tools.cpython-313.pyc
+backend/adk_agents/tools/__pycache__/market_regime_tools.cpython-313.pyc
+backend/adk_agents/tools/__pycache__/news_tools.cpython-313.pyc
+backend/adk_agents/tools/__pycache__/notebook_tools.cpython-313.pyc
+backend/adk_agents/tools/__pycache__/pattern_recognition_tools.cpython-313.pyc
+backend/adk_agents/tools/__pycache__/planning_tools.cpython-313.pyc
+backend/adk_agents/tools/__pycache__/portfolio_tools.cpython-313.pyc
+backend/adk_agents/tools/__pycache__/rag_tools.cpython-313.pyc
+backend/adk_agents/tools/__pycache__/risk_tools.cpython-313.pyc
+backend/adk_agents/tools/__pycache__/search_tools.cpython-313.pyc
+backend/adk_agents/tools/__pycache__/strategy_control_tools.cpython-313.pyc
+backend/adk_agents/tools/__pycache__/technical_analysis_tools.cpython-313.pyc
+backend/adk_agents/tools/__pycache__/web_scraper_tools.cpython-313.pyc
+backend/adk_agents/tools/broker_discovery.py
+backend/adk_agents/tools/broker_tools.py
+backend/adk_agents/tools/connector_tools.py
+backend/adk_agents/tools/custom_block_tools.py
+backend/adk_agents/tools/exploration_tools.py
+backend/adk_agents/tools/file_tools.py
+backend/adk_agents/tools/indicator_tools.py
+backend/adk_agents/tools/market_data_tools.py
+backend/adk_agents/tools/market_regime_tools.py
+backend/adk_agents/tools/news_tools.py
+backend/adk_agents/tools/notebook_tools.py
+backend/adk_agents/tools/pattern_recognition_tools.py
+backend/adk_agents/tools/planning_tools.py
+backend/adk_agents/tools/portfolio_tools.py
+backend/adk_agents/tools/rag_tools.py
+backend/adk_agents/tools/risk_tools.py
+backend/adk_agents/tools/search_tools.py
+backend/adk_agents/tools/strategy_control_tools.py
+backend/adk_agents/tools/technical_analysis_tools.py
+backend/adk_agents/tools/web_scraper_tools.py
+backend/adk_agents/trading_agent.py
+backend/agent_service.py
+backend/ai_strategy_reviewer.py
+backend/analytics_service.py
+backend/ast_parser.py
+backend/backtest_engine.py
+backend/backtest_result.json
+backend/backtest_runner.py
+backend/backtest_service.py
+backend/block_python_map.json
+backend/broker_capabilities.py
+backend/cache_service.py
+backend/check_rsi.py
+backend/chroma_db/10859966-c7ef-4506-af83-e17acb97a577/data_level0.bin
+backend/chroma_db/10859966-c7ef-4506-af83-e17acb97a577/header.bin
+backend/chroma_db/10859966-c7ef-4506-af83-e17acb97a577/length.bin
+backend/chroma_db/10859966-c7ef-4506-af83-e17acb97a577/link_lists.bin
+backend/chroma_db/chroma.sqlite3
+backend/chroma_db_v2/7c15d620-641b-446c-b729-76080ca3e9b6/data_level0.bin
+backend/chroma_db_v2/7c15d620-641b-446c-b729-76080ca3e9b6/header.bin
+backend/chroma_db_v2/7c15d620-641b-446c-b729-76080ca3e9b6/length.bin
+backend/chroma_db_v2/7c15d620-641b-446c-b729-76080ca3e9b6/link_lists.bin
+backend/chroma_db_v2/c226de1b-6249-4350-aae0-6d95d6b7ceb4/data_level0.bin
+backend/chroma_db_v2/c226de1b-6249-4350-aae0-6d95d6b7ceb4/header.bin
+backend/chroma_db_v2/c226de1b-6249-4350-aae0-6d95d6b7ceb4/length.bin
+backend/chroma_db_v2/c226de1b-6249-4350-aae0-6d95d6b7ceb4/link_lists.bin
+backend/chroma_db_v2/chroma.sqlite3
+backend/data/market_data.db
+backend/data_service.py
+backend/database/__init__.py
+backend/database/__pycache__/__init__.cpython-312.pyc
+backend/database/__pycache__/__init__.cpython-313.pyc
+backend/database/__pycache__/connection.cpython-312.pyc
+backend/database/__pycache__/connection.cpython-313.pyc
+backend/database/__pycache__/models.cpython-312.pyc
+backend/database/__pycache__/models.cpython-313.pyc
+backend/database/connection.py
+backend/database/models.py
+backend/feature_flags.py
+backend/fetch_commodities_crypto.py
+backend/fetch_forex_data.py
+backend/fmp/__init__.py
+backend/fmp/__pycache__/__init__.cpython-312.pyc
+backend/fmp/__pycache__/__init__.cpython-313.pyc
+backend/fmp/__pycache__/client.cpython-312.pyc
+backend/fmp/__pycache__/client.cpython-313.pyc
+backend/fmp/client.py
+backend/headless_validator.py
+backend/ig_client.py
+backend/import_glbx_data.py
+backend/import_stock_data.py
+backend/improve_loop.py
+backend/init_db.py
+backend/ir_adaptation.py
+backend/ir_simulator.py
+backend/json_code_generator.py
+backend/llm_logger.py
+backend/local_database.py
+backend/main.py
+backend/market_data_scheduler.py
+backend/market_screener.py
+backend/middleware/rate_limiter.py
+backend/monte_carlo.py
+backend/multi_engine_results.json
+backend/nautilus_adapter.py
+backend/nautilus_visualizer.py
+backend/nordnet_client.py
+backend/performance_reporter.py
+backend/pipelines/__init__.py
+backend/pipelines/__pycache__/__init__.cpython-312.pyc
+backend/pipelines/__pycache__/fetcher.cpython-312.pyc
+backend/pipelines/fetcher.py
+backend/prompts/block_reference.txt
+backend/prompts/rationalization_prompt.txt
+backend/prompts/system_prompt.txt
+backend/prompts/validation_prompt.txt
+backend/python_engine_test_results.json
+backend/rag_system.py
+backend/requirements.txt
+backend/risk_controls.py
+backend/routers/__pycache__/agent_chat.cpython-313.pyc
+backend/routers/__pycache__/data_export.cpython-313.pyc
+backend/routers/__pycache__/health.cpython-313.pyc
+backend/routers/__pycache__/live_trading.cpython-313.pyc
+backend/routers/__pycache__/symbols.cpython-313.pyc
+backend/routers/__pycache__/templates.cpython-313.pyc
+backend/routers/__pycache__/trade_history.cpython-313.pyc
+backend/routers/agent_chat.py
+backend/routers/data_export.py
+backend/routers/health.py
+backend/routers/live_trading.py
+backend/routers/symbols.py
+backend/routers/templates.py
+backend/routers/trade_history.py
+backend/rule_parser.py
+backend/run_fmp_pipeline.py
+backend/run_strategy_test.py
+backend/rust_backtest/.github/workflows/CI.yml
+backend/rust_backtest/.gitignore
+backend/rust_backtest/Cargo.lock
+backend/rust_backtest/Cargo.toml
+backend/rust_backtest/pyproject.toml
+backend/rust_backtest/src/backtest.rs
+backend/rust_backtest/src/indicators.rs
+backend/rust_backtest/src/lib.rs
+backend/rust_backtest/src/metrics.rs
+backend/rust_backtest/src/types.rs
+backend/rust_service.py
+backend/sample_data.py
+backend/sp500_trend_strategy.py
+backend/strategies.db
+backend/strategy_compiler.py
+backend/strategy_converter.py
+backend/strategy_exporter.py
+backend/strategy_ir.py
+backend/strategy_runner.py
+backend/strategy_store.py
+backend/strategy_templates.py
+backend/strategy_validator.py
+backend/strategy_version_manager.py
+backend/template_strategies.py
+backend/test_actual_backtest.py
+backend/test_alphavantage.py
+backend/test_ast_parser.py
+backend/test_backtest_endpoint.py
+backend/test_backtest_loop.py
+backend/test_caching.py
+backend/test_debug_zero_trades.py
+backend/test_expanded_indicators.py
+backend/test_headless_backtest.py
+backend/test_imports.py
+backend/test_iterative_no_llm.py
+backend/test_iterative_python_engine.py
+backend/test_multi_engine.py
+backend/test_nautilus_chart.html
+backend/test_nautilus_pipeline.py
+backend/test_risk_management.py
+backend/test_rsi_backtest.py
+backend/test_rsi_template.py
+backend/test_rust_integration.py
+backend/test_single.py
+backend/test_supertrend_backtest.py
+backend/test_trailing_stop_backtest.py
+backend/test_viz_gen.py
+backend/tests/__pycache__/test_nautilus_backtest_smoke.cpython-313-pytest-9.0.2.pyc
+backend/tests/test_nautilus_backtest_adapter_contract.py
+backend/tests/test_nautilus_backtest_smoke.py
+backend/tests/test_ui_representation_compat.py
+backend/tests/verify_nautilus.py
+backend/vector_rag.py
+backend/verification.py
+backend/verify_blocks.py
+backend/walkforward.py
+backend/xml_evaluator.py
+bun.lockb
+components.json
+deletetext.txt
+diffrent-model.md
+engine_comparison.md
+eslint.config.js
+index.html
+mql4_syntax_indexed.json
+nautilus_block_audit.html
+old.html
+package-lock.json
+package.json
+plan.md
+plan2.md
+postcss.config.js
+public/favicon.ico
+public/logo/avanza.png
+public/logo/etrade.png
+public/logo/handelsbanken.png
+public/logo/ig.png
+public/logo/images.png
+public/logo/interactivebrokers.png
+public/logo/logo_discord_small.png
+public/logo/logo_etoro.png
+public/logo/logo_firecrawl.png
+public/logo/logo_icmarkets.png
+public/logo/logo_ig.png
+public/logo/logo_n8n.png
+public/logo/logo_perplexity.png
+public/logo/logo_robinhood.png
+public/logo/logo_tradingview.webp
+public/logo/logo_webull.png
+public/logo/nordea.png
+public/logo/nordnet.png
+public/logo/saxo.png
+public/logo/scandinaviancapitalmarkets.png
+public/logo/schwab.png
+public/logo/seb.png
+public/logo/swedbank.png
+public/logo/swissquote.png
+public/mql4_syntax.json
+public/mql5_syntax.json
+public/mql_syntax.json
+public/placeholder.svg
+public/robots.txt
+rag_test_results.json
+src/App.css
+src/App.tsx
+src/components/AIChatPanel.tsx
+src/components/BacktestVisualizationModal.tsx
+src/components/BacktestingPanel.tsx
+src/components/BlockSearchDialog.tsx
+src/components/BrokerConnectModal.tsx
+src/components/ConfirmDialog.tsx
+src/components/DevLogPanel.tsx
+src/components/DraggableModal.tsx
+src/components/ErrorBoundary.tsx
+src/components/FloatingChartModal.tsx
+src/components/GuidedTour.tsx
+src/components/IGTradingPanel.tsx
+src/components/IndicatorSettingsModal.tsx
+src/components/NavLink.tsx
+src/components/PerformanceDashboard.tsx
+src/components/ProfileModal.tsx
+src/components/StatusBadge.tsx
+src/components/StrategyTemplatesDialog.tsx
+src/components/SystemStatus.tsx
+src/components/TimeframeSelector.tsx
+src/components/TradingViewAdvancedChart.tsx
+src/components/TradingViewChart.tsx
+src/components/TradingViewMarketOverview.tsx
+src/components/TradingViewMarketSummary.tsx
+src/components/index.ts
+src/components/ui/accordion.tsx
+src/components/ui/alert-dialog.tsx
+src/components/ui/alert.tsx
+src/components/ui/aspect-ratio.tsx
+src/components/ui/avatar.tsx
+src/components/ui/badge.tsx
+src/components/ui/breadcrumb.tsx
+src/components/ui/button.tsx
+src/components/ui/calendar.tsx
+src/components/ui/card.tsx
+src/components/ui/carousel.tsx
+src/components/ui/chart.tsx
+src/components/ui/checkbox.tsx
+src/components/ui/collapsible.tsx
+src/components/ui/command.tsx
+src/components/ui/context-menu.tsx
+src/components/ui/dialog.tsx
+src/components/ui/drawer.tsx
+src/components/ui/dropdown-menu.tsx
+src/components/ui/form.tsx
+src/components/ui/hover-card.tsx
+src/components/ui/index.ts
+src/components/ui/input-otp.tsx
+src/components/ui/input.tsx
+src/components/ui/label.tsx
+src/components/ui/menubar.tsx
+src/components/ui/navigation-menu.tsx
+src/components/ui/pagination.tsx
+src/components/ui/popover.tsx
+src/components/ui/progress.tsx
+src/components/ui/radio-group.tsx
+src/components/ui/resizable.tsx
+src/components/ui/scroll-area.tsx
+src/components/ui/select.tsx
+src/components/ui/separator.tsx
+src/components/ui/sheet.tsx
+src/components/ui/sidebar.tsx
+src/components/ui/skeleton.tsx
+src/components/ui/skeletons.tsx
+src/components/ui/slider.tsx
+src/components/ui/sonner.tsx
+src/components/ui/switch.tsx
+src/components/ui/table.tsx
+src/components/ui/tabs.tsx
+src/components/ui/textarea.tsx
+src/components/ui/toast.tsx
+src/components/ui/toaster.tsx
+src/components/ui/toggle-group.tsx
+src/components/ui/toggle.tsx
+src/components/ui/tooltip.tsx
+src/components/ui/use-toast.ts
+src/config/blockly/generator.ts
+src/config/blockly/index.ts
+src/config/blockly/mqlGenerator.ts
+src/config/blockly/nautilusGenerator.ts
+src/config/blockly/pyGenerator.ts
+src/config/blockly/toolbox.ts
+src/config/index.ts
+src/contexts/ThemeContext.tsx
+src/features/ai/index.ts
+src/features/backtest/components/BacktestingPanel.tsx
+src/features/backtest/index.ts
+src/features/backtest/logic/engine.ts
+src/features/backtest/logic/indicators.ts
+src/features/backtest/logic/runtime.ts
+src/features/blockly/components/BlocklyWorkspace.tsx
+src/features/blockly/components/CodeViewPanel.tsx
+src/features/blockly/components/WorkspaceDialogs.tsx
+src/features/blockly/components/WorkspaceToolbar.tsx
+src/features/blockly/components/index.ts
+src/features/blockly/components/workspace/WorkspaceToolbar.tsx
+src/features/blockly/hooks/index.ts
+src/features/blockly/hooks/useBacktestHandlers.ts
+src/features/blockly/hooks/useBlocklyInit.ts
+src/features/blockly/hooks/useBlocklyState.ts
+src/features/blockly/hooks/useCodeHandlers.ts
+src/features/blockly/hooks/useModalState.ts
+src/features/blockly/hooks/usePanelVisibility.ts
+src/features/blockly/hooks/useTourState.ts
+src/features/blockly/hooks/useWorkspaceHandlers.ts
+src/features/blockly/hooks/useZoomHandlers.ts
+src/features/blockly/index.ts
+src/features/blockly/utils/blocklyUtils.tsx
+src/features/blockly/utils/codeDisplay.tsx
+src/features/blockly/utils/codeFormatting.ts
+src/features/blockly/utils/index.ts
+src/features/blockly/utils/syntaxHighlighting.tsx
+src/features/chart/components/TradingViewChart.tsx
+src/features/chart/index.ts
+src/features/core/blocks/control.ts
+src/features/core/blocks/environment.ts
+src/features/core/blocks/index.ts
+src/features/core/blocks/operators.ts
+src/features/core/blocks/variables.ts
+src/features/core/generators/core.generator.ts
+src/features/core/generators/index.ts
+src/features/core/generators/variables.generator.ts
+src/features/core/index.ts
+src/features/indicators/blocks/ac.ts
+src/features/indicators/blocks/ad.ts
+src/features/indicators/blocks/adx.ts
+src/features/indicators/blocks/adxWilder.ts
+src/features/indicators/blocks/alligator.ts
+src/features/indicators/blocks/ama.ts
+src/features/indicators/blocks/ao.ts
+src/features/indicators/blocks/atr.ts
+src/features/indicators/blocks/bb.ts
+src/features/indicators/blocks/bearsPower.ts
+src/features/indicators/blocks/bullsPower.ts
+src/features/indicators/blocks/bwmfi.ts
+src/features/indicators/blocks/cci.ts
+src/features/indicators/blocks/chaikin.ts
+src/features/indicators/blocks/dema.ts
+src/features/indicators/blocks/demarker.ts
+src/features/indicators/blocks/dmi.ts
+src/features/indicators/blocks/donchian.ts
+src/features/indicators/blocks/ema.ts
+src/features/indicators/blocks/envelopes.ts
+src/features/indicators/blocks/force.ts
+src/features/indicators/blocks/fractals.ts
+src/features/indicators/blocks/frama.ts
+src/features/indicators/blocks/gator.ts
+src/features/indicators/blocks/highest.ts
+src/features/indicators/blocks/ichimoku.ts
+src/features/indicators/blocks/index.ts
+src/features/indicators/blocks/keltner.ts
+src/features/indicators/blocks/lowest.ts
+src/features/indicators/blocks/lwma.ts
+src/features/indicators/blocks/macd.ts
+src/features/indicators/blocks/mfi.ts
+src/features/indicators/blocks/momentum.ts
+src/features/indicators/blocks/obv.ts
+src/features/indicators/blocks/osma.ts
+src/features/indicators/blocks/resistance.ts
+src/features/indicators/blocks/rsi.ts
+src/features/indicators/blocks/rvi.ts
+src/features/indicators/blocks/sar.ts
+src/features/indicators/blocks/sma.ts
+src/features/indicators/blocks/smma.ts
+src/features/indicators/blocks/stddev.ts
+src/features/indicators/blocks/stochastic.ts
+src/features/indicators/blocks/supertrend.ts
+src/features/indicators/blocks/support.ts
+src/features/indicators/blocks/tema.ts
+src/features/indicators/blocks/timeframes.ts
+src/features/indicators/blocks/trix.ts
+src/features/indicators/blocks/vidya.ts
+src/features/indicators/blocks/volumes.ts
+src/features/indicators/blocks/vwap.ts
+src/features/indicators/blocks/williams_r.ts
+src/features/indicators/generators/allIndicators.generator.ts
+src/features/indicators/generators/atr.generator.ts
+src/features/indicators/generators/bb.generator.ts
+src/features/indicators/generators/index.ts
+src/features/indicators/generators/remaining.generator.ts
+src/features/indicators/generators/rsi.generator.ts
+src/features/indicators/generators/vwap.generator.ts
+src/features/indicators/index.ts
+src/features/templates/index.ts
+src/features/templates/strategyTemplates.ts
+src/features/trading/blocks/index.ts
+src/features/trading/blocks/order.ts
+src/features/trading/blocks/positionSizing.ts
+src/features/trading/blocks/riskManagement.ts
+src/features/trading/blocks/stopLoss.ts
+src/features/trading/blocks/takeProfit.ts
+src/features/trading/blocks/tradeInfo.ts
+src/features/trading/generators/index.ts
+src/features/trading/generators/trading.generator.ts
+src/features/trading/index.ts
+src/hooks/index.ts
+src/hooks/use-mobile.tsx
+src/hooks/use-toast.ts
+src/hooks/useCopyToClipboard.tsx
+src/hooks/useKeyboardShortcuts.ts
+src/hooks/useMarketData.ts
+src/hooks/useUserProfile.ts
+src/index.css
+src/integrations/index.ts
+src/integrations/supabase/client.ts
+src/integrations/supabase/types.ts
+src/lib/customBlockLoader.ts
+src/lib/index.ts
+src/lib/indicatorConfigs.ts
+src/lib/indicatorUtils.ts
+src/lib/marketData.ts
+src/lib/utils.ts
+src/main.tsx
+src/pages/ExecutionDetails.tsx
+src/pages/Index.tsx
+src/pages/Journal.tsx
+src/pages/NotFound.tsx
+src/services/api.ts
+src/services/index.ts
+src/services/marketData.ts
+src/services/notifications.ts
+src/services/trades.ts
+src/services/websocket.ts
+src/stores/preferencesStore.ts
+src/styles/blockly-custom.css
+src/utils/xmlStructure.ts
+src/vite-env.d.ts
+stock-data/GLBX-20251208-WK4D4HNKCF/condition.json
+stock-data/GLBX-20251208-WK4D4HNKCF/glbx-mdp3-20200108-20251207.ohlcv-1d.csv
+stock-data/GLBX-20251208-WK4D4HNKCF/manifest.json
+stock-data/GLBX-20251208-WK4D4HNKCF/metadata.json
+stock-data/GLBX-20251208-WK4D4HNKCF/symbology.csv
+stock-data/GLBX-20251208-WK4D4HNKCF/symbology.json
+stock-data/XNAS-20251208-KWUNHHXXC8/condition.json
+stock-data/XNAS-20251208-KWUNHHXXC8/manifest.json
+stock-data/XNAS-20251208-KWUNHHXXC8/metadata.json
+stock-data/XNAS-20251208-KWUNHHXXC8/symbology.csv
+stock-data/XNAS-20251208-KWUNHHXXC8/symbology.json
+stock-data/XNAS-20251208-KWUNHHXXC8/xnas-itch-20180501-20251205.ohlcv-1d.csv
+stock-data/XNAS-20251208-MC87YTHXUH/condition.json
+stock-data/XNAS-20251208-MC87YTHXUH/manifest.json
+stock-data/XNAS-20251208-MC87YTHXUH/metadata.json
+stock-data/XNAS-20251208-MC87YTHXUH/symbology.csv
+stock-data/XNAS-20251208-MC87YTHXUH/symbology.json
+stock-data/XNAS-20251208-MC87YTHXUH/xnas-itch-20180501-20251205.ohlcv-1h.csv
+supabase/config.toml
+supabase/functions/conversational-chat/index.ts
+supabase/functions/fetch-market-data/index.ts
+supabase/functions/generate-mql-code/index.ts
+supabase/functions/generate-strategy/index.ts
+supabase/functions/validate-strategy/index.ts
+supabase/functions/verify-backtest/index.ts
+tailwind.config.ts
+temp_old_main.py
+test_nautilus_quick.py
+tests/__pycache__/benchmark_test.cpython-313-pytest-9.0.2.pyc
+tests/__pycache__/e2e_test.cpython-313-pytest-9.0.2.pyc
+tests/__pycache__/stress_test.cpython-313-pytest-9.0.2.pyc
+tests/__pycache__/test_ai_proposals.cpython-313-pytest-9.0.2.pyc
+tests/__pycache__/test_ai_strategy_review.cpython-313-pytest-9.0.2.pyc
+tests/__pycache__/test_backtesting.cpython-313-pytest-9.0.2.pyc
+tests/__pycache__/test_broker_capabilities.cpython-313-pytest-9.0.2.pyc
+tests/__pycache__/test_data_caching.cpython-313-pytest-9.0.2.pyc
+tests/__pycache__/test_ir_adaptation.cpython-313-pytest-9.0.2.pyc
+tests/__pycache__/test_ir_simulator.cpython-313-pytest-9.0.2.pyc
+tests/__pycache__/test_ir_simulator_risk_integration.cpython-313-pytest-9.0.2.pyc
+tests/__pycache__/test_monte_carlo.cpython-313-pytest-9.0.2.pyc
+tests/__pycache__/test_multi_timeframe.cpython-313-pytest-9.0.2.pyc
+tests/__pycache__/test_nautilus_backtest_adapter_contract.cpython-313-pytest-9.0.2.pyc
+tests/__pycache__/test_nautilus_backtest_smoke.cpython-313-pytest-9.0.2.pyc
+tests/__pycache__/test_performance_reporter.cpython-313-pytest-9.0.2.pyc
+tests/__pycache__/test_risk_controls.cpython-312-pytest-9.0.2.pyc
+tests/__pycache__/test_risk_controls.cpython-313-pytest-9.0.2.pyc
+tests/__pycache__/test_rule_parser.cpython-313-pytest-9.0.2.pyc
+tests/__pycache__/test_strategy_ir.cpython-313-pytest-9.0.2.pyc
+tests/__pycache__/test_strategy_versioning.cpython-313-pytest-9.0.2.pyc
+tests/__pycache__/test_ui_representation_compat.cpython-313-pytest-9.0.2.pyc
+tests/__pycache__/test_walkforward.cpython-313-pytest-9.0.2.pyc
+tests/benchmark_test.py
+tests/reproduce_legacy_error.py
+tests/stress_test.py
+tests/test_ai_proposals.py
+tests/test_ai_strategy_review.py
+tests/test_backtesting.py
+tests/test_broker_capabilities.py
+tests/test_data_caching.py
+tests/test_e2e_headless.py
+tests/test_ir_adaptation.py
+tests/test_ir_simulator.py
+tests/test_ir_simulator_risk_integration.py
+tests/test_live_trading_safety.py
+tests/test_market_screener.py
+tests/test_monte_carlo.py
+tests/test_multi_timeframe.py
+tests/test_nautilus_backtest_adapter_contract.py
+tests/test_nautilus_execution.py
+tests/test_performance_reporter.py
+tests/test_position_management.py
+tests/test_risk_controls.py
+tests/test_rule_parser.py
+tests/test_strategy_export.py
+tests/test_strategy_ir.py
+tests/test_strategy_versioning.py
+tests/test_trade_api.py
+tests/test_trade_journaling.py
+tests/test_trade_persistence.py
+tests/test_ui_representation_compat.py
+tests/test_walkforward.py
+tsconfig.app.json
+tsconfig.json
+tsconfig.node.json
+verify_prompt_generation.py
+vite.config.ts
 
-**id:** 103
-**title:** Repair AI Strategy Reviewer Syntax
+
+For each, include:
+- why it matters
+- concrete acceptance criteria
+- a headless validation method
+
+Filter out vague or untestable suggestions.
+
+Format your response strictly as new 'plan.md' entries.
+Example:
+## Objective <next_id>
+**id:** <next_id>
+**title:** ...
 **status:** todo
-**details:**
-The file `backend/ai_strategy_reviewer.py` contains a syntax error (unterminated string literal at line 42) which prevents the module from loading. This completely blocks the AI strategy review feature (Objective 009).
+**details:** ...
+**acceptance_criteria:** ...
+**validation:** ...
+---
 
-**acceptance_criteria:**
-*   Syntax error in `backend/ai_strategy_reviewer.py` is resolved.
-*   The module can be imported and executed.
-
-**validation:**
-`python -m pytest tests/test_ai_strategy_review.py`
-
-
-Context Files:
-
---- backend/ai_strategy_reviewer.py ---
-import json
-import re
-from typing import Dict, Any, Callable, Awaitable, List
-
-REVIEW_PROMPT = """
-You are a Senior Algorithmic Trading Strategist. Review the provided trading strategy (Blockly XML).
-
-STRATEGY XML:
-{xml}
-
-Analyze the strategy and provide a structured review in JSON format with the following fields:
-1. "explanation": A clear, non-technical explanation of the strategy's logic (entry, exit, risk management).
-2. "weaknesses": A list of potential weaknesses or logical flaws (e.g. "No stop loss", "Conflicting conditions").
-3. "overfitting_risks": A specific assessment of overfitting risks (High/Medium/Low) with reasoning.
-4. "improvement_suggestions": A list of actionable suggestions to improve the strategy.
-
-Return ONLY the valid JSON object. No markdown formatting.
-"""
-
-async def review_strategy(xml: str, llm_call: Callable[[List[Dict[str, str]]], Awaitable[str]]) -> Dict[str, Any]:
-    """
-    Analyze a strategy XML and return a structured review.
-    
-    Args:
-        xml: The Blockly XML string
-        llm_call: Async function that takes messages list and returns string response
-    
-    Returns:
-        Dict containing review fields
-    """
-    messages = [
-        {"role": "system", "content": "You are a helpful assistant that analyzes trading strategies and outputs JSON."},
-        {"role": "user", "content": REVIEW_PROMPT.format(xml=xml)}
-    ]
-    
-    try:
-        response = await llm_call(messages)
-        
-        # Clean response
-        cleaned = response.strip()
-        
-        # Extract JSON if markdown blocks are present
-        if "```json" in cleaned:
-            cleaned = cleaned.split("```json")[1].split("```")[0].strip()
-        elif "```" in cleaned:
-            cleaned = cleaned.split("```")[1].split("```")[0].strip()
-            
-        return json.loads(cleaned)
-    except Exception as e:
-        return {
-            "explanation": "Failed to parse AI response",
-            "weaknesses": [str(e)],
-            "overfitting_risks": "Unknown",
-            "improvement_suggestions": []
-        }
-
---- tests/test_ai_strategy_review.py ---
-"""
-Tests for AI Strategy Review (Objective 009)
-Uses synchronous wrapper to avoid pytest-asyncio dependency.
-"""
-import pytest
-import asyncio
-from backend.ai_strategy_reviewer import review_strategy
-
-
-def run_async(coro):
-    """Helper to run async code synchronously."""
-    return asyncio.get_event_loop().run_until_complete(coro)
-
-
-def test_review_strategy_structure():
-    """Test that review_strategy returns structured output."""
-    mock_xml = "<xml>test</xml>"
-    
-    mock_response = """
-    {
-        "explanation": "Test explanation",
-        "weaknesses": ["Weakness 1"],
-        "overfitting_risks": "Low",
-        "improvement_suggestions": ["Suggestion 1"]
-    }
-    """
-    
-    async def mock_llm(messages):
-        assert len(messages) == 2
-        return mock_response
-
-    result = run_async(review_strategy(mock_xml, mock_llm))
-    
-    assert result["explanation"] == "Test explanation"
-    assert len(result["weaknesses"]) == 1
-    assert result["overfitting_risks"] == "Low"
-    assert result["improvement_suggestions"][0] == "Suggestion 1"
-
-
-def test_review_strategy_json_error():
-    """Test that invalid JSON returns error structure."""
-    mock_xml = "<xml>test</xml>"
-    
-    async def mock_llm(messages):
-        return "Not JSON"
-
-    result = run_async(review_strategy(mock_xml, mock_llm))
-    
-    # Should return error structure per our implementation
-    assert result["explanation"] == "Failed to parse AI response"
-    assert len(result["weaknesses"]) > 0
-    assert result["overfitting_risks"] == "Unknown"
-
-
-
-Previous Error (if any):
-
-
-Task: Implement the objective.
-Rules:
-- Output the FULL content of any modified/created files.
-- Use the following format for EACH file:
-FILE: <path>
-```
-<content>
-```
-- Do not include explanatory text outside the blocks.
+Ensure validation commands are realistic.
+Start IDs from 111.
