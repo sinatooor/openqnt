@@ -532,7 +532,7 @@ Strategy development is iterative. Without versioning, users lose previous worki
 
 **id:** 018  
 **title:** Add position management rules to IR  
-**status:** blocked  
+**status:** done  
 
 **details:**
 Extend the IR to support:
