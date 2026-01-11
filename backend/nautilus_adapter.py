@@ -12,10 +12,30 @@ import pandas as pd
 import numpy as np
 from decimal import Decimal
 from datetime import datetime
-from typing import Dict, List, Any, Optional, Type
+from typing import Dict, List, Any, Optional, Type, TYPE_CHECKING
 
 # Attempt Nautilus imports - all functions depend on this
 NAUTILUS_INSTALLED = False
+
+if TYPE_CHECKING:
+    # Forward references for type checking only
+    try:
+        from nautilus_trader.backtest.engine import BacktestEngine
+        from nautilus_trader.backtest.config import BacktestEngineConfig
+        from nautilus_trader.config import LoggingConfig, StrategyConfig
+        from nautilus_trader.model.currencies import USD
+        from nautilus_trader.model.enums import (
+            AccountType, OmsType, PriceType, 
+            BarAggregation, OrderSide, TimeInForce
+        )
+        from nautilus_trader.model.identifiers import TraderId, Venue, InstrumentId
+        from nautilus_trader.model.objects import Money, Quantity
+        from nautilus_trader.model.data import Bar, BarType
+        from nautilus_trader.model.instruments import CurrencyPair
+        from nautilus_trader.trading.strategy import Strategy
+        from nautilus_trader.test_kit.providers import TestInstrumentProvider
+    except ImportError:
+        pass
 
 try:
     from nautilus_trader.backtest.engine import BacktestEngine
@@ -37,7 +57,7 @@ try:
     
     NAUTILUS_INSTALLED = True
 except ImportError as e:
-    print(f"NautilusTrader not available: {e}")
+    # print(f"NautilusTrader not available: {e}") # Reduce noise
     NAUTILUS_INSTALLED = False
 
 
@@ -442,7 +462,7 @@ def run_nautilus_backtest(
         # Generate HTML Visualization
         visualization_html = None
         try:
-            from nautilus_visualizer import generate_nautilus_chart
+            from .nautilus_visualizer import generate_nautilus_chart
             visualization_html = generate_nautilus_chart(
                 ohlcv_data=historical_data,
                 trades=trades_list,
@@ -451,6 +471,9 @@ def run_nautilus_backtest(
                 symbol=symbol
             )
             print(f"[NAUTILUS] Generated visualization HTML ({len(visualization_html)} bytes)")
+        except ImportError:
+            # Handle case where visualizer is missing
+            pass
         except Exception as e:
             print(f"[NAUTILUS] Visualization generation failed: {e}")
             traceback.print_exc()
