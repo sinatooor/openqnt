@@ -624,3 +624,71 @@ Portability is a core principle. Users should be able to take their strategies t
 * Never delete tests to pass validation
 * Commit only after successful validation
 * One objective per commit
+
+I will read the project's documentation to understand its current status and goals.
+I will read the necessary files to confirm the current state of the Nautilus adapter and backtest runner.
+Based on the repository analysis and the current blocked status of Nautilus integration, here are 3 high-impact improvements.
+
+## Objective 100
+**id:** 100
+**title:** Fix Nautilus Adapter Import Safety
+**status:** done
+**details:**
+The `backend/nautilus_adapter.py` module currently raises `NameError` during import if NautilusTrader is not installed or fails to load, because type hints (like `Instrument`) are referenced at the module level without being defined in the fallback scope. This crashes the test collector and prevents any progress on engine integration.
+
+**Requirements:**
+- Wrap all Nautilus-specific type hints in string forward references or `if TYPE_CHECKING:` blocks.
+- Ensure `NAUTILUS_INSTALLED` flag is robustly set.
+- The module must import cleanly in environments where Nautilus is missing (e.g., CI, lightweight agents).
+
+**acceptance_criteria:**
+- `from backend import nautilus_adapter` succeeds without error in a fresh python shell.
+- `python -m pytest tests/test_nautilus_backtest_adapter_contract.py --collect-only` exits with code 0 (no errors).
+
+**validation:**
+`python -c "import sys; sys.path.append('.'); from backend import nautilus_adapter; print('Success')"`
+
+---
+
+## Objective 101
+**id:** 101
+**title:** Implement Granular Equity Curve for Nautilus Engine
+**status:** todo
+**details:**
+The current Nautilus adapter only generates equity curve points at trade exit times (sparse data). This results in jagged, unrealistic charts compared to the `backtesting.py` engine which samples per bar. Users need to see the intra-trade equity drawdown/run-up.
+
+**Requirements:**
+- Modify `nautilus_adapter.py` to capture account balance/equity at regular intervals (e.g., daily or hourly) during the backtest, or reconstruction from bar data + trade history.
+- Ensure the output `equity_curve` list is dense (at least one point per day/hour of backtest).
+
+**acceptance_criteria:**
+- Backtest result `equity_curve` contains > 2 points for a multi-day backtest.
+- Curve includes points between trade entry and exit (floating PnL).
+
+**validation:**
+`python -m pytest tests/test_nautilus_backtest_smoke.py` (Verify `len(result['equity_curve']) > 10`)
+
+---
+
+## Objective 102
+**id:** 102
+**title:** Implement Global Live Trading Panic Button
+**status:** todo
+**details:**
+The system lacks a centralized safety mechanism to immediately halt live trading. If a strategy goes rogue, the user must currently kill the process, which may leave orders open.
+
+**Requirements:**
+- Create a `PanicService` singleton in `backend/risk_controls.py`.
+- Implement `POST /api/panic` endpoint in `backend/main.py` that invokes this service.
+- The service must:
+    1. Set a global system-wide `STOP_TRADING` flag.
+    2. Call `IGClient.close_all_positions()`.
+    3. Call `IGClient.cancel_all_orders()`.
+    4. Persist the "panic" state so the server doesn't restart trading on reboot.
+
+**acceptance_criteria:**
+- Calling the panic function triggers the mock broker's close/cancel methods.
+- Subsequent trade attempts are rejected with a "System Halted" error.
+
+**validation:**
+`python -m pytest tests/test_risk_controls.py` (Add new test case for panic flow)
