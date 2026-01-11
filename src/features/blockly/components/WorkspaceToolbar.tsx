@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
@@ -319,12 +320,12 @@ export const WorkspaceToolbar = ({
 
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <a href="/journal" target="_self">
-                            <Button variant="outline" size="sm" className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
+                        <Button variant="outline" size="sm" asChild className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
+                            <Link to="/journal">
                                 <BookOpen className="w-4 h-4 mr-2" />
                                 Journal
-                            </Button>
-                        </a>
+                            </Link>
+                        </Button>
                     </TooltipTrigger>
                     <TooltipContent>
                         <p>Trade Journal</p>

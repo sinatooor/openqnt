@@ -1,119 +1,219 @@
-
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { 
+  ArrowLeft, 
+  RefreshCw, 
+  ArrowUpDown, 
+  ArrowUp, 
+  ArrowDown,
+  ExternalLink 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { fetchTrades, fetchTradeSummary, Trade } from "@/services/trades";
 
-interface Trade {
-    id: number;
-    symbol: string;
-    direction: string;
-    entry_time: string;
-    entry_price: number;
-    size: number;
-    exit_time: string | null;
-    exit_price: number | null;
-    pnl: number | null;
-    pnl_percent: number | null;
-    status: string;
-    broker_ref: string | null;
-}
+type SortConfig = {
+  key: keyof Trade;
+  direction: 'asc' | 'desc';
+} | null;
 
 const Journal = () => {
-    const navigate = useNavigate();
-    const [trades, setTrades] = useState<Trade[]>([]);
-    const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const [sortConfig, setSortConfig] = useState<SortConfig>(null);
 
-    const fetchTrades = async () => {
-        setLoading(true);
-        try {
-            const response = await fetch("http://127.0.0.1:8000/api/trades/"); // Hardcoded backend URL for now
-            if (response.ok) {
-                const data = await response.json();
-                setTrades(data);
-            } else {
-                console.error("Failed to fetch trades");
-            }
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setLoading(false);
-        }
-    };
+  const { data: trades = [], isLoading, isFetching, refetch } = useQuery({
+    queryKey: ['trades'],
+    queryFn: () => fetchTrades(),
+    refetchInterval: 10000, // Poll every 10 seconds
+  });
 
-    useEffect(() => {
-        fetchTrades();
-    }, []);
+  const { data: summary } = useQuery({
+    queryKey: ['trade-summary'],
+    queryFn: fetchTradeSummary,
+    refetchInterval: 30000, // Summary can poll less frequently
+  });
 
-    return (
-        <div className="min-h-screen bg-background text-foreground p-8">
-            <div className="max-w-7xl mx-auto space-y-6">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Button variant="ghost" onClick={() => navigate("/")}>
-                            <ArrowLeft className="w-4 h-4 mr-2" />
-                            Back to Workspace
-                        </Button>
-                        <h1 className="text-3xl font-bold">Trade Journal</h1>
-                    </div>
-                    <Button variant="outline" onClick={fetchTrades} disabled={loading}>
-                        <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                        Refresh
-                    </Button>
-                </div>
+  const handleSort = (key: keyof Trade) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
 
-                <div className="bg-card rounded-lg border border-border overflow-hidden">
-                    <table className="w-full text-sm">
-                        <thead className="bg-muted/50">
-                            <tr className="border-b border-border text-left">
-                                <th className="p-4 font-medium text-muted-foreground">ID</th>
-                                <th className="p-4 font-medium text-muted-foreground">Time</th>
-                                <th className="p-4 font-medium text-muted-foreground">Symbol</th>
-                                <th className="p-4 font-medium text-muted-foreground">Type</th>
-                                <th className="p-4 font-medium text-muted-foreground">Size</th>
-                                <th className="p-4 font-medium text-muted-foreground">Price</th>
-                                <th className="p-4 font-medium text-muted-foreground">PnL</th>
-                                <th className="p-4 font-medium text-muted-foreground">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {trades.length === 0 ? (
-                                <tr>
-                                    <td colSpan={8} className="p-8 text-center text-muted-foreground">
-                                        No trades recorded yet. Run a strategy to generate data.
-                                    </td>
-                                </tr>
-                            ) : (
-                                trades.map((trade) => (
-                                    <tr key={trade.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
-                                        <td className="p-4 font-mono text-xs text-muted-foreground">#{trade.id}</td>
-                                        <td className="p-4">{new Date(trade.entry_time).toLocaleString()}</td>
-                                        <td className="p-4 font-semibold">{trade.symbol}</td>
-                                        <td className={`p-4 font-bold ${trade.direction === 'BUY' ? 'text-green-500' : 'text-red-500'}`}>
-                                            {trade.direction}
-                                        </td>
-                                        <td className="p-4">{trade.size}</td>
-                                        <td className="p-4 font-mono">{trade.entry_price.toFixed(5)}</td>
-                                        <td className={`p-4 font-mono ${trade.pnl && trade.pnl > 0 ? 'text-green-500' : trade.pnl && trade.pnl < 0 ? 'text-red-500' : ''}`}>
-                                            {trade.pnl ? trade.pnl.toFixed(2) : '-'}
-                                        </td>
-                                        <td className="p-4">
-                                            <span className={`px-2 py-1 rounded-full text-xs border ${trade.status === 'OPEN'
-                                                    ? 'border-blue-500/30 bg-blue-500/10 text-blue-500'
-                                                    : 'border-muted bg-muted/30 text-muted-foreground'
-                                                }`}>
-                                                {trade.status}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+  const sortedTrades = useMemo(() => {
+    if (!sortConfig) return trades;
+
+    return [...trades].sort((a, b) => {
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
+
+      if (aValue === null || aValue === undefined) return 1;
+      if (bValue === null || bValue === undefined) return -1;
+
+      if (aValue < bValue) {
+        return sortConfig.direction === 'asc' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+  }, [trades, sortConfig]);
+
+  const renderSortIcon = (key: keyof Trade) => {
+    if (sortConfig?.key !== key) return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    return sortConfig.direction === 'asc' 
+      ? <ArrowUp className="ml-2 h-4 w-4" /> 
+      : <ArrowDown className="ml-2 h-4 w-4" />;
+  };
+
+  return (
+    <div className="min-h-screen bg-background p-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
+            </Button>
+            <h1 className="text-3xl font-bold tracking-tight">Trade Journal</h1>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => refetch()} 
+            disabled={isLoading || isFetching}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${(isLoading || isFetching) ? 'animate-spin' : ''}`} />
+            {isFetching ? 'Refreshing...' : 'Refresh'}
+          </Button>
         </div>
-    );
+
+        {summary && (
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Trades</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{summary.total_trades}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Win Rate</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{(summary.win_rate * 100).toFixed(1)}%</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total PnL</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-bold ${summary.total_pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  ${summary.total_pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        <Card>
+          <CardContent className="p-0">
+            <div className="relative w-full overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[180px] cursor-pointer" onClick={() => handleSort('entry_time')}>
+                      <div className="flex items-center">Time {renderSortIcon('entry_time')}</div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer" onClick={() => handleSort('symbol')}>
+                      <div className="flex items-center">Symbol {renderSortIcon('symbol')}</div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer" onClick={() => handleSort('direction')}>
+                      <div className="flex items-center">Direction {renderSortIcon('direction')}</div>
+                    </TableHead>
+                    <TableHead className="text-right cursor-pointer" onClick={() => handleSort('size')}>
+                      <div className="flex items-center justify-end">Size {renderSortIcon('size')}</div>
+                    </TableHead>
+                    <TableHead className="text-right cursor-pointer" onClick={() => handleSort('entry_price')}>
+                      <div className="flex items-center justify-end">Price {renderSortIcon('entry_price')}</div>
+                    </TableHead>
+                    <TableHead className="text-right cursor-pointer" onClick={() => handleSort('pnl')}>
+                      <div className="flex items-center justify-end">PnL {renderSortIcon('pnl')}</div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer" onClick={() => handleSort('status')}>
+                      <div className="flex items-center">Status {renderSortIcon('status')}</div>
+                    </TableHead>
+                    <TableHead className="w-[100px]">Details</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="h-24 text-center">
+                        Loading trades...
+                      </TableCell>
+                    </TableRow>
+                  ) : sortedTrades.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                        No trades found.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    sortedTrades.map((trade) => (
+                      <TableRow key={trade.id}>
+                        <TableCell className="font-medium">
+                          {new Date(trade.entry_time).toLocaleString()}
+                        </TableCell>
+                        <TableCell className="font-semibold">{trade.symbol}</TableCell>
+                        <TableCell>
+                          <Badge variant={trade.direction === 'BUY' ? 'default' : 'destructive'} className={trade.direction === 'BUY' ? 'bg-green-600 hover:bg-green-600' : ''}>
+                            {trade.direction}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">{trade.size.toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-mono">{trade.entry_price.toFixed(5)}</TableCell>
+                        <TableCell className={`text-right font-mono font-bold ${trade.pnl && trade.pnl > 0 ? 'text-green-600' : trade.pnl && trade.pnl < 0 ? 'text-red-600' : ''}`}>
+                          {trade.pnl ? `${trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)}` : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={trade.status === 'OPEN' ? 'border-blue-500 text-blue-500' : ''}>
+                            {trade.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="icon" asChild>
+                            <Link to={`/execution/${trade.execution_id}`}>
+                              <ExternalLink className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
 };
 
 export default Journal;
