@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
@@ -60,6 +60,10 @@ export interface WorkspaceToolbarProps {
     // Profile Modal
     showProfileModal: boolean;
     onToggleProfileModal: () => void;
+
+    // Journal Modal
+    showJournalModal: boolean;
+    onToggleJournalModal: () => void;
 }
 
 export const WorkspaceToolbar = ({
@@ -85,6 +89,8 @@ export const WorkspaceToolbar = ({
     onToggleStrategyPanel,
     showProfileModal,
     onToggleProfileModal,
+    showJournalModal,
+    onToggleJournalModal,
 }: WorkspaceToolbarProps) => {
     return (
         <div className="h-14 bg-card border-b border-border flex items-center justify-between px-4 gap-3">
@@ -320,11 +326,17 @@ export const WorkspaceToolbar = ({
 
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button variant="outline" size="sm" asChild className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
-                            <Link to="/journal">
-                                <BookOpen className="w-4 h-4 mr-2" />
-                                Journal
-                            </Link>
+                        <Button
+                            variant={showJournalModal ? "default" : "outline"}
+                            size="sm"
+                            onClick={onToggleJournalModal}
+                            className={cn(
+                                "transition-all duration-200 hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)]",
+                                showJournalModal ? "bg-blue-600 hover:bg-blue-700" : ""
+                            )}
+                        >
+                            <BookOpen className="w-4 h-4 mr-2" />
+                            Journal
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
