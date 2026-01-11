@@ -68,6 +68,12 @@ from .tools.planning_tools import (
     calculate_position_sizing,
     generate_trading_plan_template,
 )
+from .tools.notebook_tools import (
+    save_note,
+    read_note,
+    list_notes,
+    append_to_note,
+)
 
 # Main Trading Agent
 trading_agent = Agent(
@@ -96,7 +102,13 @@ trading_agent = Agent(
 - Calculate correct position sizes with `calculate_position_sizing`
 - Create structured trading plans with `generate_trading_plan_template`
 
-### 4. Trade Execution (USE WITH CAUTION)
+### 4. Research Notebook (Persistent Memory)
+- Save important findings and plans with `save_note`
+- Retrieve past research with `read_note`
+- Keep a running log of market observations using `append_to_note`
+- ALWAYS check existing notes on a topic before starting new research
+
+### 5. Trade Execution (USE WITH CAUTION)
 - Execute trades through the broker API
 - View current positions
 - Close positions
@@ -199,6 +211,11 @@ User: "Buy 0.1 lots of EURUSD"
         run_monte_carlo_simulation,
         calculate_position_sizing,
         generate_trading_plan_template,
+        # Memory/Notebook tools (New)
+        save_note,
+        read_note,
+        list_notes,
+        append_to_note,
     ],
 )
 
