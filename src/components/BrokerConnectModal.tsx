@@ -216,7 +216,7 @@ export const BrokerConnectModal = ({ isOpen, onClose, broker, onConnect, onSucce
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[425px] z-[10000]">
                 <DialogHeader>
                     <div className="flex items-center gap-3 mb-2">
                         <div className="w-10 h-10 rounded-md bg-white border flex items-center justify-center p-1">

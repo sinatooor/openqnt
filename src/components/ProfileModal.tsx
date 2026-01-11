@@ -117,12 +117,20 @@ export const ProfileModal = ({
         { id: 'ig', name: 'IG Markets', description: 'CFD Trading', logo: '/logo/logo_ig.png', status: 'disconnected' },
         { id: 'icmarkets', name: 'IC Markets', description: 'Forex & CFDs', logo: '/logo/logo_icmarkets.png', status: 'disconnected' },
         { id: 'etoro', name: 'eToro', description: 'Social Trading', logo: '/logo/logo_etoro.png', status: 'disconnected' },
-        { id: 'ibkr', name: 'Interactive Brokers', description: 'Global Markets', logo: '/logo/logo_ibkr.png', status: 'disconnected' },
-        { id: 'nordnet', name: 'Nordnet', description: 'Nordic Broker', logo: '/logo/logo_nordnet.jpeg', status: 'disconnected' },
-        { id: 'oanda', name: 'Oanda', description: 'Forex Trading', logo: '/logo/logo_oanda.png', status: 'disconnected' },
+        { id: 'ibkr', name: 'Interactive Brokers', description: 'Global Markets', logo: '/logo/interactivebrokers.png', status: 'disconnected' },
+        { id: 'nordnet', name: 'Nordnet', description: 'Nordic Broker', logo: '/logo/nordnet.png', status: 'disconnected' },
         { id: 'swissquote', name: 'Swissquote', description: 'Banking Group', logo: '/logo/swissquote.png', status: 'disconnected' },
         { id: 'saxo', name: 'Saxo Bank', description: 'Investment', logo: '/logo/saxo.png', status: 'disconnected' },
         { id: 'nordea', name: 'Nordea', description: 'Financial Services', logo: '/logo/nordea.png', status: 'disconnected' },
+        { id: 'avanza', name: 'Avanza', description: 'Swedish Stockbroker', logo: '/logo/avanza.png', status: 'disconnected' },
+        { id: 'etrade', name: 'E*TRADE', description: 'Electronic Trading', logo: '/logo/etrade.png', status: 'disconnected' },
+        { id: 'handelsbanken', name: 'Handelsbanken', description: 'Nordic Bank', logo: '/logo/handelsbanken.png', status: 'disconnected' },
+        { id: 'robinhood', name: 'Robinhood', description: 'Commission-free', logo: '/logo/logo_robinhood.png', status: 'disconnected' },
+        { id: 'webull', name: 'Webull', description: 'Zero Commission', logo: '/logo/logo_webull.png', status: 'disconnected' },
+        { id: 'scm', name: 'Scandinavian Capital Markets', description: 'Forex', logo: '/logo/scandinaviancapitalmarkets.png', status: 'disconnected' },
+        { id: 'schwab', name: 'Charles Schwab', description: 'Financial Services', logo: '/logo/schwab.png', status: 'disconnected' },
+        { id: 'seb', name: 'SEB', description: 'Nordic Financial', logo: '/logo/seb.png', status: 'disconnected' },
+        { id: 'swedbank', name: 'Swedbank', description: 'Nordic Bank', logo: '/logo/swedbank.png', status: 'disconnected' },
     ]);
 
     // Brokers State
