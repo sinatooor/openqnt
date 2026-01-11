@@ -213,6 +213,73 @@ class MarketScreener:
         rs = gain / loss
         return 100 - (100 / (1 + rs))
 
+    # --- Preset Filters ---
+    
+    @staticmethod
+    def filter_uptrend_sma200(df: pd.DataFrame) -> bool:
+        if len(df) < 200: return False
+        sma200 = df['Close'].rolling(200).mean()
+        return df['Close'].iloc[-1] > sma200.iloc[-1]
+
+    @staticmethod
+    def filter_downtrend_sma200(df: pd.DataFrame) -> bool:
+        if len(df) < 200: return False
+        sma200 = df['Close'].rolling(200).mean()
+        return df['Close'].iloc[-1] < sma200.iloc[-1]
+
+    @staticmethod
+    def filter_rsi_oversold(df: pd.DataFrame) -> bool:
+        if len(df) < 15: return False
+        rsi = MarketScreener.calculate_rsi(df['Close'], 14)
+        return rsi.iloc[-1] < 30
+
+    @staticmethod
+    def filter_rsi_overbought(df: pd.DataFrame) -> bool:
+        if len(df) < 15: return False
+        rsi = MarketScreener.calculate_rsi(df['Close'], 14)
+        return rsi.iloc[-1] > 70
+
+    def screen(self, symbols: List[str], filter_name: str, days_back: int = 365) -> List[Dict[str, Any]]:
+        """
+        High-level screening method.
+        """
+        FILTERS = {
+            "uptrend_sma200": self.filter_uptrend_sma200,
+            "downtrend_sma200": self.filter_downtrend_sma200,
+            "rsi_oversold": self.filter_rsi_oversold,
+            "rsi_overbought": self.filter_rsi_overbought,
+        }
+        
+        criteria_func = FILTERS.get(filter_name)
+        if not criteria_func:
+            logger.warning(f"Unknown filter: {filter_name}")
+            return []
+
+        # Fetch Data
+        data = self.fetch_data_parallel(symbols, days_back=days_back, save_to_db=False)
+        
+        # Apply Filter
+        passed_symbols = self.apply_filter(data, criteria_func)
+        
+        # Build Results
+        results = []
+        for sym in passed_symbols:
+            df = data[sym]
+            latest = df.iloc[-1]
+            prev = df.iloc[-2] if len(df) > 1 else latest
+            
+            change_pct = ((latest['Close'] - prev['Close']) / prev['Close']) * 100
+            
+            results.append({
+                "symbol": sym,
+                "close": round(latest['Close'], 5),
+                "change_pct": round(change_pct, 2),
+                "volume": int(latest['Volume']),
+                "date": str(latest.name.date()) if hasattr(latest.name, 'date') else str(latest.name)
+            })
+            
+        return results
+
 # Example Usage
 if __name__ == "__main__":
     screener = MarketScreener()
@@ -220,17 +287,6 @@ if __name__ == "__main__":
     # Example: Forex Majors
     forex_pairs = ["EURUSD=X", "GBPUSD=X", "USDJPY=X", "AUDUSD=X"]
     
-    # 1. Fetch Data
-    data = screener.fetch_data_parallel(forex_pairs, days_back=365)
-    
-    # 2. Define Criteria: Price > SMA(200) (Uptrend)
-    def is_uptrend(df):
-        if len(df) < 200: return False
-        sma200 = df['Close'].rolling(200).mean()
-        current_price = df['Close'].iloc[-1]
-        current_sma = sma200.iloc[-1]
-        return current_price > current_sma
-        
-    # 3. Screen
-    results = screener.apply_filter(data, is_uptrend)
-    print(f"Symbols in long-term uptrend: {results}")
+    # Screen
+    results = screener.screen(forex_pairs, "uptrend_sma200")
+    print(f"Results: {results}")
