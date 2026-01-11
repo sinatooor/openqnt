@@ -284,11 +284,8 @@ class StrategyRunner:
                     pass
             
             self.strategy_instance = self._compile_and_load_strategy()
-            self.strategy_instance.on_start()
             
-            self.is_running = True
-            
-            # Create Execution Record
+            # Create Execution Record BEFORE on_start provided DB is ready
             try:
                 with session_scope() as session:
                     execution = StrategyExecution(
@@ -298,11 +295,16 @@ class StrategyRunner:
                         configuration=str(self.trade_size)
                     )
                     session.add(execution)
-                    session.flush()
+                    session.flush() # Ensure ID is generated
+                    session.refresh(execution)
                     self.execution_db_id = execution.id
             except Exception as e:
-                print(f"[PERSIST ERROR] Failed to create execution record: {e}")
+                print(f"[DB ERROR] Failed to create execution record: {e}")
             
+            self.strategy_instance.on_start()
+            
+            self.is_running = True
+
             print(f"[RUNNER] Started Python Strategy for {self.symbol} ({self.broker_type}) [LIVE={self.live_mode}]")
             
             while self.is_running:

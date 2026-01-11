@@ -3,6 +3,9 @@ import pytest
 import asyncio
 from unittest.mock import MagicMock, AsyncMock
 from datetime import datetime
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from backend.strategy_runner import StrategyRunner
 from backend.database.models import StrategyExecution, Trade
 from backend.database.connection import session_scope
@@ -60,6 +63,7 @@ class GeneratedStrategy:
         broker_type='ig',
         strategy_code=strategy_code,
         symbol="EURUSD",
+        live_mode=True,
         poll_interval=0  # Don't sleep
     )
     
