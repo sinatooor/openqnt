@@ -3,6 +3,8 @@ import * as Blockly from "blockly";
 import { BlocklyWorkspace } from "@/features/blockly";
 import { generateCode } from "@/config/blockly/generator";
 
+import { SystemStatus } from "@/components/SystemStatus";
+
 const Index = () => {
   const [runTour, setRunTour] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
@@ -85,7 +87,11 @@ const Index = () => {
   };
 
   return (
-    <div className="flex h-screen w-full bg-background text-foreground overflow-hidden">
+    <div className="flex h-screen w-full bg-background text-foreground overflow-hidden relative">
+      <div className="absolute top-4 right-20 z-10 hidden md:block">
+        <SystemStatus className="bg-background/50 backdrop-blur-sm px-3 py-1.5 rounded-full border shadow-sm" />
+      </div>
+
       {/* Center Panel - Blockly Workspace */}
       <BlocklyWorkspace
         runTour={runTour}
