@@ -2,13 +2,16 @@ import pytest
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from backend.walkforward import WalkforwardValidator, WalkforwardConfig
 from backend.backtest_engine import create_sample_strategy
 from backend.strategy_ir import StrategyIR
 
 # Mock Data Generation
 def generate_trend_data(n=500):
-    dates = pd.date_range(start="2024-01-01", periods=n, freq="H")
+    dates = pd.date_range(start="2024-01-01", periods=n, freq="h")
     df = pd.DataFrame(index=dates)
     # Clear uptrend
     df['close'] = np.linspace(100, 200, n) + np.random.normal(0, 0.5, n)
