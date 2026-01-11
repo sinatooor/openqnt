@@ -59,6 +59,10 @@ from .tools.market_data_tools import (
     get_company_profile,
     get_financial_summary,
 )
+from .tools.technical_analysis_tools import (
+    get_technical_summary,
+    calculate_pivot_points,
+)
 
 # Main Trading Agent
 trading_agent = Agent(
@@ -77,7 +81,12 @@ trading_agent = Agent(
 - Analyze market sentiment for topics
 - Check upcoming economic events
 
-### 2. Custom Indicators
+### 2. Technical Analysis (Enhanced)
+- Get comprehensive technical study (RSI, MACD, BB, MA) with `get_technical_summary`
+- Calculate key support/resistance and pivot points with `calculate_pivot_points`
+- Analyze trends and key levels automatically
+
+### 3. Custom Indicators
 - Create new technical indicator blocks with custom formulas
 - Update and manage existing custom indicators
 - These indicators are saved and can be used in the block-based strategy builder
@@ -178,6 +187,9 @@ User: "Buy 0.1 lots of EURUSD"
         get_historical_data,
         get_company_profile,
         get_financial_summary,
+        # Technical Analysis tools (New)
+        get_technical_summary,
+        calculate_pivot_points,
     ],
 )
 
