@@ -33,10 +33,10 @@ import local_database as database # Local DB module
 from routers import live_trading # Live Trading Router
 from risk_controls import PanicService
 
-# Google ADK Agent
-from google.adk.runners import Runner
-from google.adk.sessions import InMemorySessionService
-from adk_agents.trading_agent import trading_agent
+# Google ADK Agent (Moved to agent_service.py)
+# from google.adk.runners import Runner
+# from google.adk.sessions import InMemorySessionService
+# from adk_agents.trading_agent import trading_agent
 
 # Logging
 from llm_logger import (
@@ -45,13 +45,8 @@ from llm_logger import (
     log_api_request, get_log_stats
 )
 
-# Initialize ADK session service
-adk_session_service = InMemorySessionService()
-adk_runner = Runner(
-    agent=trading_agent,
-    app_name="trading_chat",
-    session_service=adk_session_service
-)
+# Initialize ADK session service (Refactored)
+# See backend/agent_service.py
 
 # Load environment variables
 load_dotenv()
@@ -196,7 +191,10 @@ app.include_router(templates.router)
 from routers import health
 app.include_router(health.router)
 from routers import symbols
+from routers import symbols
 app.include_router(symbols.router)
+from routers import agent_chat
+app.include_router(agent_chat.router)
 
 @app.post("/api/panic")
 async def trigger_panic_endpoint():
