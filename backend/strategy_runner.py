@@ -344,6 +344,24 @@ class StrategyRunner:
             'recent_trades': self.trades[-5:] if self.trades else []
         }
 
+    def update_parameters(self, trade_size: Optional[float] = None, safety_config: Optional[Dict[str, Any]] = None):
+        """Dynamically update strategy parameters at runtime."""
+        changes = []
+        if trade_size is not None:
+            old_size = self.trade_size
+            self.trade_size = trade_size
+            changes.append(f"Trade Size: {old_size} -> {trade_size}")
+            
+        if safety_config is not None:
+            # Merge with existing
+            if not self.safety_config: self.safety_config = {}
+            for k, v in safety_config.items():
+                self.safety_config[k] = v
+            changes.append(f"Safety Config Updated: {list(safety_config.keys())}")
+            
+        print(f"[RUNNER] Dynamic Update: {', '.join(changes)}")
+        return {"success": True, "changes": changes}
+
     async def _tick(self):
         # Fetch Data
         # Even in Paper mode, we need Live Data to generate signals
@@ -435,5 +453,14 @@ def get_runner_status():
     if _active_runner:
         return _active_runner.get_status()
     return {'success': False, 'active': False}
+
+def update_runner_parameters(trade_size: Optional[float] = None, safety_config: Optional[Dict[str, Any]] = None):
+    """
+    Global helper to update the active runner's parameters.
+    """
+    global _active_runner
+    if _active_runner and _active_runner.is_running:
+        return _active_runner.update_parameters(trade_size, safety_config)
+    return {'success': False, 'error': 'No active runner'}
 
 

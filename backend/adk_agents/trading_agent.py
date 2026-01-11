@@ -90,6 +90,16 @@ from .tools.web_scraper_tools import (
 from .tools.market_regime_tools import (
     classify_market_regime,
 )
+from .tools.news_tools import (
+    get_market_news,
+    get_general_market_news,
+)
+from .tools.strategy_control_tools import (
+    check_active_strategy_status,
+    update_strategy_risk_settings,
+    adjust_trade_size,
+    emergency_stop_strategy,
+)
 
 # Main Trading Agent
 trading_agent = Agent(
@@ -141,7 +151,18 @@ trading_agent = Agent(
 - Detect High/Low Volatility environments automatically
 - Adjust strategy selection based on regime (e.g., use Trend if ADX > 25)
 
-### 10. Research Notebook (Persistent Memory)
+### 10. Real-time News & Integration
+- Check specific stock news with `get_market_news`
+- Read general market headlines with `get_general_market_news`
+- Combine news sentiment with technicals for broad analysis
+
+### 11. Dynamic Strategy Control (Active Adaptation)
+- View current strategy status with `check_active_strategy_status`
+- ADAPT instantly: Scale position sizes up/down with `adjust_trade_size`
+- MANAGE RISK: Tighten stops or drawdowns with `update_strategy_risk_settings`
+- EMERGENCY: Stop everything with `emergency_stop_strategy` if data is bad
+
+### 12. Research Notebook (Persistent Memory)
 - Save important findings and plans with `save_note`
 - Retrieve past research with `read_note`
 - Keep a running log of market observations using `append_to_note`
@@ -266,6 +287,14 @@ User: "Buy 0.1 lots of EURUSD"
         scrape_url_text,
         # Market Regime tools (New)
         classify_market_regime,
+        # Real-time News (New)
+        get_market_news,
+        get_general_market_news,
+        # Strategy Control (New - Dynamic Adaptation)
+        check_active_strategy_status,
+        update_strategy_risk_settings,
+        adjust_trade_size,
+        emergency_stop_strategy,
     ],
 )
 
