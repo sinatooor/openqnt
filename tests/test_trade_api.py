@@ -6,11 +6,12 @@ import datetime
 
 import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../backend'))
+# Add root directory to path to allow 'backend' imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from main import app
-from database.connection import get_session
-from database.models import Trade
+from backend.main import app
+from backend.database.connection import get_session
+from backend.database.models import Trade
 
 @pytest.fixture
 def client_with_mock_db():
