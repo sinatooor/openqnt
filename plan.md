@@ -653,7 +653,12 @@ The `backend/nautilus_adapter.py` module currently raises `NameError` during imp
 ## Objective 101
 **id:** 101
 **title:** Implement Granular Equity Curve for Nautilus Engine
-**status:** todo
+**status:** blocked
+
+**notes:** Command failed: python -m pytest tests/test_nautilus_backtest_smoke.py
+Stdout: 
+Stderr: /opt/miniconda3/bin/python: No module named pytest
+
 **details:**
 The current Nautilus adapter only generates equity curve points at trade exit times (sparse data). This results in jagged, unrealistic charts compared to the `backtesting.py` engine which samples per bar. Users need to see the intra-trade equity drawdown/run-up.
 
@@ -673,7 +678,7 @@ The current Nautilus adapter only generates equity curve points at trade exit ti
 ## Objective 102
 **id:** 102
 **title:** Implement Global Live Trading Panic Button
-**status:** todo
+**status:** done
 **details:**
 The system lacks a centralized safety mechanism to immediately halt live trading. If a strategy goes rogue, the user must currently kill the process, which may leave orders open.
 

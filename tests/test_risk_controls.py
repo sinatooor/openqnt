@@ -2,7 +2,8 @@
 Tests for Risk Controls (Objective 006)
 """
 import pytest
-from backend.risk_controls import RiskConstraints, RiskController, RiskViolation
+from unittest.mock import AsyncMock, patch
+from backend.risk_controls import RiskConstraints, RiskController, RiskViolation, PanicService
 
 
 def test_max_drawdown_blocks_trades():
@@ -81,3 +82,57 @@ def test_reset_clears_state():
     assert controller.is_trading_halted is False
     assert len(controller.violations) == 0
     assert controller.peak_equity == 10000.0
+
+@pytest.mark.anyio
+async def test_panic_service_trigger():
+    """Test that panic service behaves correctly."""
+    # Ensure panic is clear
+    PanicService.clear_panic()
+    assert PanicService.is_panic_active() is False
+
+    # Mock IGClient
+    with patch("backend.risk_controls.IGClient") as MockIG:
+        client_instance = MockIG.return_value
+        client_instance.login = AsyncMock(return_value={"success": True})
+        client_instance.close_all_positions = AsyncMock(return_value={"closed": 1})
+        client_instance.cancel_all_orders = AsyncMock(return_value={"cancelled": 1})
+        
+        # Trigger panic
+        result = await PanicService.trigger_panic()
+        
+        # Verify state
+        assert result["panic_enabled"] is True
+        assert PanicService.is_panic_active() is True
+        assert result["positions_closed"]["closed"] == 1
+        assert result["orders_cancelled"]["cancelled"] == 1
+        
+        # Verify calls
+        client_instance.login.assert_called_once()
+        client_instance.close_all_positions.assert_called_once()
+        client_instance.cancel_all_orders.assert_called_once()
+        
+    # Cleanup
+    PanicService.clear_panic()
+    assert PanicService.is_panic_active() is False
+
+def test_panic_mode_blocks_trades():
+    """Test that risk controller blocks trades when panic is active."""
+    # Setup
+    constraints = RiskConstraints(max_drawdown_pct=10.0, max_position_size=100.0)
+    controller = RiskController(constraints, initial_equity=10000.0)
+    
+    # Enable panic
+    PanicService.LOCK_FILE.parent.mkdir(parents=True, exist_ok=True)
+    PanicService.LOCK_FILE.touch()
+    
+    try:
+        # Attempt trade
+        result = controller.validate_trade(10.0, timestamp="T1")
+        
+        assert result["allowed"] is False
+        assert len(result["violations"]) > 0
+        assert result["violations"][0].rule == "PANIC_TRIGGERED"
+        
+    finally:
+        # Cleanup
+        PanicService.clear_panic()

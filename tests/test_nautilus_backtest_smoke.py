@@ -54,3 +54,8 @@ class SmokeStrategy(Strategy):
     # Check that backtest succeeded
     assert result["success"] == True, f"Backtest failed: {result.get('error', 'unknown')}"
     assert result["metrics"]["total_trades"] == 0  # Strategy doesn't trade
+
+    # Verify equity curve granularity
+    # We expect one point per hour for 5 days -> ~120 points
+    assert len(result["equity_curve"]) > 10, "Equity curve should be granular (more than just start/end)"
+    assert len(result["equity_curve"]) == len(data), "Equity curve should match bar data length"
