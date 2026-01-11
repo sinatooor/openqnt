@@ -118,21 +118,98 @@ async def get_execution_detail(
     }
 
 @router.get("/summary")
-async def get_trade_summary(db: Session = Depends(get_session)):
+async def get_trade_summary(
+    timeframe: Optional[str] = "all",  # "7d", "30d", "all"
+    db: Session = Depends(get_session)
+):
     """
-    Get high-level stats (Total PnL, Win Rate).
+    Get comprehensive performance statistics.
     """
-    trades = db.query(Trade).filter(Trade.status == "CLOSED").all()
+    from datetime import datetime, timedelta
+    
+    query = db.query(Trade).filter(Trade.status == "CLOSED")
+    
+    # Apply timeframe filter
+    if timeframe == "7d":
+        cutoff = datetime.utcnow() - timedelta(days=7)
+        query = query.filter(Trade.entry_time >= cutoff)
+    elif timeframe == "30d":
+        cutoff = datetime.utcnow() - timedelta(days=30)
+        query = query.filter(Trade.entry_time >= cutoff)
+    
+    trades = query.all()
     
     total_trades = len(trades)
     if total_trades == 0:
-        return {"total_trades": 0, "win_rate": 0, "total_pnl": 0}
-        
-    winning_trades = [t for t in trades if t.pnl and t.pnl > 0]
-    total_pnl = sum([t.pnl for t in trades if t.pnl])
+        return {
+            "total_trades": 0,
+            "win_rate": 0,
+            "total_pnl": 0,
+            "avg_win": 0,
+            "avg_loss": 0,
+            "best_trade": 0,
+            "worst_trade": 0,
+            "profit_factor": 0,
+            "max_drawdown": 0,
+            "avg_holding_time": "N/A"
+        }
+    
+    # Separate wins and losses
+    wins = [float(t.pnl) for t in trades if t.pnl and float(t.pnl) > 0]
+    losses = [float(t.pnl) for t in trades if t.pnl and float(t.pnl) < 0]
+    all_pnl = [float(t.pnl) for t in trades if t.pnl]
+    
+    total_pnl = sum(all_pnl)
+    avg_win = sum(wins) / len(wins) if wins else 0
+    avg_loss = sum(losses) / len(losses) if losses else 0
+    best_trade = max(all_pnl) if all_pnl else 0
+    worst_trade = min(all_pnl) if all_pnl else 0
+    
+    # Profit factor = gross profit / gross loss
+    gross_profit = sum(wins) if wins else 0
+    gross_loss = abs(sum(losses)) if losses else 1  # Avoid division by zero
+    profit_factor = gross_profit / gross_loss if gross_loss > 0 else 0
+    
+    # Calculate max drawdown (simplified - based on cumulative PnL)
+    cumulative = 0
+    peak = 0
+    max_drawdown = 0
+    for pnl in all_pnl:
+        cumulative += pnl
+        if cumulative > peak:
+            peak = cumulative
+        drawdown = peak - cumulative
+        if drawdown > max_drawdown:
+            max_drawdown = drawdown
+    
+    # Calculate average holding time
+    holding_times = []
+    for t in trades:
+        if t.entry_time and t.exit_time:
+            delta = t.exit_time - t.entry_time
+            holding_times.append(delta.total_seconds())
+    
+    if holding_times:
+        avg_seconds = sum(holding_times) / len(holding_times)
+        if avg_seconds < 3600:
+            avg_holding_time = f"{int(avg_seconds / 60)}m"
+        elif avg_seconds < 86400:
+            avg_holding_time = f"{avg_seconds / 3600:.1f}h"
+        else:
+            avg_holding_time = f"{avg_seconds / 86400:.1f}d"
+    else:
+        avg_holding_time = "N/A"
     
     return {
         "total_trades": total_trades,
-        "win_rate": len(winning_trades) / total_trades,
-        "total_pnl": float(total_pnl)
+        "win_rate": len(wins) / total_trades if total_trades > 0 else 0,
+        "total_pnl": float(total_pnl),
+        "avg_win": float(avg_win),
+        "avg_loss": float(avg_loss),
+        "best_trade": float(best_trade),
+        "worst_trade": float(worst_trade),
+        "profit_factor": float(profit_factor),
+        "max_drawdown": float(max_drawdown),
+        "avg_holding_time": avg_holding_time
     }
+
