@@ -447,6 +447,38 @@ class IGSymbolRequest(BaseModel):
     size: float = 0.5
 
 
+class ScreeningRequest(BaseModel):
+    symbols: List[str]
+    filter: str  # "uptrend_sma200", "rsi_oversold", etc.
+    days_back: int = 365
+
+
+@app.post("/api/screen")
+async def screen_market(req: ScreeningRequest):
+    """
+    Screen the market for symbols matching criteria.
+    """
+    try:
+        from market_screener import MarketScreener
+        
+        # Run in thread pool to avoid blocking asyncio loop
+        loop = asyncio.get_event_loop()
+        screener = MarketScreener()
+        
+        results = await loop.run_in_executor(
+            None, 
+            screener.screen, 
+            req.symbols, 
+            req.filter, 
+            req.days_back
+        )
+        
+        return {"success": True, "results": results}
+    except Exception as e:
+        log_error(e, "screen_market")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 class ReviewRequest(BaseModel):
     xml: str
     ai_model: str = "deepseek"

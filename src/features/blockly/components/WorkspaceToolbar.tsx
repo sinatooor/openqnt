@@ -64,6 +64,10 @@ export interface WorkspaceToolbarProps {
     // Journal Modal
     showJournalModal: boolean;
     onToggleJournalModal: () => void;
+
+    // Screener Modal
+    showScreenerModal: boolean;
+    onToggleScreenerModal: () => void;
 }
 
 export const WorkspaceToolbar = ({
@@ -91,6 +95,8 @@ export const WorkspaceToolbar = ({
     onToggleProfileModal,
     showJournalModal,
     onToggleJournalModal,
+    showScreenerModal,
+    onToggleScreenerModal,
 }: WorkspaceToolbarProps) => {
     return (
         <div className="h-14 bg-card border-b border-border flex items-center justify-between px-4 gap-3">
@@ -142,13 +148,22 @@ export const WorkspaceToolbar = ({
 
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button variant="outline" size="sm" onClick={onLoad} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
-                            <Upload className="w-4 h-4" />
+                        <Button
+                            variant={showScreenerModal ? "default" : "outline"}
+                            size="sm"
+                            onClick={onToggleScreenerModal}
+                            className={cn(
+                                "hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200",
+                                showScreenerModal ? "bg-teal-600 hover:bg-teal-700" : ""
+                            )}
+                        >
+                            <TrendingUp className="w-4 h-4 mr-2" />
+                            Screener
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>Load workspace from XML file</p>
-                        <p className="text-xs text-muted-foreground mt-1">Ctrl+O</p>
+                        <p>Market Screener</p>
+                        <p className="text-xs text-muted-foreground mt-1">Scan markets for opportunities</p>
                     </TooltipContent>
                 </Tooltip>
 
