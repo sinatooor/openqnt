@@ -22,6 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { fetchTrades, fetchTradeSummary, Trade } from "@/services/trades";
+import { API_BASE_URL } from "@/services/api";
 import { PerformanceDashboard } from "@/components/PerformanceDashboard";
 
 type SortConfig = {
@@ -82,8 +83,7 @@ const Journal = () => {
 
   const handleExport = () => {
     // Trigger download
-    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
-    window.location.href = `${apiUrl}/api/export/trades/csv`;
+    window.location.href = `${API_BASE_URL}/api/export/trades/csv`;
   };
 
   return (
