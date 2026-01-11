@@ -12,8 +12,8 @@ from main import app
 from database.connection import get_session
 from database.models import Trade
 
-# Mock DB Session
-def override_get_session():
+@pytest.fixture
+def client_with_mock_db():
     mock_session = MagicMock()
     
     # Mock Trades
@@ -25,12 +25,16 @@ def override_get_session():
     mock_trade.entry_price = 1.0500
     mock_trade.entry_time = datetime.datetime.now()
     mock_trade.status = "OPEN"
-    mock_trade.pnl = None
+    mock_trade.pnl = 0.0
     mock_trade.execution_id = 10
     
+    tags_mock = MagicMock()
+    tags_mock.tags = "[]"
+    mock_trade.tags = "[]"
+
     # Setup query return
     mock_query = MagicMock()
-    mock_query.filter.return_value = mock_query # Chaining
+    mock_query.filter.return_value = mock_query
     mock_query.order_by.return_value = mock_query
     mock_query.offset.return_value = mock_query
     mock_query.limit.return_value = mock_query
@@ -38,18 +42,19 @@ def override_get_session():
     
     mock_session.query.return_value = mock_query
     
-    try:
-        yield mock_session
-    finally:
-        pass
+    def override():
+        try:
+            yield mock_session
+        finally:
+            pass
+            
+    app.dependency_overrides[get_session] = override
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides = {}
 
-# Apply override
-app.dependency_overrides[get_session] = override_get_session
-
-client = TestClient(app)
-
-def test_get_trades():
-    response = client.get("/api/trades/")
+def test_get_trades(client_with_mock_db):
+    response = client_with_mock_db.get("/api/trades/")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 1
@@ -57,11 +62,7 @@ def test_get_trades():
     assert data[0]["direction"] == "BUY"
     assert "id" in data[0]
 
-def test_get_executions():
-    # We need to mock Execution query logic too if we want to test that specifically
-    # But since we mocked session.query generally, we need to handle different calls
-    # For now, let's just verify the endpoint exists and returns 200 (even if mock structure is same)
-    response = client.get("/api/trades/executions")
+def test_get_executions(client_with_mock_db):
+    response = client_with_mock_db.get("/api/trades/executions")
+    # Just check 200 OK as we are mocking query broadly
     assert response.status_code == 200
-    # Data might be garbage because we returned Trade objects for Query(StrategyExecution) 
-    # but as long as it handles the list, it proves the router is mounted.

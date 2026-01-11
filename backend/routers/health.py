@@ -6,7 +6,10 @@ Provides endpoints for monitoring system health and status.
 from fastapi import APIRouter
 import os
 import sys
-import psutil
+try:
+    import psutil
+except ImportError:
+    psutil = None
 from datetime import datetime
 
 router = APIRouter(
@@ -33,9 +36,23 @@ async def detailed_health():
     uptime = datetime.utcnow() - START_TIME
     
     # Get system metrics
-    cpu_percent = psutil.cpu_percent(interval=0.1)
-    memory = psutil.virtual_memory()
-    disk = psutil.disk_usage("/")
+    system_stats = {}
+    if psutil:
+        cpu_percent = psutil.cpu_percent(interval=0.1)
+        memory = psutil.virtual_memory()
+        disk = psutil.disk_usage("/")
+        
+        system_stats = {
+            "cpu_percent": cpu_percent,
+            "memory_total_gb": round(memory.total / (1024**3), 2),
+            "memory_used_gb": round(memory.used / (1024**3), 2),
+            "memory_percent": memory.percent,
+            "disk_total_gb": round(disk.total / (1024**3), 2),
+            "disk_used_gb": round(disk.used / (1024**3), 2),
+            "disk_percent": disk.percent
+        }
+    else:
+        system_stats = {"error": "psutil module not installed"}
     
     return {
         "status": "healthy",
@@ -44,15 +61,7 @@ async def detailed_health():
         "uptime_seconds": int(uptime.total_seconds()),
         "uptime_formatted": str(uptime).split(".")[0],
         "python_version": sys.version.split()[0],
-        "system": {
-            "cpu_percent": cpu_percent,
-            "memory_total_gb": round(memory.total / (1024**3), 2),
-            "memory_used_gb": round(memory.used / (1024**3), 2),
-            "memory_percent": memory.percent,
-            "disk_total_gb": round(disk.total / (1024**3), 2),
-            "disk_used_gb": round(disk.used / (1024**3), 2),
-            "disk_percent": disk.percent
-        },
+        "system": system_stats,
         "services": {
             "database": "connected",
             "llm_api": "available"
