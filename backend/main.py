@@ -195,6 +195,8 @@ from routers import templates
 app.include_router(templates.router)
 from routers import health
 app.include_router(health.router)
+from routers import symbols
+app.include_router(symbols.router)
 
 @app.post("/api/panic")
 async def trigger_panic_endpoint():
