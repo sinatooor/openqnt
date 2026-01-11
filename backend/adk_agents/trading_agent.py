@@ -74,6 +74,10 @@ from .tools.notebook_tools import (
     list_notes,
     append_to_note,
 )
+from .tools.portfolio_tools import (
+    calculate_correlation_matrix,
+    calculate_portfolio_beta,
+)
 
 # Main Trading Agent
 trading_agent = Agent(
@@ -102,7 +106,12 @@ trading_agent = Agent(
 - Calculate correct position sizes with `calculate_position_sizing`
 - Create structured trading plans with `generate_trading_plan_template`
 
-### 4. Research Notebook (Persistent Memory)
+### 5. Portfolio Management (New)
+- Check correlation between assets with `calculate_correlation_matrix` to ensure diversification
+- Calculate portfolio beta with `calculate_portfolio_beta` to understand market volatility exposure
+- Advise on portfolio construction based on these metrics
+
+### 6. Research Notebook (Persistent Memory)
 - Save important findings and plans with `save_note`
 - Retrieve past research with `read_note`
 - Keep a running log of market observations using `append_to_note`
@@ -216,6 +225,9 @@ User: "Buy 0.1 lots of EURUSD"
         read_note,
         list_notes,
         append_to_note,
+        # Portfolio tools (New)
+        calculate_correlation_matrix,
+        calculate_portfolio_beta,
     ],
 )
 
