@@ -19,6 +19,8 @@ async def get_trades(
     symbol: Optional[str] = None,
     status: Optional[str] = None,
     execution_id: Optional[int] = None,
+    tag_key: Optional[str] = None,  # Filter by tag key
+    tag_value: Optional[str] = None,  # Filter by tag value
     db: Session = Depends(get_session)
 ):
     """
@@ -35,9 +37,9 @@ async def get_trades(
         
     trades = query.order_by(Trade.entry_time.desc()).offset(skip).limit(limit).all()
     
-    # Simple serialization manual for now to avoid Pydantic schema duplication
-    return [
-        {
+    result = []
+    for t in trades:
+        trade_dict = {
             "id": t.id,
             "execution_id": t.execution_id,
             "symbol": t.symbol,
@@ -50,10 +52,23 @@ async def get_trades(
             "pnl": float(t.pnl) if t.pnl else None,
             "pnl_percent": float(t.pnl_percent) if t.pnl_percent else None,
             "status": t.status,
-            "broker_ref": t.broker_ref
+            "broker_ref": t.broker_ref,
+            "tags": t.get_tags()
         }
-        for t in trades
-    ]
+        
+        # Filter by tag if specified
+        if tag_key and tag_value:
+            tags = trade_dict.get("tags", {})
+            if tags.get(tag_key) != tag_value:
+                continue  # Skip this trade
+        elif tag_key:
+            tags = trade_dict.get("tags", {})
+            if tag_key not in tags:
+                continue
+        
+        result.append(trade_dict)
+    
+    return result
 
 @router.get("/executions", response_model=list[dict])
 async def get_executions(
