@@ -41,7 +41,7 @@ const DEFAULT_SETTINGS: UserSettings = {
     autoSave: true,
 };
 
-const BACKEND_URL = "http://localhost:8000";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
 
 export const useUserProfile = () => {
     const [user, setUser] = useState<UserProfile | null>(null);

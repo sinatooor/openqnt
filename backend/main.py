@@ -29,7 +29,7 @@ from backtest_service import XML_TO_PYTHON_PROMPT, run_backtest_pipeline, valida
 from backtest_runner import run_backtest, run_backtest_simple
 from strategy_store import hash_xml, save_strategy_version, load_by_id, load_latest_by_hash
 from ai_strategy_reviewer import review_strategy
-import database # Local DB module
+import local_database as database # Local DB module
 from routers import live_trading # Live Trading Router
 
 # Google ADK Agent
