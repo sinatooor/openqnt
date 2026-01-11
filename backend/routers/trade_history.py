@@ -79,6 +79,29 @@ async def get_executions(
         for e in executions
     ]
 
+@router.get("/executions/{execution_id}")
+async def get_execution_detail(
+    execution_id: int,
+    db: Session = Depends(get_session)
+):
+    """
+    Get detailed info for a specific strategy execution session.
+    """
+    execution = db.query(StrategyExecution).filter(StrategyExecution.id == execution_id).first()
+    if not execution:
+        raise HTTPException(status_code=404, detail="Execution not found")
+        
+    return {
+        "id": execution.id,
+        "strategy_name": execution.strategy_name,
+        "symbol": execution.symbol,
+        "start_time": execution.start_time,
+        "end_time": execution.end_time,
+        "status": execution.status,
+        "trade_count": len(execution.trades),
+        "settings": execution.settings  # Assuming this field exists or we add it later
+    }
+
 @router.get("/summary")
 async def get_trade_summary(db: Session = Depends(get_session)):
     """
