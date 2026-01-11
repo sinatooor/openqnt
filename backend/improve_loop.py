@@ -100,6 +100,12 @@ def call_gemini(prompt):
             log(f"AI Error (Exit {process.returncode}): {stderr.strip()}")
             return None
         log("AI: Response received.")
+        # Save for debugging
+        try:
+            with open(os.path.join(REPO_ROOT, ".last_ai_response"), "w") as f:
+                f.write(stdout)
+        except:
+            pass
         return stdout.strip()
     except Exception as e:
         log(f"AI Exception: {e}")
@@ -185,6 +191,18 @@ class PlanManager:
         new_content = pattern.sub(replacer, content, count=1)
         self.write(new_content)
 
+    def get_next_id(self):
+        objs = self.parse_objectives()
+        if not objs:
+            return 100
+        ids = []
+        for o in objs:
+            try:
+                ids.append(int(o['id']))
+            except:
+                pass
+        return max(ids) + 1 if ids else 100
+
     def append_new(self, text):
         content = self.read()
         self.write(content.rstrip() + "\n\n" + text + "\n")
@@ -219,16 +237,36 @@ def apply_changes(changes_text):
     # content
     # ```
     
-    # Robust regex: matches line starting with FILE:, then code block
-    pattern = re.compile(r'^FILE:\s*(.+?)\s*$\n```\w*\n(.*?)```', re.DOTALL | re.MULTILINE)
-    matches = pattern.findall(changes_text)
+    # More robust parsing:
+    # 1. Split into chunks by FILE:
+    chunks = re.split(r'^FILE:\s*', changes_text, flags=re.MULTILINE)
+    applied_count = 0
     
-    if not matches:
-        log("No valid FILE blocks found in AI response.")
-        return False
+    for chunk in chunks:
+        if not chunk.strip(): continue
         
-    for path, content in matches:
-        path = path.strip()
+        # 2. In each chunk, match path and code block
+        # Path is everything until the first newline
+        lines = chunk.split('\n', 1)
+        if len(lines) < 2: continue
+        
+        path = lines[0].strip()
+        body = lines[1]
+        
+        # Extract content between the FIRST and LAST ``` in the body
+        # This handles cases where the code itself contains ``` for markdown
+        first_tick = body.find('```')
+        last_tick = body.rfind('```')
+        
+        if first_tick == -1 or last_tick == -1 or first_tick == last_tick:
+            continue
+            
+        # Find the newline after the first ```
+        start_content = body.find('\n', first_tick)
+        if start_content == -1 or start_content > last_tick:
+            continue
+        
+        content = body[start_content+1:last_tick].strip()
         
         # Security/Sanity check
         if len(path) > 255 or any(c in path for c in ['\n', '\r', ':', '*', '?', '"', '<', '>', '|']):
@@ -236,6 +274,7 @@ def apply_changes(changes_text):
             continue
 
         full_path = os.path.join(REPO_ROOT, path)
+        applied_count += 1
         try:
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
             with open(full_path, 'w') as f:
@@ -244,7 +283,7 @@ def apply_changes(changes_text):
         except Exception as e:
             log(f"Error writing file {path}: {e}")
             
-    return True
+    return applied_count > 0
 
 def process_objective(pm, obj):
     log(f"Processing Objective {obj['id']}: {obj['title']}")
@@ -336,6 +375,7 @@ FILE: <path>
 def generate_new_objectives(pm):
     log("Continuous Improvement: Generating new objectives...")
     file_tree = list_project_files()
+    next_id = pm.get_next_id()
     prompt = f"""
 Analyze this repository and propose 3–5 high-impact improvements.
 Project Files:
@@ -360,7 +400,7 @@ Example:
 ---
 
 Ensure validation commands are realistic.
-Start IDs from 100.
+Start IDs from {next_id}.
 """
     new_objs = call_gemini(prompt)
     if new_objs and "## Objective" in new_objs:
