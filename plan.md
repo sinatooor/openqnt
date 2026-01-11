@@ -748,6 +748,10 @@ Expose persisted trades to the frontend via a FastAPI router.
 **id:** 109
 **title:** Frontend Trade Journal
 **status:** done
+
+**validation:**
+`npm test src/pages/Journal.test.tsx` (from root)
+
 **details:**
 Create a React page to visualize the trade history.
 - `src/pages/Journal.tsx`
