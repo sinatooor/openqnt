@@ -683,7 +683,7 @@ Strategy blocks are defined in TypeScript (`src/features/**/blocks/*.ts`) and ma
 ## Objective 106
 **id:** 106
 **title:** Advanced Market Screener with Parallel Fetching
-**status:** blocked
+**status:** done
 **details:**
 Implement a robust `MarketScreener` class to replace ad-hoc scripts. It should support:
 - Parallel data fetching using `ThreadPoolExecutor` and `yfinance`.
@@ -700,4 +700,29 @@ Implement a robust `MarketScreener` class to replace ad-hoc scripts. It should s
 
 **validation:**
 `python -m pytest tests/test_market_screener.py`
+
+---
+
+# Phase 6: Productization
+
+## Objective 107
+**id:** 107
+**title:** Product-Grade Trade Persistence
+**status:** done
+**details:**
+To transform the MVP into a real product, executed trades (live or simulation) must be persisted for performance tracking and auditing. Currently, `StrategyRunner` keeps trades in memory only.
+We need to:
+1.  Add `Trade` and `StrategyExecution` (session) models to `backend/database/models.py`.
+2.  Update `StrategyRunner` to persist trade lifecycle events (open, close, error) to the database.
+3.  Ensure data integrity (foreign keys to `Asset`).
+
+**acceptance_criteria:**
+*   `backend/database/models.py` includes `Trade` and `StrategyExecution` classes.
+*   `StrategyRunner` writes `Trade` records upon execution.
+*   SQLite migration managed (or strictly defined for `Base.metadata.create_all`).
+*   Test validates that a mock trade in `StrategyRunner` is retrievable from the DB.
+
+**validation:**
+`python -m pytest tests/test_trade_persistence.py`
+
 
