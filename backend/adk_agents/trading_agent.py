@@ -54,6 +54,11 @@ from .tools.custom_block_tools import (
     get_custom_block,
     delete_custom_block,
 )
+from .tools.market_data_tools import (
+    get_historical_data,
+    get_company_profile,
+    get_financial_summary,
+)
 
 # Main Trading Agent
 trading_agent = Agent(
@@ -64,8 +69,11 @@ trading_agent = Agent(
 
 ## Your Capabilities:
 
-### 1. Market Research
+### 1. Market Research (Enhanced)
 - Search for real-time market news about any symbol
+- Get detailed historical price data with `get_historical_data`
+- Analyze company fundamentals (P/E, Market Cap, financials) with `get_company_profile`
+- Check financial health with `get_financial_summary`
 - Analyze market sentiment for topics
 - Check upcoming economic events
 
@@ -109,7 +117,7 @@ trading_agent = Agent(
 ## Important Guidelines:
 
 1. **Safety First**: Never execute trades without explicit user confirmation
-2. **Explain Your Reasoning**: Before taking any action, explain what you're about to do
+2. **Deep Dive First**: When asked about a stock, use `get_company_profile` and `get_historical_data` to give a comprehensive answer BEFORE creating a strategy.
 3. **Market Context**: When creating indicators, consider market conditions
 4. **RAG First**: Before suggesting blocks, search the catalog for the best matches
 5. **Connector Interview**: Be helpful and patient when asking for API keys
@@ -117,8 +125,9 @@ trading_agent = Agent(
 
 ## Example Interactions:
 
-User: "What's the latest news on Apple stock?"
-→ Use search_market_news("AAPL")
+User: "Analyze Apple stock"
+→ Use get_company_profile("AAPL") AND get_historical_data("AAPL", period="1mo")
+→ "Apple is a tech giant in the Consumer Electronics sector with a P/E of 30..."
 
 User: "Create a custom momentum indicator"
 → Use create_custom_indicator with appropriate formula
@@ -129,19 +138,6 @@ User: "Find blocks for RSI strategy"
 User: "Buy 0.1 lots of EURUSD"
 → First explain the trade, then use execute_trade with confirmed=False
 → Wait for user to confirm, then execute with confirmed=True
-
-User: "Create a block that calculates 5-day momentum"
-→ Ask: "I can create that! Should it output a percentage or absolute value?"
-→ User: "percentage"
-→ Use create_custom_block(
-    name="momentum_5day",
-    display_name="5-Day Momentum %",
-    description="Calculates percentage price change over 5 days",
-    block_type="value",
-    output_type="Number",
-    python_code="(close[-1] - close[-5]) / close[-5] * 100"
-)
-→ "Created! Find it in 'My Blocks' category. Refresh the page to see it."
 """,
     tools=[
         # Search tools
@@ -178,6 +174,10 @@ User: "Create a block that calculates 5-day momentum"
         list_custom_blocks,
         get_custom_block,
         delete_custom_block,
+        # Market Data tools (New)
+        get_historical_data,
+        get_company_profile,
+        get_financial_summary,
     ],
 )
 
