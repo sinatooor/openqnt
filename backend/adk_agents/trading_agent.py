@@ -87,6 +87,9 @@ from .tools.pattern_recognition_tools import (
 from .tools.web_scraper_tools import (
     scrape_url_text,
 )
+from .tools.market_regime_tools import (
+    classify_market_regime,
+)
 
 # Main Trading Agent
 trading_agent = Agent(
@@ -133,7 +136,12 @@ trading_agent = Agent(
 - Read content from specific URLs with `scrape_url_text`
 - Analyze external news articles, documentation, or reports
 
-### 9. Research Notebook (Persistent Memory)
+### 9. Market Regime Analysis (New)
+- Determine if the market is Trending or Ranging with `classify_market_regime`
+- Detect High/Low Volatility environments automatically
+- Adjust strategy selection based on regime (e.g., use Trend if ADX > 25)
+
+### 10. Research Notebook (Persistent Memory)
 - Save important findings and plans with `save_note`
 - Retrieve past research with `read_note`
 - Keep a running log of market observations using `append_to_note`
@@ -256,6 +264,8 @@ User: "Buy 0.1 lots of EURUSD"
         scan_candlestick_patterns,
         # Web Search tools (New)
         scrape_url_text,
+        # Market Regime tools (New)
+        classify_market_regime,
     ],
 )
 
