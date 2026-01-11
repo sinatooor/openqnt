@@ -64,6 +64,10 @@ export interface WorkspaceToolbarProps {
     // Journal Modal
     showJournalModal: boolean;
     onToggleJournalModal: () => void;
+
+    // Screener Modal
+    showScreenerModal: boolean;
+    onToggleScreenerModal: () => void;
 }
 
 export const WorkspaceToolbar = ({
@@ -91,6 +95,8 @@ export const WorkspaceToolbar = ({
     onToggleProfileModal,
     showJournalModal,
     onToggleJournalModal,
+    showScreenerModal,
+    onToggleScreenerModal,
 }: WorkspaceToolbarProps) => {
     return (
         <div className="h-14 bg-card border-b border-border flex items-center justify-between px-4 gap-3">
@@ -180,6 +186,26 @@ export const WorkspaceToolbar = ({
                     <TooltipContent>
                         <p>Open floating live chart</p>
                         <p className="text-xs text-muted-foreground mt-1">Drag to reposition</p>
+                    </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant={showScreenerModal ? "default" : "outline"}
+                            size="sm"
+                            onClick={onToggleScreenerModal}
+                            className={cn(
+                                "transition-all duration-200 shadow-teal hover:shadow-[0_0_0_2px_rgba(20,184,166,0.5)]",
+                                showScreenerModal ? "bg-teal-600 hover:bg-teal-700" : ""
+                            )}
+                        >
+                            <Search className="w-4 h-4" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Market Screener</p>
+                        <p className="text-xs text-muted-foreground mt-1">Scan market for opportunities</p>
                     </TooltipContent>
                 </Tooltip>
 

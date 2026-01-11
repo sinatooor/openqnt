@@ -3,9 +3,6 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { DraggableModal } from "./DraggableModal";
 import { TradingViewAdvancedChart } from "./TradingViewAdvancedChart";
 import { TradingViewMarketOverview } from "./TradingViewMarketOverview";
-import { ScreenerPanel } from "./ScreenerPanel";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, TrendingUp } from "lucide-react";
 import { Model, Layout, IJsonModel, TabNode } from "flexlayout-react";
 import "flexlayout-react/style/dark.css";
 
@@ -110,24 +107,9 @@ export const FloatingChartModal = ({
       minWidth={800}
       minHeight={600}
     >
-      <div className="w-full h-full flex flex-col bg-background/95">
-        <Tabs defaultValue="chart" className="flex-1 flex flex-col min-h-0 w-full">
-          <div className="px-4 pt-2 border-b border-white/10 shrink-0">
-            <TabsList className="bg-muted/30 p-1 h-9 mb-2">
-              <TabsTrigger value="chart" className="text-xs px-4 data-[state=active]:bg-background">
-                <BarChart3 className="w-3.5 h-3.5 mr-2" />
-                Chart
-              </TabsTrigger>
-              <TabsTrigger value="screener" className="text-xs px-4 data-[state=active]:bg-background">
-                <TrendingUp className="w-3.5 h-3.5 mr-2" />
-                Screener
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-          <TabsContent value="chart" className="flex-1 mt-0 relative min-h-0 m-0 p-0 border-0">
-            {/* Custom FlexLayout styling */}
-            <style>{`
+      <div className="w-full h-full flex flex-col bg-background/95 p-1">
+        {/* Custom FlexLayout styling */}
+        <style>{`
                 .flexlayout__layout {
                   --color-1: #0f0f0f;
                   --color-2: #1a1a1a;
@@ -176,21 +158,15 @@ export const FloatingChartModal = ({
                   background: rgba(59, 130, 246, 0.3) !important;
                 }
             `}</style>
-            <div className="w-full h-full relative">
-              {modelRef.current && (
-                <Layout
-                  model={modelRef.current}
-                  factory={factory}
-                  realtimeResize={true}
-                />
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="screener" className="flex-1 mt-0 relative min-h-0 overflow-hidden m-0 p-0 border-0">
-            <ScreenerPanel />
-          </TabsContent>
-        </Tabs>
+        <div className="w-full h-full relative">
+          {modelRef.current && (
+            <Layout
+              model={modelRef.current}
+              factory={factory}
+              realtimeResize={true}
+            />
+          )}
+        </div>
       </div>
     </DraggableModal>
   );
