@@ -81,6 +81,9 @@ from .tools.portfolio_tools import (
 from .tools.risk_tools import (
     calculate_risk_metrics,
 )
+from .tools.pattern_recognition_tools import (
+    scan_candlestick_patterns,
+)
 
 # Main Trading Agent
 trading_agent = Agent(
@@ -119,7 +122,11 @@ trading_agent = Agent(
 - Evaluate asset performance using Sharpe and Sortino ratios
 - Provide institutional-grade risk assessment
 
-### 7. Research Notebook (Persistent Memory)
+### 7. Pattern Recognition (New)
+- Detect candlestick patterns (Doji, Hammer, Engulfing) with `scan_candlestick_patterns`
+- Identify potential reversals or continuations automatically via price action
+
+### 8. Research Notebook (Persistent Memory)
 - Save important findings and plans with `save_note`
 - Retrieve past research with `read_note`
 - Keep a running log of market observations using `append_to_note`
@@ -238,6 +245,8 @@ User: "Buy 0.1 lots of EURUSD"
         calculate_portfolio_beta,
         # Quantitative Risk tools (New)
         calculate_risk_metrics,
+        # Pattern Recognition tools (New)
+        scan_candlestick_patterns,
     ],
 )
 
