@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { api } from "@/services/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,7 +8,7 @@ import {
     BarChart3, Activity, Calendar, Percent
 } from "lucide-react";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const MAX_RETRIES = 3;
 
 interface TradeSummary {
     total_trades: number;
@@ -40,16 +41,15 @@ export const PerformanceDashboard = ({ className }: PerformanceDashboardProps) =
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch(`/api/trades/summary?timeframe=${timeframe}`);
-            if (response.ok) {
-                const data = await response.json();
-                setSummary(data);
-            } else {
-                setError("Failed to load performance data");
-            }
-        } catch (err) {
+            // Use centralized API client with built-in retry
+            const data = await api.get<TradeSummary>(`/api/trades/summary?timeframe=${timeframe}`, {
+                retries: 2,
+                retryDelay: 1000
+            });
+            setSummary(data);
+        } catch (err: any) {
             console.error("Failed to fetch summary:", err);
-            setError("Unable to connect to server");
+            setError(err.message || "Unable to load performance data");
         } finally {
             setLoading(false);
         }
