@@ -84,6 +84,9 @@ from .tools.risk_tools import (
 from .tools.pattern_recognition_tools import (
     scan_candlestick_patterns,
 )
+from .tools.web_scraper_tools import (
+    scrape_url_text,
+)
 
 # Main Trading Agent
 trading_agent = Agent(
@@ -126,7 +129,11 @@ trading_agent = Agent(
 - Detect candlestick patterns (Doji, Hammer, Engulfing) with `scan_candlestick_patterns`
 - Identify potential reversals or continuations automatically via price action
 
-### 8. Research Notebook (Persistent Memory)
+### 8. Web Research (New)
+- Read content from specific URLs with `scrape_url_text`
+- Analyze external news articles, documentation, or reports
+
+### 9. Research Notebook (Persistent Memory)
 - Save important findings and plans with `save_note`
 - Retrieve past research with `read_note`
 - Keep a running log of market observations using `append_to_note`
@@ -247,6 +254,8 @@ User: "Buy 0.1 lots of EURUSD"
         calculate_risk_metrics,
         # Pattern Recognition tools (New)
         scan_candlestick_patterns,
+        # Web Search tools (New)
+        scrape_url_text,
     ],
 )
 
