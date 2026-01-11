@@ -1,13 +1,13 @@
 import { useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { 
-  ArrowLeft, 
-  RefreshCw, 
-  ArrowUpDown, 
-  ArrowUp, 
+import {
+  ArrowLeft,
+  RefreshCw,
+  ArrowUpDown,
+  ArrowUp,
   ArrowDown,
-  ExternalLink 
+  ExternalLink
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { fetchTrades, fetchTradeSummary, Trade } from "@/services/trades";
+import { PerformanceDashboard } from "@/components/PerformanceDashboard";
 
 type SortConfig = {
   key: keyof Trade;
@@ -73,8 +74,8 @@ const Journal = () => {
 
   const renderSortIcon = (key: keyof Trade) => {
     if (sortConfig?.key !== key) return <ArrowUpDown className="ml-2 h-4 w-4" />;
-    return sortConfig.direction === 'asc' 
-      ? <ArrowUp className="ml-2 h-4 w-4" /> 
+    return sortConfig.direction === 'asc'
+      ? <ArrowUp className="ml-2 h-4 w-4" />
       : <ArrowDown className="ml-2 h-4 w-4" />;
   };
 
@@ -89,10 +90,10 @@ const Journal = () => {
             </Button>
             <h1 className="text-3xl font-bold tracking-tight">Trade Journal</h1>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => refetch()} 
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
             disabled={isLoading || isFetching}
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${(isLoading || isFetching) ? 'animate-spin' : ''}`} />
@@ -100,36 +101,8 @@ const Journal = () => {
           </Button>
         </div>
 
-        {summary && (
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Trades</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{summary.total_trades}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Win Rate</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{(summary.win_rate * 100).toFixed(1)}%</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total PnL</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className={`text-2xl font-bold ${summary.total_pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  ${summary.total_pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+        {/* Performance Dashboard */}
+        <PerformanceDashboard className="mb-2" />
 
         <Card>
           <CardContent className="p-0">
