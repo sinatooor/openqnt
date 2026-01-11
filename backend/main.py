@@ -193,6 +193,8 @@ from routers import data_export
 app.include_router(data_export.router)
 from routers import templates
 app.include_router(templates.router)
+from routers import health
+app.include_router(health.router)
 
 @app.post("/api/panic")
 async def trigger_panic_endpoint():
