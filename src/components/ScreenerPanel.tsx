@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
     Search,
@@ -9,7 +9,10 @@ import {
     Loader2,
     Filter,
     ArrowUpRight,
-    ArrowDownRight
+    ArrowDownRight,
+    BarChart2,
+    SlidersHorizontal,
+    RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,18 +44,24 @@ interface ScreenResult {
     change_pct: number;
     volume: number;
     date: string;
-    // Mock additional fields for enhancement
     sector?: string;
-    signal?: 'STRONG_BUY' | 'BUY' | 'NEUTRAL' | 'SELL' | 'STRONG_SELL';
+    signal?: string;
+    market_cap?: string;
+    sparkline?: number[];
 }
 
-const DEFAULT_SYMBOLS = "EURUSD=X, GBPUSD=X, USDJPY=X, AUDUSD=X, USDCAD=X, USDCHF=X, NZDUSD=X, BTC-USD, ETH-USD, SPY, QQQ, GLD, SLV, MSFT, AAPL, GOOGL, AMZN, NVDA, TSLA, AMD, INTC, COIN, MSTR";
+const DEFAULT_SYMBOLS = "EURUSD=X, GBPUSD=X, USDJPY=X, AUDUSD=X, USDCAD=X, USDCHF=X, NZDUSD=X, BTC-USD, ETH-USD, SPY, QQQ, GLD, SLV, MSFT, AAPL, GOOGL, AMZN, NVDA, TSLA, AMD, INTC, COIN, MSTR, PLTR, AMD, JPM, BAC, XOM, CVX";
 
 const FILTERS = [
-    { value: "uptrend_sma200", label: "Uptrend (Price > SMA 200)" },
-    { value: "downtrend_sma200", label: "Downtrend (Price < SMA 200)" },
-    { value: "rsi_oversold", label: "RSI Oversold (< 30)" },
-    { value: "rsi_overbought", label: "RSI Overbought (> 70)" },
+    { value: "all", label: "No Filter (Show All)", color: "bg-gray-500" },
+    { value: "uptrend_sma200", label: "Uptrend (SMA 200)", color: "bg-green-500" },
+    { value: "downtrend_sma200", label: "Downtrend (SMA 200)", color: "bg-red-500" },
+    { value: "rsi_oversold", label: "RSI Oversold (<30)", color: "bg-emerald-500" },
+    { value: "rsi_overbought", label: "RSI Overbought (>70)", color: "bg-rose-500" },
+    { value: "macd_bullish_crossover", label: "MACD Bull Cross", color: "bg-blue-500" },
+    { value: "macd_bearish_crossover", label: "MACD Bear Cross", color: "bg-orange-500" },
+    { value: "bollinger_squeeze", label: "Bollinger Squeeze (Vol)", color: "bg-purple-500" },
+    { value: "volume_breakout", label: "Volume Breakout (>200%)", color: "bg-yellow-500" },
 ];
 
 const SECTORS = [
@@ -61,13 +70,45 @@ const SECTORS = [
     { value: "finance", label: "Finance" },
     { value: "crypto", label: "Crypto" },
     { value: "forex", label: "Forex" },
+    { value: "etf", label: "ETF/Indices" },
 ];
+
+// Simple Sparkline Component
+const Sparkline = ({ data, color }: { data: number[]; color: string }) => {
+    if (!data || data.length < 2) return <div className="h-8 w-24 bg-muted/10 rounded animate-pulse" />;
+
+    const min = Math.min(...data);
+    const max = Math.max(...data);
+    const range = max - min || 1;
+    const width = 100;
+    const height = 30;
+
+    const points = data.map((val, i) => {
+        const x = (i / (data.length - 1)) * width;
+        const y = height - ((val - min) / range) * height;
+        return `${x},${y}`;
+    }).join(" ");
+
+    return (
+        <svg width="100" height="30" viewBox="0 0 100 30" className="overflow-visible">
+            <polyline
+                points={points}
+                fill="none"
+                stroke={color}
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+        </svg>
+    );
+};
 
 export const ScreenerPanel = () => {
     const [symbols, setSymbols] = useState(DEFAULT_SYMBOLS);
-    const [selectedFilter, setSelectedFilter] = useState("uptrend_sma200");
+    const [selectedFilter, setSelectedFilter] = useState("all");
     const [selectedSector, setSelectedSector] = useState("all");
     const [daysBack, setDaysBack] = useState("365");
+    const [searchTerm, setSearchTerm] = useState("");
 
     const { mutate: runScreen, data: results, isPending } = useMutation({
         mutationFn: async () => {
@@ -86,11 +127,10 @@ export const ScreenerPanel = () => {
             if (!res.ok) throw new Error("Screening failed");
             const data = await res.json();
 
-            // Enhance with mock data for now
+            // Post-process logic for Sector since we don't have it on backend
             return (data.results as ScreenResult[]).map(r => ({
                 ...r,
-                sector: determineSector(r.symbol),
-                signal: generateMockSignal(r.change_pct)
+                sector: determineSector(r.symbol)
             }));
         },
         onError: (err) => {
@@ -101,200 +141,250 @@ export const ScreenerPanel = () => {
         }
     });
 
-    // Helper to mock sector based on symbol
     const determineSector = (sym: string) => {
         if (sym.includes('=X')) return 'Forex';
         if (sym.includes('-USD') || sym === 'COIN' || sym === 'MSTR') return 'Crypto';
-        if (['SPY', 'QQQ', 'GLD', 'SLV'].includes(sym)) return 'Index/ETF';
-        return 'Technology'; // Fallback
+        if (['SPY', 'QQQ', 'GLD', 'SLV', 'DIA', 'IWM'].includes(sym)) return 'ETF/Indices';
+        if (['JPM', 'BAC', 'GS', 'C'].includes(sym)) return 'Finance';
+        return 'Technology'; // Bias default
     };
 
-    // Helper to mock signal
-    const generateMockSignal = (change: number): ScreenResult['signal'] => {
-        if (change > 2.0) return 'STRONG_BUY';
-        if (change > 0.5) return 'BUY';
-        if (change < -2.0) return 'STRONG_SELL';
-        if (change < -0.5) return 'SELL';
-        return 'NEUTRAL';
-    };
+    const filteredResults = useMemo(() => {
+        if (!results) return null;
+        return results.filter(r => {
+            const matchesSector = selectedSector === 'all' ||
+                (selectedSector === 'tech' && r.sector === 'Technology') ||
+                (selectedSector === 'forex' && r.sector === 'Forex') ||
+                (selectedSector === 'crypto' && r.sector === 'Crypto') ||
+                (selectedSector === 'finance' && r.sector === 'Finance') ||
+                (selectedSector === 'etf' && r.sector === 'ETF/Indices');
 
-    const handleRun = () => {
-        runScreen();
-    };
+            const matchesSearch = r.symbol.toLowerCase().includes(searchTerm.toLowerCase());
+            return matchesSector && matchesSearch;
+        });
+    }, [results, selectedSector, searchTerm]);
 
-    const filteredResults = results?.filter(r => {
-        if (selectedSector === 'all') return true;
-        if (selectedSector === 'forex') return r.sector === 'Forex';
-        if (selectedSector === 'crypto') return r.sector === 'Crypto';
-        if (selectedSector === 'tech') return r.sector === 'Technology';
-        if (selectedSector === 'finance') return r.sector === 'Finance';
-        return true;
-    });
+    const activeFilterLabel = FILTERS.find(f => f.value === selectedFilter)?.label;
 
     return (
-        <div className="flex flex-col h-full gap-4 p-4 text-sm bg-background/50 backdrop-blur-sm">
-
-            {/* Controls Area */}
-            <Card className="bg-card/50 border-border/50">
-                <CardContent className="p-4 grid gap-4">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                        <div className="space-y-2 col-span-1 md:col-span-1">
-                            <label className="text-xs font-medium text-muted-foreground">Technical Filter</label>
-                            <Select value={selectedFilter} onValueChange={setSelectedFilter}>
-                                <SelectTrigger className="h-9">
-                                    <SelectValue placeholder="Select a filter..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {FILTERS.map(f => (
-                                        <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+        <div className="flex flex-col h-full bg-[#0a0a0a] text-white font-sans selection:bg-teal-500/30">
+            {/* Header / Control Bar */}
+            <div className="flex flex-col md:flex-row gap-4 p-4 border-b border-white/10 bg-[#111] shrink-0">
+                <div className="flex-1 flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg shadow-teal-500/20">
+                            <Activity className="h-5 w-5 text-white" />
                         </div>
-
-                        <div className="space-y-2 col-span-1 md:col-span-1">
-                            <label className="text-xs font-medium text-muted-foreground">Sector</label>
-                            <Select value={selectedSector} onValueChange={setSelectedSector}>
-                                <SelectTrigger className="h-9">
-                                    <SelectValue placeholder="All Sectors" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {SECTORS.map(s => (
-                                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="space-y-2 col-span-1 md:col-span-1">
-                            <label className="text-xs font-medium text-muted-foreground">Lookback (Days)</label>
-                            <Input
-                                type="number"
-                                value={daysBack}
-                                onChange={e => setDaysBack(e.target.value)}
-                                min={100}
-                                max={3650}
-                                className="h-9"
-                            />
-                        </div>
-
-                        <div className="col-span-1 md:col-span-1">
-                            <Button onClick={handleRun} disabled={isPending} className="w-full h-9 bg-teal-600 hover:bg-teal-700 text-white">
-                                {isPending ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Scanning...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Activity className="mr-2 h-4 w-4" />
-                                        Run Screen
-                                    </>
-                                )}
-                            </Button>
-                        </div>
+                        <h2 className="text-lg font-bold tracking-tight bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+                            Market Screener Pro
+                        </h2>
                     </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>Universe: {symbols.split(',').length} Assets</span>
+                        <span className="h-3 w-[1px] bg-white/10" />
+                        <span>Data: Real-time (Delayed)</span>
+                    </div>
+                </div>
 
-                    <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                            <label className="text-xs font-medium text-muted-foreground">Universe (Symbols)</label>
-                            <span
-                                className="text-[10px] text-teal-400 cursor-pointer hover:underline"
-                                onClick={() => setSymbols(DEFAULT_SYMBOLS)}
-                            >
-                                Reset to Defaults
-                            </span>
-                        </div>
-                        <Textarea
-                            value={symbols}
-                            onChange={e => setSymbols(e.target.value)}
-                            className="font-mono text-xs h-16 bg-background/50 resize-none border-border/50"
-                            placeholder="AAPL, MSFT, EURUSD=X..."
+                <div className="flex items-center gap-3">
+                    <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Filter results..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-9 h-9 w-[180px] bg-[#1a1a1a] border-white/10 text-xs focus-visible:ring-teal-500/50"
                         />
                     </div>
-                </CardContent>
-            </Card>
 
-            {/* Results Table */}
-            <Card className="flex-1 overflow-hidden flex flex-col border-border/50 bg-card/30">
-                <CardContent className="p-0 flex-1 overflow-auto">
+                    <Button
+                        onClick={() => runScreen()}
+                        disabled={isPending}
+                        className="h-9 bg-teal-600 hover:bg-teal-500 text-white border-0 shadow-lg shadow-teal-900/20"
+                    >
+                        {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                        Run Scan
+                    </Button>
+                </div>
+            </div>
+
+            {/* Filter Bar */}
+            <div className="flex items-center gap-2 px-4 py-2 bg-[#0f0f0f] border-b border-white/5 overflow-x-auto no-scrollbar shrink-0">
+                <Filter className="h-3 w-3 text-muted-foreground mr-2 shrink-0" />
+                {FILTERS.map(f => (
+                    <button
+                        key={f.value}
+                        onClick={() => setSelectedFilter(f.value)}
+                        className={cn(
+                            "px-3 py-1 rounded-full text-[10px] font-medium transition-all whitespace-nowrap border",
+                            selectedFilter === f.value
+                                ? `${f.color} bg-opacity-20 border-${f.color.split('-')[1]}-500 text-white`
+                                : "bg-transparent border-white/10 text-muted-foreground hover:border-white/20 hover:text-white"
+                        )}
+                    >
+                        <div className="flex items-center gap-1.5">
+                            <div className={cn("h-1.5 w-1.5 rounded-full", f.color.replace('bg-', 'bg-'))} />
+                            {f.label}
+                        </div>
+                    </button>
+                ))}
+            </div>
+
+            {/* Main Content Area */}
+            <div className="flex-1 flex overflow-hidden">
+
+                {/* Side Settings (Collapsible idea, fixed for now) */}
+                <div className="w-64 border-r border-white/10 bg-[#111] p-4 hidden lg:flex flex-col gap-6 overflow-y-auto">
+
+                    <div className="space-y-3">
+                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                            <SlidersHorizontal className="h-3 w-3" />
+                            Configuration
+                        </h3>
+
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] text-gray-500">Scan Universe</label>
+                            <Textarea
+                                value={symbols}
+                                onChange={(e) => setSymbols(e.target.value)}
+                                className="h-32 bg-[#1a1a1a] border-white/10 text-[10px] font-mono leading-relaxed resize-none focus-visible:ring-teal-500/30"
+                            />
+                            <div className="flex justify-between">
+                                <button className="text-[10px] text-teal-400 hover:underline" onClick={() => setSymbols(DEFAULT_SYMBOLS)}>Reset Default</button>
+                                <button className="text-[10px] text-teal-400 hover:underline" onClick={() => setSymbols("")}>Clear</button>
+                            </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] text-gray-500">Lookback Period</label>
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    type="number"
+                                    value={daysBack}
+                                    onChange={(e) => setDaysBack(e.target.value)}
+                                    className="h-8 bg-[#1a1a1a] border-white/10 text-xs"
+                                />
+                                <span className="text-xs text-muted-foreground">Days</span>
+                            </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] text-gray-500">Sector Filter</label>
+                            <Select value={selectedSector} onValueChange={setSelectedSector}>
+                                <SelectTrigger className="h-8 bg-[#1a1a1a] border-white/10 text-xs">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-[#1a1a1a] border-white/10">
+                                    {SECTORS.map(s => <SelectItem key={s.value} value={s.value} className="text-xs">{s.label}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Results Table */}
+                <div className="flex-1 flex flex-col min-w-0 bg-[#0a0a0a]">
                     <Table>
-                        <TableHeader className="sticky top-0 bg-card z-10">
-                            <TableRow className="border-border/50 hover:bg-transparent">
-                                <TableHead className="w-[120px]">Symbol</TableHead>
-                                <TableHead className="w-[100px]">Sector</TableHead>
-                                <TableHead className="text-right">Price</TableHead>
-                                <TableHead className="text-right">Change %</TableHead>
-                                <TableHead className="text-center">Signal</TableHead>
-                                <TableHead className="text-right">Volume</TableHead>
-                                <TableHead className="w-[80px] text-right">Action</TableHead>
+                        <TableHeader className="bg-[#111] sticky top-0 z-10 shadow-sm border-b border-white/10">
+                            <TableRow className="hover:bg-transparent border-0">
+                                <TableHead className="text-xs font-semibold text-gray-400 w-[140px]">Asset</TableHead>
+                                <TableHead className="text-xs font-semibold text-gray-400 w-[100px]">Price</TableHead>
+                                <TableHead className="text-xs font-semibold text-gray-400 w-[120px]">Trend (20d)</TableHead>
+                                <TableHead className="text-xs font-semibold text-gray-400 text-right w-[100px]">Change</TableHead>
+                                <TableHead className="text-xs font-semibold text-gray-400 text-center w-[120px]">Signal</TableHead>
+                                <TableHead className="text-xs font-semibold text-gray-400 text-right">Volume</TableHead>
+                                <TableHead className="text-xs font-semibold text-gray-400 text-right w-[100px]">Sector</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {isPending ? (
+                                Array.from({ length: 5 }).map((_, i) => (
+                                    <TableRow key={i} className="border-b border-white/5">
+                                        <TableCell><div className="h-4 w-20 bg-white/5 rounded animate-pulse" /></TableCell>
+                                        <TableCell><div className="h-4 w-16 bg-white/5 rounded animate-pulse" /></TableCell>
+                                        <TableCell><div className="h-6 w-24 bg-white/5 rounded animate-pulse" /></TableCell>
+                                        <TableCell><div className="h-4 w-12 bg-white/5 rounded animate-pulse ml-auto" /></TableCell>
+                                        <TableCell><div className="h-5 w-16 bg-white/5 rounded-full animate-pulse mx-auto" /></TableCell>
+                                        <TableCell><div className="h-4 w-16 bg-white/5 rounded animate-pulse ml-auto" /></TableCell>
+                                        <TableCell><div className="h-4 w-16 bg-white/5 rounded animate-pulse ml-auto" /></TableCell>
+                                    </TableRow>
+                                ))
+                            ) : results && filteredResults?.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
-                                        <div className="flex flex-col items-center gap-2">
-                                            <Loader2 className="h-6 w-6 animate-spin text-teal-500" />
-                                            <span>Scanning Markets...</span>
+                                    <TableCell colSpan={7} className="h-64 text-center text-muted-foreground">
+                                        <div className="flex flex-col items-center gap-3 opacity-50">
+                                            <Search className="h-10 w-10" />
+                                            <p>No assets match your criteria ({activeFilterLabel})</p>
+                                            <Button variant="link" onClick={() => setSelectedFilter("all")}>Clear Filters</Button>
                                         </div>
                                     </TableCell>
                                 </TableRow>
-                            ) : !results ? (
-                                <TableRow>
-                                    <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
-                                        <div className="flex flex-col items-center gap-2">
-                                            <Filter className="h-6 w-6 opacity-20" />
-                                            <span>Select criteria and run screen to see results.</span>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ) : filteredResults?.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
-                                        No matches found for these criteria.
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                filteredResults?.map((r) => (
-                                    <TableRow key={r.symbol} className="border-border/40 hover:bg-muted/30">
-                                        <TableCell className="font-bold text-foreground">{r.symbol}</TableCell>
-                                        <TableCell className="text-muted-foreground">{r.sector}</TableCell>
-                                        <TableCell className="text-right font-mono text-foreground">{r.close}</TableCell>
+                            ) : filteredResults ? (
+                                filteredResults.map((r, i) => (
+                                    <TableRow key={r.symbol} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
+                                        <TableCell>
+                                            <div className="flex flex-col">
+                                                <span className="font-bold text-sm text-white group-hover:text-teal-400 transition-colors">{r.symbol}</span>
+                                                <span className="text-[10px] text-muted-foreground">{r.date}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="font-mono text-sm text-gray-300">
+                                            {r.close.toFixed(r.close < 1 ? 5 : 2)}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Sparkline
+                                                data={r.sparkline || []}
+                                                color={r.change_pct >= 0 ? "#10b981" : "#ef4444"}
+                                            />
+                                        </TableCell>
                                         <TableCell className="text-right">
                                             <div className={cn(
-                                                "inline-flex items-center gap-1 font-medium",
-                                                r.change_pct >= 0 ? "text-green-500" : "text-red-500"
+                                                "inline-flex items-center gap-1 font-mono font-medium text-xs",
+                                                r.change_pct >= 0 ? "text-emerald-400" : "text-rose-400"
                                             )}>
-                                                {r.change_pct >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                                                {Math.abs(r.change_pct).toFixed(2)}%
+                                                {r.change_pct >= 0 ? "+" : ""}{r.change_pct.toFixed(2)}%
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-center">
                                             <Badge variant="outline" className={cn(
-                                                "text-[10px] w-20 justify-center",
-                                                r.signal?.includes('BUY') ? "border-green-800 text-green-500 bg-green-500/10" :
-                                                    r.signal?.includes('SELL') ? "border-red-800 text-red-500 bg-red-500/10" :
-                                                        "border-gray-700 text-gray-500"
+                                                "border-0 text-[10px] px-2 py-0.5 font-bold uppercase tracking-wider shadow-sm",
+                                                r.signal === 'Strong Buy' ? "bg-emerald-500/20 text-emerald-400 shadow-emerald-500/20" :
+                                                    r.signal === 'Buy' ? "bg-green-500/10 text-green-400" :
+                                                        r.signal === 'Strong Sell' ? "bg-rose-500/20 text-rose-400 shadow-rose-500/20" :
+                                                            r.signal === 'Sell' ? "bg-red-500/10 text-red-400" :
+                                                                "bg-gray-500/10 text-gray-400"
                                             )}>
-                                                {r.signal?.replace('_', ' ')}
+                                                {r.signal}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="text-right text-muted-foreground font-mono text-xs">
-                                            {(r.volume / 1000000).toFixed(1)}M
+                                        <TableCell className="text-right font-mono text-xs text-gray-400">
+                                            {(r.volume / 1000000).toFixed(2)}M
                                         </TableCell>
-                                        <TableCell className="text-right">
-                                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:text-teal-400">
-                                                <Activity className="h-4 w-4" />
-                                            </Button>
+                                        <TableCell className="text-right text-xs text-muted-foreground">
+                                            {r.sector}
                                         </TableCell>
                                     </TableRow>
                                 ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={7} className="h-64 text-center text-muted-foreground">
+                                        <div className="flex flex-col items-center gap-4">
+                                            <BarChart2 className="h-12 w-12 opacity-20" />
+                                            <div className="space-y-1">
+                                                <p className="font-medium text-white">Market Screener Ready</p>
+                                                <p className="text-xs">Define your universe and filters to scan the market.</p>
+                                            </div>
+                                            <Button variant="outline" onClick={() => runScreen()} className="border-white/10 hover:bg-white/5">
+                                                Start Scan
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
                             )}
                         </TableBody>
                     </Table>
-                </CardContent>
-            </Card>
+                </div>
+            </div>
         </div>
     );
 };
