@@ -590,7 +590,7 @@ Understanding why trades happened enables pattern discovery. Tagged journals hel
 
 **id:** 020  
 **title:** Add strategy export to multiple formats  
-**status:** blocked  
+**status:** done  
 
 **details:**
 Export IR strategies to:
