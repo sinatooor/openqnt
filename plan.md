@@ -725,4 +725,44 @@ We need to:
 **validation:**
 `python -m pytest tests/test_trade_persistence.py`
 
+## Objective 108
+**id:** 108
+**title:** Trade History API
+**status:** done
+**details:**
+Expose persisted trades to the frontend via a FastAPI router.
+- Endpoint: `GET /api/trades` (Filter by strategy, symbol, date)
+- Endpoint: `GET /api/executions` (List of strategy sessions)
+- Use `sqlalchemy` queries on `Trade` and `StrategyExecution` models.
+
+**acceptance_criteria:**
+*   `backend/routers/trade_history.py` exists.
+*   `GET /api/trades` returns JSON list of trades.
+*   Mounted in `backend/main.py`.
+*   Unit test validating API response.
+
+**validation:**
+`python -m pytest tests/test_trade_api.py`
+
+## Objective 109
+**id:** 109
+**title:** Frontend Trade Journal
+**status:** done
+**details:**
+Create a React page to visualize the trade history.
+- `src/pages/Journal.tsx`
+- Sortable table of trades (Time, Symbol, Direction, Size, Price, PnL).
+- Link to execution details.
+- Real-time updates (optional, via polling).
+
+**acceptance_criteria:**
+*   Page accessible via navigation.
+*   Fetches data from `/api/trades`.
+*   Displays correct columns.
+*   Handles empty state.
+
+**validation:**
+`cd frontend && npm test src/pages/Journal.test.tsx` (or manual verification)
+
+
 

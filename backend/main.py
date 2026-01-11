@@ -187,6 +187,8 @@ app = FastAPI(title="Strategy Generator API", version="1.0.0")
 
 # Include Live Trading Router
 app.include_router(live_trading.router)
+from routers import trade_history
+app.include_router(trade_history.router)
 
 @app.post("/api/panic")
 async def trigger_panic_endpoint():
@@ -926,4 +928,13 @@ def extract_xml(content: str) -> str:
     cleaned = content.strip()
     
     # Remove markdown code blocks if present
-    if cleaned.startswith("
+    if cleaned.startswith("```"):
+        # Strip code block markers
+        lines = cleaned.split("\n")
+        if lines[0].strip().startswith("```"):
+            lines = lines[1:]
+        if lines[-1].strip().startswith("```"):
+            lines = lines[:-1]
+        cleaned = "\n".join(lines)
+        
+    return cleaned

@@ -314,6 +314,23 @@ export const WorkspaceToolbar = ({
                         <p className="text-xs text-muted-foreground mt-1">Backtest or deploy live</p>
                     </TooltipContent>
                 </Tooltip>
+
+                <Separator orientation="vertical" className="h-6" />
+
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <a href="/journal" target="_self">
+                            <Button variant="outline" size="sm" className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
+                                <BookOpen className="w-4 h-4 mr-2" />
+                                Journal
+                            </Button>
+                        </a>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Trade Journal</p>
+                        <p className="text-xs text-muted-foreground mt-1">View trade history & stats</p>
+                    </TooltipContent>
+                </Tooltip>
             </div>
         </div>
     );
