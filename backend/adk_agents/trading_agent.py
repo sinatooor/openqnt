@@ -78,6 +78,9 @@ from .tools.portfolio_tools import (
     calculate_correlation_matrix,
     calculate_portfolio_beta,
 )
+from .tools.risk_tools import (
+    calculate_risk_metrics,
+)
 
 # Main Trading Agent
 trading_agent = Agent(
@@ -111,7 +114,12 @@ trading_agent = Agent(
 - Calculate portfolio beta with `calculate_portfolio_beta` to understand market volatility exposure
 - Advise on portfolio construction based on these metrics
 
-### 6. Research Notebook (Persistent Memory)
+### 6. Quantitative Analysis (New)
+- Calculate Value at Risk (VaR) and CVaR with `calculate_risk_metrics`
+- Evaluate asset performance using Sharpe and Sortino ratios
+- Provide institutional-grade risk assessment
+
+### 7. Research Notebook (Persistent Memory)
 - Save important findings and plans with `save_note`
 - Retrieve past research with `read_note`
 - Keep a running log of market observations using `append_to_note`
@@ -228,6 +236,8 @@ User: "Buy 0.1 lots of EURUSD"
         # Portfolio tools (New)
         calculate_correlation_matrix,
         calculate_portfolio_beta,
+        # Quantitative Risk tools (New)
+        calculate_risk_metrics,
     ],
 )
 
