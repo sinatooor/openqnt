@@ -77,4 +77,8 @@ def test_end_to_end_headless_flow():
         
         # Setup mock return value for /generate-strategy
         # The API expects the LLM to return XML wrapped in markdown or raw
-        mock_response = f"Here is the strategy:\n
+        mock_response = f"""Here is the strategy:
+```xml
+{MOCK_XML_STRATEGY}
+```
+"""
