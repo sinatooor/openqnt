@@ -26,9 +26,10 @@ class NordnetLoginRequest(BaseModel): # Added NordnetLoginRequest
 class StrategyStartRequest(BaseModel):
     symbol: str
     python_code: str
-    trade_size: float = 1.0 # Changed default from 0.5 to 1.0
+    trade_size: float = 1.0 
     poll_interval: int = 60
-    broker: str = "ig" # Added broker field, default to "ig"
+    broker: str = "ig" 
+    live_mode: bool = False # Default to False (Paper)
 
 @router.post("/login")
 async def login_ig(creds: IGLoginRequest):
@@ -55,8 +56,9 @@ async def login_nordnet(creds: NordnetLoginRequest):
 async def get_status():
     """Get connection and runner status."""
     runner_status = get_runner_status()
+    ig_connected = ig_client.is_authenticated if ig_client else False
     return {
-        "connected": ig_client.is_authenticated,
+        "connected": ig_connected,
         "runner": runner_status
     }
 
@@ -86,7 +88,8 @@ async def start_strategy(req: StrategyStartRequest):
         python_code=req.python_code,
         symbol=req.symbol,
         trade_size=req.trade_size,
-        poll_interval=req.poll_interval
+        poll_interval=req.poll_interval,
+        live_mode=req.live_mode
     )
     
     if not result['success']:

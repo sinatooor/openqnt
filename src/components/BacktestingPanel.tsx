@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { BacktestVisualizationModal } from "./BacktestVisualizationModal";
 import { generateCode } from "@/config/blockly/generator";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 // Helper function to format numbers to 4 decimal places
 const formatNumber = (value: number | undefined, decimals: number = 4): string => {
@@ -100,6 +101,9 @@ export const BacktestingPanel = ({ onStartTour, onClose, leverage = "1", onLever
     const [isStrategyRunning, setIsStrategyRunning] = useState(false);
     const [isStartingStrategy, setIsStartingStrategy] = useState(false);
     const [strategyStatus, setStrategyStatus] = useState<any>(null);
+    const [isLiveMode, setIsLiveMode] = useState(false); // False = Paper, True = Live
+    const [maxTradeSize, setMaxTradeSize] = useState("1.0");
+    const [maxDrawdown, setMaxDrawdown] = useState("500");
 
     // Visualization state
     const [isVisModalOpen, setIsVisModalOpen] = useState(false);
@@ -422,14 +426,20 @@ export const BacktestingPanel = ({ onStartTour, onClose, leverage = "1", onLever
                     workspaceXml: xml,
                     symbol: tradingSymbol,
                     tradeSize: parseFloat(capitalAllocation) / 100000,
-                    pollInterval: 60
+                    pollInterval: 60,
+                    live_mode: isLiveMode,
+                    safety_config: {
+                        max_size: parseFloat(maxTradeSize),
+                        max_drawdown: parseFloat(maxDrawdown)
+                    }
                 }),
             });
             const data = await response.json();
             if (data.success) {
                 setIsStrategyRunning(true);
                 setStrategyStatus(data.status);
-                toast.success("Strategy launched!", { description: `Running on ${tradingSymbol}` });
+                const modeText = isLiveMode ? "LIVE TRADING" : "Paper Trading";
+                toast.success(`Strategy launched in ${modeText}!`, { description: `Running on ${tradingSymbol}` });
             } else {
                 toast.error("Failed to start", { description: data.error });
             }
@@ -807,42 +817,114 @@ export const BacktestingPanel = ({ onStartTour, onClose, leverage = "1", onLever
                     </>
                 ) : (
                     <>
-                        {/* Live Mode */}
-                        <Card className="bg-secondary/50">
-                            <CardContent className="p-3">
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-muted-foreground">Status</span>
-                                    {isStrategyRunning ? (
-                                        <Badge className="bg-green-500 animate-pulse">
-                                            <Play className="w-3 h-3 mr-1" />
-                                            Running
-                                        </Badge>
-                                    ) : (
-                                        <Badge variant="outline">
-                                            <AlertCircle className="w-3 h-3 mr-1" />
-                                            Stopped
-                                        </Badge>
-                                    )}
-                                </div>
-
-                                {isStrategyRunning && strategyStatus && (
-                                    <div className="mt-3 space-y-1 text-xs">
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Position</span>
-                                            <span>{strategyStatus.current_position || 'None'}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Last Signal</span>
-                                            <span>{strategyStatus.last_signal || 'None'}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Trades</span>
-                                            <span>{strategyStatus.trade_count || 0}</span>
+                        {/* Live Mode Controls */}
+                        <div className="space-y-4">
+                            <Card className={cn("transition-colors", isLiveMode ? "bg-red-950/30 border-red-900/50" : "bg-blue-950/30 border-blue-900/50")}>
+                                <CardContent className="p-3">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <Label className="font-semibold text-sm">Execution Mode</Label>
+                                        <div className="flex bg-muted/50 rounded-lg p-1 gap-1">
+                                            <Button
+                                                variant={!isLiveMode ? "secondary" : "ghost"}
+                                                size="sm"
+                                                className={cn("h-7 text-xs px-3", !isLiveMode && "bg-blue-600 text-white hover:bg-blue-700")}
+                                                onClick={() => setIsLiveMode(false)}
+                                                disabled={isStrategyRunning}
+                                            >
+                                                Paper
+                                            </Button>
+                                            <Button
+                                                variant={isLiveMode ? "secondary" : "ghost"}
+                                                size="sm"
+                                                className={cn("h-7 text-xs px-3", isLiveMode && "bg-red-600 text-white hover:bg-red-700")}
+                                                onClick={() => setIsLiveMode(true)}
+                                                disabled={isStrategyRunning}
+                                            >
+                                                LIVE
+                                            </Button>
                                         </div>
                                     </div>
-                                )}
-                            </CardContent>
-                        </Card>
+
+                                    {isLiveMode && (
+                                        <div className="bg-red-900/20 border border-red-500/30 rounded p-2 mb-3">
+                                            <div className="flex items-start gap-2 text-red-200">
+                                                <AlertCircle className="w-4 h-4 mt-0.5 text-red-500" />
+                                                <p className="text-[10px] leading-tight">
+                                                    You are about to trade with <span className="font-bold underline">REAL MONEY</span>.
+                                                    Ensure you have tested your strategy thoroughly.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <Separator className="bg-border/50 my-3" />
+
+                                    <div className="space-y-3">
+                                        <h4 className="text-xs font-semibold text-muted-foreground uppercase">Safety Guardrails</h4>
+                                        <div>
+                                            <Label className="text-xs mb-1 block">Max Trade Size (Lots)</Label>
+                                            <Input
+                                                type="number"
+                                                value={maxTradeSize}
+                                                onChange={(e) => setMaxTradeSize(e.target.value)}
+                                                className="h-8 text-xs"
+                                                step="0.1"
+                                                min="0.1"
+                                                disabled={isStrategyRunning}
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-xs mb-1 block">Max Daily Drawdown ($)</Label>
+                                            <Input
+                                                type="number"
+                                                value={maxDrawdown}
+                                                onChange={(e) => setMaxDrawdown(e.target.value)}
+                                                className="h-8 text-xs"
+                                                step="10"
+                                                min="0"
+                                                disabled={isStrategyRunning}
+                                            />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="bg-secondary/50">
+                                <CardContent className="p-3">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-muted-foreground">Status</span>
+                                        {isStrategyRunning ? (
+                                            <Badge className={cn("animate-pulse", isLiveMode ? "bg-red-600" : "bg-blue-600")}>
+                                                <Play className="w-3 h-3 mr-1" />
+                                                {isLiveMode ? "Running LIVE" : "Running Simulated"}
+                                            </Badge>
+                                        ) : (
+                                            <Badge variant="outline">
+                                                <AlertCircle className="w-3 h-3 mr-1" />
+                                                Stopped
+                                            </Badge>
+                                        )}
+                                    </div>
+
+                                    {isStrategyRunning && strategyStatus && (
+                                        <div className="mt-3 space-y-1 text-xs">
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Position</span>
+                                                <span className="font-mono">{strategyStatus.current_position || 'None'}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Last Signal</span>
+                                                <span className="font-mono">{strategyStatus.last_signal || 'None'}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Trades</span>
+                                                <span className="font-mono">{strategyStatus.trade_count || 0}</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </div>
                     </>
                 )}
             </div>

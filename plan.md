@@ -770,3 +770,25 @@ Create a React page to visualize the trade history.
 
 
 
+## Objective 110
+**id:** 110
+**title:** Safe Live Trading Integration
+**status:** done
+**details:**
+Enable real "Live Trading" with safety rails.
+- Add `live_mode` flag to `StrategyRunner`.
+- If `live_mode=False`: Paper trading (log-only, persisted to DB).
+- If `live_mode=True`: Execute on Broker (IG/Nordnet).
+- Implement Safety Rails:
+    - Max size per trade.
+    - Max open positions.
+    - Stop strategy if daily loss > X.
+
+**acceptance_criteria:**
+*   `StrategyRunner` accepts `live_mode` param.
+*   Trades are not sent to broker if `live_mode=False`.
+*   Safety checks prevent large orders.
+*   Frontend "Run" button allows selecting "Paper" or "Live".
+
+**validation:**
+`pytest tests/test_live_trading_safety.py`
