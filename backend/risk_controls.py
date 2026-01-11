@@ -4,10 +4,13 @@ Risk Controls Module
 Implements headless risk constraints for IR execution:
 - Max drawdown limit
 - Max position size limit
+- Global Panic Button
 """
 from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, field
-
+from pathlib import Path
+import os
+from backend.ig_client import IGClient
 
 @dataclass
 class RiskConstraints:
@@ -23,6 +26,58 @@ class RiskViolation:
     rule: str
     message: str
     blocked_action: Optional[str] = None
+
+# Panic Lock File
+PANIC_LOCK_FILE = Path(".panic_lock")
+
+class PanicService:
+    """Service to handle global panic state."""
+    
+    LOCK_FILE = PANIC_LOCK_FILE
+    
+    @staticmethod
+    def is_panic_active() -> bool:
+        """Check if panic mode is active."""
+        return PanicService.LOCK_FILE.exists()
+    
+    @staticmethod
+    def clear_panic():
+        """Clear panic state (manual intervention required usually)."""
+        if PanicService.LOCK_FILE.exists():
+            PanicService.LOCK_FILE.unlink()
+            
+    @staticmethod
+    async def trigger_panic():
+        """
+        Enable panic mode:
+        1. Set persistent flag
+        2. Close all positions
+        3. Cancel all orders
+        """
+        # 1. Set flag
+        PanicService.LOCK_FILE.touch()
+        
+        # 2. Close/Cancel
+        client = IGClient()
+        
+        login_res = await client.login()
+        if not login_res["success"]:
+            # If we can't login, we still set panic flag, but report error
+            return {
+                "success": False,
+                "error": "Could not login to IG to close positions",
+                "panic_enabled": True
+            }
+            
+        close_res = await client.close_all_positions()
+        cancel_res = await client.cancel_all_orders()
+        
+        return {
+            "success": True,
+            "panic_enabled": True,
+            "positions_closed": close_res,
+            "orders_cancelled": cancel_res
+        }
 
 
 class RiskController:
@@ -81,6 +136,16 @@ class RiskController:
                 blocked_action="TRADE"
             ))
             allowed = False
+        
+        # Check global panic
+        if PanicService.is_panic_active():
+            violations.append(RiskViolation(
+                timestamp=timestamp,
+                rule="PANIC_TRIGGERED",
+                message="Global panic mode is active. All trading halted.",
+                blocked_action="TRADE"
+            ))
+            allowed = False
             
         # Check position size
         if size > self.constraints.max_position_size:
@@ -94,6 +159,9 @@ class RiskController:
             # Record violation
             self.violations.extend(violations)
             
+        if not allowed:
+            self.violations.extend(violations)
+
         return {
             "allowed": allowed,
             "violations": violations,

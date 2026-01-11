@@ -6,6 +6,12 @@ import time
 import re
 import json
 from datetime import datetime
+import signal
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 # --- Configuration ---
 PLAN_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), "../plan.md"))
@@ -13,6 +19,7 @@ REPO_ROOT = os.path.dirname(PLAN_FILE)
 MAX_RETRIES = 10
 GEMINI_MODEL = "gemini-3-pro-preview"
 PAUSE_FILE = os.path.join(REPO_ROOT, ".pause_improve_loop")
+AI_TIMEOUT = 900 # 15 minutes
 
 # --- Utils ---
 LOG_FILE = os.path.join(REPO_ROOT, "improve_loop.log")
@@ -58,23 +65,39 @@ def run_cmd(cmd, cwd=REPO_ROOT, timeout=300):
         return False, "", str(e)
 
 def call_gemini(prompt):
-    log(f"AI: Querying {GEMINI_MODEL}...")
+    log(f"AI: Querying {GEMINI_MODEL} (Prompt: {len(prompt)/1024:.1f} KB)...")
+    # Save for debugging
+    try:
+        with open(os.path.join(REPO_ROOT, ".last_prompt"), "w") as f:
+            f.write(prompt)
+    except:
+        pass
+        
     try:
         cmd = ["gemini", "-m", GEMINI_MODEL, "--output-format", "text"]
         
-        # Use simple Popen to pipe input
         process = subprocess.Popen(
             cmd,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            cwd=REPO_ROOT
+            cwd=REPO_ROOT,
+            preexec_fn=os.setsid
         )
-        stdout, stderr = process.communicate(input=prompt)
+        log(f"AI: Communicating (Timeout: {AI_TIMEOUT}s)...")
+        try:
+            stdout, stderr = process.communicate(input=prompt, timeout=AI_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+            except:
+                pass
+            log(f"AI TIMEOUT ({AI_TIMEOUT}s)")
+            return None
         
         if process.returncode != 0:
-            log(f"AI Error: {stderr.strip()}")
+            log(f"AI Error (Exit {process.returncode}): {stderr.strip()}")
             return None
         log("AI: Response received.")
         return stdout.strip()

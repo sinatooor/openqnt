@@ -159,6 +159,27 @@ class IGClient:
                 }
             else:
                 return {"success": False, "error": response.text}
+
+    async def get_working_orders(self) -> Dict[str, Any]:
+        """Get all working orders."""
+        if not self.is_authenticated:
+            return {"success": False, "error": "Not authenticated"}
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(
+                f"{self.base_url}/workingorders",
+                headers=self._get_headers(version=2)
+            )
+            
+            if response.status_code == 200:
+                orders = response.json().get("workingOrders", [])
+                return {
+                    "success": True,
+                    "count": len(orders),
+                    "orders": orders
+                }
+            else:
+                return {"success": False, "error": response.text}
     
     async def create_position(
         self,
@@ -270,6 +291,84 @@ class IGClient:
                     "error": f"Close failed: {response.status_code}",
                     "details": response.text
                 }
+
+    async def delete_working_order(self, deal_id: str) -> Dict[str, Any]:
+        """Cancel a working order."""
+        if not self.is_authenticated:
+            return {"success": False, "error": "Not authenticated"}
+            
+        headers = self._get_headers(version=2)
+        headers["_method"] = "DELETE"
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                f"{self.base_url}/workingorders/otc/{deal_id}",
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                return {"success": True, "deal_reference": response.json().get("dealReference")}
+            else:
+                return {"success": False, "error": response.text}
+
+    async def close_all_positions(self) -> Dict[str, Any]:
+        """Close all open positions."""
+        positions_result = await self.get_positions()
+        if not positions_result["success"]:
+            return positions_result
+            
+        closed_count = 0
+        errors = []
+        
+        for pos in positions_result.get("positions", []):
+            market = pos.get("market", {})
+            position = pos.get("position", {})
+            deal_id = position.get("dealId")
+            direction = position.get("direction")
+            
+            # Close opposite direction
+            close_dir = "SELL" if direction == "BUY" else "BUY"
+            
+            result = await self.close_position(deal_id, direction=close_dir)
+            if result["success"]:
+                closed_count += 1
+            else:
+                errors.append(f"Failed to close {market.get('epic')}: {result.get('error')}")
+                
+        return {
+            "success": True, 
+            "closed": closed_count, 
+            "total": len(positions_result.get("positions", [])),
+            "errors": errors
+        }
+
+    async def cancel_all_orders(self) -> Dict[str, Any]:
+        """Cancel all working orders."""
+        orders_result = await self.get_working_orders()
+        if not orders_result["success"]:
+             # If endpoint fails (e.g. not supported in demo sometimes), return warning
+             if "404" in str(orders_result.get("error", "")):
+                 return {"success": True, "cancelled": 0, "message": "Working orders not supported or empty"}
+             return orders_result
+
+        cancelled_count = 0
+        errors = []
+        
+        for order in orders_result.get("orders", []):
+            deal_id = order.get("workingOrderData", {}).get("dealId")
+            if deal_id:
+                result = await self.delete_working_order(deal_id)
+                if result["success"]:
+                    cancelled_count += 1
+                else:
+                    errors.append(f"Failed to cancel order {deal_id}: {result.get('error')}")
+                    
+        return {
+            "success": True,
+            "cancelled": cancelled_count,
+            "total": len(orders_result.get("orders", [])),
+            "errors": errors
+        }
     
     async def get_historical_prices(
         self,
