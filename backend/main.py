@@ -189,6 +189,8 @@ app = FastAPI(title="Strategy Generator API", version="1.0.0")
 app.include_router(live_trading.router)
 from routers import trade_history
 app.include_router(trade_history.router)
+from routers import data_export
+app.include_router(data_export.router)
 
 @app.post("/api/panic")
 async def trigger_panic_endpoint():
