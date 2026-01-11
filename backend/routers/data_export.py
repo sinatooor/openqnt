@@ -3,7 +3,7 @@ Data Export Router
 
 Provides endpoints to export market data and trade history as CSV files.
 """
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, Query, Response, HTTPException
 from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import datetime, timedelta
@@ -34,11 +34,20 @@ async def export_trades_csv(
     if symbol:
         query = query.filter(Trade.symbol == symbol)
     if start_date:
-        query = query.filter(Trade.entry_time >= datetime.fromisoformat(start_date))
+        try:
+            query = query.filter(Trade.entry_time >= datetime.fromisoformat(start_date))
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Invalid start_date format: {start_date}")
     if end_date:
-        query = query.filter(Trade.entry_time <= datetime.fromisoformat(end_date))
+        try:
+            query = query.filter(Trade.entry_time <= datetime.fromisoformat(end_date))
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Invalid end_date format: {end_date}")
     
     trades = query.order_by(Trade.entry_time.desc()).all()
+    
+    if not trades:
+        raise HTTPException(status_code=404, detail="No trades found for the specified criteria")
     
     # Create CSV in memory
     output = io.StringIO()
