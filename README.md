@@ -163,10 +163,15 @@ The AI chat uses Google ADK with a `trading_agent` that has access to:
 
 | Tool Category | Tools | Description |
 |---------------|-------|-------------|
-| **Market Research** | `search_market_news`, `search_sentiment`, `search_economic_calendar` | Real-time market data |
+| **Market Research** | `search_market_news`, `search_sentiment`, `search_economic_calendar`, `get_market_news`, `get_general_market_news` | Real-time market data & News |
+| **Web Research** | `scrape_url_text` | Extract content from external URLs |
 | **Indicators** | `create_custom_indicator`, `update`, `delete`, `list`, `get` | Custom indicator CRUD |
 | **Broker** | `execute_trade`, `get_positions`, `close_position`, `get_account_info`, `get_market_price` | IG Markets integration |
 | **RAG** | `find_similar_blocks`, `get_block_info`, `list_block_categories` | Block discovery |
+| **Strategy & Risk** | `run_monte_carlo_simulation`, `calculate_position_sizing`, `generate_trading_plan_template`, `calculate_risk_metrics`, `calculate_correlation_matrix`, `calculate_portfolio_beta` | Advanced Strategy Planning & Risk Analysis |
+| **Analysis** | `scan_candlestick_patterns`, `classify_market_regime` | Technical Pattern & Regime Analysis |
+| **Memory** | `save_note`, `read_note`, `list_notes`, `append_to_note` | Persistent Research Notebook |
+| **Control** | `update_strategy_risk_settings`, `adjust_trade_size`, `emergency_stop_strategy`, `check_active_strategy_status` | Dynamic Strategy Management |
 
 ## 🧪 Testing Suite
 
