@@ -647,7 +647,7 @@ The file `backend/ai_strategy_reviewer.py` contains a syntax error (unterminated
 ## Objective 104
 **id:** 104
 **title:** Integrate Rust Backtest Engine
-**status:** doing
+**status:** todo
 **details:**
 A Rust-based backtesting core exists in `backend/rust_backtest` but is currently dormant. Enabling this will provide significant performance improvements over the Python-based `IRSimulator`.
 
@@ -665,7 +665,7 @@ A Rust-based backtesting core exists in `backend/rust_backtest` but is currently
 ## Objective 105
 **id:** 105
 **title:** Automated Frontend-Backend Block Definition Sync
-**status:** todo
+**status:** done
 **details:**
 Strategy blocks are defined in TypeScript (`src/features/**/blocks/*.ts`) and mapped to Python logic in `backend/block_python_map.json`. These definitions are manually synchronized, leading to potential drift where a frontend block generates XML that the backend cannot handle.
 

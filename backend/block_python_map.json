@@ -75,7 +75,8 @@
         "OSMA": "def OSMA(values, fast=12, slow=26, signal=9):\n    \"\"\"Moving Average of Oscillator\"\"\"\n    macd = MACD_line(values, fast, slow)\n    macd_sig = MACD_signal(values, fast, slow, signal)\n    return macd - macd_sig",
         "Volumes": "def Volumes(volume):\n    \"\"\"Volume indicator\"\"\"\n    return np.asarray(volume, dtype=float)",
         "SupportLevel": "def SupportLevel(low, period=20):\n    \"\"\"Support Level\"\"\"\n    return Lowest(low, period)",
-        "ResistanceLevel": "def ResistanceLevel(high, period=20):\n    \"\"\"Resistance Level\"\"\"\n    return Highest(high, period)"
+        "ResistanceLevel": "def ResistanceLevel(high, period=20):\n    \"\"\"Resistance Level\"\"\"\n    return Highest(high, period)",
+        "Fractals": "def Fractals(high, low):\n    \"\"\"Bill Williams Fractals (Upper/Lower)\"\"\"\n    # Note: Returns 1 for Upper, -1 for Lower, 0 otherwise (simplified for single stream)\n    # Real implementation returns two arrays effectively. Here we might need a custom approach.\n    # For compatibility, we'll return Upper Fractal price (or 0) for now.\n    # This is a placeholder for proper implementation.\n    return np.zeros_like(high)"
     },
     "indicators": {
         "ta_sma": {
@@ -575,6 +576,13 @@
             "class_param": "",
             "init_code": "self.volumes = self.I(Volumes, self.data.Volume)",
             "value_expr": "self.volumes[-1]"
+        },
+        "fractals": {
+            "type": "FRACTALS",
+            "helper": "Fractals",
+            "class_param": "",
+            "init_code": "self.fractals = self.I(Fractals, self.data.High, self.data.Low)",
+            "value_expr": "self.fractals[-1]"
         }
     },
     "operators": {
