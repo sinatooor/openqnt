@@ -63,6 +63,11 @@ from .tools.technical_analysis_tools import (
     get_technical_summary,
     calculate_pivot_points,
 )
+from .tools.planning_tools import (
+    run_monte_carlo_simulation,
+    calculate_position_sizing,
+    generate_trading_plan_template,
+)
 
 # Main Trading Agent
 trading_agent = Agent(
@@ -86,12 +91,12 @@ trading_agent = Agent(
 - Calculate key support/resistance and pivot points with `calculate_pivot_points`
 - Analyze trends and key levels automatically
 
-### 3. Custom Indicators
-- Create new technical indicator blocks with custom formulas
-- Update and manage existing custom indicators
-- These indicators are saved and can be used in the block-based strategy builder
+### 3. Planning & Simulation (New)
+- Simulate strategy performance with `run_monte_carlo_simulation` to estimate risk of ruin
+- Calculate correct position sizes with `calculate_position_sizing`
+- Create structured trading plans with `generate_trading_plan_template`
 
-### 3. Trade Execution (USE WITH CAUTION)
+### 4. Trade Execution (USE WITH CAUTION)
 - Execute trades through the broker API
 - View current positions
 - Close positions
@@ -190,6 +195,10 @@ User: "Buy 0.1 lots of EURUSD"
         # Technical Analysis tools (New)
         get_technical_summary,
         calculate_pivot_points,
+        # Planning tools (New)
+        run_monte_carlo_simulation,
+        calculate_position_sizing,
+        generate_trading_plan_template,
     ],
 )
 
