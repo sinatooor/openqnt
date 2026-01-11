@@ -238,5 +238,24 @@ class Trade(Base):
     
     created_at = Column(DateTime, default=dt.datetime.utcnow)
     updated_at = Column(DateTime, default=dt.datetime.utcnow, onupdate=dt.datetime.utcnow)
+    
+    # Trade Journaling - JSON field for tags like {"entry_reason": "RSI oversold", "regime": "trending"}
+    tags = Column(Text, nullable=True)  # JSON string
 
     execution = relationship("StrategyExecution", back_populates="trades")
+    
+    def get_tags(self):
+        """Return tags as a dictionary."""
+        import json
+        if self.tags:
+            try:
+                return json.loads(self.tags)
+            except:
+                return {}
+        return {}
+    
+    def set_tags(self, tags_dict):
+        """Set tags from a dictionary."""
+        import json
+        self.tags = json.dumps(tags_dict) if tags_dict else None
+

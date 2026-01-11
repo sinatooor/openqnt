@@ -561,7 +561,7 @@ Real trading strategies often include dynamic position management. Without these
 
 **id:** 019  
 **title:** Add trade journaling and tagging  
-**status:** blocked  
+**status:** done  
 
 **details:**
 Allow trades to be tagged with metadata:
