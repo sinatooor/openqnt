@@ -27,6 +27,7 @@ interface PerformanceDashboardProps {
 export const PerformanceDashboard = ({ className }: PerformanceDashboardProps) => {
     const [summary, setSummary] = useState<TradeSummary | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [timeframe, setTimeframe] = useState<"7d" | "30d" | "all">("30d");
 
     useEffect(() => {
@@ -35,14 +36,18 @@ export const PerformanceDashboard = ({ className }: PerformanceDashboardProps) =
 
     const fetchSummary = async () => {
         setLoading(true);
+        setError(null);
         try {
             const response = await fetch(`/api/trades/summary?timeframe=${timeframe}`);
             if (response.ok) {
                 const data = await response.json();
                 setSummary(data);
+            } else {
+                setError("Failed to load performance data");
             }
         } catch (err) {
             console.error("Failed to fetch summary:", err);
+            setError("Unable to connect to server");
         } finally {
             setLoading(false);
         }
@@ -103,6 +108,19 @@ export const PerformanceDashboard = ({ className }: PerformanceDashboardProps) =
                         </Card>
                     ))}
                 </div>
+            ) : error ? (
+                <Card className="border-red-500/30 bg-red-950/20">
+                    <CardContent className="p-6 text-center">
+                        <TrendingDown className="w-8 h-8 mx-auto mb-2 text-red-400" />
+                        <p className="text-red-400 font-medium">{error}</p>
+                        <button
+                            onClick={fetchSummary}
+                            className="mt-3 text-sm text-muted-foreground hover:text-foreground underline"
+                        >
+                            Try again
+                        </button>
+                    </CardContent>
+                </Card>
             ) : (
                 <>
                     {/* Main Stats Row */}
