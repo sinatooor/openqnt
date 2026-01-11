@@ -17,7 +17,7 @@ except ImportError:
 PLAN_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), "../plan.md"))
 REPO_ROOT = os.path.dirname(PLAN_FILE)
 MAX_RETRIES = 10
-GEMINI_MODEL = "gemini-3-pro-preview"
+GEMINI_MODEL = "" # Use CLI default
 PAUSE_FILE = os.path.join(REPO_ROOT, ".pause_improve_loop")
 AI_TIMEOUT = 900 # 15 minutes
 
@@ -74,7 +74,9 @@ def call_gemini(prompt):
         pass
         
     try:
-        cmd = ["gemini", "-m", GEMINI_MODEL, "--output-format", "text"]
+        cmd = ["gemini", "--output-format", "text"]
+        if GEMINI_MODEL:
+            cmd.extend(["-m", GEMINI_MODEL])
         
         process = subprocess.Popen(
             cmd,
@@ -362,6 +364,8 @@ FILE: <path>
                 all_passed = False
                 last_error = f"Command failed: {cmd}\nStdout: {out}\nStderr: {err}"
                 log(f"Validation failed: {cmd}")
+                log(f"Stdout: {out}")
+                log(f"Stderr: {err}")
                 break
         
         if all_passed:
@@ -424,7 +428,19 @@ def main():
              time.sleep(10)
              continue
 
-        # Find Todo
+        # 1. Resume interrupted/doing tasks first
+        doing = next((o for o in objs if o['status'].lower() == 'doing'), None)
+        if doing:
+            log(f"Resuming interrupted objective {doing['id']}...")
+            success = process_objective(pm, doing)
+            if success:
+                pm.update_status(doing['id'], 'done')
+                git_commit(doing['id'], doing['title'])
+            else:
+                log(f"Objective {doing['id']} failed/blocked.")
+            continue
+
+        # 2. Find Todo
         todo = next((o for o in objs if o['status'].lower() == 'todo'), None)
         
         if todo:
