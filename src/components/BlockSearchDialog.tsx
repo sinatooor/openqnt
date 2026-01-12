@@ -13,7 +13,7 @@ import {
     controlBlocksToolbox,
     tradeBlocksToolbox,
     taBlocksToolbox,
-    myBlocksToolbox,
+    variablesAndFunctionsToolbox,
 } from "@/config/blockly/toolbox";
 import { Blocks } from "lucide-react";
 
@@ -120,7 +120,7 @@ export const BlockSearchDialog = ({
         processToolbox(controlBlocksToolbox, "Control");
         processToolbox(tradeBlocksToolbox, "Trade");
         processToolbox(taBlocksToolbox, "TA Tools");
-        processToolbox(myBlocksToolbox, "My Blocks");
+        processToolbox(variablesAndFunctionsToolbox, "Variables");
 
         // Add Values category manually as it's defined inline in BlocklyWorkspace
         items.push({ type: "math_number", category: "Values", label: "number" });
@@ -133,7 +133,7 @@ export const BlockSearchDialog = ({
             <CommandInput placeholder="Search for blocks..." />
             <CommandList>
                 <CommandEmpty>No results found.</CommandEmpty>
-                {["Environment", "Operators", "Control", "Trade", "TA Tools", "Values", "My Blocks"].map((category) => {
+                {["Environment", "Operators", "Control", "Trade", "TA Tools", "Values", "Variables"].map((category) => {
                     const categoryItems = allItems.filter((item) => item.category === category);
                     if (categoryItems.length === 0) return null;
 
