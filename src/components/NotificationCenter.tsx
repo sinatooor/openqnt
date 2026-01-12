@@ -100,9 +100,9 @@ export const NotificationCenter = ({ className }: NotificationCenterProps) => {
                 </Button>
             </PopoverTrigger>
             <PopoverContent
-                className="w-80 p-0"
+                className="w-80 p-0 z-[1100]"
                 align="end"
-                side="bottom"
+                side="top"
                 sideOffset={8}
             >
                 {/* Header */}
