@@ -11,7 +11,8 @@ import {
     GitBranch,
     ChevronUp,
     Check,
-    Users
+    Users,
+    Plus
 } from "lucide-react";
 import {
     Popover,
@@ -24,16 +25,20 @@ import {
     CommandGroup,
     CommandInput,
     CommandItem,
-    CommandList
+    CommandList,
+    CommandSeparator
 } from "@/components/ui/command";
 import { SystemStatus } from "./SystemStatus";
+
+const MAX_STRATEGIES = 8;
 
 interface StatusBarProps {
     currentStrategyName: string;
     onLoadStrategy: (xml: string, name: string) => void;
+    onNewStrategy?: () => void;
 }
 
-export const StatusBar = ({ currentStrategyName, onLoadStrategy }: StatusBarProps) => {
+export const StatusBar = ({ currentStrategyName, onLoadStrategy, onNewStrategy }: StatusBarProps) => {
     const [openStrategySelector, setOpenStrategySelector] = useState(false);
     const { savedStrategies } = useUserProfile();
 
@@ -67,6 +72,32 @@ export const StatusBar = ({ currentStrategyName, onLoadStrategy }: StatusBarProp
                             <CommandInput placeholder="Switch strategy..." />
                             <CommandList>
                                 <CommandEmpty>No strategies found.</CommandEmpty>
+                                {/* New Strategy Option */}
+                                {onNewStrategy && savedStrategies.length < MAX_STRATEGIES && (
+                                    <CommandGroup>
+                                        <CommandItem
+                                            onSelect={() => {
+                                                onNewStrategy();
+                                                setOpenStrategySelector(false);
+                                            }}
+                                            className="text-primary"
+                                        >
+                                            <Plus className="mr-2 h-4 w-4" />
+                                            New Strategy
+                                            <span className="ml-auto text-xs text-muted-foreground">
+                                                {savedStrategies.length}/{MAX_STRATEGIES}
+                                            </span>
+                                        </CommandItem>
+                                    </CommandGroup>
+                                )}
+                                {savedStrategies.length >= MAX_STRATEGIES && (
+                                    <CommandGroup>
+                                        <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                                            Max {MAX_STRATEGIES} strategies reached
+                                        </div>
+                                    </CommandGroup>
+                                )}
+                                <CommandSeparator />
                                 <CommandGroup heading="Saved Strategies">
                                     {savedStrategies.map((strategy) => (
                                         <CommandItem
