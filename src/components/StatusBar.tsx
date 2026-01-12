@@ -68,7 +68,7 @@ export const StatusBar = ({ currentStrategyName, onLoadStrategy, onNewStrategy }
                             </span>
                         </button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[250px] p-0 mb-1" side="top" align="start">
+                    <PopoverContent className="w-[250px] p-0 mb-1 z-[1100]" side="top" align="start">
                         <Command>
                             <CommandInput placeholder="Switch strategy..." />
                             <CommandList>
