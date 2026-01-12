@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel, Input, Label, Tooltip, TooltipContent, TooltipTrigger, Separator, Badge, Card, CardContent } from "@/components/ui";
-import { X, TrendingUp, History, Zap, AlertCircle, CheckCircle2, Play, Square, Loader2, BarChart3, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { X, TrendingUp, History, Zap, AlertCircle, CheckCircle2, Play, Square, Loader2, BarChart3, ArrowUpRight, ArrowDownRight, GitCompare } from "lucide-react";
 import { TourTriggerButton } from "./GuidedTour";
 import { toast } from "sonner";
 import { BacktestVisualizationModal } from "./BacktestVisualizationModal";
 import { generateCode } from "@/config/blockly/generator";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { StrategyComparison, saveBacktestResult } from "./StrategyComparison";
 
 // Helper function to format numbers to 4 decimal places
 const formatNumber = (value: number | undefined, decimals: number = 4): string => {
@@ -109,6 +110,9 @@ export const BacktestingPanel = ({ onStartTour, onClose, leverage = "1", onLever
     const [isVisModalOpen, setIsVisModalOpen] = useState(false);
     const [visualizationHtml, setVisualizationHtml] = useState<string | null>(null);
     const [rawStats, setRawStats] = useState<string | null>(null);
+
+    // Comparison state
+    const [showComparison, setShowComparison] = useState(false);
 
     const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
@@ -268,6 +272,20 @@ export const BacktestingPanel = ({ onStartTour, onClose, leverage = "1", onLever
 
                     toast.success("PyGenerator Backtest completed!", {
                         description: `Return: ${formatNumber(data.metrics.total_return, 4)}% with ${data.metrics.total_trades} trades`
+                    });
+
+                    // Save to comparison history
+                    saveBacktestResult({
+                        strategyName: 'Strategy',
+                        timestamp: new Date().toISOString(),
+                        symbol: tradingSymbol,
+                        totalReturn: data.metrics.total_return,
+                        winRate: data.metrics.win_rate,
+                        totalTrades: data.metrics.total_trades,
+                        maxDrawdown: data.metrics.max_drawdown,
+                        sharpeRatio: data.metrics.sharpe_ratio,
+                        profitFactor: data.metrics.profit_factor,
+                        finalBalance: data.final_balance
                     });
                 } else {
                     toast.error("Backtest failed", { description: data.error });
@@ -930,25 +948,39 @@ export const BacktestingPanel = ({ onStartTour, onClose, leverage = "1", onLever
             </div>
 
             {/* Action Button */}
-            <div className="p-4 border-t border-border">
+            <div className="p-4 border-t border-border space-y-2">
                 {mode === "backtest" ? (
-                    <Button
-                        onClick={handleRunBacktest}
-                        disabled={isBacktesting}
-                        className="w-full bg-purple-600 hover:bg-purple-700 font-semibold py-5"
-                    >
-                        {isBacktesting ? (
-                            <>
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                Running Backtest...
-                            </>
-                        ) : (
-                            <>
-                                <BarChart3 className="w-4 h-4 mr-2" />
-                                Run Backtest
-                            </>
+                    <>
+                        <Button
+                            onClick={handleRunBacktest}
+                            disabled={isBacktesting}
+                            className="w-full bg-purple-600 hover:bg-purple-700 font-semibold py-5"
+                        >
+                            {isBacktesting ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Running Backtest...
+                                </>
+                            ) : (
+                                <>
+                                    <BarChart3 className="w-4 h-4 mr-2" />
+                                    Run Backtest
+                                </>
+                            )}
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowComparison(!showComparison)}
+                            className="w-full"
+                        >
+                            <GitCompare className="w-4 h-4 mr-2" />
+                            {showComparison ? 'Hide Comparison' : 'Compare Strategies'}
+                        </Button>
+                        {showComparison && (
+                            <StrategyComparison onClose={() => setShowComparison(false)} />
                         )}
-                    </Button>
+                    </>
                 ) : isStrategyRunning ? (
                     <Button
                         onClick={handleStopStrategy}

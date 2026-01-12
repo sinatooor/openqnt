@@ -70,6 +70,7 @@ backend/adk_agents/tools/planning_tools.py
 backend/adk_agents/tools/portfolio_tools.py
 backend/adk_agents/tools/rag_tools.py
 backend/adk_agents/tools/risk_tools.py
+backend/adk_agents/tools/screener_tools.py
 backend/adk_agents/tools/search_tools.py
 backend/adk_agents/tools/strategy_control_tools.py
 backend/adk_agents/tools/technical_analysis_tools.py
@@ -294,7 +295,10 @@ src/components/JournalModal.tsx
 src/components/NavLink.tsx
 src/components/PerformanceDashboard.tsx
 src/components/ProfileModal.tsx
+src/components/ScreenerModal.tsx
+src/components/ScreenerPanel.tsx
 src/components/StatusBadge.tsx
+src/components/StatusBar.tsx
 src/components/StrategyTemplatesDialog.tsx
 src/components/SystemStatus.tsx
 src/components/TimeframeSelector.tsx

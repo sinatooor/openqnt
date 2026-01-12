@@ -26,9 +26,12 @@ import {
     Mail,
     CheckCircle,
     XCircle,
+    PieChart,
 } from 'lucide-react';
+import { PortfolioDashboard } from './PortfolioDashboard';
+import { RiskSettings } from './RiskSettings';
 
-type TabType = 'profile' | 'strategies' | 'settings' | 'connectors';
+type TabType = 'profile' | 'portfolio' | 'strategies' | 'settings' | 'connectors';
 
 interface ProfileModalProps {
     isOpen: boolean;
@@ -89,6 +92,7 @@ export const ProfileModal = ({
 
     const tabs = [
         { id: 'profile' as TabType, label: 'Profile', icon: User },
+        { id: 'portfolio' as TabType, label: 'Portfolio', icon: PieChart },
         { id: 'strategies' as TabType, label: 'Strategies', icon: FolderOpen },
         { id: 'settings' as TabType, label: 'Settings', icon: Settings },
         { id: 'connectors' as TabType, label: 'Connectors', icon: Link2 },
@@ -260,6 +264,11 @@ export const ProfileModal = ({
                             </div>
                         )}
 
+                        {/* Portfolio Tab */}
+                        {activeTab === 'portfolio' && (
+                            <PortfolioDashboard />
+                        )}
+
                         {/* Strategies Tab */}
                         {activeTab === 'strategies' && (
                             <div className="space-y-4">
@@ -376,6 +385,12 @@ export const ProfileModal = ({
                                         />
                                     </button>
                                 </div>
+
+                                {/* Separator */}
+                                <div className="border-t border-border pt-4 mt-4" />
+
+                                {/* Risk Management */}
+                                <RiskSettings />
                             </div>
                         )}
 
