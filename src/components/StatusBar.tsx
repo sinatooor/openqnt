@@ -29,6 +29,7 @@ import {
     CommandSeparator
 } from "@/components/ui/command";
 import { SystemStatus } from "./SystemStatus";
+import { NotificationCenter } from "./NotificationCenter";
 
 const MAX_STRATEGIES = 8;
 
@@ -151,6 +152,9 @@ export const StatusBar = ({ currentStrategyName, onLoadStrategy, onNewStrategy }
 
                 {/* System Status */}
                 <SystemStatusInBar />
+
+                {/* Notifications */}
+                <NotificationCenter className="h-6 w-6" />
             </div>
         </div>
     );

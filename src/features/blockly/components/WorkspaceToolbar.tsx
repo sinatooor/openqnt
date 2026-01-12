@@ -19,7 +19,6 @@ import {
     Sparkles,
     User,
 } from "lucide-react";
-import { NotificationCenter } from "@/components/NotificationCenter";
 
 
 export interface WorkspaceToolbarProps {
@@ -315,9 +314,6 @@ export const WorkspaceToolbar = ({
                         <p className="text-xs text-muted-foreground mt-1">Manage account, saved strategies & settings</p>
                     </TooltipContent>
                 </Tooltip>
-
-                {/* Notifications */}
-                <NotificationCenter />
 
                 <Tooltip>
                     <TooltipTrigger asChild>
