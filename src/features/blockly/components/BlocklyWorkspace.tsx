@@ -478,7 +478,7 @@ export const BlocklyWorkspace = ({
       <div className="flex-1 flex min-h-0 relative">
         <div className="flex-1 relative group">
           <div ref={blocklyDiv} className="absolute inset-0" />
-          {blockCount === 0 && <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          {blockCount === 0 && <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
             <div className="text-center space-y-4 opacity-0 animate-in fade-in zoom-in duration-500 delay-150 fill-mode-forwards">
               <div className="bg-card/50 backdrop-blur-sm p-8 rounded-2xl border border-border/50 shadow-2xl">
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -560,6 +560,13 @@ export const BlocklyWorkspace = ({
           loadXmlToWorkspace(xml, true);
           setStrategyName(name);
           toast.success(`Loaded: ${name}`);
+        }}
+        onNewStrategy={() => {
+          if (workspaceRef.current) {
+            workspaceRef.current.clear();
+            setStrategyName(`Strategy ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
+            toast.success("New strategy canvas created");
+          }
         }}
       />
 
