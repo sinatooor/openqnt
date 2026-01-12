@@ -1,7 +1,7 @@
 import { useEffect, useRef, RefObject, MutableRefObject } from 'react';
 import * as Blockly from 'blockly';
 import { toast } from 'sonner';
-import { environmentBlocksToolbox, operatorBlocksToolbox, controlBlocksToolbox, tradeBlocksToolbox, taBlocksToolbox, myBlocksToolbox } from "@/config/blockly/toolbox";
+import { environmentBlocksToolbox, operatorBlocksToolbox, controlBlocksToolbox, tradeBlocksToolbox, taBlocksToolbox, variablesAndFunctionsToolbox } from "@/config/blockly/toolbox";
 import { registerAllCustomBlocks, getCustomBlocksToolboxItems, CustomBlockDef } from '@/lib/customBlockLoader';
 
 interface UseBlocklyInitProps {
@@ -16,6 +16,7 @@ interface UseBlocklyInitProps {
     aiPanelRef: RefObject<HTMLDivElement>;
     handleOpenAdvancedLogic: (blockId: string, type: string, xml: string) => void;
     handleOpenIndicatorSettings: (blockId: string, indicatorName: string) => void;
+    // Add custom blocks prop or state if needed? No, we fetch inside. 
 }
 
 export const useBlocklyInit = ({
@@ -118,6 +119,8 @@ export const useBlocklyInit = ({
 
             // Initialize workspace with configuration
             // Build toolbox contents dynamically
+            const customItems = getCustomBlocksToolboxItems(customBlocksRef.current);
+
             const toolboxContents: any[] = [
                 {
                     kind: "category",
@@ -168,22 +171,17 @@ export const useBlocklyInit = ({
                 },
                 {
                     kind: "category",
+                    name: "Variables",
+                    colour: "#64748b",
+                    contents: variablesAndFunctionsToolbox
+                },
+                {
+                    kind: "category",
                     name: "My Blocks",
                     colour: "#ef4444",
-                    contents: myBlocksToolbox
+                    contents: customItems.length > 0 ? customItems : [{ kind: 'label', text: 'No Custom Blocks' }]
                 }
             ];
-
-            // Only add Custom category if there are custom blocks
-            const customItems = getCustomBlocksToolboxItems(customBlocksRef.current);
-            if (customItems.length > 0) {
-                toolboxContents.push({
-                    kind: "category",
-                    name: "Custom",
-                    colour: "#a855f7",
-                    contents: customItems
-                });
-            }
 
             // Initialize workspace with configuration
             const workspace = Blockly.inject(containerRef.current, {

@@ -380,7 +380,7 @@ export const taBlocksToolbox = [
   { kind: 'block', type: 'ta_resistance' },
 ];
 
-export const myBlocksToolbox = [
+export const variablesAndFunctionsToolbox = [
   { kind: 'label', text: 'Variables' },
   { kind: 'block', type: 'variables_set' },
   { kind: 'block', type: 'variables_get' },
