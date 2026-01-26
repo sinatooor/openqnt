@@ -90,7 +90,7 @@ export const BlocklyWorkspace = ({
   const [showLineNumbers, setShowLineNumbers] = useState(true);
   const [beautified, setBeautified] = useState(true);
 
-  // Panel Visibility
+  /* Panel Visibility */
   const [showBacktest, setShowBacktest] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -490,6 +490,8 @@ export const BlocklyWorkspace = ({
             </div>
           </div>}
         </div>
+
+
 
         {showCode && <CodeViewPanel
           mqlCode={generatedMqlCode}

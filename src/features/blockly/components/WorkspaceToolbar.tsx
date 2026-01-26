@@ -209,6 +209,8 @@ export const WorkspaceToolbar = ({
                     </TooltipContent>
                 </Tooltip>
 
+
+
                 <Separator orientation="vertical" className="h-6" />
 
                 {/* Workspace Controls */}
