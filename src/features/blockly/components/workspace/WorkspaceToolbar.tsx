@@ -72,8 +72,8 @@ export const WorkspaceToolbar = ({
   onToggleCode,
 }: WorkspaceToolbarProps) => {
   return (
-    <div className="h-14 bg-card border-b border-border flex items-center justify-between px-4 gap-3">
-      <div className="flex items-center gap-3">
+    <div className="h-11 bg-card border-b border-border flex items-center justify-between px-3 gap-2">
+      <div className="flex items-center gap-2">
         {isEditingName ? (
           <input
             type="text"
@@ -84,16 +84,16 @@ export const WorkspaceToolbar = ({
               if (e.key === "Enter") onEditingNameChange(false);
             }}
             autoFocus
-            className="h-8 px-2 py-1 text-lg font-semibold bg-transparent border-b-2 border-primary focus:outline-none w-[200px]"
+            className="h-7 px-2 py-1 text-sm font-semibold bg-transparent border-b-2 border-primary focus:outline-none w-[180px]"
           />
         ) : (
           <Tooltip>
             <TooltipTrigger asChild>
               <div
-                className="flex items-center gap-2 px-2 py-1 rounded-md cursor-pointer hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200 group"
+                className="flex items-center gap-1.5 px-2 py-1 rounded-md cursor-pointer hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200 group"
                 onClick={() => onEditingNameChange(true)}
               >
-                <h2 className="font-semibold text-foreground text-lg max-w-[200px] truncate">
+                <h2 className="font-semibold text-foreground text-sm max-w-[180px] truncate">
                   {strategyName}
                 </h2>
                 <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />

@@ -201,12 +201,12 @@ export const ProfileModal = ({
                             <div className="space-y-4">
                                 {isLoggedIn ? (
                                     <>
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-2xl font-bold text-white">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-lg font-bold text-white">
                                                 {user?.name.charAt(0).toUpperCase()}
                                             </div>
                                             <div>
-                                                <h3 className="text-xl font-semibold">{user?.name}</h3>
+                                                <h3 className="text-sm font-semibold">{user?.name}</h3>
                                                 <p className="text-muted-foreground flex items-center gap-1">
                                                     <Mail className="w-3 h-3" />
                                                     {user?.email}
@@ -214,16 +214,16 @@ export const ProfileModal = ({
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-4 mt-6">
-                                            <div className="p-4 rounded-lg bg-muted/50 border border-border">
-                                                <div className="text-2xl font-bold">{savedStrategies.length}</div>
-                                                <div className="text-sm text-muted-foreground">Saved Strategies</div>
+                                        <div className="grid grid-cols-2 gap-3 mt-4">
+                                            <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                                                <div className="text-base font-bold">{savedStrategies.length}</div>
+                                                <div className="text-xs text-muted-foreground">Saved Strategies</div>
                                             </div>
-                                            <div className="p-4 rounded-lg bg-muted/50 border border-border">
-                                                <div className="text-2xl font-bold">
+                                            <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                                                <div className="text-base font-bold">
                                                     {user?.createdAt ? formatDate(user.createdAt).split(',')[0] : '-'}
                                                 </div>
-                                                <div className="text-sm text-muted-foreground">Member Since</div>
+                                                <div className="text-xs text-muted-foreground">Member Since</div>
                                             </div>
                                         </div>
                                     </>
@@ -231,7 +231,7 @@ export const ProfileModal = ({
                                     <div className="space-y-4">
                                         <div className="text-center py-6">
                                             <User className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-                                            <h3 className="text-lg font-semibold">Welcome to PPM</h3>
+                                            <h3 className="text-sm font-semibold">Welcome to PPM</h3>
                                             <p className="text-muted-foreground text-sm">
                                                 Sign in to save your strategies and preferences
                                             </p>

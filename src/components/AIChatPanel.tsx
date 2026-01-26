@@ -380,30 +380,30 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
     };
 
     return (
-        <div className="w-80 bg-card border-l border-border flex flex-col overflow-hidden animate-fade-in h-full">
+        <div className="w-72 bg-card border-l border-border flex flex-col overflow-hidden animate-fade-in h-full">
             {/* Header */}
-            <div className="px-3 py-2 border-b border-border">
-                <div className="flex items-center justify-between mb-3 gap-2">
-                    <div className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-pink-500" />
-                        <h2 className="font-semibold text-foreground text-sm">AI Assistant</h2>
+            <div className="px-2.5 py-1.5 border-b border-border">
+                <div className="flex items-center justify-between mb-2 gap-2">
+                    <div className="flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-pink-500" />
+                        <h2 className="font-medium text-foreground text-xs">AI Assistant</h2>
                     </div>
                     {onClose && (
-                        <Button onClick={onClose} variant="ghost" size="icon" className="h-7 w-7 hover:bg-destructive/10">
-                            <X className="w-4 h-4" />
+                        <Button onClick={onClose} variant="ghost" size="icon" className="h-6 w-6 hover:bg-destructive/10">
+                            <X className="w-3.5 h-3.5" />
                         </Button>
                     )}
                 </div>
 
                 {/* Mode Selector */}
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                     <Button
                         variant={isGenerateMode ? "secondary" : "ghost"}
                         size="sm"
                         onClick={() => setIsGenerateMode(true)}
                         className="flex-1"
                     >
-                        <Code className="w-4 h-4 mr-2" />
+                        <Code className="w-3.5 h-3.5 mr-1.5" />
                         Generate
                     </Button>
                     <Button
@@ -412,7 +412,7 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
                         onClick={() => setIsGenerateMode(false)}
                         className="flex-1"
                     >
-                        <MessageSquare className="w-4 h-4 mr-2" />
+                        <MessageSquare className="w-3.5 h-3.5 mr-1.5" />
                         Chat
                     </Button>
                 </div>
@@ -437,59 +437,59 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
             </div>
 
             <ScrollArea
-                className={`flex-1 p-4 transition-colors ${isDragOver ? 'bg-pink-500/10 border-2 border-pink-500 border-dashed' : ''}`}
+                className={`flex-1 p-3 transition-colors ${isDragOver ? 'bg-pink-500/10 border-2 border-pink-500 border-dashed' : ''}`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
             >
                 {messages.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-6">
-                        <Sparkles className="w-12 h-12 mb-4 text-pink-500/50" />
+                    <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
+                        <Sparkles className="w-10 h-10 mb-3 text-pink-500/50" />
                         {isGenerateMode ? (
                             <>
-                                <p className="text-sm mb-4">Describe your trading strategy in plain language</p>
-                                <div className="text-xs space-y-2">
+                                <p className="text-xs mb-3">Describe your trading strategy in plain language</p>
+                                <div className="text-[10px] space-y-1.5">
                                     <p className="italic">"Buy when price crosses above 20-day SMA"</p>
                                     <p className="italic">"RSI strategy - long below 30, close above 70"</p>
                                 </div>
                             </>
                         ) : (
                             <>
-                                <p className="text-sm mb-4">Ask questions about trading strategies</p>
-                                <div className="text-xs space-y-2">
+                                <p className="text-xs mb-3">Ask questions about trading strategies</p>
+                                <div className="text-[10px] space-y-1.5">
                                     <p className="italic">"What is RSI and how do I use it?"</p>
                                     <p className="italic">"Explain moving average crossover strategies"</p>
                                 </div>
                             </>
                         )}
-                        <p className="text-xs mt-4 text-pink-500/50">
+                        <p className="text-[10px] mt-3 text-pink-500/50">
                             Drag blocks from workspace for context
                         </p>
                     </div>
                 ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                         {messages.map((msg, idx) => (
                             <div
                                 key={idx}
                                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                             >
                                 <div
-                                    className={`max-w-[80%] rounded-lg p-3 ${msg.role === "user"
+                                    className={`max-w-[85%] rounded-lg p-2.5 ${msg.role === "user"
                                         ? "bg-pink-500/20 text-foreground"
                                         : "bg-muted text-foreground"
                                         }`}
                                 >
                                     {msg.role === "assistant" ? (
-                                        <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
+                                        <div className="text-xs prose prose-xs dark:prose-invert max-w-none">
                                             <ReactMarkdown
                                                 components={{
-                                                    p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                                                    ul: ({ children }) => <ul className="list-disc ml-4 mb-2">{children}</ul>,
-                                                    ol: ({ children }) => <ol className="list-decimal ml-4 mb-2">{children}</ol>,
-                                                    li: ({ children }) => <li className="mb-1">{children}</li>,
+                                                    p: ({ children }) => <p className="mb-1.5 last:mb-0">{children}</p>,
+                                                    ul: ({ children }) => <ul className="list-disc ml-3 mb-1.5">{children}</ul>,
+                                                    ol: ({ children }) => <ol className="list-decimal ml-3 mb-1.5">{children}</ol>,
+                                                    li: ({ children }) => <li className="mb-0.5">{children}</li>,
                                                     strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
                                                     em: ({ children }) => <em className="italic">{children}</em>,
-                                                    code: ({ children }) => <code className="bg-background/50 px-1 py-0.5 rounded text-xs">{children}</code>,
+                                                    code: ({ children }) => <code className="bg-background/50 px-1 py-0.5 rounded text-[10px]">{children}</code>,
                                                 }}
                                             >
                                                 {msg.content}
@@ -497,10 +497,10 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
                                         </div>
                                     ) : (
                                         <>
-                                            <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                                            <p className="text-xs whitespace-pre-wrap">{msg.content}</p>
                                             {msg.blockXml && msg.blockName && (
-                                                <div className="mt-2 flex items-center gap-1 text-xs text-pink-500/80">
-                                                    <Blocks className="w-3 h-3" />
+                                                <div className="mt-1.5 flex items-center gap-1 text-[10px] text-pink-500/80">
+                                                    <Blocks className="w-2.5 h-2.5" />
                                                     <span>Block: {msg.blockName}</span>
                                                 </div>
                                             )}
@@ -511,53 +511,53 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
                         ))}
                         {isLoading && (
                             <div className="flex justify-start">
-                                <div className="bg-muted rounded-lg p-4 min-w-[250px]">
+                                <div className="bg-muted rounded-lg p-3 min-w-[200px]">
                                     {isGenerateMode && generationProgress ? (
-                                        <div className="space-y-3">
+                                        <div className="space-y-2">
                                             {/* Progress header */}
-                                            <div className="flex items-center gap-2">
-                                                <Loader2 className="w-4 h-4 animate-spin text-pink-500" />
-                                                <p className="text-sm font-medium text-foreground">
+                                            <div className="flex items-center gap-1.5">
+                                                <Loader2 className="w-3.5 h-3.5 animate-spin text-pink-500" />
+                                                <p className="text-xs font-medium text-foreground">
                                                     {generationProgress.message}
                                                 </p>
                                             </div>
 
                                             {/* Progress bar */}
-                                            <div className="w-full bg-background/50 rounded-full h-2">
+                                            <div className="w-full bg-background/50 rounded-full h-1.5">
                                                 <div
-                                                    className="bg-gradient-to-r from-pink-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+                                                    className="bg-gradient-to-r from-pink-500 to-purple-500 h-1.5 rounded-full transition-all duration-300"
                                                     style={{ width: `${(generationProgress.step / generationProgress.totalSteps) * 100}%` }}
                                                 />
                                             </div>
 
                                             {/* Step indicator */}
-                                            <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                            <div className="flex justify-between items-center text-[10px] text-muted-foreground">
                                                 <span>Step {generationProgress.step} of {generationProgress.totalSteps}</span>
-                                                <span className="capitalize px-2 py-0.5 bg-pink-500/10 rounded text-pink-500">
+                                                <span className="capitalize px-1.5 py-0.5 bg-pink-500/10 rounded text-pink-500">
                                                     {generationProgress.phase}
                                                 </span>
                                             </div>
 
                                             {/* Blocks generated indicator */}
                                             {generationProgress.blocksGenerated && (
-                                                <div className="flex items-center gap-1 text-xs text-green-500">
-                                                    <Blocks className="w-3 h-3" />
+                                                <div className="flex items-center gap-1 text-[10px] text-green-500">
+                                                    <Blocks className="w-2.5 h-2.5" />
                                                     <span>{generationProgress.blocksGenerated} blocks generated</span>
                                                 </div>
                                             )}
 
                                             {/* Optimized indicator for rationalization */}
                                             {generationProgress.phase === 'complete' && slowMode && (
-                                                <div className="flex items-center gap-1 text-xs text-amber-500">
-                                                    <CheckCircle2 className="w-3 h-3" />
+                                                <div className="flex items-center gap-1 text-[10px] text-amber-500">
+                                                    <CheckCircle2 className="w-2.5 h-2.5" />
                                                     <span>Logic optimized</span>
                                                 </div>
                                             )}
                                         </div>
                                     ) : (
-                                        <div className="flex items-center gap-2">
-                                            <Loader2 className="w-4 h-4 animate-spin text-pink-500" />
-                                            <p className="text-sm text-muted-foreground">
+                                        <div className="flex items-center gap-1.5">
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin text-pink-500" />
+                                            <p className="text-xs text-muted-foreground">
                                                 {isGenerateMode ? "Initializing..." : "Thinking..."}
                                             </p>
                                         </div>
@@ -569,29 +569,29 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
                 )}
             </ScrollArea>
 
-            <div className="p-4 border-t border-border">
+            <div className="p-3 border-t border-border">
                 {!isGenerateMode && (
-                    <div className="flex items-center gap-2 px-3 py-1.5 mb-2 bg-muted/30 rounded-md text-xs text-muted-foreground">
-                        <Eye className="w-3 h-3" />
+                    <div className="flex items-center gap-1.5 px-2 py-1 mb-1.5 bg-muted/30 rounded-md text-[10px] text-muted-foreground">
+                        <Eye className="w-2.5 h-2.5" />
                         <span>AI can see your workspace ({workspaceBlockCount} blocks)</span>
                     </div>
                 )}
 
                 {draggedBlockXml && (
-                    <div className="mb-2 p-2 bg-pink-500/10 border border-pink-500/20 rounded flex items-center gap-2">
-                        <Blocks className="w-4 h-4 text-pink-500" />
-                        <span className="text-xs flex-1">Block attached: {draggedBlockXml.name}</span>
+                    <div className="mb-1.5 p-1.5 bg-pink-500/10 border border-pink-500/20 rounded flex items-center gap-1.5">
+                        <Blocks className="w-3.5 h-3.5 text-pink-500" />
+                        <span className="text-[10px] flex-1">Block: {draggedBlockXml.name}</span>
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6"
+                            className="h-5 w-5"
                             onClick={() => setDraggedBlockXml(null)}
                         >
-                            <X className="w-3 h-3" />
+                            <X className="w-2.5 h-2.5" />
                         </Button>
                     </div>
                 )}
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                     <Input
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
@@ -607,9 +607,9 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
                         className="bg-pink-500 hover:bg-pink-600"
                     >
                         {isLoading ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         ) : (
-                            <Send className="w-4 h-4" />
+                            <Send className="w-3.5 h-3.5" />
                         )}
                     </Button>
                 </div>

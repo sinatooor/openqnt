@@ -238,9 +238,9 @@ export const McptSimulationModal = ({ isOpen, onClose, symbol }: McptSimulationM
 
                     {/* Results Overlay */}
                     {result && (
-                        <div className="absolute top-4 left-4 bg-black/80 backdrop-blur border border-border p-4 rounded-lg shadow-xl">
-                            <h3 className="text-lg font-bold mb-2">Simulation Results</h3>
-                            <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                        <div className="absolute top-4 left-4 bg-black/80 backdrop-blur border border-border p-3 rounded-lg shadow-xl">
+                            <h3 className="text-sm font-bold mb-2">Simulation Results</h3>
+                            <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
                                 <span className="text-muted-foreground">P-Value:</span>
                                 <span className={result.pValue < 0.05 ? "text-green-400 font-bold" : "text-red-400 font-bold"}>
                                     {result.pValue.toFixed(4)}

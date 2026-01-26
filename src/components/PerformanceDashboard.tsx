@@ -85,9 +85,9 @@ export const PerformanceDashboard = ({ className }: PerformanceDashboardProps) =
 
     return (
         <div className={className}>
-            <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5 text-primary" />
+            <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold flex items-center gap-1.5">
+                    <BarChart3 className="w-4 h-4 text-primary" />
                     Performance Dashboard
                 </h2>
                 <Tabs value={timeframe} onValueChange={(v) => setTimeframe(v as "7d" | "30d" | "all")}>
@@ -133,7 +133,7 @@ export const PerformanceDashboard = ({ className }: PerformanceDashboardProps) =
                                     <DollarSign className="w-3 h-3" />
                                     Total P&L
                                 </div>
-                                <div className={`text-xl font-bold ${data.total_pnl >= 0 ? "text-green-400" : "text-red-400"}`}>
+                                <div className={`text-base font-bold ${data.total_pnl >= 0 ? "text-green-400" : "text-red-400"}`}>
                                     {formatCurrency(data.total_pnl)}
                                 </div>
                             </CardContent>
@@ -145,7 +145,7 @@ export const PerformanceDashboard = ({ className }: PerformanceDashboardProps) =
                                     <Target className="w-3 h-3" />
                                     Win Rate
                                 </div>
-                                <div className="text-xl font-bold">
+                                <div className="text-base font-bold">
                                     {formatPercent(data.win_rate)}
                                 </div>
                                 <Badge variant={data.win_rate >= 0.5 ? "default" : "secondary"} className="text-[10px] mt-1">
@@ -160,7 +160,7 @@ export const PerformanceDashboard = ({ className }: PerformanceDashboardProps) =
                                     <Activity className="w-3 h-3" />
                                     Profit Factor
                                 </div>
-                                <div className="text-xl font-bold">
+                                <div className="text-base font-bold">
                                     {data.profit_factor.toFixed(2)}
                                 </div>
                                 <Badge variant={data.profit_factor >= 1.5 ? "default" : "secondary"} className="text-[10px] mt-1">
@@ -175,7 +175,7 @@ export const PerformanceDashboard = ({ className }: PerformanceDashboardProps) =
                                     <TrendingDown className="w-3 h-3" />
                                     Max Drawdown
                                 </div>
-                                <div className="text-xl font-bold text-orange-400">
+                                <div className="text-base font-bold text-orange-400">
                                     {formatCurrency(data.max_drawdown)}
                                 </div>
                             </CardContent>

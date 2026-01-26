@@ -204,8 +204,8 @@ export const TradingViewChart = ({
     <div className="flex flex-col gap-4 animate-fade-in">
       {/* Chart Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h3 className="text-lg font-semibold text-foreground">{symbol}</h3>
+        <div className="flex items-center gap-1.5">
+          <h3 className="text-sm font-semibold text-foreground">{symbol}</h3>
           <Badge variant="secondary" className="animate-scale-in">{interval}</Badge>
         </div>
         <div className="flex items-center gap-2">
