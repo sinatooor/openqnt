@@ -42,13 +42,7 @@ except ImportError:
     VERIFICATION_AVAILABLE = False
     print("Warning: Verification module not available")
 
-# Import JSON-driven code generator (new approach)
-try:
-    from json_code_generator import generate_strategy_from_json
-    JSON_GENERATOR_AVAILABLE = True
-except ImportError:
-    JSON_GENERATOR_AVAILABLE = False
-    print("Warning: JSON code generator not available, using legacy generator")
+   
 
 # Import Rust backtest engine (high-performance)
 try:
@@ -194,20 +188,8 @@ def generate_strategy_code_simple(parsed: Dict[str, Any]) -> str:
     """
     Generate strategy code from parsed data.
     """
-    if JSON_GENERATOR_AVAILABLE:
-        try:
-            # generate_strategy_from_json returns (code, unknown_blocks) tuple
-            result = generate_strategy_from_json(parsed)
-            if isinstance(result, tuple):
-                code, unknown_blocks = result
-                if unknown_blocks:
-                    print(f"[CODE_GEN] Warning: {len(unknown_blocks)} unknown blocks")
-                return code if code else ""
-            return result if isinstance(result, str) else ""
-        except Exception as e:
-            print(f"JSON generation failed: {e}")
-            import traceback
-            traceback.print_exc()
+    # Legacy generator removed.
+    pass
             
     return ""
 

@@ -189,6 +189,57 @@ def DONCHIAN(high, low, n=20):
     lower = low.rolling(n).min()
     return upper.values, lower.values
 
+def KELTNER(high, low, close, n=20, multiplier=2.0):
+    """Keltner Channels"""
+    # EMA for middle line
+    middle = EMA(close, n)
+    # ATR for band width
+    atr = ATR(high, low, close, n)
+    upper = middle + (multiplier * atr)
+    lower = middle - (multiplier * atr)
+    return upper, middle, lower
+
+def ICHIMOKU(high, low, tenkan=9, kijun=26, senkou_b=52):
+    """Ichimoku Cloud"""
+    # Tenkan-sen (Conversion Line)
+    # (Highest High + Lowest Low) / 2 for last 9 periods
+    high_s = pd.Series(high)
+    low_s = pd.Series(low)
+    
+    tenkan_high = high_s.rolling(window=tenkan).max()
+    tenkan_low = low_s.rolling(window=tenkan).min()
+    tenkan_line = (tenkan_high + tenkan_low) / 2
+
+    # Kijun-sen (Base Line)
+    # (Highest High + Lowest Low) / 2 for last 26 periods
+    kijun_high = high_s.rolling(window=kijun).max()
+    kijun_low = low_s.rolling(window=kijun).min()
+    kijun_line = (kijun_high + kijun_low) / 2
+
+    # Senkou Span A (Leading Span A)
+    # (Conversion Line + Base Line) / 2, shifted forward by 26 periods
+    senkou_a = ((tenkan_line + kijun_line) / 2).shift(kijun)
+
+    # Senkou Span B (Leading Span B)
+    # (Highest High + Lowest Low) / 2 for last 52 periods, shifted forward by 26 periods
+    senkou_b_high = high_s.rolling(window=senkou_b).max()
+    senkou_b_low = low_s.rolling(window=senkou_b).min()
+    senkou_b_line = ((senkou_b_high + senkou_b_low) / 2).shift(kijun)
+    
+    # Chikou Span (Lagging Span) is just Close shifted back, but we return arrays aligned to current time
+    # This is usually handled by looking at Future data in backtesting or Past data in live.
+    # We will return 0s for now or just not use it for simple logic.
+    
+    return tenkan_line.values, kijun_line.values, senkou_a.values, senkou_b_line.values
+
+def GET_SUPPORT(low, n=20):
+    """Local Minima Support"""
+    return pd.Series(low).rolling(window=n).min().values
+
+def GET_RESISTANCE(high, n=20):
+    """Local Maxima Resistance"""
+    return pd.Series(high).rolling(window=n).max().values
+
 # =============================================================================
 # GENERATED STRATEGY
 # =============================================================================
@@ -616,6 +667,72 @@ pyGenerator.forBlock['donchian'] = function (block: Blockly.Block) {
         pyGenerator.indicators_.push(`self.donchian_upper_${period}, self.donchian_lower_${period} = self.I(DONCHIAN, self.data.High, self.data.Low, n=${period})`);
     }
     return [component === 'upper' ? `self.donchian_upper_${period}[-1]` : `self.donchian_lower_${period}[-1]`, pyGenerator.ORDER_ATOMIC];
+};
+
+pyGenerator.forBlock['ta_keltner'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'ma_period', 20);
+    const multiplier = getIndicatorParam(block, 'deviation', 2.0);
+    const component = block.getFieldValue('COMPONENT') || 'middle';
+
+    // Cache key needs both params
+    const cacheKey = `keltner_${period}_${multiplier}`;
+
+    if (!pyGenerator.indicatorCache_[cacheKey]) {
+        pyGenerator.indicatorCache_[cacheKey] = true;
+        // self.I(KELTNER, ...) returns upper, middle, lower
+        pyGenerator.indicators_.push(`self.kelt_upper_${period}, self.kelt_middle_${period}, self.kelt_lower_${period} = self.I(KELTNER, self.data.High, self.data.Low, self.data.Close, n=${period}, multiplier=${multiplier})`);
+    }
+
+    const compMap: { [key: string]: string } = {
+        'upper': `self.kelt_upper_${period}[-1]`,
+        'middle': `self.kelt_middle_${period}[-1]`,
+        'lower': `self.kelt_lower_${period}[-1]`
+    };
+    return [compMap[component] || compMap['middle'], pyGenerator.ORDER_ATOMIC];
+};
+
+pyGenerator.forBlock['ichimoku'] = function (block: Blockly.Block) {
+    const tenkan = getIndicatorParam(block, 'tenkanSen', 9);
+    const kijun = getIndicatorParam(block, 'kijunSen', 26);
+    const senkouB = getIndicatorParam(block, 'senkouSpanB', 52);
+    const component = block.getFieldValue('COMPONENT') || 'tenkan';
+
+    const cacheKey = `ichimoku_${tenkan}_${kijun}_${senkouB}`;
+
+    if (!pyGenerator.indicatorCache_[cacheKey]) {
+        pyGenerator.indicatorCache_[cacheKey] = true;
+        pyGenerator.indicators_.push(`self.ichi_tenkan_${tenkan}, self.ichi_kijun_${kijun}, self.ichi_sqa_${tenkan}, self.ichi_sqb_${tenkan} = self.I(ICHIMOKU, self.data.High, self.data.Low, tenkan=${tenkan}, kijun=${kijun}, senkou_b=${senkouB})`);
+    }
+
+    const compMap: { [key: string]: string } = {
+        'tenkan': `self.ichi_tenkan_${tenkan}[-1]`,
+        'kijun': `self.ichi_kijun_${kijun}[-1]`,
+        'senkouA': `self.ichi_sqa_${tenkan}[-1]`,
+        'senkouB': `self.ichi_sqb_${tenkan}[-1]`
+    };
+    // Chickou span is often not used in basic strategies, omitting for now
+
+    return [compMap[component] || compMap['tenkan'], pyGenerator.ORDER_ATOMIC];
+};
+
+pyGenerator.forBlock['ta_support'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'lookback', 20);
+    const cacheKey = `support_${period}`;
+    if (!pyGenerator.indicatorCache_[cacheKey]) {
+        pyGenerator.indicatorCache_[cacheKey] = true;
+        pyGenerator.indicators_.push(`self.support_${period} = self.I(GET_SUPPORT, self.data.Low, n=${period})`);
+    }
+    return [`self.support_${period}[-1]`, pyGenerator.ORDER_ATOMIC];
+};
+
+pyGenerator.forBlock['ta_resistance'] = function (block: Blockly.Block) {
+    const period = getIndicatorParam(block, 'lookback', 20);
+    const cacheKey = `resistance_${period}`;
+    if (!pyGenerator.indicatorCache_[cacheKey]) {
+        pyGenerator.indicatorCache_[cacheKey] = true;
+        pyGenerator.indicators_.push(`self.resistance_${period} = self.I(GET_RESISTANCE, self.data.High, n=${period})`);
+    }
+    return [`self.resistance_${period}[-1]`, pyGenerator.ORDER_ATOMIC];
 };
 
 // Fallback for remaining (use Simple MA as placeholder to avoid crash if not critical)
