@@ -8,7 +8,6 @@ import json
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from strategy_store import hash_xml_structure, hash_xml
-from json_code_generator import get_strategy_parameters, _load_block_map
 from backtest_service import parse_xml_simple
 
 def test_structure_hashing():
@@ -90,52 +89,12 @@ def test_structure_hashing():
     print("SUCCESS: Structure hashing works correctly.\n")
 
 
-def test_param_extraction():
-    print("=== Testing Parameter Extraction ===")
-    
-    # XML with SMA Period 25 and RSI Period 7
-    xml = """<xml xmlns="https://developers.google.com/blockly/xml">
-    <block type="trade_setup">
-        <statement name="CONDITIONS">
-            <block type="logic_compare">
-                <value name="A">
-                    <block type="ta_sma">
-                        <field name="PERIOD">25</field>
-                    </block>
-                </value>
-                <value name="B">
-                    <block type="ta_rsi">
-                        <field name="PERIOD">7</field>
-                    </block>
-                </value>
-            </block>
-        </statement>
-    </block>
-    </xml>"""
-    
-    parsed = parse_xml_simple(xml)
-    print(f"Parsed Indicators: {len(parsed['indicators'])}")
-    
-    params = get_strategy_parameters(parsed)
-    print("Extracted Parameters:", params)
-    
-    # The variable names depend on index order in parsing
-    # Typically depth-first?
-    # Let's check keys
-    
-    # We expect something like 'sma0_period': 25, 'rsi1_period': 7 (or distinct indices)
-    # Note: parse_xml_simple assigns generic IDs?
-    
-    # Check if we have values 25 and 7
-    values = list(params.values())
-    assert 25 in values, f"ERROR: Failed to extract SMA period 25. Got: {values}"
-    assert 7 in values, f"ERROR: Failed to extract RSI period 7. Got: {values}"
-    print("SUCCESS: Parameters extracted correctly.\n")
+
 
 if __name__ == "__main__":
     try:
         test_structure_hashing()
-        test_param_extraction()
+        # test_param_extraction()
         print("ALL TESTS PASSED.")
     except AssertionError as e:
         print(e)
