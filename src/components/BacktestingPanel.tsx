@@ -8,6 +8,7 @@ import { generateCode } from "@/config/blockly/generator";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { StrategyComparison, saveBacktestResult } from "./StrategyComparison";
+import { McptSimulationModal } from "./McptSimulationModal";
 
 // Helper function to format numbers to 4 decimal places
 const formatNumber = (value: number | undefined, decimals: number = 4): string => {
@@ -113,6 +114,9 @@ export const BacktestingPanel = ({ onStartTour, onClose, leverage = "1", onLever
 
     // Comparison state
     const [showComparison, setShowComparison] = useState(false);
+
+    // MCPT state
+    const [showMcptModal, setShowMcptModal] = useState(false);
 
     const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
@@ -980,6 +984,15 @@ export const BacktestingPanel = ({ onStartTour, onClose, leverage = "1", onLever
                         {showComparison && (
                             <StrategyComparison onClose={() => setShowComparison(false)} />
                         )}
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setShowMcptModal(true)}
+                            className="w-full mt-2 bg-purple-900/20 hover:bg-purple-900/40 text-purple-200 border border-purple-500/30"
+                        >
+                            <Zap className="w-4 h-4 mr-2" />
+                            PPM Simulation
+                        </Button>
                     </>
                 ) : isStrategyRunning ? (
                     <Button
@@ -1017,6 +1030,12 @@ export const BacktestingPanel = ({ onStartTour, onClose, leverage = "1", onLever
                 htmlContent={visualizationHtml}
                 rawStats={rawStats}
                 trades={backtestResult?.trades}
+            />
+
+            <McptSimulationModal
+                isOpen={showMcptModal}
+                onClose={() => setShowMcptModal(false)}
+                symbol={tradingSymbol}
             />
         </div>
     );
