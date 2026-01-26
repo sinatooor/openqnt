@@ -10,9 +10,9 @@ import asyncio
 import json
 from datetime import datetime
 
-from backend.data_service import MarketDataService
-from backend.mcpt.tree_strat import train_tree, tree_strategy
-from backend.mcpt.bar_permute import get_permutation
+from data_service import MarketDataService
+from mcpt.tree_strat import train_tree, tree_strategy
+from mcpt.bar_permute import get_permutation
 
 router = APIRouter(prefix="/api/mcpt", tags=["mcpt"])
 

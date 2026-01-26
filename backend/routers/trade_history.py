@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
 
-from backend.database.connection import get_session
-from backend.database.models import Trade, StrategyExecution, DailyPrice
+from database.connection import get_session
+from database.models import Trade, StrategyExecution, DailyPrice
 
 router = APIRouter(
     prefix="/api/trades",

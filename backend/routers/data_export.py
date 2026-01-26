@@ -10,8 +10,8 @@ from datetime import datetime, timedelta
 import csv
 import io
 
-from backend.database.connection import get_session
-from backend.database.models import Trade, DailyPrice, HourlyPrice
+from database.connection import get_session
+from database.models import Trade, DailyPrice, HourlyPrice
 
 router = APIRouter(
     prefix="/api/export",

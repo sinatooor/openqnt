@@ -14,10 +14,10 @@ import json
 import sys
 import os
 
-from backend.ir_simulator import IRSimulator, SimulationResult, Trade
-from backend.strategy_ir import StrategyIR, Rule, Condition, ActionType, MarketComponent, ComparisonOperator, PositionSizing
-from backend.sample_data import generate_ohlcv_data
-from backend.data_service import MarketDataService
+from ir_simulator import IRSimulator, SimulationResult, Trade
+from strategy_ir import StrategyIR, Rule, Condition, ActionType, MarketComponent, ComparisonOperator, PositionSizing
+from sample_data import generate_ohlcv_data
+from data_service import MarketDataService
 
 @dataclass
 class BacktestRequest:

@@ -10,8 +10,8 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any, Optional, Callable
 from dataclasses import dataclass
-from backend.backtest_engine import BacktestEngine, BacktestRequest, BacktestResult
-from backend.strategy_ir import StrategyIR
+from backtest_engine import BacktestEngine, BacktestRequest, BacktestResult
+from strategy_ir import StrategyIR
 
 @dataclass
 class WalkforwardConfig:

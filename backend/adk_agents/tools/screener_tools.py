@@ -1,11 +1,9 @@
 
-from google.adk.tools import tool
 from typing import List, Optional, Dict, Any
 import logging
 
 logger = logging.getLogger(__name__)
 
-@tool
 def run_market_screen(symbols: List[str], filter_name: str, days_back: int = 365) -> List[Dict[str, Any]]:
     """
     Run a market screen on a list of symbols using a specific technical filter.
@@ -30,7 +28,7 @@ def run_market_screen(symbols: List[str], filter_name: str, days_back: int = 365
     """
     try:
         # Import lazily to avoid circular imports
-        from backend.market_screener import MarketScreener
+        from market_screener import MarketScreener
         
         screener = MarketScreener()
         results = screener.screen(symbols, filter_name, days_back)
