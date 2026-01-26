@@ -13,9 +13,9 @@ from typing import Optional, List, Dict, Any, Union
 from sqlalchemy import select, and_
 import os
 
-from backend.database.connection import get_session, session_scope
-from backend.database.models import Asset, DailyPrice, HourlyPrice, AssetMetadata
-from backend.fmp.client import FMPClient
+from database.connection import get_session, session_scope
+from database.models import Asset, DailyPrice, HourlyPrice, AssetMetadata
+from fmp.client import FMPClient
 
 # Try to import yfinance
 try:

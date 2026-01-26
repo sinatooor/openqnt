@@ -9,8 +9,8 @@ import numpy as np
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from backend.strategy_ir import StrategyIR, Rule, Condition, ActionType, MarketComponent, ComparisonOperator, PositionSizing
-from backend.risk_controls import RiskController, RiskViolation
+from strategy_ir import StrategyIR, Rule, Condition, ActionType, MarketComponent, ComparisonOperator, PositionSizing
+from risk_controls import RiskController, RiskViolation
 
 @dataclass
 class Trade:

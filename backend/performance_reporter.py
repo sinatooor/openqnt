@@ -9,7 +9,7 @@ import numpy as np
 import json
 from datetime import datetime
 from typing import Dict, Any, List, Optional
-from backend.ir_simulator import SimulationResult, Trade
+from ir_simulator import SimulationResult, Trade
 
 class PerformanceReporter:
     def __init__(self, simulation_result: SimulationResult):

@@ -6,8 +6,8 @@ For example: emulating OCO orders using individual stop/limit orders.
 """
 from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass, field
-from backend.strategy_ir import StrategyIR, Rule, Condition, ActionType
-from backend.broker_capabilities import BrokerCapabilities, OrderType
+from strategy_ir import StrategyIR, Rule, Condition, ActionType
+from broker_capabilities import BrokerCapabilities, OrderType
 
 
 @dataclass

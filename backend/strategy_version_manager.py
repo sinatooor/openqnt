@@ -1,7 +1,7 @@
 import dataclasses
 from typing import List, Dict, Any, Optional
-from backend.strategy_ir import StrategyIR
-from backend import strategy_store
+from strategy_ir import StrategyIR
+import strategy_store
 
 class StrategyVersionManager:
     """

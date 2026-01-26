@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, field
 from pathlib import Path
 import os
-from backend.ig_client import IGClient
+from ig_client import IGClient
 
 @dataclass
 class RiskConstraints:
