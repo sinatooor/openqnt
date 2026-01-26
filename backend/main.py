@@ -201,6 +201,22 @@ app.include_router(strategies_v2.router)
 from routers import mcpt
 app.include_router(mcpt.router)
 
+
+# ============================================================
+# Root-level health and custom-blocks endpoints
+# ============================================================
+@app.get("/health")
+async def root_health_check():
+    """Root-level health check endpoint."""
+    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
+
+
+@app.get("/custom-blocks")
+async def get_custom_blocks():
+    """Return custom blocks (empty for now - can be extended later)."""
+    return {"blocks": []}
+
+
 @app.post("/api/panic")
 async def trigger_panic_endpoint():
     """

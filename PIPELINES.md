@@ -144,12 +144,9 @@ flowchart TB
     end
     
     subgraph Engines
-        E1["🟢 Simple (Fast)"]
-        E2["🟡 TechnicalIndicators"]
-        E3["🔵 PyGenerator ⭐"]
-        E4["🟠 Python AI-Generated"]
-        E5["🟣 NautilusTrader"]
-        E6["⚫ AI Simulation"]
+        E1["🟢 backtesting.py (Standard)"]
+        E2["🟣 NautilusTrader (Advanced)"]
+        E3["⚫ AI Simulation (DeepSeek)"]
     end
     
     subgraph Processing

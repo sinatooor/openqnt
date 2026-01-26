@@ -85,6 +85,14 @@ adk web --port 8085
 
 ## 🏗️ Architecture
 
+The platform follows a layered architecture with React for the UI, FastAPI for the backend logic, and specialized services for AI and Trading execution.
+
+For a detailed deep-dive, see:
+*   [** Architectural Overview**](ARCHITECTURAL_OVERVIEW.md) - Full system map.
+*   [** Pipelines Reference**](PIPELINES.md) - Detailed data flow diagrams.
+*   [** RAG Pipeline**](RAG_PIPELINE.md) - AI strategy generation internals.
+
+**High-Level Overview:**
 ```mermaid
 graph TD
     User[👤 User] -->|Chat / Prompt| UI[React Frontend]
@@ -92,27 +100,10 @@ graph TD
     
     UI -->|API Calls| API[FastAPI Backend :8000]
     
-    subgraph "AI Layer"
-        API -->|"/conversational-chat"| ADK[Google ADK Agent]
-        ADK -->|15 Tools| Tools{Tools}
-        Tools --> Search[Market Search]
-        Tools --> Indicators[Custom Indicators]
-        Tools --> Broker[Broker API]
-        Tools --> RAG[Block RAG]
-        
-        API -->|"/generate-strategy"| LLM[Gemini / DeepSeek]
-        LLM -->|XML Strategy| API
-    end
-    
-    subgraph "Execution Layer"
-        API -->|Strategy XML| Compiler[XML → Python]
-        Compiler -->|Strategy Class| Backtest[backtesting.py]
-        Backtest -->|Results + Metrics| API
-    end
-    
-    subgraph "Live Trading"
-        API -->|Orders| IG[IG Markets API]
-        IG -->|Prices| API
+    subgraph "Backend Services"
+        API -->|AI Agents| ADK[Google ADK / Gemini]
+        API -->|Strategy Gen| LLM[DeepSeek / RAG]
+        API -->|Execution| Engines[backtesting.py / Nautilus]
     end
 ```
 
@@ -196,3 +187,8 @@ Distributed under the MIT License. See `LICENSE` for more information.
 ## server setup
 
 http://localhost:8000/docs
+
+
+how to run backend?
+cd backend && source venv/bin/activate && uvicorn main:app --reload --port 8000
+
