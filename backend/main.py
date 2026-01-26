@@ -195,6 +195,11 @@ from routers import symbols
 app.include_router(symbols.router)
 from routers import agent_chat
 app.include_router(agent_chat.router)
+from routers import strategies_v2
+from routers import strategies_v2
+app.include_router(strategies_v2.router)
+from routers import mcpt
+app.include_router(mcpt.router)
 
 @app.post("/api/panic")
 async def trigger_panic_endpoint():
