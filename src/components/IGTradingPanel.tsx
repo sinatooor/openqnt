@@ -264,8 +264,8 @@ export const IGTradingPanel = ({ onClose, getWorkspaceXml, getPythonCode }: IGTr
     return (
         <Card className="w-[400px] border-l border-border bg-card flex flex-col animate-in slide-in-from-right duration-300 shadow-2xl">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-lg flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-green-500" />
+                <CardTitle className="text-sm flex items-center gap-1.5">
+                    <TrendingUp className="w-4 h-4 text-green-500" />
                     IG Trading
                 </CardTitle>
                 <div className="flex items-center gap-2">

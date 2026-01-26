@@ -57,17 +57,17 @@ class ErrorBoundary extends Component<Props, State> {
             }
 
             return (
-                <div className="min-h-[400px] flex items-center justify-center p-8">
-                    <div className="max-w-md w-full text-center space-y-6">
+                <div className="min-h-[300px] flex items-center justify-center p-6">
+                    <div className="max-w-md w-full text-center space-y-4">
                         <div className="flex justify-center">
-                            <div className="p-4 bg-destructive/10 rounded-full">
-                                <AlertTriangle className="w-12 h-12 text-destructive" />
+                            <div className="p-3 bg-destructive/10 rounded-full">
+                                <AlertTriangle className="w-8 h-8 text-destructive" />
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <h2 className="text-2xl font-bold">Something went wrong</h2>
-                            <p className="text-muted-foreground">
+                        <div className="space-y-1.5">
+                            <h2 className="text-base font-bold">Something went wrong</h2>
+                            <p className="text-muted-foreground text-xs">
                                 An unexpected error occurred. Please try again.
                             </p>
                         </div>

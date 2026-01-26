@@ -81,13 +81,13 @@ export const ConfirmDialog = ({
         <AlertDialog open={open} onOpenChange={onOpenChange}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-full bg-muted ${iconClass}`}>
-                            <Icon className="w-5 h-5" />
+                    <div className="flex items-center gap-2">
+                        <div className={`p-1.5 rounded-full bg-muted ${iconClass}`}>
+                            <Icon className="w-4 h-4" />
                         </div>
                         <AlertDialogTitle>{title}</AlertDialogTitle>
                     </div>
-                    <AlertDialogDescription className="pl-12">
+                    <AlertDialogDescription className="pl-10">
                         {description}
                     </AlertDialogDescription>
                 </AlertDialogHeader>

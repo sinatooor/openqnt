@@ -80,7 +80,7 @@ export const BacktestingPanel = ({
           {/* Header */}
           <div className="p-4 border-b border-border">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-foreground">Backtest Results</h2>
+              <h2 className="text-sm font-bold text-foreground">Backtest Results</h2>
               <Badge variant="secondary" className="gap-1">
                 <Activity className="h-3 w-3" />
                 {symbol}
@@ -173,14 +173,14 @@ export const BacktestingPanel = ({
                       <CardContent>
                         <div
                           className={cn(
-                            'text-2xl font-bold flex items-center gap-1 transition-colors duration-300',
+                            'text-base font-bold flex items-center gap-1 transition-colors duration-300',
                             result.metrics.totalReturn >= 0 ? 'text-block-environment' : 'text-destructive'
                           )}
                         >
                           {result.metrics.totalReturn >= 0 ? (
-                            <TrendingUp className="h-5 w-5 animate-pulse" />
+                            <TrendingUp className="h-4 w-4 animate-pulse" />
                           ) : (
-                            <TrendingDown className="h-5 w-5 animate-pulse" />
+                            <TrendingDown className="h-4 w-4 animate-pulse" />
                           )}
                           {result.metrics.totalReturn.toFixed(2)}%
                         </div>
@@ -196,8 +196,8 @@ export const BacktestingPanel = ({
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-2xl font-bold text-foreground flex items-center gap-1">
-                          <Percent className="h-5 w-5" />
+                        <div className="text-base font-bold text-foreground flex items-center gap-1">
+                          <Percent className="h-4 w-4" />
                           {result.metrics.winRate.toFixed(1)}%
                         </div>
                       </CardContent>
@@ -209,7 +209,7 @@ export const BacktestingPanel = ({
                         <CardTitle className="text-xs text-muted-foreground">Max Drawdown</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-lg font-bold text-destructive">
+                        <div className="text-sm font-bold text-destructive">
                           -{result.metrics.maxDrawdown.toFixed(2)}%
                         </div>
                       </CardContent>
@@ -221,7 +221,7 @@ export const BacktestingPanel = ({
                         <CardTitle className="text-xs text-muted-foreground">Sharpe Ratio</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-lg font-bold text-foreground">
+                        <div className="text-sm font-bold text-foreground">
                           {result.metrics.sharpeRatio.toFixed(2)}
                         </div>
                       </CardContent>
@@ -233,7 +233,7 @@ export const BacktestingPanel = ({
                         <CardTitle className="text-xs text-muted-foreground">Total Trades</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-lg font-bold text-foreground">
+                        <div className="text-sm font-bold text-foreground">
                           {result.metrics.totalTrades}
                         </div>
                         <div className="text-xs text-muted-foreground mt-1">
@@ -249,7 +249,7 @@ export const BacktestingPanel = ({
                         <CardTitle className="text-xs text-muted-foreground">Profit Factor</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-lg font-bold text-foreground">
+                        <div className="text-sm font-bold text-foreground">
                           {result.metrics.profitFactor === Infinity
                             ? '∞'
                             : result.metrics.profitFactor.toFixed(2)}

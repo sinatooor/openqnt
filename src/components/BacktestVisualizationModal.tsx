@@ -228,14 +228,14 @@ export const BacktestVisualizationModal = ({
                         <Card className="bg-muted/30">
                             <CardContent className="p-3 text-center">
                                 <div className="text-[10px] text-muted-foreground uppercase">Win Rate</div>
-                                <div className="text-2xl font-bold">{formatNumber(analytics.winRate, 1)}%</div>
+                                <div className="text-base font-bold">{formatNumber(analytics.winRate, 1)}%</div>
                                 <div className="text-[10px] text-muted-foreground">{analytics.winCount}W / {analytics.lossCount}L</div>
                             </CardContent>
                         </Card>
                         <Card className="bg-muted/30">
                             <CardContent className="p-3 text-center">
                                 <div className="text-[10px] text-muted-foreground uppercase">Total P&L</div>
-                                <div className={`text-2xl font-bold ${analytics.totalPnL >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                <div className={`text-base font-bold ${analytics.totalPnL >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                                     {analytics.totalPnL >= 0 ? '+' : ''}{formatNumber(analytics.totalPnL)}
                                 </div>
                                 <div className="text-[10px] text-muted-foreground">{trades.length} trades</div>
@@ -248,7 +248,7 @@ export const BacktestVisualizationModal = ({
                                 <div className="text-[10px] text-muted-foreground flex items-center gap-1">
                                     <TrendingUp className="w-3 h-3 text-green-500" /> Best
                                 </div>
-                                <div className="text-lg font-bold text-green-500">+{formatNumber(analytics.bestTrade?.pnl)}</div>
+                                <div className="text-sm font-bold text-green-500">+{formatNumber(analytics.bestTrade?.pnl)}</div>
                             </CardContent>
                         </Card>
                         <Card className="bg-red-500/10 border-red-500/20">
@@ -256,7 +256,7 @@ export const BacktestVisualizationModal = ({
                                 <div className="text-[10px] text-muted-foreground flex items-center gap-1">
                                     <TrendingDown className="w-3 h-3 text-red-500" /> Worst
                                 </div>
-                                <div className="text-lg font-bold text-red-500">{formatNumber(analytics.worstTrade?.pnl)}</div>
+                                <div className="text-sm font-bold text-red-500">{formatNumber(analytics.worstTrade?.pnl)}</div>
                             </CardContent>
                         </Card>
                     </div>

@@ -145,7 +145,7 @@ export const PortfolioDashboard = () => {
                             <DollarSign className="w-4 h-4 text-blue-500" />
                             <span className="text-xs text-muted-foreground">Total Balance</span>
                         </div>
-                        <p className="text-xl font-bold">
+                        <p className="text-base font-bold">
                             ${((summary?.total_pnl || 0) + 10000).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </p>
                     </CardContent>
@@ -166,7 +166,7 @@ export const PortfolioDashboard = () => {
                             <span className="text-xs text-muted-foreground">Total P&L</span>
                         </div>
                         <p className={cn(
-                            "text-xl font-bold",
+                            "text-base font-bold",
                             (summary?.total_pnl || 0) >= 0 ? "text-green-500" : "text-red-500"
                         )}>
                             {(summary?.total_pnl || 0) >= 0 ? '+' : ''}${(summary?.total_pnl || 0).toFixed(2)}
@@ -180,7 +180,7 @@ export const PortfolioDashboard = () => {
                             <Activity className="w-4 h-4 text-muted-foreground" />
                             <span className="text-xs text-muted-foreground">Win Rate</span>
                         </div>
-                        <p className="text-xl font-bold">{(summary?.win_rate || 0).toFixed(1)}%</p>
+                        <p className="text-base font-bold">{(summary?.win_rate || 0).toFixed(1)}%</p>
                     </CardContent>
                 </Card>
 
@@ -190,7 +190,7 @@ export const PortfolioDashboard = () => {
                             <PieChart className="w-4 h-4 text-muted-foreground" />
                             <span className="text-xs text-muted-foreground">Total Trades</span>
                         </div>
-                        <p className="text-xl font-bold">{summary?.total_trades || 0}</p>
+                        <p className="text-base font-bold">{summary?.total_trades || 0}</p>
                     </CardContent>
                 </Card>
             </div>
@@ -200,7 +200,7 @@ export const PortfolioDashboard = () => {
                 <div className="p-3 rounded-lg border bg-card">
                     <span className="text-xs text-muted-foreground">Today</span>
                     <p className={cn(
-                        "text-lg font-semibold",
+                        "text-sm font-semibold",
                         dailyPnL >= 0 ? "text-green-500" : "text-red-500"
                     )}>
                         {dailyPnL >= 0 ? '+' : ''}${dailyPnL.toFixed(2)}
@@ -209,7 +209,7 @@ export const PortfolioDashboard = () => {
                 <div className="p-3 rounded-lg border bg-card">
                     <span className="text-xs text-muted-foreground">This Week</span>
                     <p className={cn(
-                        "text-lg font-semibold",
+                        "text-sm font-semibold",
                         weeklyPnL >= 0 ? "text-green-500" : "text-red-500"
                     )}>
                         {weeklyPnL >= 0 ? '+' : ''}${weeklyPnL.toFixed(2)}

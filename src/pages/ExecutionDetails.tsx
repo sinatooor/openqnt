@@ -91,7 +91,7 @@ const ExecutionDetails = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Workspace
           </Button>
-          <h1 className="text-3xl font-bold tracking-tight">Execution Details</h1>
+          <h1 className="text-lg font-bold tracking-tight">Execution Details</h1>
           {isLive && (
             <Badge variant="default" className="bg-green-600 animate-pulse">
               <Radio className="w-3 h-3 mr-1" />
@@ -141,13 +141,13 @@ const ExecutionDetails = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-4 bg-muted/20 rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-1">Total Trades</p>
-                    <p className="text-2xl font-bold">{allTrades.length}</p>
+                  <div className="text-center p-3 bg-muted/20 rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-1">Total Trades</p>
+                    <p className="text-base font-bold">{allTrades.length}</p>
                   </div>
-                  <div className="text-center p-4 bg-muted/20 rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-1">Net PnL</p>
-                    <p className={`text-2xl font-bold ${allTrades.reduce((acc, t) => acc + (t.pnl || 0), 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                  <div className="text-center p-3 bg-muted/20 rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-1">Net PnL</p>
+                    <p className={`text-base font-bold ${allTrades.reduce((acc, t) => acc + (t.pnl || 0), 0) >= 0 ? 'text-green-600' : 'text-red-600'
                       }`}>
                       ${allTrades.reduce((acc, t) => acc + (t.pnl || 0), 0).toFixed(2)}
                     </p>

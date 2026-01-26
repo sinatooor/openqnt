@@ -99,7 +99,7 @@ export const WorkspaceToolbar = ({
     onToggleScreenerModal,
 }: WorkspaceToolbarProps) => {
     return (
-        <div className="h-14 bg-card border-b border-border flex items-center justify-between px-4 gap-3">
+        <div className="h-11 bg-card border-b border-border flex items-center justify-between px-3 gap-2">
             {/* Strategy Name */}
             <div className="flex items-center gap-3">
                 {isEditingName ? (
@@ -112,19 +112,19 @@ export const WorkspaceToolbar = ({
                             if (e.key === 'Enter') onEditNameEnd();
                         }}
                         autoFocus
-                        className="h-8 px-2 py-1 text-lg font-semibold bg-transparent border-b-2 border-primary focus:outline-none w-[200px]"
+                        className="h-7 px-2 py-1 text-sm font-medium bg-transparent border-b-2 border-primary focus:outline-none w-[180px]"
                     />
                 ) : (
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <div
-                                className="flex items-center gap-2 px-2 py-1 rounded-md cursor-pointer hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200 group"
+                                className="flex items-center gap-1.5 px-2 py-0.5 rounded-md cursor-pointer hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200 group"
                                 onClick={onEditNameStart}
                             >
-                                <h2 className="font-semibold text-foreground text-lg max-w-[200px] truncate">
+                                <h2 className="font-medium text-foreground text-sm max-w-[180px] truncate">
                                     {strategyName}
                                 </h2>
-                                <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <Pencil className="w-2.5 h-2.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
                         </TooltipTrigger>
                         <TooltipContent>Rename</TooltipContent>
@@ -137,55 +137,55 @@ export const WorkspaceToolbar = ({
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button variant="outline" size="sm" onClick={onSave} className="save-workspace-trigger hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
-                            <Download className="w-4 h-4" />
+                            <Download className="w-3.5 h-3.5" />
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>Save workspace as XML file</p>
-                        <p className="text-xs text-muted-foreground mt-1">Ctrl+S</p>
+                        <p className="text-xs">Save workspace as XML file</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Ctrl+S</p>
                     </TooltipContent>
                 </Tooltip>
 
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button variant="outline" size="sm" onClick={onShowTemplates} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
-                            <BookOpen className="w-4 h-4 mr-2" />
+                            <BookOpen className="w-3.5 h-3.5 mr-1.5" />
                             Templates
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>Load pre-built strategy templates</p>
-                        <p className="text-xs text-muted-foreground mt-1">Learn from examples</p>
+                        <p className="text-xs">Load pre-built strategy templates</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Learn from examples</p>
                     </TooltipContent>
                 </Tooltip>
             </div>
 
             {/* Search Bar */}
-            <div className="flex-1 max-w-xl mx-4">
+            <div className="flex-1 max-w-xl mx-3">
                 <Button
                     variant="outline"
-                    className="w-full justify-start text-muted-foreground bg-muted/50 hover:bg-muted relative h-9 hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200"
+                    className="w-full justify-start text-muted-foreground bg-muted/50 hover:bg-muted relative h-7 text-xs hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200"
                     onClick={onShowSearch}
                 >
-                    <Search className="w-4 h-4 mr-2" />
+                    <Search className="w-3.5 h-3.5 mr-1.5" />
                     Search for blocks...
-                    <kbd className="pointer-events-none absolute right-2 top-[50%] translate-y-[-50%] inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-                        <span className="text-xs">⌘</span>F
+                    <kbd className="pointer-events-none absolute right-2 top-[50%] translate-y-[-50%] inline-flex h-4 select-none items-center gap-0.5 rounded border bg-muted px-1 font-mono text-[9px] font-medium text-muted-foreground opacity-100">
+                        <span className="text-[10px]">⌘</span>F
                     </kbd>
                 </Button>
             </div>
 
             {/* Right Controls */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button variant="outline" size="sm" onClick={onToggleFloatingChart} className="transition-all duration-200 shadow-indigo hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)]">
-                            <BarChart3 className="w-4 h-4" />
+                            <BarChart3 className="w-3.5 h-3.5" />
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>Open floating live chart</p>
-                        <p className="text-xs text-muted-foreground mt-1">Drag to reposition</p>
+                        <p className="text-xs">Open floating live chart</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Drag to reposition</p>
                     </TooltipContent>
                 </Tooltip>
 
@@ -200,58 +200,58 @@ export const WorkspaceToolbar = ({
                                 showScreenerModal ? "bg-teal-600 hover:bg-teal-700" : ""
                             )}
                         >
-                            <Search className="w-4 h-4" />
+                            <Search className="w-3.5 h-3.5" />
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>Market Screener</p>
-                        <p className="text-xs text-muted-foreground mt-1">Scan market for opportunities</p>
+                        <p className="text-xs">Market Screener</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Scan market for opportunities</p>
                     </TooltipContent>
                 </Tooltip>
 
 
 
-                <Separator orientation="vertical" className="h-6" />
+                <Separator orientation="vertical" className="h-5" />
 
                 {/* Workspace Controls */}
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button variant="outline" size="sm" onClick={onUndo} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
-                            <Undo2 className="w-4 h-4" />
+                            <Undo2 className="w-3.5 h-3.5" />
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>Undo</p>
-                        <p className="text-xs text-muted-foreground mt-1">Ctrl+Z</p>
+                        <p className="text-xs">Undo</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Ctrl+Z</p>
                     </TooltipContent>
                 </Tooltip>
 
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button variant="outline" size="sm" onClick={onRedo} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
-                            <Redo2 className="w-4 h-4" />
+                            <Redo2 className="w-3.5 h-3.5" />
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>Redo</p>
-                        <p className="text-xs text-muted-foreground mt-1">Ctrl+Y</p>
+                        <p className="text-xs">Redo</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Ctrl+Y</p>
                     </TooltipContent>
                 </Tooltip>
 
-                <Separator orientation="vertical" className="h-6" />
+                <Separator orientation="vertical" className="h-5" />
 
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button variant="outline" size="sm" onClick={onCenter} className="hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)] transition-all duration-200">
-                            <Maximize2 className="w-4 h-4" />
+                            <Maximize2 className="w-3.5 h-3.5" />
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>Center workspace</p>
+                        <p className="text-xs">Center workspace</p>
                     </TooltipContent>
                 </Tooltip>
 
-                <Separator orientation="vertical" className="h-6" />
+                <Separator orientation="vertical" className="h-5" />
 
                 {/* View Group */}
                 <Tooltip>
@@ -265,13 +265,13 @@ export const WorkspaceToolbar = ({
                                 showCode ? "bg-red-600 hover:bg-red-700" : "hover:shadow-[0_0_0_2px_rgba(239,68,68,0.5)]"
                             )}
                         >
-                            <Code2 className="w-4 h-4 mr-2" />
+                            <Code2 className="w-3.5 h-3.5 mr-1.5" />
                             Code
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>Toggle code view</p>
-                        <p className="text-xs text-muted-foreground mt-1">View generated strategy code</p>
+                        <p className="text-xs">Toggle code view</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">View generated strategy code</p>
                     </TooltipContent>
                 </Tooltip>
 
@@ -286,13 +286,13 @@ export const WorkspaceToolbar = ({
                                 showAIPanel ? "bg-red-600 hover:bg-red-700" : "hover:shadow-[0_0_0_2px_rgba(239,68,68,0.5)]"
                             )}
                         >
-                            <Sparkles className="w-4 h-4 mr-2" />
+                            <Sparkles className="w-3.5 h-3.5 mr-1.5" />
                             AI Chat
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>AI Strategy Assistant</p>
-                        <p className="text-xs text-muted-foreground mt-1">Chat with AI to generate strategies</p>
+                        <p className="text-xs">AI Strategy Assistant</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Chat with AI to generate strategies</p>
                     </TooltipContent>
                 </Tooltip>
 
@@ -307,13 +307,13 @@ export const WorkspaceToolbar = ({
                                 showProfileModal ? "bg-blue-600 hover:bg-blue-700" : "hover:shadow-[0_0_0_2px_rgba(59,130,246,0.5)]"
                             )}
                         >
-                            <User className="w-4 h-4 mr-2" />
+                            <User className="w-3.5 h-3.5 mr-1.5" />
                             Profile
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>User Profile</p>
-                        <p className="text-xs text-muted-foreground mt-1">Manage account, saved strategies & settings</p>
+                        <p className="text-xs">User Profile</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Manage account & settings</p>
                     </TooltipContent>
                 </Tooltip>
 
@@ -328,17 +328,17 @@ export const WorkspaceToolbar = ({
                                 showStrategyPanel ? "bg-green-600 hover:bg-green-700" : "hover:shadow-[0_0_0_2px_rgba(34,197,94,0.5)]"
                             )}
                         >
-                            <TrendingUp className="w-4 h-4 mr-2" />
+                            <TrendingUp className="w-3.5 h-3.5 mr-1.5" />
                             Run & Test
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>Run & Test Strategy</p>
-                        <p className="text-xs text-muted-foreground mt-1">Backtest or deploy live</p>
+                        <p className="text-xs">Run & Test Strategy</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Backtest or deploy live</p>
                     </TooltipContent>
                 </Tooltip>
 
-                <Separator orientation="vertical" className="h-6" />
+                <Separator orientation="vertical" className="h-5" />
 
                 <Tooltip>
                     <TooltipTrigger asChild>
@@ -351,13 +351,13 @@ export const WorkspaceToolbar = ({
                                 showJournalModal ? "bg-blue-600 hover:bg-blue-700" : ""
                             )}
                         >
-                            <BookOpen className="w-4 h-4 mr-2" />
+                            <BookOpen className="w-3.5 h-3.5 mr-1.5" />
                             Journal
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                        <p>Trade Journal</p>
-                        <p className="text-xs text-muted-foreground mt-1">View trade history & stats</p>
+                        <p className="text-xs">Trade Journal</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">View trade history & stats</p>
                     </TooltipContent>
                 </Tooltip>
             </div>

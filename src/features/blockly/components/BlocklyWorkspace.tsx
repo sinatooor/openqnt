@@ -479,13 +479,13 @@ export const BlocklyWorkspace = ({
         <div className="flex-1 relative group">
           <div ref={blocklyDiv} className="absolute inset-0" />
           {blockCount === 0 && <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 1100 }}>
-            <div className="text-center space-y-4 opacity-0 animate-in fade-in zoom-in duration-500 delay-150 fill-mode-forwards">
-              <div className="bg-card/50 backdrop-blur-sm p-8 rounded-2xl border border-border/50 shadow-2xl">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Wand2 className="w-8 h-8 text-primary" />
+            <div className="text-center space-y-3 opacity-0 animate-in fade-in zoom-in duration-500 delay-150 fill-mode-forwards">
+              <div className="bg-card/50 backdrop-blur-sm p-6 rounded-xl border border-border/50 shadow-2xl">
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Wand2 className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="text-2xl font-bold">Start Building</h3>
-                <p className="text-muted-foreground max-w-sm">Drag blocks from the toolbox or ask AI to generate a strategy</p>
+                <h3 className="text-base font-bold">Start Building</h3>
+                <p className="text-muted-foreground text-xs max-w-sm">Drag blocks from the toolbox or ask AI to generate a strategy</p>
               </div>
             </div>
           </div>}

@@ -98,36 +98,36 @@ const DraggableHeader = ({
             {...listeners}
             {...attributes}
             className={cn(
-                "flex items-center justify-between p-3 border-b border-border bg-secondary/50 select-none",
+                "flex items-center justify-between p-2.5 border-b border-border bg-secondary/50 select-none",
                 isDragging ? "cursor-grabbing" : "cursor-grab"
             )}
         >
-            <div className="flex items-center gap-2">
-                <GripHorizontal className="w-4 h-4 text-muted-foreground" />
-                <h3 className="font-semibold text-sm">{title}</h3>
+            <div className="flex items-center gap-1.5">
+                <GripHorizontal className="w-3.5 h-3.5 text-muted-foreground" />
+                <h3 className="font-semibold text-xs">{title}</h3>
                 {headerActions}
             </div>
             <div className="flex items-center gap-1" onPointerDown={(e) => e.stopPropagation()}>
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7"
+                    className="h-6 w-6"
                     onClick={onMaximize}
                     title={isMaximized || cornerSnap ? "Restore" : "Maximize"}
                 >
                     {isMaximized || cornerSnap ? (
-                        <Minimize2 className="w-4 h-4" />
+                        <Minimize2 className="w-3.5 h-3.5" />
                     ) : (
-                        <Maximize2 className="w-4 h-4" />
+                        <Maximize2 className="w-3.5 h-3.5" />
                     )}
                 </Button>
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive"
+                    className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive"
                     onClick={onClose}
                 >
-                    <X className="w-4 h-4" />
+                    <X className="w-3.5 h-3.5" />
                 </Button>
             </div>
         </div>

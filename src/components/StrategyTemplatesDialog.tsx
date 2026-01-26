@@ -44,8 +44,8 @@ export const StrategyTemplatesDialog = ({ open, onOpenChange, onLoadTemplate }: 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <BookOpen className="w-5 h-5" />
+          <DialogTitle className="flex items-center gap-1.5">
+            <BookOpen className="w-4 h-4" />
             Strategy Templates
           </DialogTitle>
           <DialogDescription>
@@ -84,7 +84,7 @@ export const StrategyTemplatesDialog = ({ open, onOpenChange, onLoadTemplate }: 
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-2">
                             {getCategoryIcon(template.category)}
-                            <CardTitle className="text-lg">{template.name}</CardTitle>
+                            <CardTitle className="text-sm">{template.name}</CardTitle>
                           </div>
                           <Badge
                             variant="outline"

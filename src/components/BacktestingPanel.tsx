@@ -502,32 +502,32 @@ export const BacktestingPanel = ({ onStartTour, onClose, leverage = "1", onLever
 
 
     return (
-        <div className="w-80 bg-card border-l border-border flex flex-col overflow-hidden animate-fade-in">
+        <div className="w-72 bg-card border-l border-border flex flex-col overflow-hidden animate-fade-in">
             {/* Header */}
-            <div className="px-3 py-2 border-b border-border">
-                <div className="flex items-center justify-between mb-3 gap-2">
-                    <h2 className="font-semibold text-foreground text-sm">Strategy</h2>
-                    <div className="flex items-center gap-1">
+            <div className="px-2.5 py-1.5 border-b border-border">
+                <div className="flex items-center justify-between mb-2 gap-2">
+                    <h2 className="font-medium text-foreground text-xs">Strategy</h2>
+                    <div className="flex items-center gap-0.5">
                         {onStartTour && (
-                            <TourTriggerButton onClick={onStartTour} className="h-7 w-7" />
+                            <TourTriggerButton onClick={onStartTour} className="h-6 w-6" />
                         )}
                         {onClose && (
-                            <Button onClick={onClose} variant="ghost" size="icon" className="h-7 w-7 hover:bg-destructive/10">
-                                <X className="w-4 h-4" />
+                            <Button onClick={onClose} variant="ghost" size="icon" className="h-6 w-6 hover:bg-destructive/10">
+                                <X className="w-3.5 h-3.5" />
                             </Button>
                         )}
                     </div>
                 </div>
 
                 {/* Mode Selector */}
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                     <Button
                         variant={mode === "backtest" ? "secondary" : "ghost"}
                         size="sm"
                         onClick={() => setMode("backtest")}
                         className="flex-1"
                     >
-                        <History className="w-4 h-4 mr-2" />
+                        <History className="w-3.5 h-3.5 mr-1.5" />
                         Backtest
                     </Button>
                     <Button
@@ -536,17 +536,17 @@ export const BacktestingPanel = ({ onStartTour, onClose, leverage = "1", onLever
                         onClick={() => setMode("live")}
                         className="flex-1"
                     >
-                        <Zap className="w-4 h-4 mr-2" />
+                        <Zap className="w-3.5 h-3.5 mr-1.5" />
                         Live
                     </Button>
                 </div>
             </div>
 
             {/* Content based on mode */}
-            <div className="flex-1 overflow-auto p-4 space-y-4">
+            <div className="flex-1 overflow-auto p-3 space-y-3">
                 {/* Common: Symbol Selection */}
                 <div>
-                    <label className="text-sm font-medium text-muted-foreground mb-2 block">Symbol</label>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Symbol</label>
                     <Select value={tradingSymbol} onValueChange={setTradingSymbol}>
                         <SelectTrigger className="bg-secondary">
                             <SelectValue />

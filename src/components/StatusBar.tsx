@@ -56,14 +56,14 @@ export const StatusBar = ({ currentStrategyName, onLoadStrategy, onNewStrategy }
     const activeAgents = 1; // Placeholder
 
     return (
-        <div className="h-7 bg-card border-t border-border text-xs flex items-center justify-between px-3 select-none text-muted-foreground transition-colors">
+        <div className="h-6 bg-card border-t border-border text-[10px] flex items-center justify-between px-2 select-none text-muted-foreground transition-colors">
             {/* Left Section: Strategy Selector (Branch-like) */}
             <div className="flex items-center gap-4">
                 <Popover open={openStrategySelector} onOpenChange={setOpenStrategySelector}>
                     <PopoverTrigger asChild>
-                        <button className="flex items-center gap-1.5 hover:bg-muted/50 hover:text-foreground px-2 py-0.5 rounded-sm transition-colors focus:outline-none">
-                            <GitBranch className="w-3.5 h-3.5" />
-                            <span className="font-medium max-w-[150px] truncate">
+                        <button className="flex items-center gap-1 hover:bg-muted/50 hover:text-foreground px-1.5 py-0.5 rounded-sm transition-colors focus:outline-none">
+                            <GitBranch className="w-3 h-3" />
+                            <span className="font-medium max-w-[140px] truncate">
                                 {currentStrategyName || "Untitled Strategy"}
                             </span>
                         </button>
