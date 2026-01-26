@@ -1,1 +1,50 @@
-src/pages/Journal.tsx, src/pages/Journal.test.tsx, src/App.tsx, backend/main.py, backend/database/models.py, src/components/ui/table.tsx, src/components/NavLink.tsx, src/services/index.ts
+I will start by analyzing the project's backend structure, specifically the API entry point, the Rust service integration, and the current testing setup, to identify the most impactful improvements.
+
+Based on the analysis of the `backend/` and project structure, here are the high-impact improvements.
+
+The current setup uses a FastAPI backend that mirrors Supabase Edge Functions but lacks strict type synchronization with the frontend. Additionally, the high-performance Rust integration contains a significant Python-side bottleneck (`iterrows`) that negates its benefits. Finally, the testing suite is fragmented, making CI/CD reliable validation difficult.
+
+## Objective 111
+**id:** 111
+**title:** Optimization of Rust Data Bridge
+**status:** todo
+**details:** The current `backend/rust_service.py` uses `df.iterrows()` to convert Pandas DataFrames into Rust `Bar` objects. `iterrows` is extremely slow and creates a bottleneck that undermines the performance gains of the Rust engine. This should be replaced with vectorized operations (e.g., `df.to_dict('records')` or direct Numpy array access) to speed up data marshalling by orders of magnitude.
+**acceptance_criteria:**
+- `convert_to_rust_bars` no longer uses `iterrows`.
+- Data conversion speed is improved by at least 10x (measured by benchmark).
+- Existing `test_rust_integration.py` passes without modification to logic.
+**validation:** `python tests/benchmark_test.py` (compare before/after or add specific bridge benchmark).
+
+## Objective 112
+**id:** 112
+**title:** Automated API Client & Type Generation
+**status:** todo
+**details:** The frontend manually defines types that should mirror the FastAPI backend (`backend/main.py`). This is prone to drift. We should introduce `openapi-typescript-codegen` to automatically generate a TypeScript client based on the FastAPI `openapi.json` schema. This ensures the Frontend `src/services/api.ts` is always in sync with Backend models like `StrategyRequest` and `BacktestResult`.
+**acceptance_criteria:**
+- `openapi-typescript-codegen` is added to `package.json` devDependencies.
+- A script `npm run generate-client` is created that fetches the schema from the running backend (or a static file export) and generates typed clients in `src/integrations/api`.
+- The generated client is importable in the frontend.
+**validation:** `npm run generate-client` executes successfully and produces valid `.ts` files.
+
+## Objective 113
+**id:** 113
+**title:** Centralized Test Configuration & CI Readiness
+**status:** todo
+**details:** Tests are currently scattered between `backend/tests/`, `tests/`, and root-level scripts (`test_nautilus_quick.py`). There is no centralized configuration to run them all. We need to create a root-level `pytest.ini` that defines the python path (including `backend`), standardizes markers (e.g., `slow`, `integration`), and creates a single entry point for running all validations.
+**acceptance_criteria:**
+- `pytest.ini` exists in the project root.
+- Running `pytest` from the root successfully discovers and runs tests in both `backend/tests` and `tests/`.
+- `backend` is added to the python path via the configuration, removing the need for `sys.path.append` hacks in individual test files.
+**validation:** `pytest --collect-only` lists all expected tests without import errors.
+
+## Objective 114
+**id:** 114
+**title:** Headless Strategy Pipeline Validation
+**status:** todo
+**details:** `backend/main.py` contains a TODO regarding "proper XML to IR parsing" in the export endpoint. We need to verify if the chain `Blockly XML -> Strategy IR -> Python Code` functions correctly headless. This task involves creating a dedicated integration test that takes a sample XML (mimicking the frontend payload), hits the internal service logic, and asserts valid Python code generation.
+**acceptance_criteria:**
+- A new test file `tests/test_pipeline_integrity.py` is created.
+- The test loads a fixture XML.
+- It calls `xml_to_strategy_ir` (or the equivalent logic in `strategy_converter`) and asserts the resulting IR is valid.
+- It verifies the export to Python produces syntax-valid code.
+**validation:** `pytest tests/test_pipeline_integrity.py` passes.

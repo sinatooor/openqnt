@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { PortfolioDashboard } from './PortfolioDashboard';
 import { RiskSettings } from './RiskSettings';
+import { StrategyHistoryModal } from './StrategyHistoryModal';
 
 type TabType = 'profile' | 'portfolio' | 'strategies' | 'settings' | 'connectors';
 
@@ -137,8 +138,11 @@ export const ProfileModal = ({
         { id: 'swedbank', name: 'Swedbank', description: 'Nordic Bank', logo: '/logo/swedbank.png', status: 'disconnected' },
     ]);
 
-    // Brokers State
     const [selectedBroker, setSelectedBroker] = useState<{ id: string, name: string, logo: string } | null>(null);
+
+    // History Modal State
+    const [historyStrategyId, setHistoryStrategyId] = useState<string | null>(null);
+    const [showHistoryModal, setShowHistoryModal] = useState(false);
 
     const handleConnect = (broker: any) => {
         // If it's a tool/connector, keep the old flow or just show alert for now
@@ -317,9 +321,21 @@ export const ProfileModal = ({
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
+                                                        title="Load Strategy"
                                                         onClick={() => handleLoadStrategy(strategy)}
                                                     >
                                                         <Upload className="w-4 h-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        title="View History"
+                                                        onClick={() => {
+                                                            setHistoryStrategyId(strategy.id);
+                                                            setShowHistoryModal(true);
+                                                        }}
+                                                    >
+                                                        <Clock className="w-4 h-4" />
                                                     </Button>
                                                     <Button
                                                         variant="ghost"
@@ -483,6 +499,16 @@ export const ProfileModal = ({
                 broker={selectedBroker}
                 onSuccess={(id) => {
                     setBrokers(prev => prev.map(b => b.id === id ? { ...b, status: 'connected' } : b));
+                }}
+            />
+
+            <StrategyHistoryModal
+                isOpen={showHistoryModal}
+                onClose={() => setShowHistoryModal(false)}
+                strategyId={historyStrategyId || ""}
+                onRestore={(xml, name) => {
+                    onLoadStrategy?.(xml, name);
+                    setShowHistoryModal(false);
                 }}
             />
         </>
