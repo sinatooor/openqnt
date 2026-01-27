@@ -10,3 +10,10 @@ export {
   type GeneratorOutput,
   type GeneratorOptions,
 } from './codeGenerators';
+
+// Python backtesting.py generator
+export {
+  generatePythonCode as generateBacktestingPyCode,
+  generateStrategySummary,
+  generateStrategyIR,
+} from './pythonGenerator';

@@ -18,6 +18,10 @@ import {
   Save,
   Download,
   Upload,
+  User,
+  BookOpen,
+  Search,
+  Activity,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -34,6 +38,10 @@ interface FloatingToolbarProps {
   onOpenCode: () => void;
   onOpenAI: () => void;
   onOpenSettings: () => void;
+  onOpenProfile: () => void;
+  onOpenJournal: () => void;
+  onOpenScreener: () => void;
+  onOpenLiveTrading: () => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
   onFitView: () => void;
@@ -48,6 +56,10 @@ export const FloatingToolbar = memo(({
   onOpenCode,
   onOpenAI,
   onOpenSettings,
+  onOpenProfile,
+  onOpenJournal,
+  onOpenScreener,
+  onOpenLiveTrading,
   onZoomIn,
   onZoomOut,
   onFitView,
@@ -178,6 +190,61 @@ export const FloatingToolbar = memo(({
             </Toolbar.Button>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="text-xs">Run Backtest</TooltipContent>
+        </Tooltip>
+
+        {/* Live Trading */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Toolbar.Button
+              onClick={onOpenLiveTrading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-sm bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-all"
+            >
+              <Activity className="w-3.5 h-3.5" />
+              Live
+            </Toolbar.Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="text-xs">Live Trading</TooltipContent>
+        </Tooltip>
+
+        <Toolbar.Separator className="w-px h-5 bg-border/50 mx-1" />
+
+        {/* Screener */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Toolbar.Button
+              onClick={onOpenScreener}
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            >
+              <Search className="w-4 h-4" />
+            </Toolbar.Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="text-xs">Market Screener</TooltipContent>
+        </Tooltip>
+
+        {/* Journal */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Toolbar.Button
+              onClick={onOpenJournal}
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            >
+              <BookOpen className="w-4 h-4" />
+            </Toolbar.Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="text-xs">Trade Journal</TooltipContent>
+        </Tooltip>
+
+        {/* Profile */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Toolbar.Button
+              onClick={onOpenProfile}
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            >
+              <User className="w-4 h-4" />
+            </Toolbar.Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="text-xs">Profile & Settings</TooltipContent>
         </Tooltip>
 
         <Toolbar.Separator className="w-px h-5 bg-border/50 mx-1" />

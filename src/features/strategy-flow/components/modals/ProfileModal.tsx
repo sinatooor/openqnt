@@ -1,0 +1,450 @@
+/**
+ * ProfileModal - User profile management for Strategy Flow
+ * Features: Login/Logout, User Info, Saved Strategies, Settings, Broker Connections
+ */
+
+import { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { useUserProfile, SavedStrategy } from '@/hooks/useUserProfile';
+import { useStrategyFlowStore } from '../../store/strategyFlowStore';
+import { toast } from 'sonner';
+import {
+  User,
+  FolderOpen,
+  Settings,
+  Link2,
+  Trash2,
+  Clock,
+  LogOut,
+  LogIn,
+  Save,
+  Upload,
+  Mail,
+  CheckCircle,
+  XCircle,
+  Wallet,
+  TrendingUp,
+  Shield,
+} from 'lucide-react';
+
+interface ProfileModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+// Broker list with logos
+const BROKERS = [
+  { id: 'ig', name: 'IG Markets', description: 'CFD Trading', logo: '/logo/logo_ig.png' },
+  { id: 'icmarkets', name: 'IC Markets', description: 'Forex & CFDs', logo: '/logo/logo_icmarkets.png' },
+  { id: 'ibkr', name: 'Interactive Brokers', description: 'Global Markets', logo: '/logo/interactivebrokers.png' },
+  { id: 'nordnet', name: 'Nordnet', description: 'Nordic Broker', logo: '/logo/nordnet.png' },
+  { id: 'avanza', name: 'Avanza', description: 'Swedish Stockbroker', logo: '/logo/avanza.png' },
+  { id: 'etoro', name: 'eToro', description: 'Social Trading', logo: '/logo/logo_etoro.png' },
+];
+
+// Connectors list
+const CONNECTORS = [
+  { id: 'tradingview', name: 'TradingView', description: 'Charting & Alerts', logo: '/logo/logo_tradingview.webp' },
+  { id: 'discord', name: 'Discord Bot', description: 'Notifications', logo: '/logo/logo_discord_small.png' },
+  { id: 'n8n', name: 'n8n', description: 'Workflow automation', logo: '/logo/logo_n8n.png' },
+];
+
+export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
+  const [activeTab, setActiveTab] = useState('profile');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [saveStrategyName, setSaveStrategyName] = useState('');
+  const [brokerConnections, setBrokerConnections] = useState<Record<string, boolean>>({});
+
+  const {
+    user,
+    isLoggedIn,
+    login,
+    logout,
+    savedStrategies,
+    saveStrategy,
+    deleteStrategy,
+    settings,
+    updateSettings,
+  } = useUserProfile();
+
+  const { strategyName, exportStrategy, importStrategy } = useStrategyFlowStore();
+
+  const handleLogin = async () => {
+    if (loginEmail.trim() && loginPassword.trim()) {
+      try {
+        await login(loginEmail.trim(), loginPassword.trim());
+        setLoginPassword('');
+        setLoginEmail('');
+        toast.success('Login successful');
+      } catch (e) {
+        toast.error('Login failed: ' + e);
+      }
+    }
+  };
+
+  const handleSaveStrategy = async () => {
+    const name = saveStrategyName.trim() || strategyName;
+    const strategyJson = exportStrategy();
+    if (strategyJson) {
+      await saveStrategy(name, strategyJson);
+      setSaveStrategyName('');
+      toast.success('Strategy saved');
+    }
+  };
+
+  const handleLoadStrategy = (strategy: SavedStrategy) => {
+    try {
+      importStrategy(strategy.xml);
+      toast.success(`Loaded: ${strategy.name}`);
+      onOpenChange(false);
+    } catch (e) {
+      toast.error('Failed to load strategy');
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const handleConnectBroker = (brokerId: string) => {
+    // TODO: Open broker-specific connection modal
+    toast.info(`Connecting to ${brokerId}...`);
+    setBrokerConnections(prev => ({ ...prev, [brokerId]: true }));
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[700px] h-[600px] bg-[#1a1a1f] border-white/10 text-white p-0">
+        <DialogHeader className="p-6 pb-0">
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            <User className="w-5 h-5 text-purple-400" />
+            Profile & Settings
+          </DialogTitle>
+        </DialogHeader>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+          <TabsList className="mx-6 bg-[#252530] border border-white/10">
+            <TabsTrigger value="profile" className="flex items-center gap-1.5 data-[state=active]:bg-purple-600">
+              <User className="w-3.5 h-3.5" />
+              Profile
+            </TabsTrigger>
+            <TabsTrigger value="strategies" className="flex items-center gap-1.5 data-[state=active]:bg-purple-600">
+              <FolderOpen className="w-3.5 h-3.5" />
+              Strategies
+            </TabsTrigger>
+            <TabsTrigger value="brokers" className="flex items-center gap-1.5 data-[state=active]:bg-purple-600">
+              <Wallet className="w-3.5 h-3.5" />
+              Brokers
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center gap-1.5 data-[state=active]:bg-purple-600">
+              <Settings className="w-3.5 h-3.5" />
+              Settings
+            </TabsTrigger>
+          </TabsList>
+
+          <ScrollArea className="flex-1 p-6">
+            {/* Profile Tab */}
+            <TabsContent value="profile" className="m-0 space-y-6">
+              {isLoggedIn ? (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-4 p-4 bg-[#252530] rounded-lg border border-white/10">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-2xl font-bold">
+                      {user?.email?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg">{user?.email}</h3>
+                      <p className="text-sm text-white/60">Member since {formatDate(user?.createdAt || new Date().toISOString())}</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={logout}
+                      className="ml-auto border-white/10"
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Logout
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="p-4 bg-[#252530] rounded-lg border border-white/10 text-center">
+                      <TrendingUp className="w-8 h-8 mx-auto mb-2 text-green-400" />
+                      <div className="text-2xl font-bold">{savedStrategies.length}</div>
+                      <div className="text-sm text-white/60">Strategies</div>
+                    </div>
+                    <div className="p-4 bg-[#252530] rounded-lg border border-white/10 text-center">
+                      <Shield className="w-8 h-8 mx-auto mb-2 text-blue-400" />
+                      <div className="text-2xl font-bold">{Object.values(brokerConnections).filter(Boolean).length}</div>
+                      <div className="text-sm text-white/60">Brokers</div>
+                    </div>
+                    <div className="p-4 bg-[#252530] rounded-lg border border-white/10 text-center">
+                      <Link2 className="w-8 h-8 mx-auto mb-2 text-purple-400" />
+                      <div className="text-2xl font-bold">0</div>
+                      <div className="text-sm text-white/60">Integrations</div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4 max-w-sm mx-auto">
+                  <div className="text-center mb-6">
+                    <User className="w-16 h-16 mx-auto mb-4 text-white/20" />
+                    <h3 className="text-lg font-semibold">Sign In</h3>
+                    <p className="text-sm text-white/60">Sign in to save strategies and connect brokers</p>
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-white/70">Email</Label>
+                      <Input
+                        type="email"
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
+                        placeholder="your@email.com"
+                        className="bg-[#252530] border-white/10"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-white/70">Password</Label>
+                      <Input
+                        type="password"
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="bg-[#252530] border-white/10"
+                        onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                      />
+                    </div>
+                    <Button onClick={handleLogin} className="w-full bg-purple-600 hover:bg-purple-700">
+                      <LogIn className="w-4 h-4 mr-2" />
+                      Sign In
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Strategies Tab */}
+            <TabsContent value="strategies" className="m-0 space-y-4">
+              {/* Save Current Strategy */}
+              <div className="p-4 bg-[#252530] rounded-lg border border-white/10">
+                <h4 className="font-medium mb-3 flex items-center gap-2">
+                  <Save className="w-4 h-4 text-purple-400" />
+                  Save Current Strategy
+                </h4>
+                <div className="flex gap-2">
+                  <Input
+                    value={saveStrategyName}
+                    onChange={(e) => setSaveStrategyName(e.target.value)}
+                    placeholder={strategyName}
+                    className="flex-1 bg-[#1a1a1f] border-white/10"
+                  />
+                  <Button onClick={handleSaveStrategy} className="bg-purple-600 hover:bg-purple-700">
+                    <Save className="w-4 h-4 mr-2" />
+                    Save
+                  </Button>
+                </div>
+              </div>
+
+              <Separator className="bg-white/10" />
+
+              {/* Saved Strategies List */}
+              <div>
+                <h4 className="font-medium mb-3 flex items-center gap-2">
+                  <FolderOpen className="w-4 h-4 text-blue-400" />
+                  Saved Strategies ({savedStrategies.length})
+                </h4>
+                {savedStrategies.length === 0 ? (
+                  <div className="text-center py-8 text-white/40">
+                    <FolderOpen className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No saved strategies yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {savedStrategies.map((strategy) => (
+                      <div
+                        key={strategy.id}
+                        className="flex items-center gap-3 p-3 bg-[#252530] rounded-lg border border-white/10 hover:border-white/20 transition-colors"
+                      >
+                        <div className="flex-1">
+                          <div className="font-medium">{strategy.name}</div>
+                          <div className="text-xs text-white/50 flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {formatDate(strategy.savedAt)}
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleLoadStrategy(strategy)}
+                          className="border-white/10"
+                        >
+                          <Upload className="w-3.5 h-3.5 mr-1" />
+                          Load
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => deleteStrategy(strategy.id)}
+                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            {/* Brokers Tab */}
+            <TabsContent value="brokers" className="m-0 space-y-4">
+              <div>
+                <h4 className="font-medium mb-3 flex items-center gap-2">
+                  <Wallet className="w-4 h-4 text-green-400" />
+                  Trading Brokers
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  {BROKERS.map((broker) => (
+                    <div
+                      key={broker.id}
+                      className="flex items-center gap-3 p-3 bg-[#252530] rounded-lg border border-white/10"
+                    >
+                      <img
+                        src={broker.logo}
+                        alt={broker.name}
+                        className="w-10 h-10 rounded object-contain bg-white/5 p-1"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder.svg';
+                        }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate">{broker.name}</div>
+                        <div className="text-xs text-white/50">{broker.description}</div>
+                      </div>
+                      {brokerConnections[broker.id] ? (
+                        <Badge variant="outline" className="bg-green-500/10 text-green-400 border-green-500/30">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Connected
+                        </Badge>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleConnectBroker(broker.id)}
+                          className="border-white/10 text-xs"
+                        >
+                          Connect
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <Separator className="bg-white/10" />
+
+              <div>
+                <h4 className="font-medium mb-3 flex items-center gap-2">
+                  <Link2 className="w-4 h-4 text-purple-400" />
+                  Integrations
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  {CONNECTORS.map((connector) => (
+                    <div
+                      key={connector.id}
+                      className="flex items-center gap-3 p-3 bg-[#252530] rounded-lg border border-white/10"
+                    >
+                      <img
+                        src={connector.logo}
+                        alt={connector.name}
+                        className="w-10 h-10 rounded object-contain bg-white/5 p-1"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder.svg';
+                        }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate">{connector.name}</div>
+                        <div className="text-xs text-white/50">{connector.description}</div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-white/10 text-xs"
+                      >
+                        Setup
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Settings Tab */}
+            <TabsContent value="settings" className="m-0 space-y-4">
+              <div className="space-y-4">
+                <div className="p-4 bg-[#252530] rounded-lg border border-white/10">
+                  <h4 className="font-medium mb-3">Default Trading Settings</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-white/70 text-sm">Default Symbol</Label>
+                      <Input
+                        type="text"
+                        defaultValue={settings?.defaultSymbol || 'EURUSD'}
+                        onChange={(e) => updateSettings({ defaultSymbol: e.target.value })}
+                        className="bg-[#1a1a1f] border-white/10"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-white/70 text-sm">Default Timeframe</Label>
+                      <Input
+                        type="text"
+                        defaultValue={settings?.defaultTimeframe || '1H'}
+                        onChange={(e) => updateSettings({ defaultTimeframe: e.target.value })}
+                        className="bg-[#1a1a1f] border-white/10"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-[#252530] rounded-lg border border-white/10">
+                  <h4 className="font-medium mb-3">Preferences</h4>
+                  <div className="space-y-3">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        defaultChecked={settings?.autoSave ?? true}
+                        onChange={(e) => updateSettings({ autoSave: e.target.checked })}
+                        className="rounded"
+                      />
+                      <span className="text-sm">Auto-save strategies</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+          </ScrollArea>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default ProfileModal;

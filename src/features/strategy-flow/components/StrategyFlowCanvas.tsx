@@ -9,6 +9,7 @@ import {
   Background,
   BackgroundVariant,
   MiniMap,
+  Controls,
   SelectionMode,
   OnConnect,
   OnNodesChange,
@@ -18,6 +19,7 @@ import {
   Panel,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { Sparkles, Boxes, Play, AlertCircle, CheckCircle2, Cloud, CloudOff } from 'lucide-react';
 
 import { nodeTypes } from './nodes';
 import { FloatingToolbar } from './FloatingToolbar';
@@ -31,10 +33,14 @@ import {
   SettingsModal, 
   TemplatesDialog, 
   SearchNodesDialog,
-  ChartModal 
+  ChartModal,
+  ProfileModal,
+  JournalModal,
+  ScreenerModal,
+  LiveTradingPanel,
 } from './modals';
-import { useStrategyFlowStore } from '../store/strategyFlowStore';
-import { NODE_CATALOG } from '../catalog/nodeCatalog';
+import { useStrategyFlowStore, isValidConnection, validateStrategy } from '../store/strategyFlowStore';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import type { StrategyFlowNode, NodeCatalogItem } from '../types';
 
 // Professional edge styling
@@ -66,6 +72,125 @@ const nodeColor = (node: { type?: string }) => {
   return colors[node.type || ''] || '#6366f1';
 };
 
+// =============================================================================
+// EMPTY STATE COMPONENT
+// =============================================================================
+
+const EmptyState = () => (
+  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+    <div className="text-center max-w-md pointer-events-auto">
+      <div className="mb-6">
+        <div className="w-20 h-20 mx-auto bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-2xl flex items-center justify-center">
+          <Boxes className="w-10 h-10 text-purple-400" />
+        </div>
+      </div>
+      <h2 className="text-xl font-semibold text-white mb-2">Start Building Your Strategy</h2>
+      <p className="text-white/60 text-sm mb-6">
+        Drag nodes from the sidebar to create your trading strategy, or use AI to generate one automatically.
+      </p>
+      <div className="grid grid-cols-2 gap-3 text-left">
+        <div className="p-3 bg-white/5 rounded-lg border border-white/10">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Boxes className="w-4 h-4 text-purple-400" />
+            <span className="text-sm font-medium text-white">Drag & Drop</span>
+          </div>
+          <p className="text-xs text-white/50">Drag nodes from the left sidebar onto the canvas</p>
+        </div>
+        <div className="p-3 bg-white/5 rounded-lg border border-white/10">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Sparkles className="w-4 h-4 text-blue-400" />
+            <span className="text-sm font-medium text-white">AI Generate</span>
+          </div>
+          <p className="text-xs text-white/50">Press <kbd className="px-1 bg-white/10 rounded">I</kbd> to describe your strategy</p>
+        </div>
+        <div className="p-3 bg-white/5 rounded-lg border border-white/10">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Play className="w-4 h-4 text-green-400" />
+            <span className="text-sm font-medium text-white">Backtest</span>
+          </div>
+          <p className="text-xs text-white/50">Test your strategy on historical data</p>
+        </div>
+        <div className="p-3 bg-white/5 rounded-lg border border-white/10">
+          <div className="flex items-center gap-2 mb-1.5">
+            <AlertCircle className="w-4 h-4 text-amber-400" />
+            <span className="text-sm font-medium text-white">Quick Start</span>
+          </div>
+          <p className="text-xs text-white/50">Load a template from the toolbar</p>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// =============================================================================
+// SAVE STATUS INDICATOR
+// =============================================================================
+
+const SaveStatusIndicator = ({ lastSavedAt, isModified }: { lastSavedAt: number | null; isModified: boolean }) => {
+  const getTimeAgo = (timestamp: number) => {
+    const seconds = Math.floor((Date.now() - timestamp) / 1000);
+    if (seconds < 5) return 'Just now';
+    if (seconds < 60) return `${seconds}s ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    return 'Saved';
+  };
+
+  if (!lastSavedAt) {
+    return (
+      <div className="flex items-center gap-1.5 text-white/40 text-xs">
+        <CloudOff className="w-3.5 h-3.5" />
+        <span>Not saved</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 text-white/60 text-xs">
+      <Cloud className="w-3.5 h-3.5 text-green-400" />
+      <span>Saved {getTimeAgo(lastSavedAt)}</span>
+      {isModified && <span className="text-amber-400">•</span>}
+    </div>
+  );
+};
+
+// =============================================================================
+// STRATEGY VALIDATION BADGE
+// =============================================================================
+
+const StrategyValidationBadge = ({ nodes, edges }: { nodes: StrategyFlowNode[]; edges: any[] }) => {
+  const validation = useMemo(() => validateStrategy(nodes, edges), [nodes, edges]);
+
+  if (nodes.length === 0) return null;
+
+  return (
+    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs ${
+      validation.isValid 
+        ? 'bg-green-500/20 text-green-400' 
+        : validation.errors.length > 0 
+          ? 'bg-red-500/20 text-red-400'
+          : 'bg-amber-500/20 text-amber-400'
+    }`}>
+      {validation.isValid ? (
+        <>
+          <CheckCircle2 className="w-3.5 h-3.5" />
+          <span>Valid Strategy</span>
+        </>
+      ) : validation.errors.length > 0 ? (
+        <>
+          <AlertCircle className="w-3.5 h-3.5" />
+          <span>{validation.errors.length} issue{validation.errors.length > 1 ? 's' : ''}</span>
+        </>
+      ) : (
+        <>
+          <AlertCircle className="w-3.5 h-3.5" />
+          <span>{validation.warnings.length} warning{validation.warnings.length > 1 ? 's' : ''}</span>
+        </>
+      )}
+    </div>
+  );
+};
+
 // Inner component that uses ReactFlow hooks
 const StrategyFlowCanvasInner = () => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
@@ -74,6 +199,7 @@ const StrategyFlowCanvasInner = () => {
   // Panel visibility states
   const [showCodePanel, setShowCodePanel] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
   
   // Modal states
   const [showBacktest, setShowBacktest] = useState(false);
@@ -81,6 +207,10 @@ const StrategyFlowCanvasInner = () => {
   const [showTemplates, setShowTemplates] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showChart, setShowChart] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showJournal, setShowJournal] = useState(false);
+  const [showScreener, setShowScreener] = useState(false);
+  const [showLiveTrading, setShowLiveTrading] = useState(false);
   
   const {
     nodes,
@@ -95,6 +225,8 @@ const StrategyFlowCanvasInner = () => {
     leftSidebarWidth,
     rightPanelOpen,
     rightPanelWidth,
+    lastSavedAt,
+    isModified,
     onNodesChange,
     onEdgesChange,
     onConnect,
@@ -103,6 +235,12 @@ const StrategyFlowCanvasInner = () => {
     setViewport,
     hideContextMenu,
   } = useStrategyFlowStore();
+
+  // Update zoom level on move
+  const handleMoveEnd = useCallback((_: any, vp: any) => {
+    setViewport(vp);
+    setZoomLevel(vp.zoom);
+  }, [setViewport]);
 
   // Get selected node object
   const selectedNode = useMemo(() => {
@@ -227,8 +365,13 @@ const StrategyFlowCanvasInner = () => {
         onSelectionChange={handleSelectionChange}
         onNodeContextMenu={handleNodeContextMenu}
         onPaneClick={handlePaneClick}
-        onMoveEnd={(_, vp) => setViewport(vp)}
+        onMoveEnd={handleMoveEnd}
         defaultViewport={viewport}
+        isValidConnection={(connection) => {
+          const sourceNode = nodes.find(n => n.id === connection.source);
+          const targetNode = nodes.find(n => n.id === connection.target);
+          return isValidConnection(sourceNode, targetNode);
+        }}
         selectionMode={SelectionMode.Partial}
         panOnDrag={isPanMode ? true : [1, 2]}
         selectNodesOnDrag={!isPanMode}
@@ -268,6 +411,19 @@ const StrategyFlowCanvasInner = () => {
           className="!m-4"
         />
 
+        {/* Controls (zoom buttons) */}
+        <Controls
+          position="bottom-right"
+          style={{
+            bottom: 120,
+            right: 16,
+          }}
+          className="!bg-card/90 !border-border/50 !rounded-lg !shadow-lg"
+          showZoom
+          showFitView
+          showInteractive={false}
+        />
+
         {/* ========== FLOATING TOOLBAR ========== */}
 
         {/* Top Center: Floating Toolbar */}
@@ -279,12 +435,29 @@ const StrategyFlowCanvasInner = () => {
             onOpenCode={() => setShowCodePanel(!showCodePanel)}
             onOpenAI={() => setShowAIPanel(!showAIPanel)}
             onOpenSettings={() => setShowSettings(true)}
+            onOpenProfile={() => setShowProfile(true)}
+            onOpenJournal={() => setShowJournal(true)}
+            onOpenScreener={() => setShowScreener(true)}
+            onOpenLiveTrading={() => setShowLiveTrading(true)}
             onZoomIn={() => zoomIn()}
             onZoomOut={() => zoomOut()}
             onFitView={() => fitView({ padding: 0.2 })}
             showCode={showCodePanel}
             showAI={showAIPanel}
           />
+        </Panel>
+
+        {/* Top Right: Status indicators */}
+        <Panel position="top-right" className="!m-4">
+          <div className="flex items-center gap-3 px-3 py-2 bg-card/80 backdrop-blur-sm border border-border/30 rounded-lg">
+            <SaveStatusIndicator lastSavedAt={lastSavedAt} isModified={isModified} />
+            <div className="w-px h-4 bg-border/50" />
+            <StrategyValidationBadge nodes={nodes} edges={edges} />
+            <div className="w-px h-4 bg-border/50" />
+            <span className="text-xs text-white/50 tabular-nums">
+              {Math.round(zoomLevel * 100)}%
+            </span>
+          </div>
         </Panel>
 
         {/* Bottom Left: Keyboard hints */}
@@ -309,6 +482,9 @@ const StrategyFlowCanvasInner = () => {
           </div>
         </Panel>
       </ReactFlow>
+
+      {/* Empty State (shown when no nodes) */}
+      {nodes.length === 0 && <EmptyState />}
 
       {/* Context Menu */}
       {contextMenu && (
@@ -340,30 +516,57 @@ const StrategyFlowCanvasInner = () => {
       <TemplatesDialog open={showTemplates} onOpenChange={setShowTemplates} />
       <SearchNodesDialog open={showSearch} onOpenChange={setShowSearch} />
       <ChartModal open={showChart} onOpenChange={setShowChart} />
+      <ProfileModal open={showProfile} onOpenChange={setShowProfile} />
+      <JournalModal open={showJournal} onOpenChange={setShowJournal} />
+      <ScreenerModal open={showScreener} onOpenChange={setShowScreener} />
+      <LiveTradingPanel open={showLiveTrading} onOpenChange={setShowLiveTrading} />
     </div>
   );
 };
 
-// Main component wrapped with ReactFlowProvider
+// Strategy Flow Error Fallback
+const StrategyFlowErrorFallback = () => (
+  <div className="h-screen w-screen bg-[#0a0a0b] flex items-center justify-center">
+    <div className="text-center max-w-md p-6">
+      <div className="w-16 h-16 mx-auto mb-4 bg-red-500/10 rounded-full flex items-center justify-center">
+        <AlertCircle className="w-8 h-8 text-red-400" />
+      </div>
+      <h2 className="text-xl font-semibold text-white mb-2">Strategy Builder Error</h2>
+      <p className="text-white/60 text-sm mb-4">
+        Something went wrong with the strategy builder. Your work has been saved locally.
+      </p>
+      <button
+        onClick={() => window.location.reload()}
+        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+      >
+        Reload Page
+      </button>
+    </div>
+  </div>
+);
+
+// Main component wrapped with ReactFlowProvider and ErrorBoundary
 export const StrategyFlowCanvas = () => {
   return (
-    <div className="relative h-screen w-screen bg-[#0a0a0b] overflow-hidden">
-      {/* Canvas fills entire background */}
-      <div className="absolute inset-0">
-        <ReactFlowProvider>
-          <StrategyFlowCanvasInner />
-        </ReactFlowProvider>
-      </div>
+    <ErrorBoundary fallback={<StrategyFlowErrorFallback />}>
+      <div className="relative h-screen w-screen bg-[#0a0a0b] overflow-hidden">
+        {/* Canvas fills entire background */}
+        <div className="absolute inset-0">
+          <ReactFlowProvider>
+            <StrategyFlowCanvasInner />
+          </ReactFlowProvider>
+        </div>
 
-      {/* Left Sidebar overlays canvas */}
-      <div className="absolute left-0 top-0 h-full z-20">
-        <LeftSidebar />
-      </div>
+        {/* Left Sidebar overlays canvas */}
+        <div className="absolute left-0 top-0 h-full z-20">
+          <LeftSidebar />
+        </div>
 
-      {/* Right Property Panel overlays canvas */}
-      <div className="absolute right-0 top-0 h-full z-20">
-        <RightPropertyPanel />
+        {/* Right Property Panel overlays canvas */}
+        <div className="absolute right-0 top-0 h-full z-20">
+          <RightPropertyPanel />
+        </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 };
