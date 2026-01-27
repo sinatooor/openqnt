@@ -116,7 +116,7 @@ export const ScreenerModal = ({ open, onOpenChange, onSelectSymbol }: ScreenerMo
       }
 
       const data = await response.json();
-      
+
       if (data.success && data.results) {
         setResults(data.results);
         setLastScan(new Date());
@@ -160,7 +160,7 @@ export const ScreenerModal = ({ open, onOpenChange, onSelectSymbol }: ScreenerMo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[900px] h-[700px] bg-[#1a1a1f] border-white/10 text-white p-0 flex flex-col">
+      <DialogContent className="sm:max-w-[900px] h-[700px] bg-card/80 backdrop-blur-xl border-border/50 text-foreground p-0 flex flex-col">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="flex items-center gap-2 text-xl">
             <Search className="w-5 h-5 text-purple-400" />
@@ -170,16 +170,16 @@ export const ScreenerModal = ({ open, onOpenChange, onSelectSymbol }: ScreenerMo
 
         <div className="flex-1 flex flex-col p-6 pt-4 gap-4">
           {/* Filters Section */}
-          <div className="p-4 bg-[#252530] rounded-lg border border-white/10 space-y-4">
+          <div className="p-4 bg-secondary rounded-lg border border-border space-y-4">
             <div className="grid grid-cols-4 gap-4">
               {/* Watchlist Selection */}
               <div className="space-y-2">
-                <Label className="text-white/70 text-sm">Market</Label>
+                <Label className="text-muted-foreground text-sm">Market</Label>
                 <Select value={watchlist} onValueChange={(v: any) => setWatchlist(v)}>
-                  <SelectTrigger className="bg-[#1a1a1f] border-white/10">
+                  <SelectTrigger className="bg-background border-white/10">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#252530] border-white/10">
+                  <SelectContent className="bg-secondary border-border">
                     <SelectItem value="forex">Forex</SelectItem>
                     <SelectItem value="crypto">Crypto</SelectItem>
                     <SelectItem value="stocks">Stocks</SelectItem>
@@ -190,12 +190,12 @@ export const ScreenerModal = ({ open, onOpenChange, onSelectSymbol }: ScreenerMo
 
               {/* Filter Selection */}
               <div className="space-y-2 col-span-2">
-                <Label className="text-white/70 text-sm">Filter</Label>
+                <Label className="text-muted-foreground text-sm">Filter</Label>
                 <Select value={filter} onValueChange={setFilter}>
-                  <SelectTrigger className="bg-[#1a1a1f] border-white/10">
+                  <SelectTrigger className="bg-background border-white/10">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#252530] border-white/10">
+                  <SelectContent className="bg-secondary border-border">
                     {FILTERS.map(f => (
                       <SelectItem key={f.value} value={f.value}>
                         <div className="flex flex-col">
@@ -209,7 +209,7 @@ export const ScreenerModal = ({ open, onOpenChange, onSelectSymbol }: ScreenerMo
 
               {/* Scan Button */}
               <div className="space-y-2">
-                <Label className="text-white/70 text-sm">&nbsp;</Label>
+                <Label className="text-muted-foreground text-sm">&nbsp;</Label>
                 <Button
                   onClick={runScreener}
                   disabled={isScanning}
@@ -232,17 +232,17 @@ export const ScreenerModal = ({ open, onOpenChange, onSelectSymbol }: ScreenerMo
 
             {/* Custom Symbols */}
             <div className="space-y-2">
-              <Label className="text-white/70 text-sm">Custom Symbols (optional, comma-separated)</Label>
+              <Label className="text-muted-foreground text-sm">Custom Symbols (optional, comma-separated)</Label>
               <Input
                 value={customSymbols}
                 onChange={(e) => setCustomSymbols(e.target.value)}
                 placeholder="AAPL, MSFT, GOOGL..."
-                className="bg-[#1a1a1f] border-white/10"
+                className="bg-background border-white/10"
               />
             </div>
 
             {/* Current Filter Info */}
-            <div className="flex items-center gap-2 text-sm text-white/60">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Filter className="w-4 h-4" />
               <span>Scanning {customSymbols.trim() ? 'custom symbols' : WATCHLISTS[watchlist].length + ' ' + watchlist + ' symbols'} for: </span>
               <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/30">
@@ -252,7 +252,7 @@ export const ScreenerModal = ({ open, onOpenChange, onSelectSymbol }: ScreenerMo
           </div>
 
           {/* Results Section */}
-          <div className="flex-1 bg-[#252530] rounded-lg border border-white/10 overflow-hidden flex flex-col">
+          <div className="flex-1 bg-secondary rounded-lg border border-border overflow-hidden flex flex-col">
             <div className="p-3 border-b border-white/10 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-purple-400" />
@@ -262,7 +262,7 @@ export const ScreenerModal = ({ open, onOpenChange, onSelectSymbol }: ScreenerMo
                 )}
               </div>
               {lastScan && (
-                <span className="text-xs text-white/40">
+                <span className="text-xs text-muted-foreground">
                   Last scan: {lastScan.toLocaleTimeString()}
                 </span>
               )}
@@ -270,7 +270,7 @@ export const ScreenerModal = ({ open, onOpenChange, onSelectSymbol }: ScreenerMo
 
             <ScrollArea className="flex-1">
               {results.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-white/40">
+                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                   <Search className="w-12 h-12 mb-3 opacity-50" />
                   <p>No results yet</p>
                   <p className="text-sm mt-1">Click "Scan" to search for opportunities</p>
@@ -278,7 +278,7 @@ export const ScreenerModal = ({ open, onOpenChange, onSelectSymbol }: ScreenerMo
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-white/10 hover:bg-transparent">
+                    <TableRow className="border-border hover:bg-transparent">
                       <TableHead>Symbol</TableHead>
                       <TableHead className="text-right">Price</TableHead>
                       <TableHead className="text-right">Change</TableHead>
@@ -291,21 +291,20 @@ export const ScreenerModal = ({ open, onOpenChange, onSelectSymbol }: ScreenerMo
                   </TableHeader>
                   <TableBody>
                     {results.map((result) => (
-                      <TableRow key={result.symbol} className="border-white/10 hover:bg-white/5">
+                      <TableRow key={result.symbol} className="border-border hover:bg-secondary/50">
                         <TableCell>
                           <div>
                             <div className="font-medium">{result.symbol}</div>
                             {result.name !== result.symbol && (
-                              <div className="text-xs text-white/50">{result.name}</div>
+                              <div className="text-xs text-muted-foreground">{result.name}</div>
                             )}
                           </div>
                         </TableCell>
                         <TableCell className="text-right font-mono">
                           ${result.price.toFixed(2)}
                         </TableCell>
-                        <TableCell className={`text-right font-medium ${
-                          result.change_pct >= 0 ? 'text-green-400' : 'text-red-400'
-                        }`}>
+                        <TableCell className={`text-right font-medium ${result.change_pct >= 0 ? 'text-green-400' : 'text-red-400'
+                          }`}>
                           <span className="flex items-center justify-end gap-1">
                             {result.change_pct >= 0 ? (
                               <TrendingUp className="w-3 h-3" />
@@ -315,12 +314,11 @@ export const ScreenerModal = ({ open, onOpenChange, onSelectSymbol }: ScreenerMo
                             {result.change_pct >= 0 ? '+' : ''}{result.change_pct.toFixed(2)}%
                           </span>
                         </TableCell>
-                        <TableCell className="text-right text-white/60">
+                        <TableCell className="text-right text-muted-foreground">
                           {formatVolume(result.volume)}
                         </TableCell>
-                        <TableCell className={`text-right font-medium ${
-                          result.rsi < 30 ? 'text-green-400' : result.rsi > 70 ? 'text-red-400' : 'text-white/60'
-                        }`}>
+                        <TableCell className={`text-right font-medium ${result.rsi < 30 ? 'text-green-400' : result.rsi > 70 ? 'text-red-400' : 'text-muted-foreground'
+                          }`}>
                           {result.rsi.toFixed(1)}
                         </TableCell>
                         <TableCell className="text-center">
@@ -330,8 +328,8 @@ export const ScreenerModal = ({ open, onOpenChange, onSelectSymbol }: ScreenerMo
                               result.signal === 'buy'
                                 ? 'bg-green-500/10 text-green-400 border-green-500/30'
                                 : result.signal === 'sell'
-                                ? 'bg-red-500/10 text-red-400 border-red-500/30'
-                                : 'bg-gray-500/10 text-gray-400 border-gray-500/30'
+                                  ? 'bg-red-500/10 text-red-400 border-red-500/30'
+                                  : 'bg-gray-500/10 text-gray-400 border-gray-500/30'
                             }
                           >
                             {result.signal === 'buy' && <CheckCircle2 className="w-3 h-3 mr-1" />}
@@ -341,16 +339,15 @@ export const ScreenerModal = ({ open, onOpenChange, onSelectSymbol }: ScreenerMo
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <div className="w-16 h-2 bg-white/10 rounded-full overflow-hidden">
+                            <div className="w-16 h-2 bg-secondary/50 rounded-full overflow-hidden">
                               <div
-                                className={`h-full rounded-full ${
-                                  result.strength > 70 ? 'bg-green-500' :
+                                className={`h-full rounded-full ${result.strength > 70 ? 'bg-green-500' :
                                   result.strength > 40 ? 'bg-yellow-500' : 'bg-red-500'
-                                }`}
+                                  }`}
                                 style={{ width: `${result.strength}%` }}
                               />
                             </div>
-                            <span className="text-xs text-white/50 w-8">{result.strength.toFixed(0)}%</span>
+                            <span className="text-xs text-muted-foreground w-8">{result.strength.toFixed(0)}%</span>
                           </div>
                         </TableCell>
                         <TableCell>

@@ -133,7 +133,7 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] h-[600px] bg-[#1a1a1f] border-white/10 text-white p-0">
+      <DialogContent className="sm:max-w-[700px] h-[600px] bg-card/80 backdrop-blur-xl border-border/50 text-foreground p-0">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="flex items-center gap-2 text-xl">
             <User className="w-5 h-5 text-purple-400" />
@@ -142,7 +142,7 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-          <TabsList className="mx-6 bg-[#252530] border border-white/10">
+          <TabsList className="mx-6 bg-secondary border border-border">
             <TabsTrigger value="profile" className="flex items-center gap-1.5 data-[state=active]:bg-purple-600">
               <User className="w-3.5 h-3.5" />
               Profile
@@ -166,19 +166,19 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
             <TabsContent value="profile" className="m-0 space-y-6">
               {isLoggedIn ? (
                 <div className="space-y-6">
-                  <div className="flex items-center gap-4 p-4 bg-[#252530] rounded-lg border border-white/10">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-2xl font-bold">
+                  <div className="flex items-center gap-4 p-4 bg-secondary rounded-lg border border-border">
+                    <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-2xl font-bold">
                       {user?.email?.charAt(0).toUpperCase() || 'U'}
                     </div>
                     <div>
                       <h3 className="font-semibold text-lg">{user?.email}</h3>
-                      <p className="text-sm text-white/60">Member since {formatDate(user?.createdAt || new Date().toISOString())}</p>
+                      <p className="text-sm text-muted-foreground">Member since {formatDate(user?.createdAt || new Date().toISOString())}</p>
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={logout}
-                      className="ml-auto border-white/10"
+                      className="ml-auto border-border"
                     >
                       <LogOut className="w-4 h-4 mr-2" />
                       Logout
@@ -186,20 +186,20 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
                   </div>
 
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="p-4 bg-[#252530] rounded-lg border border-white/10 text-center">
+                    <div className="p-4 bg-secondary rounded-lg border border-border text-center">
                       <TrendingUp className="w-8 h-8 mx-auto mb-2 text-green-400" />
                       <div className="text-2xl font-bold">{savedStrategies.length}</div>
-                      <div className="text-sm text-white/60">Strategies</div>
+                      <div className="text-sm text-muted-foreground">Strategies</div>
                     </div>
-                    <div className="p-4 bg-[#252530] rounded-lg border border-white/10 text-center">
+                    <div className="p-4 bg-secondary rounded-lg border border-border text-center">
                       <Shield className="w-8 h-8 mx-auto mb-2 text-blue-400" />
                       <div className="text-2xl font-bold">{Object.values(brokerConnections).filter(Boolean).length}</div>
-                      <div className="text-sm text-white/60">Brokers</div>
+                      <div className="text-sm text-muted-foreground">Brokers</div>
                     </div>
-                    <div className="p-4 bg-[#252530] rounded-lg border border-white/10 text-center">
+                    <div className="p-4 bg-secondary rounded-lg border border-border text-center">
                       <Link2 className="w-8 h-8 mx-auto mb-2 text-purple-400" />
                       <div className="text-2xl font-bold">0</div>
-                      <div className="text-sm text-white/60">Integrations</div>
+                      <div className="text-sm text-muted-foreground">Integrations</div>
                     </div>
                   </div>
                 </div>
@@ -208,27 +208,27 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
                   <div className="text-center mb-6">
                     <User className="w-16 h-16 mx-auto mb-4 text-white/20" />
                     <h3 className="text-lg font-semibold">Sign In</h3>
-                    <p className="text-sm text-white/60">Sign in to save strategies and connect brokers</p>
+                    <p className="text-sm text-muted-foreground">Sign in to save strategies and connect brokers</p>
                   </div>
                   <div className="space-y-3">
                     <div>
-                      <Label className="text-white/70">Email</Label>
+                      <Label className="text-muted-foreground">Email</Label>
                       <Input
                         type="email"
                         value={loginEmail}
                         onChange={(e) => setLoginEmail(e.target.value)}
                         placeholder="your@email.com"
-                        className="bg-[#252530] border-white/10"
+                        className="bg-secondary border-border"
                       />
                     </div>
                     <div>
-                      <Label className="text-white/70">Password</Label>
+                      <Label className="text-muted-foreground">Password</Label>
                       <Input
                         type="password"
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="bg-[#252530] border-white/10"
+                        className="bg-secondary border-border"
                         onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
                       />
                     </div>
@@ -244,7 +244,7 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
             {/* Strategies Tab */}
             <TabsContent value="strategies" className="m-0 space-y-4">
               {/* Save Current Strategy */}
-              <div className="p-4 bg-[#252530] rounded-lg border border-white/10">
+              <div className="p-4 bg-secondary rounded-lg border border-border">
                 <h4 className="font-medium mb-3 flex items-center gap-2">
                   <Save className="w-4 h-4 text-purple-400" />
                   Save Current Strategy
@@ -254,7 +254,7 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
                     value={saveStrategyName}
                     onChange={(e) => setSaveStrategyName(e.target.value)}
                     placeholder={strategyName}
-                    className="flex-1 bg-[#1a1a1f] border-white/10"
+                    className="flex-1 bg-background border-border"
                   />
                   <Button onClick={handleSaveStrategy} className="bg-purple-600 hover:bg-purple-700">
                     <Save className="w-4 h-4 mr-2" />
@@ -263,7 +263,7 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
                 </div>
               </div>
 
-              <Separator className="bg-white/10" />
+              <Separator className="bg-border" />
 
               {/* Saved Strategies List */}
               <div>
@@ -272,7 +272,7 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
                   Saved Strategies ({savedStrategies.length})
                 </h4>
                 {savedStrategies.length === 0 ? (
-                  <div className="text-center py-8 text-white/40">
+                  <div className="text-center py-8 text-muted-foreground">
                     <FolderOpen className="w-12 h-12 mx-auto mb-2 opacity-50" />
                     <p>No saved strategies yet</p>
                   </div>
@@ -281,11 +281,11 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
                     {savedStrategies.map((strategy) => (
                       <div
                         key={strategy.id}
-                        className="flex items-center gap-3 p-3 bg-[#252530] rounded-lg border border-white/10 hover:border-white/20 transition-colors"
+                        className="flex items-center gap-3 p-3 bg-secondary rounded-lg border border-border hover:border-primary/50 transition-colors"
                       >
                         <div className="flex-1">
                           <div className="font-medium">{strategy.name}</div>
-                          <div className="text-xs text-white/50 flex items-center gap-1">
+                          <div className="text-xs text-muted-foreground flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             {formatDate(strategy.savedAt)}
                           </div>
@@ -294,7 +294,7 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
                           size="sm"
                           variant="outline"
                           onClick={() => handleLoadStrategy(strategy)}
-                          className="border-white/10"
+                          className="border-border"
                         >
                           <Upload className="w-3.5 h-3.5 mr-1" />
                           Load
@@ -325,7 +325,7 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
                   {BROKERS.map((broker) => (
                     <div
                       key={broker.id}
-                      className="flex items-center gap-3 p-3 bg-[#252530] rounded-lg border border-white/10"
+                      className="flex items-center gap-3 p-3 bg-secondary rounded-lg border border-border"
                     >
                       <img
                         src={broker.logo}
@@ -337,7 +337,7 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
                       />
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-sm truncate">{broker.name}</div>
-                        <div className="text-xs text-white/50">{broker.description}</div>
+                        <div className="text-xs text-muted-foreground">{broker.description}</div>
                       </div>
                       {brokerConnections[broker.id] ? (
                         <Badge variant="outline" className="bg-green-500/10 text-green-400 border-green-500/30">
@@ -349,7 +349,7 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
                           size="sm"
                           variant="outline"
                           onClick={() => handleConnectBroker(broker.id)}
-                          className="border-white/10 text-xs"
+                          className="border-border text-xs"
                         >
                           Connect
                         </Button>
@@ -359,7 +359,7 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
                 </div>
               </div>
 
-              <Separator className="bg-white/10" />
+              <Separator className="bg-border" />
 
               <div>
                 <h4 className="font-medium mb-3 flex items-center gap-2">
@@ -370,7 +370,7 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
                   {CONNECTORS.map((connector) => (
                     <div
                       key={connector.id}
-                      className="flex items-center gap-3 p-3 bg-[#252530] rounded-lg border border-white/10"
+                      className="flex items-center gap-3 p-3 bg-secondary rounded-lg border border-border"
                     >
                       <img
                         src={connector.logo}
@@ -382,12 +382,12 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
                       />
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-sm truncate">{connector.name}</div>
-                        <div className="text-xs text-white/50">{connector.description}</div>
+                        <div className="text-xs text-muted-foreground">{connector.description}</div>
                       </div>
                       <Button
                         size="sm"
                         variant="outline"
-                        className="border-white/10 text-xs"
+                        className="border-border text-xs"
                       >
                         Setup
                       </Button>
@@ -400,31 +400,31 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
             {/* Settings Tab */}
             <TabsContent value="settings" className="m-0 space-y-4">
               <div className="space-y-4">
-                <div className="p-4 bg-[#252530] rounded-lg border border-white/10">
+                <div className="p-4 bg-secondary rounded-lg border border-border">
                   <h4 className="font-medium mb-3">Default Trading Settings</h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-white/70 text-sm">Default Symbol</Label>
+                      <Label className="text-muted-foreground text-sm">Default Symbol</Label>
                       <Input
                         type="text"
                         defaultValue={settings?.defaultSymbol || 'EURUSD'}
                         onChange={(e) => updateSettings({ defaultSymbol: e.target.value })}
-                        className="bg-[#1a1a1f] border-white/10"
+                        className="bg-background border-border"
                       />
                     </div>
                     <div>
-                      <Label className="text-white/70 text-sm">Default Timeframe</Label>
+                      <Label className="text-muted-foreground text-sm">Default Timeframe</Label>
                       <Input
                         type="text"
                         defaultValue={settings?.defaultTimeframe || '1H'}
                         onChange={(e) => updateSettings({ defaultTimeframe: e.target.value })}
-                        className="bg-[#1a1a1f] border-white/10"
+                        className="bg-background border-border"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="p-4 bg-[#252530] rounded-lg border border-white/10">
+                <div className="p-4 bg-secondary rounded-lg border border-border">
                   <h4 className="font-medium mb-3">Preferences</h4>
                   <div className="space-y-3">
                     <label className="flex items-center gap-3 cursor-pointer">

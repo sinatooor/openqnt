@@ -30,12 +30,12 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { 
-  Calendar, 
-  DollarSign, 
-  TrendingUp, 
-  Play, 
-  Loader2, 
+import {
+  Calendar,
+  DollarSign,
+  TrendingUp,
+  Play,
+  Loader2,
   Settings2,
   BarChart3,
   Cpu,
@@ -120,24 +120,24 @@ const TIMEFRAMES = [
 ];
 
 const ENGINES = [
-  { 
-    value: 'backtesting.py', 
-    label: 'Backtesting.py', 
-    description: 'Python-based, feature-rich', 
+  {
+    value: 'backtesting.py',
+    label: 'Backtesting.py',
+    description: 'Python-based, feature-rich',
     icon: Cpu,
     color: 'text-blue-400'
   },
-  { 
-    value: 'rust', 
-    label: 'Rust Engine', 
-    description: 'Ultra-fast performance', 
+  {
+    value: 'rust',
+    label: 'Rust Engine',
+    description: 'Ultra-fast performance',
     icon: Zap,
     color: 'text-orange-400'
   },
-  { 
-    value: 'nautilus', 
-    label: 'NautilusTrader', 
-    description: 'Institutional-grade', 
+  {
+    value: 'nautilus',
+    label: 'NautilusTrader',
+    description: 'Institutional-grade',
     icon: Target,
     color: 'text-green-400'
   },
@@ -152,9 +152,9 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
   const [activeTab, setActiveTab] = useState<'config' | 'results'>('config');
   const [isRunning, setIsRunning] = useState(false);
   const [result, setResult] = useState<BacktestResult | null>(null);
-  
+
   const { nodes, edges, strategyName } = useStrategyFlowStore();
-  
+
   const [config, setConfig] = useState<BacktestConfig>({
     symbol: 'EURUSD',
     timeframe: '1d',
@@ -182,7 +182,7 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
 
     // Validate strategy before running
     const validation = validateStrategy(nodes, edges);
-    
+
     if (!validation.isValid) {
       toast.error('Strategy validation failed', {
         description: validation.errors.join('. '),
@@ -203,7 +203,7 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
     try {
       // Generate Python code from flow nodes
       const pythonCode = generateBacktestingPyCode(nodes, edges);
-      
+
       if (!pythonCode || pythonCode.includes('# No strategy defined')) {
         toast.error('Could not generate strategy code. Add indicator and action nodes.');
         setIsRunning(false);
@@ -251,7 +251,7 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
           rawStats: data.raw_stats,
           trades: data.trades,
         });
-        
+
         setActiveTab('results');
         toast.success(`Backtest completed: ${formatNumber(data.metrics.total_return)}% return`);
       } else {
@@ -259,8 +259,8 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
       }
     } catch (error) {
       console.error('Backtest error:', error);
-      toast.error('Backtest failed', { 
-        description: error instanceof Error ? error.message : 'Unknown error' 
+      toast.error('Backtest failed', {
+        description: error instanceof Error ? error.message : 'Unknown error'
       });
     } finally {
       setIsRunning(false);
@@ -296,25 +296,25 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] h-[700px] bg-[#1a1a1f] border-white/10 text-white p-0 flex flex-col">
+      <DialogContent className="sm:max-w-4xl h-[700px] bg-card/80 backdrop-blur-xl border-border/50 text-foreground p-0 flex flex-col">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="flex items-center gap-2 text-xl">
             <TrendingUp className="w-5 h-5 text-purple-400" />
             Backtest Strategy
           </DialogTitle>
-          <DialogDescription className="text-white/60">
+          <DialogDescription className="text-muted-foreground">
             Configure parameters and run a historical simulation
           </DialogDescription>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'config' | 'results')} className="flex-1 flex flex-col">
-          <TabsList className="mx-6 bg-[#252530] border border-white/10">
+          <TabsList className="mx-6 bg-secondary border border-border">
             <TabsTrigger value="config" className="flex items-center gap-1.5 data-[state=active]:bg-purple-600">
               <Settings2 className="w-3.5 h-3.5" />
               Configuration
             </TabsTrigger>
-            <TabsTrigger 
-              value="results" 
+            <TabsTrigger
+              value="results"
               className="flex items-center gap-1.5 data-[state=active]:bg-purple-600"
               disabled={!result}
             >
@@ -333,7 +333,7 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
             <TabsContent value="config" className="m-0 space-y-6">
               {/* Engine Selection */}
               <div className="space-y-3">
-                <Label className="text-white/70 flex items-center gap-2">
+                <Label className="text-muted-foreground flex items-center gap-2">
                   <Cpu className="w-4 h-4" />
                   Backtest Engine
                 </Label>
@@ -346,17 +346,16 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
                         key={engine.value}
                         type="button"
                         onClick={() => updateConfig('engine', engine.value)}
-                        className={`p-3 rounded-lg border text-left transition-all ${
-                          isSelected 
-                            ? 'bg-purple-600/20 border-purple-500' 
-                            : 'bg-[#252530] border-white/10 hover:border-white/20'
-                        }`}
+                        className={`p-3 rounded-lg border text-left transition-all ${isSelected
+                          ? 'bg-primary/20 border-primary'
+                          : 'bg-secondary border-border hover:border-border/80'
+                          }`}
                       >
                         <div className="flex items-center gap-2 mb-1">
                           <Icon className={`w-4 h-4 ${engine.color}`} />
                           <span className="font-medium text-sm">{engine.label}</span>
                         </div>
-                        <p className="text-xs text-white/50">{engine.description}</p>
+                        <p className="text-xs text-muted-foreground">{engine.description}</p>
                       </button>
                     );
                   })}
@@ -368,12 +367,12 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
               {/* Symbol & Timeframe */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-white/70">Symbol</Label>
+                  <Label className="text-muted-foreground">Symbol</Label>
                   <Select value={config.symbol} onValueChange={(v) => updateConfig('symbol', v)}>
-                    <SelectTrigger className="bg-[#252530] border-white/10">
+                    <SelectTrigger className="bg-secondary border-border">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-[#252530] border-white/10">
+                    <SelectContent className="bg-popover border-border">
                       {SYMBOLS.map(s => (
                         <SelectItem key={s.value} value={s.value}>
                           <span className="flex items-center gap-2">
@@ -386,12 +385,12 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-white/70">Timeframe</Label>
+                  <Label className="text-muted-foreground">Timeframe</Label>
                   <Select value={config.timeframe} onValueChange={(v) => updateConfig('timeframe', v)}>
-                    <SelectTrigger className="bg-[#252530] border-white/10">
+                    <SelectTrigger className="bg-secondary border-border">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-[#252530] border-white/10">
+                    <SelectContent className="bg-secondary border-border">
                       {TIMEFRAMES.map(tf => (
                         <SelectItem key={tf.value} value={tf.value}>{tf.label}</SelectItem>
                       ))}
@@ -403,7 +402,7 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
               {/* Date Range */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-white/70 flex items-center gap-1">
+                  <Label className="text-muted-foreground flex items-center gap-1">
                     <Calendar className="w-3.5 h-3.5" />
                     Start Date
                   </Label>
@@ -411,11 +410,11 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
                     type="date"
                     value={config.startDate}
                     onChange={(e) => updateConfig('startDate', e.target.value)}
-                    className="bg-[#252530] border-white/10"
+                    className="bg-secondary border-border"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-white/70 flex items-center gap-1">
+                  <Label className="text-muted-foreground flex items-center gap-1">
                     <Calendar className="w-3.5 h-3.5" />
                     End Date
                   </Label>
@@ -423,7 +422,7 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
                     type="date"
                     value={config.endDate}
                     onChange={(e) => updateConfig('endDate', e.target.value)}
-                    className="bg-[#252530] border-white/10"
+                    className="bg-secondary border-border"
                   />
                 </div>
               </div>
@@ -431,7 +430,7 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
               {/* Capital & Position Size */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-white/70 flex items-center gap-1">
+                  <Label className="text-muted-foreground flex items-center gap-1">
                     <DollarSign className="w-3.5 h-3.5" />
                     Initial Capital
                   </Label>
@@ -439,16 +438,16 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
                     type="number"
                     value={config.initialCapital}
                     onChange={(e) => updateConfig('initialCapital', parseFloat(e.target.value))}
-                    className="bg-[#252530] border-white/10"
+                    className="bg-secondary border-border"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-white/70">Position Size (%)</Label>
+                  <Label className="text-muted-foreground">Position Size (%)</Label>
                   <Input
                     type="number"
                     value={config.positionSize}
                     onChange={(e) => updateConfig('positionSize', parseFloat(e.target.value))}
-                    className="bg-[#252530] border-white/10"
+                    className="bg-secondary border-border"
                     min={1}
                     max={100}
                   />
@@ -458,32 +457,32 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
               {/* Advanced Settings */}
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-white/70 text-xs">Commission (%)</Label>
+                  <Label className="text-muted-foreground text-xs">Commission (%)</Label>
                   <Input
                     type="number"
                     step="0.01"
                     value={config.commission}
                     onChange={(e) => updateConfig('commission', parseFloat(e.target.value))}
-                    className="bg-[#252530] border-white/10"
+                    className="bg-secondary border-border"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-white/70 text-xs">Slippage (%)</Label>
+                  <Label className="text-muted-foreground text-xs">Slippage (%)</Label>
                   <Input
                     type="number"
                     step="0.01"
                     value={config.slippage}
                     onChange={(e) => updateConfig('slippage', parseFloat(e.target.value))}
-                    className="bg-[#252530] border-white/10"
+                    className="bg-secondary border-border"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-white/70 text-xs">Leverage</Label>
+                  <Label className="text-muted-foreground text-xs">Leverage</Label>
                   <Input
                     type="number"
                     value={config.leverage}
                     onChange={(e) => updateConfig('leverage', parseInt(e.target.value))}
-                    className="bg-[#252530] border-white/10"
+                    className="bg-secondary border-border"
                     min={1}
                     max={100}
                   />
@@ -492,10 +491,10 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
 
               {/* Run Button */}
               <div className="pt-4">
-                <Button 
+                <Button
                   onClick={runBacktest}
                   disabled={isRunning || nodes.length === 0}
-                  className="w-full h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-lg"
+                  className="w-full h-12 bg-primary hover:bg-primary/90 text-lg shadow-md"
                 >
                   {isRunning ? (
                     <>
@@ -510,7 +509,7 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
                   )}
                 </Button>
                 {nodes.length === 0 && (
-                  <p className="text-center text-xs text-white/40 mt-2">
+                  <p className="text-center text-xs text-muted-foreground mt-2">
                     Add nodes to your strategy to run a backtest
                   </p>
                 )}
@@ -523,66 +522,65 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
                 <>
                   {/* Summary Cards */}
                   <div className="grid grid-cols-4 gap-3">
-                    <div className="p-3 bg-[#252530] rounded-lg border border-white/10 text-center">
+                    <div className="p-3 bg-secondary rounded-lg border border-border text-center">
                       <div className={`text-xl font-bold ${result.totalReturn >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                         {result.totalReturn >= 0 ? '+' : ''}{formatNumber(result.totalReturn)}%
                       </div>
-                      <div className="text-xs text-white/50">Total Return</div>
+                      <div className="text-xs text-muted-foreground">Total Return</div>
                     </div>
-                    <div className="p-3 bg-[#252530] rounded-lg border border-white/10 text-center">
+                    <div className="p-3 bg-secondary rounded-lg border border-border text-center">
                       <div className="text-xl font-bold text-blue-400">{formatNumber(result.winRate)}%</div>
-                      <div className="text-xs text-white/50">Win Rate</div>
+                      <div className="text-xs text-muted-foreground">Win Rate</div>
                     </div>
-                    <div className="p-3 bg-[#252530] rounded-lg border border-white/10 text-center">
+                    <div className="p-3 bg-secondary rounded-lg border border-border text-center">
                       <div className="text-xl font-bold text-purple-400">{result.totalTrades}</div>
-                      <div className="text-xs text-white/50">Total Trades</div>
+                      <div className="text-xs text-muted-foreground">Total Trades</div>
                     </div>
-                    <div className="p-3 bg-[#252530] rounded-lg border border-white/10 text-center">
+                    <div className="p-3 bg-secondary rounded-lg border border-border text-center">
                       <div className="text-xl font-bold text-red-400">{formatNumber(result.maxDrawdown)}%</div>
-                      <div className="text-xs text-white/50">Max Drawdown</div>
+                      <div className="text-xs text-muted-foreground">Max Drawdown</div>
                     </div>
                   </div>
 
                   {/* Detailed Metrics */}
-                  <div className="p-4 bg-[#252530] rounded-lg border border-white/10">
+                  <div className="p-4 bg-secondary rounded-lg border border-border">
                     <h4 className="font-medium mb-3 flex items-center gap-2">
                       <BarChart3 className="w-4 h-4 text-purple-400" />
                       Performance Metrics
                     </h4>
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-white/60">Final Balance:</span>
+                        <span className="text-muted-foreground">Final Balance:</span>
                         <span className="font-medium">${formatNumber(result.finalBalance, 0)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-white/60">Sharpe Ratio:</span>
+                        <span className="text-muted-foreground">Sharpe Ratio:</span>
                         <span className="font-medium">{formatNumber(result.sharpeRatio)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-white/60">Profit Factor:</span>
+                        <span className="text-muted-foreground">Profit Factor:</span>
                         <span className="font-medium">{formatNumber(result.profitFactor)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-white/60">Sortino Ratio:</span>
+                        <span className="text-muted-foreground">Sortino Ratio:</span>
                         <span className="font-medium">{formatNumber(result.sortinoRatio)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-white/60">Calmar Ratio:</span>
+                        <span className="text-muted-foreground">Calmar Ratio:</span>
                         <span className="font-medium">{formatNumber(result.calmarRatio)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-white/60">Avg Hold Time:</span>
+                        <span className="text-muted-foreground">Avg Hold Time:</span>
                         <span className="font-medium">{result.avgHoldingTime || 'N/A'}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Result Status */}
-                  <div className={`p-4 rounded-lg border ${
-                    result.totalReturn >= 0 
-                      ? 'bg-green-500/10 border-green-500/30' 
-                      : 'bg-red-500/10 border-red-500/30'
-                  }`}>
+                  <div className={`p-4 rounded-lg border ${result.totalReturn >= 0
+                    ? 'bg-green-500/10 border-green-500/30'
+                    : 'bg-red-500/10 border-red-500/30'
+                    }`}>
                     <div className="flex items-center gap-2">
                       {result.totalReturn >= 0 ? (
                         <CheckCircle2 className="w-5 h-5 text-green-400" />
@@ -590,13 +588,13 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
                         <AlertTriangle className="w-5 h-5 text-red-400" />
                       )}
                       <span className="font-medium">
-                        {result.totalReturn >= 0 
-                          ? 'Strategy shows positive returns' 
+                        {result.totalReturn >= 0
+                          ? 'Strategy shows positive returns'
                           : 'Strategy shows negative returns'}
                       </span>
                     </div>
                     {result.totalTrades === 0 && (
-                      <p className="text-sm text-white/60 mt-2">
+                      <p className="text-sm text-muted-foreground mt-2">
                         No trades were executed. Check your entry/exit conditions.
                       </p>
                     )}
@@ -608,7 +606,7 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
                       <Button
                         variant="outline"
                         onClick={handleOpenVisualization}
-                        className="flex-1 border-white/10"
+                        className="flex-1 border-border"
                       >
                         <ExternalLink className="w-4 h-4 mr-2" />
                         Open Chart
@@ -617,7 +615,7 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
                     <Button
                       variant="outline"
                       onClick={handleDownloadReport}
-                      className="flex-1 border-white/10"
+                      className="flex-1 border-border"
                     >
                       <Download className="w-4 h-4 mr-2" />
                       Download Report
@@ -625,7 +623,7 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
                     <Button
                       variant="outline"
                       onClick={() => setActiveTab('config')}
-                      className="flex-1 border-white/10"
+                      className="flex-1 border-border"
                     >
                       <RotateCcw className="w-4 h-4 mr-2" />
                       Run Again
