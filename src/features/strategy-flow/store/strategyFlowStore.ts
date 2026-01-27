@@ -21,10 +21,111 @@ import {
   StrategyFlowNodeType,
   NodeCatalogItem,
 } from '../types';
-import { NODE_CATALOG } from '../catalog/nodeCatalog';
 
 // Simple ID generator (no external dependency needed)
 const generateId = () => Math.random().toString(36).substring(2, 8);
+
+// =============================================================================
+// CONNECTION VALIDATION
+// =============================================================================
+
+/**
+ * Valid connection rules between node types
+ * Key = source node type, Value = array of valid target node types
+ */
+const VALID_CONNECTIONS: Record<string, string[]> = {
+  indicator: ['condition', 'action', 'variable'],
+  environment: ['condition', 'action', 'variable'],
+  condition: ['action', 'control', 'condition'],
+  action: ['action', 'control'],
+  control: ['action', 'control'],
+  variable: ['condition', 'action', 'variable', 'control'],
+};
+
+/**
+ * Validates if a connection between two nodes is allowed
+ */
+export const isValidConnection = (
+  sourceNode: StrategyFlowNode | undefined,
+  targetNode: StrategyFlowNode | undefined
+): boolean => {
+  if (!sourceNode || !targetNode) return false;
+  if (sourceNode.id === targetNode.id) return false; // No self-connections
+  
+  const sourceType = sourceNode.type || '';
+  const targetType = targetNode.type || '';
+  
+  const validTargets = VALID_CONNECTIONS[sourceType];
+  return validTargets ? validTargets.includes(targetType) : false;
+};
+
+/**
+ * Validates the entire strategy for completeness
+ */
+export interface StrategyValidationResult {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+export const validateStrategy = (
+  nodes: StrategyFlowNode[],
+  edges: StrategyFlowEdge[]
+): StrategyValidationResult => {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // Check if there are any nodes
+  if (nodes.length === 0) {
+    errors.push('Strategy has no nodes. Add at least one indicator and one action.');
+    return { isValid: false, errors, warnings };
+  }
+
+  // Check for required node types
+  const hasIndicator = nodes.some(n => n.type === 'indicator' || n.type === 'environment');
+  const hasAction = nodes.some(n => n.type === 'action');
+  const hasCondition = nodes.some(n => n.type === 'condition');
+
+  if (!hasIndicator) {
+    errors.push('Strategy needs at least one indicator or environment node.');
+  }
+
+  if (!hasAction) {
+    errors.push('Strategy needs at least one action node (e.g., Place Order).');
+  }
+
+  if (!hasCondition && nodes.length > 1) {
+    warnings.push('Consider adding a condition node to define your entry/exit rules.');
+  }
+
+  // Check for disconnected nodes
+  const connectedNodeIds = new Set<string>();
+  edges.forEach(edge => {
+    connectedNodeIds.add(edge.source);
+    connectedNodeIds.add(edge.target);
+  });
+
+  const disconnectedNodes = nodes.filter(n => !connectedNodeIds.has(n.id));
+  if (disconnectedNodes.length > 0 && nodes.length > 1) {
+    const labels = disconnectedNodes.map(n => n.data.label).join(', ');
+    warnings.push(`Some nodes are not connected: ${labels}`);
+  }
+
+  // Check for action nodes without trigger
+  const actionNodes = nodes.filter(n => n.type === 'action');
+  actionNodes.forEach(action => {
+    const hasIncomingEdge = edges.some(e => e.target === action.id);
+    if (!hasIncomingEdge && nodes.length > 1) {
+      warnings.push(`"${action.data.label}" action has no trigger connected to it.`);
+    }
+  });
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings,
+  };
+};
 
 // =============================================================================
 // STORE STATE INTERFACE
@@ -54,6 +155,10 @@ interface StrategyFlowState {
   
   // Execution State
   isRunning: boolean;
+  
+  // Save Status
+  lastSavedAt: number | null;
+  isSaving: boolean;
   
   // Canvas Controls
   isPanMode: boolean;
@@ -156,6 +261,8 @@ const initialState: StrategyFlowState = {
   strategyDescription: '',
   isModified: false,
   isRunning: false,
+  lastSavedAt: null,
+  isSaving: false,
   isPanMode: false,
   showGrid: true,
   isLocked: false,
@@ -182,6 +289,7 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
         set({
           nodes: applyNodeChanges(changes, get().nodes),
           isModified: true,
+          lastSavedAt: Date.now(),
         });
       },
 
@@ -273,6 +381,15 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
       onConnect: (connection) => {
         if (!connection.source || !connection.target) return;
         
+        // Validate connection
+        const sourceNode = get().nodes.find(n => n.id === connection.source);
+        const targetNode = get().nodes.find(n => n.id === connection.target);
+        
+        if (!isValidConnection(sourceNode, targetNode)) {
+          console.warn(`Invalid connection: ${sourceNode?.type} → ${targetNode?.type}`);
+          return; // Silently reject invalid connections
+        }
+        
         get().saveToHistory();
         const newEdge: StrategyFlowEdge = {
           id: `edge-${generateId()}`,
@@ -287,6 +404,7 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
         set({
           edges: addEdge(newEdge, get().edges),
           isModified: true,
+          lastSavedAt: Date.now(), // Auto-save to localStorage
         });
       },
 

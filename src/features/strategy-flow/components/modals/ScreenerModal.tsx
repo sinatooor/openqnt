@@ -1,0 +1,379 @@
+/**
+ * ScreenerModal - Market screener for Strategy Flow
+ * Scan for trading opportunities based on technical criteria
+ */
+
+import { useState, useCallback } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Search,
+  RefreshCw,
+  TrendingUp,
+  TrendingDown,
+  BarChart3,
+  Filter,
+  ChevronRight,
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
+} from 'lucide-react';
+import { toast } from 'sonner';
+
+interface ScreenerResult {
+  symbol: string;
+  name: string;
+  price: number;
+  change_pct: number;
+  volume: number;
+  rsi: number;
+  sma_status: 'above' | 'below';
+  signal: 'buy' | 'sell' | 'neutral';
+  strength: number;
+}
+
+interface ScreenerModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSelectSymbol?: (symbol: string) => void;
+}
+
+const FILTERS = [
+  { value: 'rsi_oversold', label: 'RSI Oversold (<30)', description: 'Potential buy signals' },
+  { value: 'rsi_overbought', label: 'RSI Overbought (>70)', description: 'Potential sell signals' },
+  { value: 'uptrend_sma200', label: 'Above SMA 200', description: 'Long-term uptrend' },
+  { value: 'downtrend_sma200', label: 'Below SMA 200', description: 'Long-term downtrend' },
+  { value: 'golden_cross', label: 'Golden Cross', description: 'SMA 50 crosses above SMA 200' },
+  { value: 'death_cross', label: 'Death Cross', description: 'SMA 50 crosses below SMA 200' },
+  { value: 'macd_bullish', label: 'MACD Bullish', description: 'MACD crossover signal' },
+  { value: 'macd_bearish', label: 'MACD Bearish', description: 'MACD crossunder signal' },
+  { value: 'high_volume', label: 'High Volume', description: 'Volume spike detected' },
+  { value: 'breakout', label: 'Price Breakout', description: 'Breaking resistance/support' },
+];
+
+const WATCHLISTS = {
+  forex: ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'USDCAD', 'USDCHF', 'NZDUSD', 'EURGBP'],
+  crypto: ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'XRPUSDT', 'SOLUSDT', 'ADAUSDT', 'DOGEUSDT', 'AVAXUSDT'],
+  stocks: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA', 'JPM', 'V', 'WMT'],
+  indices: ['SPY', 'QQQ', 'DIA', 'IWM', 'VTI'],
+};
+
+export const ScreenerModal = ({ open, onOpenChange, onSelectSymbol }: ScreenerModalProps) => {
+  const [filter, setFilter] = useState('rsi_oversold');
+  const [watchlist, setWatchlist] = useState<'forex' | 'crypto' | 'stocks' | 'indices'>('stocks');
+  const [customSymbols, setCustomSymbols] = useState('');
+  const [results, setResults] = useState<ScreenerResult[]>([]);
+  const [isScanning, setIsScanning] = useState(false);
+  const [lastScan, setLastScan] = useState<Date | null>(null);
+
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+
+  const runScreener = useCallback(async () => {
+    setIsScanning(true);
+    setResults([]);
+
+    try {
+      const symbols = customSymbols.trim()
+        ? customSymbols.split(',').map(s => s.trim().toUpperCase())
+        : WATCHLISTS[watchlist];
+
+      const response = await fetch(`${backendUrl}/api/screen`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          symbols,
+          filter,
+          days_back: 365,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Screener request failed');
+      }
+
+      const data = await response.json();
+      
+      if (data.success && data.results) {
+        setResults(data.results);
+        setLastScan(new Date());
+        toast.success(`Found ${data.results.length} matches`);
+      } else {
+        toast.info('No matches found for this filter');
+      }
+    } catch (error) {
+      console.error('Screener error:', error);
+      // Generate mock results for demo
+      const mockResults: ScreenerResult[] = WATCHLISTS[watchlist].slice(0, 5).map((symbol, i) => ({
+        symbol,
+        name: symbol,
+        price: 100 + Math.random() * 100,
+        change_pct: (Math.random() - 0.5) * 10,
+        volume: Math.floor(Math.random() * 10000000),
+        rsi: Math.random() * 100,
+        sma_status: Math.random() > 0.5 ? 'above' : 'below',
+        signal: ['buy', 'sell', 'neutral'][Math.floor(Math.random() * 3)] as 'buy' | 'sell' | 'neutral',
+        strength: Math.random() * 100,
+      }));
+      setResults(mockResults);
+      setLastScan(new Date());
+      toast.info('Using demo data (backend unavailable)');
+    } finally {
+      setIsScanning(false);
+    }
+  }, [filter, watchlist, customSymbols, backendUrl]);
+
+  const handleSelectSymbol = (symbol: string) => {
+    onSelectSymbol?.(symbol);
+    toast.success(`Selected ${symbol}`);
+  };
+
+  const formatVolume = (volume: number) => {
+    if (volume >= 1000000000) return (volume / 1000000000).toFixed(1) + 'B';
+    if (volume >= 1000000) return (volume / 1000000).toFixed(1) + 'M';
+    if (volume >= 1000) return (volume / 1000).toFixed(1) + 'K';
+    return volume.toString();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[900px] h-[700px] bg-[#1a1a1f] border-white/10 text-white p-0 flex flex-col">
+        <DialogHeader className="p-6 pb-0">
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            <Search className="w-5 h-5 text-purple-400" />
+            Market Screener
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="flex-1 flex flex-col p-6 pt-4 gap-4">
+          {/* Filters Section */}
+          <div className="p-4 bg-[#252530] rounded-lg border border-white/10 space-y-4">
+            <div className="grid grid-cols-4 gap-4">
+              {/* Watchlist Selection */}
+              <div className="space-y-2">
+                <Label className="text-white/70 text-sm">Market</Label>
+                <Select value={watchlist} onValueChange={(v: any) => setWatchlist(v)}>
+                  <SelectTrigger className="bg-[#1a1a1f] border-white/10">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#252530] border-white/10">
+                    <SelectItem value="forex">Forex</SelectItem>
+                    <SelectItem value="crypto">Crypto</SelectItem>
+                    <SelectItem value="stocks">Stocks</SelectItem>
+                    <SelectItem value="indices">Indices</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Filter Selection */}
+              <div className="space-y-2 col-span-2">
+                <Label className="text-white/70 text-sm">Filter</Label>
+                <Select value={filter} onValueChange={setFilter}>
+                  <SelectTrigger className="bg-[#1a1a1f] border-white/10">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#252530] border-white/10">
+                    {FILTERS.map(f => (
+                      <SelectItem key={f.value} value={f.value}>
+                        <div className="flex flex-col">
+                          <span>{f.label}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Scan Button */}
+              <div className="space-y-2">
+                <Label className="text-white/70 text-sm">&nbsp;</Label>
+                <Button
+                  onClick={runScreener}
+                  disabled={isScanning}
+                  className="w-full bg-purple-600 hover:bg-purple-700"
+                >
+                  {isScanning ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Scanning...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="w-4 h-4 mr-2" />
+                      Scan
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* Custom Symbols */}
+            <div className="space-y-2">
+              <Label className="text-white/70 text-sm">Custom Symbols (optional, comma-separated)</Label>
+              <Input
+                value={customSymbols}
+                onChange={(e) => setCustomSymbols(e.target.value)}
+                placeholder="AAPL, MSFT, GOOGL..."
+                className="bg-[#1a1a1f] border-white/10"
+              />
+            </div>
+
+            {/* Current Filter Info */}
+            <div className="flex items-center gap-2 text-sm text-white/60">
+              <Filter className="w-4 h-4" />
+              <span>Scanning {customSymbols.trim() ? 'custom symbols' : WATCHLISTS[watchlist].length + ' ' + watchlist + ' symbols'} for: </span>
+              <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/30">
+                {FILTERS.find(f => f.value === filter)?.label}
+              </Badge>
+            </div>
+          </div>
+
+          {/* Results Section */}
+          <div className="flex-1 bg-[#252530] rounded-lg border border-white/10 overflow-hidden flex flex-col">
+            <div className="p-3 border-b border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-purple-400" />
+                <span className="font-medium">Results</span>
+                {results.length > 0 && (
+                  <Badge variant="outline" className="text-xs">{results.length} matches</Badge>
+                )}
+              </div>
+              {lastScan && (
+                <span className="text-xs text-white/40">
+                  Last scan: {lastScan.toLocaleTimeString()}
+                </span>
+              )}
+            </div>
+
+            <ScrollArea className="flex-1">
+              {results.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-white/40">
+                  <Search className="w-12 h-12 mb-3 opacity-50" />
+                  <p>No results yet</p>
+                  <p className="text-sm mt-1">Click "Scan" to search for opportunities</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-white/10 hover:bg-transparent">
+                      <TableHead>Symbol</TableHead>
+                      <TableHead className="text-right">Price</TableHead>
+                      <TableHead className="text-right">Change</TableHead>
+                      <TableHead className="text-right">Volume</TableHead>
+                      <TableHead className="text-right">RSI</TableHead>
+                      <TableHead className="text-center">Signal</TableHead>
+                      <TableHead className="text-right">Strength</TableHead>
+                      <TableHead></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {results.map((result) => (
+                      <TableRow key={result.symbol} className="border-white/10 hover:bg-white/5">
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{result.symbol}</div>
+                            {result.name !== result.symbol && (
+                              <div className="text-xs text-white/50">{result.name}</div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          ${result.price.toFixed(2)}
+                        </TableCell>
+                        <TableCell className={`text-right font-medium ${
+                          result.change_pct >= 0 ? 'text-green-400' : 'text-red-400'
+                        }`}>
+                          <span className="flex items-center justify-end gap-1">
+                            {result.change_pct >= 0 ? (
+                              <TrendingUp className="w-3 h-3" />
+                            ) : (
+                              <TrendingDown className="w-3 h-3" />
+                            )}
+                            {result.change_pct >= 0 ? '+' : ''}{result.change_pct.toFixed(2)}%
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right text-white/60">
+                          {formatVolume(result.volume)}
+                        </TableCell>
+                        <TableCell className={`text-right font-medium ${
+                          result.rsi < 30 ? 'text-green-400' : result.rsi > 70 ? 'text-red-400' : 'text-white/60'
+                        }`}>
+                          {result.rsi.toFixed(1)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge
+                            variant="outline"
+                            className={
+                              result.signal === 'buy'
+                                ? 'bg-green-500/10 text-green-400 border-green-500/30'
+                                : result.signal === 'sell'
+                                ? 'bg-red-500/10 text-red-400 border-red-500/30'
+                                : 'bg-gray-500/10 text-gray-400 border-gray-500/30'
+                            }
+                          >
+                            {result.signal === 'buy' && <CheckCircle2 className="w-3 h-3 mr-1" />}
+                            {result.signal === 'sell' && <AlertCircle className="w-3 h-3 mr-1" />}
+                            {result.signal.toUpperCase()}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <div className="w-16 h-2 bg-white/10 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${
+                                  result.strength > 70 ? 'bg-green-500' :
+                                  result.strength > 40 ? 'bg-yellow-500' : 'bg-red-500'
+                                }`}
+                                style={{ width: `${result.strength}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-white/50 w-8">{result.strength.toFixed(0)}%</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleSelectSymbol(result.symbol)}
+                            className="text-purple-400 hover:text-purple-300"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </ScrollArea>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default ScreenerModal;

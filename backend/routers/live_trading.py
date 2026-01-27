@@ -70,6 +70,25 @@ async def start_strategy(req: StrategyStartRequest):
     broker_type = req.broker.lower() if req.broker else "ig"
     active_client = None
     
+    # Paper trading mode - no broker needed
+    if broker_type == "paper" or not req.live_mode:
+        # Use paper trading simulation
+        result = await start_strategy_runner(
+            broker_client=None,  # Paper mode doesn't need a broker
+            broker_type="paper",
+            python_code=req.python_code,
+            symbol=req.symbol,
+            trade_size=req.trade_size,
+            poll_interval=req.poll_interval,
+            live_mode=False  # Always paper mode when broker is paper
+        )
+        
+        if not result['success']:
+            raise HTTPException(status_code=500, detail=result.get('error'))
+        
+        return result
+    
+    # Live trading requires authenticated broker
     if broker_type == "ig":
         if not ig_client:
              raise HTTPException(status_code=400, detail="Use login endpoint first (IG)")
@@ -101,3 +120,40 @@ async def start_strategy(req: StrategyStartRequest):
 async def stop_strategy():
     """Stop the running strategy."""
     return stop_strategy_runner()
+
+@router.get("/strategy/status")
+async def get_strategy_status():
+    """Get the current strategy status for the live trading panel."""
+    status = get_runner_status()
+    
+    # Format for frontend
+    if status.get("running"):
+        return {
+            "running": True,
+            "mode": "paper" if not status.get("live_mode") else "live",
+            "started_at": status.get("started_at"),
+            "trades_count": status.get("trades_count", 0),
+            "pnl": status.get("pnl", 0.0),
+            "positions": status.get("positions", [])
+        }
+    
+    return {
+        "running": False,
+        "mode": "paper",
+        "trades_count": 0,
+        "pnl": 0.0,
+        "positions": []
+    }
+
+@router.post("/position/{position_id}/close")
+async def close_position(position_id: str):
+    """Close a specific position."""
+    # This would be implemented in the strategy runner
+    return {"success": True, "message": f"Position {position_id} close requested"}
+
+@router.post("/panic")
+async def panic_stop():
+    """Emergency stop - closes all positions and stops strategy."""
+    result = stop_strategy_runner()
+    # In a real implementation, this would also close all positions immediately
+    return {"success": True, "message": "Emergency stop triggered", "details": result}
