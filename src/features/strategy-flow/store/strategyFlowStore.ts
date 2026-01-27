@@ -12,6 +12,7 @@ import {
   NodeChange,
   EdgeChange,
   Viewport,
+  MarkerType,
 } from '@xyflow/react';
 import {
   StrategyFlowNode,
@@ -21,6 +22,23 @@ import {
   StrategyFlowNodeType,
   NodeCatalogItem,
 } from '../types';
+import { getHandleConfigs } from '../utils/handleUtils';
+
+// =============================================================================
+// EDGE COLOR MAPPING BY DATA TYPE
+// =============================================================================
+
+/**
+ * Color palette for edge connections based on data type
+ * These match the node handle colors for visual consistency
+ */
+export const EDGE_DATA_TYPE_COLORS: Record<string, string> = {
+  number: '#8b5cf6',    // Purple mostly for Indicators/Values (matches SMA node)
+  boolean: '#f59e0b',   // Amber for Boolean/Logic (matches Condition/Trigger)
+  signal: '#06b6d4',    // Cyan for Execution Flow/Signals (matches Control flow)
+  any: '#ec4899',       // Pink for Variables/Any
+  default: '#64748b',   // Slate gray fallback
+};
 
 // Simple ID generator (no external dependency needed)
 const generateId = () => Math.random().toString(36).substring(2, 8);
@@ -51,10 +69,10 @@ export const isValidConnection = (
 ): boolean => {
   if (!sourceNode || !targetNode) return false;
   if (sourceNode.id === targetNode.id) return false; // No self-connections
-  
+
   const sourceType = sourceNode.type || '';
   const targetType = targetNode.type || '';
-  
+
   const validTargets = VALID_CONNECTIONS[sourceType];
   return validTargets ? validTargets.includes(targetType) : false;
 };
@@ -136,42 +154,42 @@ interface StrategyFlowState {
   nodes: StrategyFlowNode[];
   edges: StrategyFlowEdge[];
   viewport: Viewport;
-  
+
   // Selection
   selectedNodeId: string | null;
   editingNodeId: string | null;
-  
+
   // Sidebar State
   leftSidebarOpen: boolean;
   leftSidebarTab: LeftSidebarTab;
   leftSidebarWidth: number;
   rightPanelOpen: boolean;
   rightPanelWidth: number;
-  
+
   // Strategy Metadata
   strategyName: string;
   strategyDescription: string;
   isModified: boolean;
-  
+
   // Execution State
   isRunning: boolean;
-  
+
   // Save Status
   lastSavedAt: number | null;
   isSaving: boolean;
-  
+
   // Canvas Controls
   isPanMode: boolean;
   showGrid: boolean;
   isLocked: boolean;
-  
+
   // History (for undo/redo)
   history: Array<{ nodes: StrategyFlowNode[]; edges: StrategyFlowEdge[] }>;
   historyIndex: number;
-  
+
   // Search
   searchQuery: string;
-  
+
   // Context Menu
   contextMenu: { x: number; y: number; nodeId: string } | null;
 }
@@ -188,56 +206,56 @@ interface StrategyFlowActions {
   deleteNode: (nodeId: string) => void;
   duplicateNode: (nodeId: string) => void;
   lockNode: (nodeId: string, locked: boolean) => void;
-  
+
   // Edge Operations
   onEdgesChange: (changes: EdgeChange<StrategyFlowEdge>[]) => void;
   onConnect: (connection: Connection) => void;
   deleteEdge: (edgeId: string) => void;
-  
+
   // Selection
   selectNode: (nodeId: string | null) => void;
-  
+
   // Viewport
   setViewport: (viewport: Viewport) => void;
-  
+
   // Sidebar
   setLeftSidebarOpen: (open: boolean) => void;
   setLeftSidebarTab: (tab: LeftSidebarTab) => void;
   setLeftSidebarWidth: (width: number) => void;
   setRightPanelOpen: (open: boolean) => void;
   setRightPanelWidth: (width: number) => void;
-  
+
   // Strategy Metadata
   setStrategyName: (name: string) => void;
   setStrategyDescription: (description: string) => void;
-  
+
   // Execution
   setIsRunning: (running: boolean) => void;
-  
+
   // Canvas Controls
   togglePanMode: () => void;
   toggleGrid: () => void;
   toggleLock: () => void;
-  
+
   // Node Editing
   setEditingNodeId: (nodeId: string | null) => void;
-  
+
   // Context Menu
   showContextMenu: (x: number, y: number, nodeId: string) => void;
   hideContextMenu: () => void;
-  
+
   // History
   undo: () => void;
   redo: () => void;
   saveToHistory: () => void;
   canUndo: () => boolean;
   canRedo: () => boolean;
-  
+
   // Import/Export
   exportStrategy: () => string;
   importStrategy: (json: string) => void;
   clearCanvas: () => void;
-  
+
   // Search
   setSearchQuery: (query: string) => void;
 }
@@ -380,16 +398,38 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
 
       onConnect: (connection) => {
         if (!connection.source || !connection.target) return;
-        
+
         // Validate connection
         const sourceNode = get().nodes.find(n => n.id === connection.source);
         const targetNode = get().nodes.find(n => n.id === connection.target);
-        
+
         if (!isValidConnection(sourceNode, targetNode)) {
           console.warn(`Invalid connection: ${sourceNode?.type} → ${targetNode?.type}`);
           return; // Silently reject invalid connections
         }
-        
+
+        // Determine edge color based on source handle's data type
+        let edgeColor = '#ef4444'; // default to red to spot issues
+
+        if (sourceNode) {
+          const subType = (sourceNode.data as Record<string, unknown>)?.indicatorType as string ||
+            (sourceNode.data as Record<string, unknown>)?.conditionType as string ||
+            (sourceNode.data as Record<string, unknown>)?.actionType as string ||
+            (sourceNode.data as Record<string, unknown>)?.mathType as string ||
+            (sourceNode.data as Record<string, unknown>)?.controlType as string ||
+            (sourceNode.data as Record<string, unknown>)?.riskType as string ||
+            (sourceNode.data as Record<string, unknown>)?.variableType as string;
+
+          const handleConfigs = getHandleConfigs(sourceNode.type || '', subType);
+          const sourceHandle = handleConfigs.find(
+            h => h.id === connection.sourceHandle || (h.type === 'source' && !connection.sourceHandle)
+          );
+
+          if (sourceHandle?.dataType) {
+            edgeColor = EDGE_DATA_TYPE_COLORS[sourceHandle.dataType] || edgeColor;
+          }
+        }
+
         get().saveToHistory();
         const newEdge: StrategyFlowEdge = {
           id: `edge-${generateId()}`,
@@ -397,8 +437,13 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
           target: connection.target,
           sourceHandle: connection.sourceHandle ?? undefined,
           targetHandle: connection.targetHandle ?? undefined,
-          type: 'smoothstep',
-          animated: true,
+          type: 'bezier',
+          animated: false,
+          style: {
+            stroke: edgeColor,
+            strokeWidth: 2,
+          },
+        
         };
 
         set({
@@ -452,7 +497,7 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
       },
 
       setRightPanelOpen: (open) => {
-        set({ 
+        set({
           rightPanelOpen: open,
           selectedNodeId: open ? get().selectedNodeId : null,
         });
@@ -490,7 +535,7 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
         const { nodes, edges, history, historyIndex } = get();
         const newHistory = history.slice(0, historyIndex + 1);
         newHistory.push({ nodes: [...nodes], edges: [...edges] });
-        
+
         // Limit history to 50 entries
         if (newHistory.length > 50) {
           newHistory.shift();

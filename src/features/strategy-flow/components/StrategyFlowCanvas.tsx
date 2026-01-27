@@ -43,12 +43,11 @@ import { useStrategyFlowStore, isValidConnection, validateStrategy } from '../st
 import ErrorBoundary from '@/components/ErrorBoundary';
 import type { StrategyFlowNode, NodeCatalogItem } from '../types';
 
-// Professional edge styling
+// Professional edge styling (defaults for new edges - actual color is set per-edge in store)
 const defaultEdgeOptions = {
-  type: 'smoothstep',
-  animated: true,
+  type: 'bezier',
+  animated: false,
   style: {
-    stroke: 'hsl(var(--primary))',
     strokeWidth: 2,
   },
 };

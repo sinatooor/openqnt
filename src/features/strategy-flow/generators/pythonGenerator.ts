@@ -120,7 +120,6 @@ function extractConditions(
   return conditionNodes.map(node => {
     const data = node.data as any;
     const conditionType = data.conditionType || 'compare';
-    const label = data.label?.toLowerCase() || '';
     
     // Get operator from node data
     let operator = data.operator || '>';
@@ -136,33 +135,81 @@ function extractConditions(
       operator = 'range';
     }
     
-    // Find connected indicator(s) via edges
+    // Find connected nodes via edges (respecting targetHandle for proper A/B ordering)
     const incomingEdges = edges.filter(e => e.target === node.id);
-    const connectedIndicators = incomingEdges
-      .map(e => allNodes.find(n => n.id === e.source))
-      .filter(n => n && n.type === 'indicator');
+    const edgeA = incomingEdges.find(e => e.targetHandle === 'input-a') || incomingEdges[0];
+    const edgeB = incomingEdges.find(e => e.targetHandle === 'input-b') || incomingEdges[1];
     
-    // Build left operand from connected indicator
-    let left = 'self.data.Close[-1]';
-    if (connectedIndicators.length > 0) {
-      const ind = connectedIndicators[0];
-      const indData = ind?.data as any;
-      const indType = indData?.indicatorType?.toLowerCase() || 'sma';
-      const period = indData?.params?.period || 14;
-      left = `self.${indType}_${period}[-1]`;
-    }
+    // Helper to build variable reference from source node and handle
+    const buildVarRef = (edge: StrategyFlowEdge | undefined): string => {
+      if (!edge) return 'self.data.Close[-1]';
+      
+      const sourceNode = allNodes.find(n => n.id === edge.source);
+      if (!sourceNode) return 'self.data.Close[-1]';
+      
+      const sourceData = sourceNode.data as any;
+      const sourceType = sourceNode.type;
+      const sourceHandle = edge.sourceHandle;
+      
+      if (sourceType === 'indicator') {
+        const indType = sourceData?.indicatorType?.toLowerCase() || 'sma';
+        const period = sourceData?.params?.period || 14;
+        
+        // Handle multi-output indicators
+        if (indType === 'macd') {
+          if (sourceHandle === 'line') return 'self.macd_line';
+          if (sourceHandle === 'signal') return 'self.macd_signal';
+          if (sourceHandle === 'histogram') return 'self.macd_hist';
+          return 'self.macd_line'; // default
+        }
+        if (indType === 'bb') {
+          if (sourceHandle === 'upper') return 'self.bb_upper';
+          if (sourceHandle === 'middle') return 'self.bb_middle';
+          if (sourceHandle === 'lower') return 'self.bb_lower';
+          return 'self.bb_middle'; // default
+        }
+        if (indType === 'stochastic') {
+          if (sourceHandle === 'main') return 'self.stoch_k';
+          if (sourceHandle === 'signal') return 'self.stoch_d';
+          return 'self.stoch_k'; // default
+        }
+        
+        // Single output indicators
+        return `self.${indType}_${period}`;
+      }
+      
+      if (sourceType === 'environment') {
+        const envType = sourceData?.environmentType || 'price';
+        if (envType === 'price') return 'self.data.Close';
+        return 'self.data.Close';
+      }
+      
+      if (sourceType === 'math') {
+        const mathType = sourceData?.mathType || 'number';
+        if (mathType === 'number') return String(sourceData?.value || 0);
+        return 'self.data.Close';
+      }
+      
+      return 'self.data.Close';
+    };
     
-    // Get right value from node data
-    let right: string | number = data.value || data.threshold || 30;
+    // Build left and right operands
+    let left = buildVarRef(edgeA);
+    let right: string | number = buildVarRef(edgeB);
     
-    // For crossover/crossunder, right is the second indicator
-    if ((operator === 'crossover' || operator === 'crossunder') && connectedIndicators.length > 1) {
-      const ind2 = connectedIndicators[1];
-      const indData2 = ind2?.data as any;
-      const indType2 = indData2?.indicatorType?.toLowerCase() || 'sma';
-      const period2 = indData2?.params?.period || 14;
-      right = `self.${indType2}_${period2}`;
-      left = left.replace('[-1]', ''); // Remove indexing for crossover
+    // For crossover/crossunder, remove array indexing
+    if (operator === 'crossover' || operator === 'crossunder') {
+      // Variables should not have [-1] for crossover functions
+      left = left.replace('[-1]', '');
+      right = typeof right === 'string' ? right.replace('[-1]', '') : right;
+    } else {
+      // Add indexing for comparison operators
+      if (!left.endsWith('[-1]') && !left.match(/^\d+$/)) {
+        left = `${left}[-1]`;
+      }
+      if (typeof right === 'string' && !right.endsWith('[-1]') && !right.match(/^\d+$/)) {
+        right = `${right}[-1]`;
+      }
     }
 
     return { left, operator, right };
@@ -209,9 +256,9 @@ interface CodeGenContext {
 function generateBacktestingPyCode(ctx: CodeGenContext): string {
   const { indicators, entryConditions, exitConditions, actions, nodes } = ctx;
   
-  // Build indicator calculations
-  const indicatorCode = indicators.map((ind, i) => {
-    const varName = `${ind.type.toLowerCase()}_${i}`;
+  // Build indicator calculations - use indicatorType_period naming for consistency
+  const indicatorCode = indicators.map((ind) => {
+    const varName = `${ind.type.toLowerCase()}_${ind.period}`;
     switch (ind.type) {
       case 'SMA':
         return `        self.${varName} = self.I(SMA, self.data.Close, ${ind.period})`;
