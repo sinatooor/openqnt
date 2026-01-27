@@ -102,7 +102,7 @@ export const FloatingToolbar = memo(({
 
   return (
     <TooltipProvider delayDuration={0}>
-      <Toolbar.Root className="flex items-center gap-1 px-2 py-1.5 bg-card/95 backdrop-blur-md border border-border/50 rounded-xl shadow-2xl">
+      <Toolbar.Root className="flex items-center gap-1 px-3 py-2 glass border border-border/50 rounded-xl shadow-trading-lg">
         {/* Strategy Name */}
         <div className="px-3 py-1 text-sm font-medium text-foreground/90 border-r border-border/50 mr-1">
           {strategyName}
@@ -113,10 +113,10 @@ export const FloatingToolbar = memo(({
           <TooltipTrigger asChild>
             <Toolbar.Button
               onClick={onOpenAI}
-              className={`p-2 rounded-lg transition-all ${
+              className={`p-2.5 rounded-lg transition-all duration-200 ${
                 showAI 
-                  ? 'bg-purple-500/20 text-purple-400' 
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                  ? 'bg-primary/20 text-primary shadow-sm' 
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/60 hover:scale-105'
               }`}
             >
               <Sparkles className="w-4 h-4" />
@@ -134,7 +134,7 @@ export const FloatingToolbar = memo(({
           <TooltipTrigger asChild>
             <Toolbar.Button
               onClick={onOpenTemplates}
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="p-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-all duration-200 hover:scale-105"
             >
               <Layers className="w-4 h-4" />
             </Toolbar.Button>
@@ -147,7 +147,7 @@ export const FloatingToolbar = memo(({
           <TooltipTrigger asChild>
             <Toolbar.Button
               onClick={onOpenChart}
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="p-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-all duration-200 hover:scale-105"
             >
               <LineChart className="w-4 h-4" />
             </Toolbar.Button>
@@ -160,10 +160,10 @@ export const FloatingToolbar = memo(({
           <TooltipTrigger asChild>
             <Toolbar.Button
               onClick={onOpenCode}
-              className={`p-2 rounded-lg transition-all ${
+              className={`p-2.5 rounded-lg transition-all duration-200 ${
                 showCode 
-                  ? 'bg-blue-500/20 text-blue-400' 
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                  ? 'bg-primary/20 text-primary shadow-sm' 
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/60 hover:scale-105'
               }`}
             >
               <Code2 className="w-4 h-4" />
@@ -179,10 +179,10 @@ export const FloatingToolbar = memo(({
           <TooltipTrigger asChild>
             <Toolbar.Button
               onClick={onOpenBacktest}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-sm transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-sm transition-all duration-200 ${
                 isRunning
-                  ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
-                  : 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                  ? 'bg-loss/20 text-loss hover:bg-loss/30 hover:scale-105'
+                  : 'bg-profit/20 text-profit hover:bg-profit/30 hover:scale-105'
               }`}
             >
               <Play className="w-3.5 h-3.5" />
@@ -197,7 +197,7 @@ export const FloatingToolbar = memo(({
           <TooltipTrigger asChild>
             <Toolbar.Button
               onClick={onOpenLiveTrading}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-sm bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-sm bg-primary/20 text-primary hover:bg-primary/30 transition-all duration-200 hover:scale-105"
             >
               <Activity className="w-3.5 h-3.5" />
               Live
@@ -213,7 +213,7 @@ export const FloatingToolbar = memo(({
           <TooltipTrigger asChild>
             <Toolbar.Button
               onClick={onOpenScreener}
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="p-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-all duration-200 hover:scale-105"
             >
               <Search className="w-4 h-4" />
             </Toolbar.Button>
@@ -226,7 +226,7 @@ export const FloatingToolbar = memo(({
           <TooltipTrigger asChild>
             <Toolbar.Button
               onClick={onOpenJournal}
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="p-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-all duration-200 hover:scale-105"
             >
               <BookOpen className="w-4 h-4" />
             </Toolbar.Button>
@@ -239,7 +239,7 @@ export const FloatingToolbar = memo(({
           <TooltipTrigger asChild>
             <Toolbar.Button
               onClick={onOpenProfile}
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="p-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-all duration-200 hover:scale-105"
             >
               <User className="w-4 h-4" />
             </Toolbar.Button>
@@ -254,7 +254,7 @@ export const FloatingToolbar = memo(({
           <TooltipTrigger asChild>
             <Toolbar.Button
               onClick={onZoomOut}
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="p-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-all duration-200 hover:scale-105"
             >
               <ZoomOut className="w-4 h-4" />
             </Toolbar.Button>
@@ -266,7 +266,7 @@ export const FloatingToolbar = memo(({
           <TooltipTrigger asChild>
             <Toolbar.Button
               onClick={onZoomIn}
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="p-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-all duration-200 hover:scale-105"
             >
               <ZoomIn className="w-4 h-4" />
             </Toolbar.Button>
@@ -278,7 +278,7 @@ export const FloatingToolbar = memo(({
           <TooltipTrigger asChild>
             <Toolbar.Button
               onClick={onFitView}
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="p-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-all duration-200 hover:scale-105"
             >
               <Maximize2 className="w-4 h-4" />
             </Toolbar.Button>
@@ -293,7 +293,7 @@ export const FloatingToolbar = memo(({
           <TooltipTrigger asChild>
             <Toolbar.Button
               onClick={handleImport}
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="p-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-all duration-200 hover:scale-105"
             >
               <Upload className="w-4 h-4" />
             </Toolbar.Button>
@@ -305,7 +305,7 @@ export const FloatingToolbar = memo(({
           <TooltipTrigger asChild>
             <Toolbar.Button
               onClick={handleExport}
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="p-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-all duration-200 hover:scale-105"
             >
               <Download className="w-4 h-4" />
             </Toolbar.Button>
@@ -318,7 +318,7 @@ export const FloatingToolbar = memo(({
           <TooltipTrigger asChild>
             <Toolbar.Button
               onClick={onOpenSettings}
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="p-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-all duration-200 hover:scale-105"
             >
               <Settings className="w-4 h-4" />
             </Toolbar.Button>

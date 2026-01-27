@@ -8,32 +8,47 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 220 13% 10%;
-    --foreground: 210 40% 98%;
+    /* Webull-inspired deep dark background */
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
 
-    --card: 220 13% 12%;
-    --card-foreground: 210 40% 98%;
+    /* Card with subtle elevation */
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 220 13% 12%;
-    --popover-foreground: 210 40% 98%;
+    /* Popover with glassmorphism */
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 98%;
 
+    /* Primary blue - Webull blue */
     --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 13% 18%;
-    --secondary-foreground: 210 40% 98%;
+    /* Secondary - slightly lighter than background */
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 220 13% 18%;
-    --muted-foreground: 215 20% 65%;
+    /* Muted for subtle text */
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 65%;
 
-    --accent: 220 13% 18%;
-    --accent-foreground: 210 40% 98%;
+    /* Accent - subtle highlight */
+    --accent: 0 0% 12%;
+    --accent-foreground: 0 0% 98%;
 
+    /* Trading colors - Webull style */
+    --profit: 142 71% 45%; /* Green for gains */
+    --profit-foreground: 0 0% 100%;
+    --loss: 0 84% 60%; /* Red for losses */
+    --loss-foreground: 0 0% 100%;
+
+    /* Destructive */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 220 13% 20%;
-    --input: 220 13% 18%;
+    /* Borders - subtle */
+    --border: 0 0% 15%;
+    --input: 0 0% 10%;
     --ring: 217 91% 60%;
 
     --radius: 0.5rem;
@@ -90,8 +105,74 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'SF Pro Display', Roboto, sans-serif;
     letter-spacing: -0.01em;
+    font-feature-settings: 'tnum' 1; /* Tabular numbers for trading data */
+  }
+
+  /* Professional number display */
+  .trading-number {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  /* Smooth transitions */
+  * {
+    transition-property: color, background-color, border-color, transform, opacity, box-shadow;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 200ms;
+  }
+
+  /* Glassmorphism effect */
+  .glass {
+    background: rgba(15, 15, 18, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Professional shadows */
+  .shadow-trading {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 1px rgba(0, 0, 0, 0.5);
+  }
+
+  .shadow-trading-lg {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 1px rgba(0, 0, 0, 0.6);
+  }
+
+  /* Hover lift effect */
+  .hover-lift {
+    transition: transform 200ms ease, box-shadow 200ms ease;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Profit/Loss colors */
+  .text-profit {
+    color: hsl(142, 71%, 45%);
+  }
+
+  .text-loss {
+    color: hsl(0, 84%, 60%);
+  }
+
+  .bg-profit {
+    background-color: hsla(142, 71%, 45%, 0.1);
+  }
+
+  .bg-loss {
+    background-color: hsla(0, 84%, 60%, 0.1);
+  }
+
+  .border-profit {
+    border-color: hsla(142, 71%, 45%, 0.3);
+  }
+
+  .border-loss {
+    border-color: hsla(0, 84%, 60%, 0.3);
   }
 }
 

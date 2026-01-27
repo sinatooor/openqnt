@@ -31,7 +31,7 @@ async def save_strategy(req: SaveStrategyRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("")
-async def get_strategies(user_id: str):
+async def get_strategies(user_id: str = "default"):
     """Get all strategies for a user, grouped by name (returning distinct strategies)."""
     try:
         all_strategies = db.get_user_strategies(user_id)
@@ -50,7 +50,7 @@ async def get_strategies(user_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/{strategy_id}")
-async def delete_strategy(strategy_id: str, user_id: str):
+async def delete_strategy(strategy_id: str, user_id: str = "default"):
     """Delete a specific strategy version."""
     try:
         db.delete_user_strategy(strategy_id, user_id)

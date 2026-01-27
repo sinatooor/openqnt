@@ -264,7 +264,7 @@ export const LiveTradingPanel = ({ open, onOpenChange }: LiveTradingPanelProps) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] h-[700px] bg-[#1a1a1f] border-white/10 text-white p-0 flex flex-col">
+      <DialogContent className="sm:max-w-[700px] h-[700px] glass border-border/50 shadow-trading-lg p-0 flex flex-col">
         <DialogHeader className="p-6 pb-0">
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2 text-xl">
@@ -274,13 +274,13 @@ export const LiveTradingPanel = ({ open, onOpenChange }: LiveTradingPanelProps) 
             {isRunning && (
               <Badge 
                 variant="outline" 
-                className={`animate-pulse ${
+                className={`animate-pulse font-semibold tracking-wide ${
                   isLiveMode 
-                    ? 'bg-red-500/10 text-red-400 border-red-500/30' 
-                    : 'bg-green-500/10 text-green-400 border-green-500/30'
+                    ? 'bg-loss/20 text-loss border-loss/40' 
+                    : 'bg-profit/20 text-profit border-profit/40'
                 }`}
               >
-                <Activity className="w-3 h-3 mr-1" />
+                <Activity className="w-3 h-3 mr-1.5" />
                 {isLiveMode ? 'LIVE' : 'PAPER'} TRADING
               </Badge>
             )}
@@ -291,7 +291,7 @@ export const LiveTradingPanel = ({ open, onOpenChange }: LiveTradingPanelProps) 
           <div className="space-y-6">
             {/* Mode Selection */}
             {!isRunning && (
-              <div className="p-4 bg-[#252530] rounded-lg border border-white/10 space-y-4">
+              <div className="p-5 glass rounded-xl border border-border/50 shadow-trading space-y-5">
                 <h4 className="font-medium flex items-center gap-2">
                   <Settings className="w-4 h-4 text-purple-400" />
                   Trading Configuration
@@ -300,17 +300,17 @@ export const LiveTradingPanel = ({ open, onOpenChange }: LiveTradingPanelProps) 
                 {/* Broker Selection */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-white/70 text-sm">Broker</Label>
+                    <Label className="text-muted-foreground text-sm font-medium">Broker</Label>
                     <Select value={selectedBroker} onValueChange={setSelectedBroker}>
-                      <SelectTrigger className="bg-[#1a1a1f] border-white/10">
+                      <SelectTrigger className="bg-muted/50 border-border/50 h-10">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-[#252530] border-white/10">
+                      <SelectContent className="glass border-border/50">
                         {BROKERS.map(b => (
                           <SelectItem key={b.id} value={b.id} disabled={!b.connected && b.id !== 'paper'}>
                             <span className="flex items-center gap-2">
                               {b.name}
-                              {b.connected && <CheckCircle2 className="w-3 h-3 text-green-400" />}
+                              {b.connected && <CheckCircle2 className="w-3 h-3 text-profit" />}
                             </span>
                           </SelectItem>
                         ))}
@@ -319,30 +319,30 @@ export const LiveTradingPanel = ({ open, onOpenChange }: LiveTradingPanelProps) 
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-white/70 text-sm">Trading Mode</Label>
-                    <div className="flex items-center gap-3 h-10 px-3 bg-[#1a1a1f] rounded-md border border-white/10">
-                      <span className={`text-sm ${!isLiveMode ? 'text-green-400' : 'text-white/50'}`}>Paper</span>
+                    <Label className="text-muted-foreground text-sm font-medium">Trading Mode</Label>
+                    <div className="flex items-center gap-3 h-10 px-4 glass rounded-lg border border-border/50">
+                      <span className={`text-sm font-medium transition-colors ${!isLiveMode ? 'text-profit' : 'text-muted-foreground'}`}>Paper</span>
                       <Switch
                         checked={isLiveMode}
                         onCheckedChange={setIsLiveMode}
-                        className="data-[state=checked]:bg-red-500"
+                        className="data-[state=checked]:bg-loss"
                       />
-                      <span className={`text-sm ${isLiveMode ? 'text-red-400' : 'text-white/50'}`}>Live</span>
+                      <span className={`text-sm font-medium transition-colors ${isLiveMode ? 'text-loss' : 'text-muted-foreground'}`}>Live</span>
                     </div>
                   </div>
                 </div>
 
                 {isLiveMode && (
-                  <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg flex items-start gap-2">
-                    <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                  <div className="p-4 bg-loss/10 border border-loss/30 rounded-lg flex items-start gap-3 shadow-trading">
+                    <AlertTriangle className="w-5 h-5 text-loss shrink-0 mt-0.5" />
                     <div className="text-sm">
-                      <p className="font-medium text-red-400">Live Trading Warning</p>
-                      <p className="text-white/60">Real money will be at risk. Ensure your strategy is thoroughly backtested.</p>
+                      <p className="font-semibold text-loss mb-1">Live Trading Warning</p>
+                      <p className="text-muted-foreground leading-relaxed">Real money will be at risk. Ensure your strategy is thoroughly backtested.</p>
                     </div>
                   </div>
                 )}
 
-                <Separator className="bg-white/10" />
+                <Separator className="bg-border/50" />
 
                 {/* Risk Settings */}
                 <h4 className="font-medium flex items-center gap-2">
@@ -352,13 +352,13 @@ export const LiveTradingPanel = ({ open, onOpenChange }: LiveTradingPanelProps) 
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-white/70 text-sm">Max Position Size</Label>
+                    <Label className="text-muted-foreground text-sm font-medium">Max Position Size</Label>
                     <Input
                       type="number"
                       step="0.01"
                       value={maxPositionSize}
                       onChange={(e) => setMaxPositionSize(parseFloat(e.target.value))}
-                      className="bg-[#1a1a1f] border-white/10"
+                      className="bg-muted/50 border-border/50 h-10 trading-number focus:border-primary/50"
                     />
                   </div>
                   <div className="space-y-2">
@@ -398,32 +398,32 @@ export const LiveTradingPanel = ({ open, onOpenChange }: LiveTradingPanelProps) 
               <>
                 {/* Stats Cards */}
                 <div className="grid grid-cols-4 gap-3">
-                  <div className="p-3 bg-[#252530] rounded-lg border border-white/10 text-center">
+                  <div className="p-4 glass rounded-xl border border-border/50 text-center hover-lift">
                     <Clock className="w-5 h-5 mx-auto mb-1 text-purple-400" />
-                    <div className="text-lg font-mono">{formatDuration(status.started_at)}</div>
-                    <div className="text-xs text-white/50">Runtime</div>
+                    <div className="text-lg font-mono trading-number text-foreground">{formatDuration(status.started_at)}</div>
+                    <div className="text-xs text-muted-foreground mt-1">Runtime</div>
                   </div>
                   <div className="p-3 bg-[#252530] rounded-lg border border-white/10 text-center">
                     <Target className="w-5 h-5 mx-auto mb-1 text-blue-400" />
-                    <div className="text-lg font-bold">{status.trades_count}</div>
-                    <div className="text-xs text-white/50">Trades</div>
+                    <div className="text-lg font-bold trading-number text-foreground">{status.trades_count}</div>
+                    <div className="text-xs text-muted-foreground mt-1">Trades</div>
                   </div>
                   <div className="p-3 bg-[#252530] rounded-lg border border-white/10 text-center">
                     <DollarSign className="w-5 h-5 mx-auto mb-1 text-green-400" />
-                    <div className={`text-lg font-bold ${status.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    <div className={`text-lg font-bold trading-number ${status.pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
                       {status.pnl >= 0 ? '+' : ''}${status.pnl.toFixed(2)}
                     </div>
                     <div className="text-xs text-white/50">PnL</div>
                   </div>
                   <div className="p-3 bg-[#252530] rounded-lg border border-white/10 text-center">
                     <Activity className="w-5 h-5 mx-auto mb-1 text-orange-400" />
-                    <div className="text-lg font-bold">{status.positions.length}</div>
-                    <div className="text-xs text-white/50">Open Positions</div>
+                    <div className="text-lg font-bold trading-number text-foreground">{status.positions.length}</div>
+                    <div className="text-xs text-muted-foreground mt-1">Open Positions</div>
                   </div>
                 </div>
 
                 {/* Open Positions */}
-                <div className="p-4 bg-[#252530] rounded-lg border border-white/10">
+                <div className="p-5 glass rounded-xl border border-border/50 shadow-trading">
                   <h4 className="font-medium mb-3 flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-green-400" />
                     Open Positions
@@ -447,8 +447,8 @@ export const LiveTradingPanel = ({ open, onOpenChange }: LiveTradingPanelProps) 
                               <Badge
                                 variant="outline"
                                 className={position.direction === 'long'
-                                  ? 'bg-green-500/10 text-green-400 border-green-500/30'
-                                  : 'bg-red-500/10 text-red-400 border-red-500/30'
+                                  ? 'bg-profit/20 text-profit border-profit/40'
+                                  : 'bg-loss/20 text-loss border-loss/40'
                                 }
                               >
                                 {position.direction.toUpperCase()}
@@ -459,11 +459,11 @@ export const LiveTradingPanel = ({ open, onOpenChange }: LiveTradingPanelProps) 
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className={`font-medium ${position.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            <div className={`font-semibold trading-number ${position.pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
                               {position.pnl >= 0 ? '+' : ''}${position.pnl.toFixed(2)}
-                              <span className="text-xs ml-1">({position.pnl_pct.toFixed(2)}%)</span>
+                              <span className="text-xs ml-1.5 font-normal">({position.pnl_pct.toFixed(2)}%)</span>
                             </div>
-                            <div className="text-xs text-white/50">
+                            <div className="text-xs text-muted-foreground trading-number">
                               Current: ${position.current_price.toFixed(4)}
                             </div>
                           </div>
@@ -490,10 +490,10 @@ export const LiveTradingPanel = ({ open, onOpenChange }: LiveTradingPanelProps) 
                   <AlertDialogTrigger asChild>
                     <Button
                       disabled={isStarting || nodes.length === 0}
-                      className={`flex-1 h-12 ${
+                      className={`flex-1 h-12 font-semibold transition-all duration-200 ${
                         isLiveMode
-                          ? 'bg-red-600 hover:bg-red-700'
-                          : 'bg-green-600 hover:bg-green-700'
+                          ? 'bg-loss hover:bg-loss/90 shadow-trading hover:shadow-trading-lg'
+                          : 'bg-profit hover:bg-profit/90 shadow-trading hover:shadow-trading-lg'
                       }`}
                     >
                       {isStarting ? (
@@ -585,7 +585,7 @@ export const LiveTradingPanel = ({ open, onOpenChange }: LiveTradingPanelProps) 
             </div>
 
             {nodes.length === 0 && !isRunning && (
-              <p className="text-center text-sm text-white/40">
+              <p className="text-center text-sm text-muted-foreground">
                 Add nodes to your strategy to enable trading
               </p>
             )}

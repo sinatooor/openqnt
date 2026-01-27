@@ -715,11 +715,11 @@ export const RightPropertyPanel = memo(() => {
 
   return (
     <div 
-      className="h-full border-l border-border/30 bg-[#0f0f12]/95 backdrop-blur-sm flex flex-col"
+      className="h-full border-l border-border/50 glass flex flex-col shadow-trading-lg animate-in slide-in-from-right duration-300"
       style={{ width: rightPanelWidth }}
     >
       {/* Header */}
-      <div className="h-12 px-4 flex items-center justify-between border-b border-border/50">
+      <div className="h-12 px-4 flex items-center justify-between border-b border-border/50 bg-card/50">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium truncate">{data.label}</span>
         </div>
@@ -777,7 +777,7 @@ export const RightPropertyPanel = memo(() => {
         <Input
           value={data.label || ''}
           onChange={(e) => updateNodeData(selectedNode.id, { label: e.target.value })}
-          className="mt-1.5 h-8 text-sm"
+          className="mt-1.5 h-9 text-sm bg-muted/50 border-border/50 focus:border-primary/50 transition-colors"
           disabled={isLocked}
         />
       </div>

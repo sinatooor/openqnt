@@ -1,0 +1,74 @@
+# =============================================================================
+# Fyer Trading Platform - Docker Ignore
+# =============================================================================
+
+# Git
+.git
+.gitignore
+
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+.env.local
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Testing
+coverage/
+htmlcov/
+.coverage
+
+# Build artifacts
+dist/
+*.log
+
+# Environment files (use docker-compose env vars instead)
+backend/.env
+.env.local
+.env.*.local
+
+# Database files (will be in volumes)
+*.db
+*.sqlite3
+
+# ChromaDB (will be in volumes)
+chroma_db/
+chroma_db_v2/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Documentation
+*.md
+!README.md
+
+# Tests (optional - comment out if you want to run tests in container)
+tests/
+backend/tests/
+**/test_*.py
+
+# Legacy files
+*_LEGACY*
+old_*
