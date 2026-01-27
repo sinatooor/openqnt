@@ -1,0 +1,63 @@
+/**
+ * Trade Info Nodes - Position and trade data access
+ */
+import { NodeCatalogItem } from '../../types';
+
+export const TRADE_INFO_NODES: NodeCatalogItem[] = [
+    {
+        type: 'trade_entry_price',
+        nodeType: 'tradeInfo',
+        label: 'Entry Price',
+        description: 'Trade entry level',
+        tooltip: 'Get the entry price of current position. Use to calculate distance to SL/TP.',
+        inputs: [],
+        outputs: ['Number'],
+        category: 'tradeInfo',
+        subcategory: 'Price',
+        icon: 'DollarSign',
+        color: '#8b5cf6',
+        defaultData: { tradeInfoType: 'entryPrice' },
+    },
+    {
+        type: 'trade_position_size',
+        nodeType: 'tradeInfo',
+        label: 'Position Size',
+        description: 'Current lot size',
+        tooltip: 'Get current open position size. Use for partial closes or scaling.',
+        inputs: [],
+        outputs: ['Number'],
+        category: 'tradeInfo',
+        subcategory: 'Info',
+        icon: 'Hash',
+        color: '#8b5cf6',
+        defaultData: { tradeInfoType: 'positionSize' },
+    },
+    {
+        type: 'trade_pnl',
+        nodeType: 'tradeInfo',
+        label: 'Trade PnL',
+        description: 'Current profit/loss',
+        tooltip: 'Get unrealized P&L of current trade. Use for trailing or time-based exits.',
+        inputs: [],
+        outputs: ['Number'],
+        category: 'tradeInfo',
+        subcategory: 'Info',
+        icon: 'TrendingUp',
+        color: '#8b5cf6',
+        defaultData: { tradeInfoType: 'pnl' },
+    },
+    {
+        type: 'trade_duration',
+        nodeType: 'tradeInfo',
+        label: 'Trade Duration',
+        description: 'Time in trade',
+        tooltip: 'Get time elapsed since entry. Use for time-based exit rules.',
+        inputs: [],
+        outputs: ['Number'],
+        category: 'tradeInfo',
+        subcategory: 'Time',
+        icon: 'Clock',
+        color: '#8b5cf6',
+        defaultData: { tradeInfoType: 'tradeDuration' },
+    },
+];

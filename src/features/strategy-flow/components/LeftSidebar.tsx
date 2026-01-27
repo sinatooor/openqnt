@@ -168,31 +168,95 @@ const DraggableItem = memo(({ item, onDragStart, onNodeClick }: {
 }) => {
   const Icon = getNodeIcon(item.icon);
 
+  // Type badge colors for tooltip
+  const typeColors: Record<string, string> = {
+    'Price Data': 'bg-purple-500/30 text-purple-200',
+    'Number': 'bg-green-500/30 text-green-200',
+    'Boolean': 'bg-yellow-500/30 text-yellow-200',
+    'Trigger': 'bg-blue-500/30 text-blue-200',
+    'Signal': 'bg-cyan-500/30 text-cyan-200',
+    'Value': 'bg-pink-500/30 text-pink-200',
+    'Volume': 'bg-orange-500/30 text-orange-200',
+    'Time': 'bg-indigo-500/30 text-indigo-200',
+    'Size': 'bg-emerald-500/30 text-emerald-200',
+    'Price': 'bg-amber-500/30 text-amber-200',
+    'default': 'bg-gray-500/30 text-gray-200',
+  };
+
+  const getTypeColor = (type: string) => typeColors[type] || typeColors['default'];
+
+  const hasIO = (item.inputs?.length ?? 0) > 0 || (item.outputs?.length ?? 0) > 0;
+
   return (
-    <div
-      draggable
-      onDragStart={(e) => onDragStart(e, item)}
-      onClick={() => onNodeClick(item)}
-      className="group flex items-center gap-3 p-2.5 mb-1.5 bg-card/40 border border-white/5 rounded-lg hover:border-primary/50 hover:bg-white/5 cursor-grab active:cursor-grabbing transition-all shadow-sm hover:shadow-md"
-    >
-      <div
-        className="p-1.5 rounded-md shrink-0 transition-colors"
-        style={{ backgroundColor: `${item.color}15`, color: item.color }}
-      >
-        <Icon className="w-4 h-4" />
-      </div>
-      <div className="flex-1 min-w-0 text-left">
-        <div className="flex items-center justify-between gap-2">
-          <span className="font-medium text-[13px] truncate text-foreground/90">{item.label}</span>
-          <GripHorizontal className="w-3 h-3 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div
+          draggable
+          onDragStart={(e) => onDragStart(e, item)}
+          onClick={() => onNodeClick(item)}
+          className="group flex items-center gap-2.5 p-2.5 mb-1.5 bg-card/40 border border-white/5 rounded-lg hover:border-primary/50 hover:bg-white/5 cursor-grab active:cursor-grabbing transition-all shadow-sm hover:shadow-md"
+        >
+          <div
+            className="p-1.5 rounded-md shrink-0"
+            style={{ backgroundColor: `${item.color}15`, color: item.color }}
+          >
+            <Icon className="w-4 h-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <span className="font-medium text-[13px] text-foreground/90 block">{item.label}</span>
+            <p className="text-[10px] text-muted-foreground/70 truncate">{item.description}</p>
+          </div>
+          <GripHorizontal className="w-3 h-3 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
         </div>
-        <p className="text-[10px] text-muted-foreground/70 truncate leading-tight mt-0.5">
-          {item.description}
-        </p>
-      </div>
-    </div>
+      </TooltipTrigger>
+      <TooltipContent
+        side="right"
+        sideOffset={8}
+        className="z-[9999] max-w-[280px] p-3 bg-popover/95 backdrop-blur-sm border border-white/10 shadow-xl"
+      >
+        <div className="space-y-2">
+          {/* Title */}
+          <p className="font-semibold text-sm text-foreground">{item.label}</p>
+
+          {/* Description */}
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            {item.tooltip || item.description}
+          </p>
+
+          {/* From/To Section */}
+          {hasIO && (
+            <div className="pt-2 border-t border-white/10">
+              <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
+                {item.inputs && item.inputs.length > 0 && (
+                  <>
+                    <span className="text-muted-foreground/70 font-medium">From:</span>
+                    {item.inputs.map((input, i) => (
+                      <span key={i} className={cn("px-1.5 py-0.5 rounded font-medium", getTypeColor(input))}>
+                        {input}
+                      </span>
+                    ))}
+                  </>
+                )}
+                {item.outputs && item.outputs.length > 0 && (
+                  <>
+                    <span className="text-muted-foreground/70 font-medium ml-1">→</span>
+                    {item.outputs.map((output, i) => (
+                      <span key={i} className={cn("px-1.5 py-0.5 rounded font-medium", getTypeColor(output))}>
+                        {output}
+                      </span>
+                    ))}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </TooltipContent>
+    </Tooltip>
   );
 });
+
+
 
 DraggableItem.displayName = 'DraggableItem';
 
@@ -302,7 +366,7 @@ export const LeftSidebar = memo(() => {
 
         {/* Tool Categories */}
         <div className="flex flex-col items-center gap-1.5 p-1.5 overflow-y-auto no-scrollbar pt-3">
-          <TooltipProvider delayDuration={0} side="right">
+          <TooltipProvider delayDuration={0}>
             {TOOL_CATEGORIES.map((cat) => (
               <Tooltip key={cat.id}>
                 <TooltipTrigger asChild>
@@ -331,7 +395,7 @@ export const LeftSidebar = memo(() => {
 
         {/* Bottom Fixed Items */}
         <div className="flex flex-col items-center gap-1 p-1.5 border-t border-white/5 bg-black/20">
-          <TooltipProvider delayDuration={0} side="right">
+          <TooltipProvider delayDuration={0}>
             {[
               { id: 'settings', icon: Settings, label: 'Settings' },
               { id: 'profile', icon: User, label: 'Profile' },
@@ -377,24 +441,26 @@ export const LeftSidebar = memo(() => {
         </div>
 
         {/* Scrollable Categories */}
-        <div
-          ref={scrollContainerRef}
-          onScroll={handleScroll}
-          className="flex-1 overflow-y-auto p-2 scroll-smooth no-scrollbar"
-        >
-          {TOOL_CATEGORIES.map((cat) => (
-            <CategorySection
-              key={cat.id}
-              category={cat}
-              onDragStart={handleDragStart}
-              onNodeClick={handleNodeClick}
-              setRef={(el) => (categoryRefs.current[cat.id] = el)}
-            />
-          ))}
+        <TooltipProvider delayDuration={1000}>
+          <div
+            ref={scrollContainerRef}
+            onScroll={handleScroll}
+            className="flex-1 overflow-y-auto p-2 scroll-smooth no-scrollbar"
+          >
+            {TOOL_CATEGORIES.map((cat) => (
+              <CategorySection
+                key={cat.id}
+                category={cat}
+                onDragStart={handleDragStart}
+                onNodeClick={handleNodeClick}
+                setRef={(el) => (categoryRefs.current[cat.id] = el)}
+              />
+            ))}
 
-          {/* Bottom Padding for scroll */}
-          <div className="h-24" />
-        </div>
+            {/* Bottom Padding for scroll */}
+            <div className="h-24" />
+          </div>
+        </TooltipProvider>
       </div>
     </div>
   );

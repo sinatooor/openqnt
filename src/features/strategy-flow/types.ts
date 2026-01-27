@@ -348,6 +348,10 @@ export interface NodeCatalogItem {
   icon: string;
   color: string;
   defaultData: Partial<StrategyNodeData>;
+  // New fields for enhanced tooltips and From/To badges
+  inputs?: string[];   // What the node accepts (e.g., ['Price', 'Number'])
+  outputs?: string[];  // What the node produces (e.g., ['Number', 'Signal'])
+  tooltip?: string;    // Extended trading explanation
 }
 
 // =============================================================================
