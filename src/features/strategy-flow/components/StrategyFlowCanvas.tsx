@@ -78,44 +78,52 @@ const nodeColor = (node: { type?: string }) => {
 
 const EmptyState = () => (
   <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-    <div className="text-center max-w-md pointer-events-auto">
-      <div className="mb-6">
-        <div className="w-20 h-20 mx-auto bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-2xl flex items-center justify-center">
-          <Boxes className="w-10 h-10 text-purple-400" />
+    <div className="text-center max-w-lg pointer-events-auto animate-in fade-in duration-500">
+      <div className="mb-8">
+        <div className="w-24 h-24 mx-auto bg-gradient-to-br from-primary/20 via-purple-500/20 to-blue-500/20 rounded-3xl flex items-center justify-center shadow-trading-lg hover-lift">
+          <Boxes className="w-12 h-12 text-primary" />
         </div>
       </div>
-      <h2 className="text-xl font-semibold text-white mb-2">Start Building Your Strategy</h2>
-      <p className="text-white/60 text-sm mb-6">
+      <h2 className="text-2xl font-bold text-foreground mb-3 tracking-tight">Start Building Your Strategy</h2>
+      <p className="text-muted-foreground text-sm mb-8 leading-relaxed max-w-md mx-auto">
         Drag nodes from the sidebar to create your trading strategy, or use AI to generate one automatically.
       </p>
-      <div className="grid grid-cols-2 gap-3 text-left">
-        <div className="p-3 bg-white/5 rounded-lg border border-white/10">
-          <div className="flex items-center gap-2 mb-1.5">
-            <Boxes className="w-4 h-4 text-purple-400" />
-            <span className="text-sm font-medium text-white">Drag & Drop</span>
+      <div className="grid grid-cols-2 gap-4 text-left">
+        <div className="p-4 glass rounded-xl border border-border/50 hover-lift group cursor-pointer">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+              <Boxes className="w-4 h-4 text-primary" />
+            </div>
+            <span className="text-sm font-semibold text-foreground">Drag & Drop</span>
           </div>
-          <p className="text-xs text-white/50">Drag nodes from the left sidebar onto the canvas</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">Drag nodes from the left sidebar onto the canvas</p>
         </div>
-        <div className="p-3 bg-white/5 rounded-lg border border-white/10">
-          <div className="flex items-center gap-2 mb-1.5">
-            <Sparkles className="w-4 h-4 text-blue-400" />
-            <span className="text-sm font-medium text-white">AI Generate</span>
+        <div className="p-4 glass rounded-xl border border-border/50 hover-lift group cursor-pointer">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-lg bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
+              <Sparkles className="w-4 h-4 text-purple-400" />
+            </div>
+            <span className="text-sm font-semibold text-foreground">AI Generate</span>
           </div>
-          <p className="text-xs text-white/50">Press <kbd className="px-1 bg-white/10 rounded">I</kbd> to describe your strategy</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">Press <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs font-mono border border-border">I</kbd> to describe your strategy</p>
         </div>
-        <div className="p-3 bg-white/5 rounded-lg border border-white/10">
-          <div className="flex items-center gap-2 mb-1.5">
-            <Play className="w-4 h-4 text-green-400" />
-            <span className="text-sm font-medium text-white">Backtest</span>
+        <div className="p-4 glass rounded-xl border border-border/50 hover-lift group cursor-pointer">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-lg bg-profit/20 group-hover:bg-profit/30 transition-colors">
+              <Play className="w-4 h-4 text-profit" />
+            </div>
+            <span className="text-sm font-semibold text-foreground">Backtest</span>
           </div>
-          <p className="text-xs text-white/50">Test your strategy on historical data</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">Test your strategy on historical data</p>
         </div>
-        <div className="p-3 bg-white/5 rounded-lg border border-white/10">
-          <div className="flex items-center gap-2 mb-1.5">
-            <AlertCircle className="w-4 h-4 text-amber-400" />
-            <span className="text-sm font-medium text-white">Quick Start</span>
+        <div className="p-4 glass rounded-xl border border-border/50 hover-lift group cursor-pointer">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-lg bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors">
+              <AlertCircle className="w-4 h-4 text-amber-400" />
+            </div>
+            <span className="text-sm font-semibold text-foreground">Quick Start</span>
           </div>
-          <p className="text-xs text-white/50">Load a template from the toolbar</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">Load a template from the toolbar</p>
         </div>
       </div>
     </div>
@@ -549,7 +557,7 @@ const StrategyFlowErrorFallback = () => (
 export const StrategyFlowCanvas = () => {
   return (
     <ErrorBoundary fallback={<StrategyFlowErrorFallback />}>
-      <div className="relative h-screen w-screen bg-[#0a0a0b] overflow-hidden">
+      <div className="relative h-screen w-screen bg-background overflow-hidden">
         {/* Canvas fills entire background */}
         <div className="absolute inset-0">
           <ReactFlowProvider>

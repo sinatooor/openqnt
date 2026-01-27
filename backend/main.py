@@ -200,6 +200,8 @@ from routers import strategies_v2
 app.include_router(strategies_v2.router)
 from routers import mcpt
 app.include_router(mcpt.router)
+from routers import strategy_flow
+app.include_router(strategy_flow.router)
 
 
 # ============================================================
@@ -497,6 +499,153 @@ async def screen_market(req: ScreeningRequest):
         return {"success": True, "results": results}
     except Exception as e:
         log_error(e, "screen_market")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================
+# BACKTEST ENDPOINT (Blockly XML)
+# ============================================================
+
+@app.post("/backtest")
+async def run_blockly_backtest(req: BacktestRequest):
+    """
+    Run backtest from Blockly XML strategy.
+    Converts XML to code and runs backtest using selected engine.
+    """
+    import time
+    start_time = time.time()
+    
+    try:
+        # Run backtest pipeline (XML -> Code -> Backtest)
+        result = await run_backtest_pipeline(
+            xml=req.workspaceXml,
+            symbol=req.symbol,
+            data_source=req.data_source,
+            start_date=req.startDate,
+            end_date=req.endDate,
+            engine=req.engine,
+            initial_balance=req.initialBalance
+        )
+        
+        duration_ms = (time.time() - start_time) * 1000
+        
+        if result.get("success"):
+            metrics = result.get("metrics", {})
+            log_backtest(
+                symbol=req.symbol,
+                engine=req.engine,
+                period=f"{req.startDate} to {req.endDate}",
+                duration_ms=duration_ms,
+                success=True,
+                trades=metrics.get("total_trades", 0),
+                return_pct=metrics.get("return_pct", 0),
+                full_metrics=metrics
+            )
+            
+            return BacktestResponse(
+                success=True,
+                symbol=req.symbol,
+                start_date=req.startDate,
+                end_date=req.endDate,
+                initial_balance=req.initialBalance,
+                final_balance=result.get("final_balance", req.initialBalance),
+                metrics=result.get("metrics", {}),
+                trades=result.get("trades", []),
+                equity_curve=result.get("equity_curve", []),
+                visualization_html=result.get("visualization_html"),
+                raw_stats=result.get("raw_stats")
+            )
+        else:
+            error_msg = result.get("error", "Unknown error")
+            log_backtest(
+                symbol=req.symbol,
+                engine=req.engine,
+                period=f"{req.startDate} to {req.endDate}",
+                duration_ms=duration_ms,
+                success=False,
+                error=error_msg
+            )
+            raise HTTPException(status_code=400, detail=error_msg)
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        log_error(e, "backtest")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================
+# BACKTEST ENDPOINT (Python Code)
+# ============================================================
+
+class BacktestPyCodeRequest(BaseModel):
+    pythonCode: str
+    symbol: str = "EURUSD"
+    startDate: str = "2024-01-01"
+    endDate: str = "2024-12-31"
+    initialBalance: float = 10000.0
+    commission: float = 0.001
+    leverage: float = 1.0
+    engine: str = "backtesting.py"
+
+
+@app.post("/backtest-py-code")
+async def backtest_py_code(req: BacktestPyCodeRequest):
+    """
+    Run backtest with pre-generated Python code.
+    Used by Strategy Flow to test generated strategies.
+    """
+    import time
+    start_time = time.time()
+    
+    try:
+        # Run backtest with the provided Python code
+        result = run_backtest(
+            strategy_code=req.pythonCode,
+            symbol=req.symbol,
+            start_date=req.startDate,
+            end_date=req.endDate,
+            initial_balance=req.initialBalance,
+            use_nautilus=False,  # Use backtesting.py for simplicity
+        )
+        
+        duration_ms = (time.time() - start_time) * 1000
+        
+        if result.get("success"):
+            metrics = result.get("metrics", {})
+            log_backtest(
+                symbol=req.symbol,
+                engine=req.engine,
+                period=f"{req.startDate} to {req.endDate}",
+                duration_ms=duration_ms,
+                success=True,
+                trades=metrics.get("total_trades", 0),
+                return_pct=metrics.get("return_pct", 0),
+                full_metrics=metrics
+            )
+            
+            return {
+                "success": True,
+                "metrics": result.get("metrics", {}),
+                "final_balance": result.get("final_balance", req.initialBalance),
+                "trades": result.get("trades", []),
+                "equity_curve": result.get("equity_curve", []),
+                "visualization_html": result.get("visualization_html"),
+            }
+        else:
+            error_msg = result.get("error", "Unknown error")
+            log_backtest(
+                symbol=req.symbol,
+                engine=req.engine,
+                period=f"{req.startDate} to {req.endDate}",
+                duration_ms=duration_ms,
+                success=False,
+                error=error_msg
+            )
+            raise HTTPException(status_code=400, detail=error_msg)
+            
+    except Exception as e:
+        log_error(e, "backtest_py_code")
         raise HTTPException(status_code=500, detail=str(e))
 
 

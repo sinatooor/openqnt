@@ -130,7 +130,7 @@ const NodeItem = memo(({ item, onDragStart, onClick }: NodeItemProps) => {
             draggable
             onDragStart={(e) => onDragStart(e, item)}
             onClick={() => onClick(item)}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent/60 transition-colors cursor-grab active:cursor-grabbing group"
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent/60 transition-all duration-200 cursor-grab active:cursor-grabbing group hover-lift"
           >
             <div 
               className="p-1.5 rounded-md"
@@ -309,7 +309,7 @@ const NodePalettePanel = memo(() => {
             placeholder="Search nodes..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-8 text-sm bg-muted/50"
+            className="pl-9 h-9 text-sm bg-muted/50 border-border/50 focus:border-primary/50 transition-colors"
           />
         </div>
       </div>
@@ -562,7 +562,7 @@ export const LeftSidebar = memo(() => {
   return (
     <div className="flex h-full">
       {/* Icon Rail */}
-      <div className="w-12 flex flex-col items-center py-2 bg-[#0f0f12] border-r border-border/30">
+      <div className="w-12 flex flex-col items-center py-2 bg-card border-r border-border/50 shadow-trading">
         <TooltipProvider delayDuration={0}>
           {RAIL_ITEMS.map((item) => {
             const IconComponent = item.icon;
@@ -581,10 +581,10 @@ export const LeftSidebar = memo(() => {
                       }
                     }}
                     className={cn(
-                      'w-10 h-10 flex items-center justify-center rounded-lg mb-1 transition-colors',
+                      'w-10 h-10 flex items-center justify-center rounded-lg mb-1 transition-all duration-200',
                       isActive 
-                        ? 'bg-accent text-foreground' 
-                        : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                        ? 'bg-primary/20 text-primary shadow-sm border border-primary/30' 
+                        : 'text-muted-foreground hover:text-foreground hover:bg-accent/60 hover:scale-105'
                     )}
                   >
                     <IconComponent className="w-5 h-5" />
@@ -618,7 +618,7 @@ export const LeftSidebar = memo(() => {
       {/* Expandable Panel */}
       {leftSidebarOpen && (
         <div 
-          className="border-r border-border/30 bg-[#0f0f12]/95 backdrop-blur-sm overflow-hidden"
+          className="border-r border-border/50 glass overflow-hidden shadow-trading-lg animate-in slide-in-from-left duration-300"
           style={{ width: leftSidebarWidth }}
         >
           {/* Panel Header */}
