@@ -76,7 +76,17 @@ const nodeColor = (node: { type?: string }) => {
 // EMPTY STATE COMPONENT
 // =============================================================================
 
-const EmptyState = () => (
+const EmptyState = ({
+  onOpenSidebar,
+  onOpenAI,
+  onOpenBacktest,
+  onOpenTemplates
+}: {
+  onOpenSidebar: () => void;
+  onOpenAI: () => void;
+  onOpenBacktest: () => void;
+  onOpenTemplates: () => void;
+}) => (
   <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
     <div className="text-center max-w-lg pointer-events-auto animate-in fade-in duration-500">
       <div className="mb-8">
@@ -89,7 +99,10 @@ const EmptyState = () => (
         Drag nodes from the sidebar to create your trading strategy, or use AI to generate one automatically.
       </p>
       <div className="grid grid-cols-2 gap-4 text-left">
-        <div className="p-4 glass rounded-xl border border-border/50 hover-lift group cursor-pointer">
+        <div
+          onClick={onOpenSidebar}
+          className="p-4 glass rounded-xl border border-border/50 hover-lift group cursor-pointer hover:bg-card/50 transition-all"
+        >
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
               <Boxes className="w-4 h-4 text-primary" />
@@ -98,7 +111,10 @@ const EmptyState = () => (
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">Drag nodes from the left sidebar onto the canvas</p>
         </div>
-        <div className="p-4 glass rounded-xl border border-border/50 hover-lift group cursor-pointer">
+        <div
+          onClick={onOpenAI}
+          className="p-4 glass rounded-xl border border-border/50 hover-lift group cursor-pointer hover:bg-card/50 transition-all"
+        >
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 rounded-lg bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
               <Sparkles className="w-4 h-4 text-purple-400" />
@@ -107,7 +123,10 @@ const EmptyState = () => (
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">Press <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs font-mono border border-border">I</kbd> to describe your strategy</p>
         </div>
-        <div className="p-4 glass rounded-xl border border-border/50 hover-lift group cursor-pointer">
+        <div
+          onClick={onOpenBacktest}
+          className="p-4 glass rounded-xl border border-border/50 hover-lift group cursor-pointer hover:bg-card/50 transition-all"
+        >
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 rounded-lg bg-profit/20 group-hover:bg-profit/30 transition-colors">
               <Play className="w-4 h-4 text-profit" />
@@ -116,7 +135,10 @@ const EmptyState = () => (
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">Test your strategy on historical data</p>
         </div>
-        <div className="p-4 glass rounded-xl border border-border/50 hover-lift group cursor-pointer">
+        <div
+          onClick={onOpenTemplates}
+          className="p-4 glass rounded-xl border border-border/50 hover-lift group cursor-pointer hover:bg-card/50 transition-all"
+        >
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 rounded-lg bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors">
               <AlertCircle className="w-4 h-4 text-amber-400" />
@@ -480,7 +502,14 @@ const StrategyFlowCanvasInner = () => {
       </ReactFlow>
 
       {/* Empty State (shown when no nodes) */}
-      {nodes.length === 0 && <EmptyState />}
+      {nodes.length === 0 && (
+        <EmptyState
+          onOpenSidebar={() => useStrategyFlowStore.getState().setLeftSidebarOpen(true)}
+          onOpenAI={() => setShowAIPanel(true)}
+          onOpenBacktest={() => setShowBacktest(true)}
+          onOpenTemplates={() => setShowTemplates(true)}
+        />
+      )}
 
       {/* Context Menu */}
       {contextMenu && (

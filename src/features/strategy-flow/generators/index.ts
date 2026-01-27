@@ -17,3 +17,8 @@ export {
   generateStrategySummary,
   generateStrategyIR,
 } from './pythonGenerator';
+
+// Enhanced Python generator with full node type support
+export {
+  generatePythonCode as generateEnhancedPythonCode,
+} from './enhancedPythonGenerator';

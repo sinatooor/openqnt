@@ -537,6 +537,275 @@ export const INDICATOR_NODES: NodeCatalogItem[] = [
       params: { period: 20, priceType: 'low' },
     },
   },
+
+
+  // =============================================================================
+  // ADDITIONAL TA-LIB MOMENTUM
+  // =============================================================================
+  {
+    type: 'stochrsi',
+    nodeType: 'indicator',
+    label: 'StochRSI',
+    description: 'Stochastic Relative Strength Index',
+    category: 'indicators',
+    subcategory: 'Momentum',
+    icon: 'Activity',
+    color: '#8b5cf6',
+    defaultData: {
+      indicatorType: 'stochrsi',
+      timeframe: '60',
+      params: { timeperiod: 14, fastk_period: 5, fastd_period: 3, fastd_matype: 0 },
+    },
+  },
+  {
+    type: 'aroon',
+    nodeType: 'indicator',
+    label: 'Aroon',
+    description: 'Aroon Indicator',
+    category: 'indicators',
+    subcategory: 'Momentum',
+    icon: 'Activity',
+    color: '#06b6d4',
+    defaultData: {
+      indicatorType: 'aroon',
+      timeframe: '60',
+      params: { period: 14 },
+    },
+  },
+  {
+    type: 'aroonosc',
+    nodeType: 'indicator',
+    label: 'Aroon Asc',
+    description: 'Aroon Oscillator',
+    category: 'indicators',
+    subcategory: 'Momentum',
+    icon: 'Activity',
+    color: '#06b6d4',
+    defaultData: {
+      indicatorType: 'aroonosc',
+      timeframe: '60',
+      params: { period: 14 },
+    },
+  },
+  {
+    type: 'adxr',
+    nodeType: 'indicator',
+    label: 'ADXR',
+    description: 'Average Directional Movement Index Rating',
+    category: 'indicators',
+    subcategory: 'Momentum',
+    icon: 'TrendingUp',
+    color: '#06b6d4',
+    defaultData: {
+      indicatorType: 'adxr',
+      timeframe: '60',
+      params: { period: 14 },
+    },
+  },
+  {
+    type: 'cmo',
+    nodeType: 'indicator',
+    label: 'CMO',
+    description: 'Chande Momentum Oscillator',
+    category: 'indicators',
+    subcategory: 'Momentum',
+    icon: 'Activity',
+    color: '#06b6d4',
+    defaultData: {
+      indicatorType: 'cmo',
+      timeframe: '60',
+      params: { period: 14 },
+    },
+  },
+  {
+    type: 'roc',
+    nodeType: 'indicator',
+    label: 'ROC',
+    description: 'Rate of Change',
+    category: 'indicators',
+    subcategory: 'Momentum',
+    icon: 'TrendingUp',
+    color: '#06b6d4',
+    defaultData: {
+      indicatorType: 'roc',
+      timeframe: '60',
+      params: { period: 10 },
+    },
+  },
+  {
+    type: 'trix',
+    nodeType: 'indicator',
+    label: 'TRIX',
+    description: '1-day Rate-Of-Change (ROC) of a Triple Smooth EMA',
+    category: 'indicators',
+    subcategory: 'Momentum',
+    icon: 'Activity',
+    color: '#06b6d4',
+    defaultData: {
+      indicatorType: 'trix',
+      timeframe: '60',
+      params: { period: 30 },
+    },
+  },
+  {
+    type: 'ultosc',
+    nodeType: 'indicator',
+    label: 'Ultimate Osc',
+    description: 'Ultimate Oscillator',
+    category: 'indicators',
+    subcategory: 'Momentum',
+    icon: 'Activity',
+    color: '#06b6d4',
+    defaultData: {
+      indicatorType: 'ultosc',
+      timeframe: '60',
+      params: { timeperiod1: 7, timeperiod2: 14, timeperiod3: 28 },
+    },
+  },
+
+  // =============================================================================
+  // TA-LIB VOLUME
+  // =============================================================================
+  {
+    type: 'ad',
+    nodeType: 'indicator',
+    label: 'Chaikin A/D',
+    description: 'Chaikin A/D Line',
+    category: 'indicators',
+    subcategory: 'Volume',
+    icon: 'BarChart',
+    color: '#3b82f6',
+    defaultData: {
+      indicatorType: 'ad',
+      timeframe: '60',
+    },
+  },
+  {
+    type: 'adosc',
+    nodeType: 'indicator',
+    label: 'Chaikin Osc',
+    description: 'Chaikin Oscillator',
+    category: 'indicators',
+    subcategory: 'Volume',
+    icon: 'BarChart',
+    color: '#3b82f6',
+    defaultData: {
+      indicatorType: 'adosc',
+      timeframe: '60',
+      params: { fastPeriod: 3, slowPeriod: 10 },
+    },
+  },
+
+  // =============================================================================
+  // TA-LIB CYCLE
+  // =============================================================================
+  {
+    type: 'ht_trendline',
+    nodeType: 'indicator',
+    label: 'HT Trendline',
+    description: 'Hilbert Transform - Instantaneous Trendline',
+    category: 'indicators',
+    subcategory: 'Cycle',
+    icon: 'Activity',
+    color: '#8b5cf6',
+    defaultData: {
+      indicatorType: 'ht_trendline',
+      timeframe: '60',
+    },
+  },
+  {
+    type: 'ht_dcperiod',
+    nodeType: 'indicator',
+    label: 'HT DC Period',
+    description: 'Hilbert Transform - Dominant Cycle Period',
+    category: 'indicators',
+    subcategory: 'Cycle',
+    icon: 'Activity',
+    color: '#8b5cf6',
+    defaultData: {
+      indicatorType: 'ht_dcperiod',
+      timeframe: '60',
+    },
+  },
+  {
+    type: 'ht_phasor',
+    nodeType: 'indicator',
+    label: 'HT Phasor',
+    description: 'Hilbert Transform - Phasor Components (InPhase, Quadrature)',
+    category: 'indicators',
+    subcategory: 'Cycle',
+    icon: 'Activity',
+    color: '#8b5cf6',
+    defaultData: {
+      indicatorType: 'ht_phasor',
+      timeframe: '60',
+    },
+  },
+  {
+    type: 'ht_sine',
+    nodeType: 'indicator',
+    label: 'HT Sine',
+    description: 'Hilbert Transform - SineWave',
+    category: 'indicators',
+    subcategory: 'Cycle',
+    icon: 'Activity',
+    color: '#8b5cf6',
+    defaultData: {
+      indicatorType: 'ht_sine',
+      timeframe: '60',
+    },
+  },
+
+  // =============================================================================
+  // TA-LIB PATTERN RECOGNITION
+  // =============================================================================
+  {
+    type: 'cdl_pattern',
+    nodeType: 'indicator',
+    label: 'Candle Pattern',
+    description: 'Detect candlestick patterns (Doji, Hammer, Engulfing...)',
+    category: 'indicators',
+    subcategory: 'Pattern',
+    icon: 'Search',
+    color: '#ec4899',
+    defaultData: {
+      indicatorType: 'cdl_pattern',
+      timeframe: '60',
+      params: { pattern: 'CDLDOJI' }, // Default pattern
+    },
+  },
+
+  // =============================================================================
+  // TA-LIB MATH TRANSFORM
+  // =============================================================================
+  {
+    type: 'avgprice',
+    nodeType: 'indicator',
+    label: 'Avg Price',
+    description: 'Average Price',
+    category: 'indicators',
+    subcategory: 'Transform',
+    icon: 'Calculator',
+    color: '#6366f1',
+    defaultData: {
+      indicatorType: 'avgprice',
+      timeframe: '60',
+    },
+  },
+  {
+    type: 'medprice',
+    nodeType: 'indicator',
+    label: 'Med Price',
+    description: 'Median Price',
+    category: 'indicators',
+    subcategory: 'Transform',
+    icon: 'Calculator',
+    color: '#6366f1',
+    defaultData: {
+      indicatorType: 'medprice',
+      timeframe: '60',
+    },
+  },
 ];
 
 // =============================================================================
@@ -1069,6 +1338,228 @@ export const VARIABLE_NODES: NodeCatalogItem[] = [
 ];
 
 // =============================================================================
+// MATH NODES
+// =============================================================================
+
+export const MATH_NODES: NodeCatalogItem[] = [
+  {
+    type: 'add',
+    nodeType: 'math',
+    label: 'Add',
+    description: 'Add two values (A + B)',
+    category: 'math',
+    subcategory: 'Operators',
+    icon: 'Plus',
+    color: '#14b8a6',
+    defaultData: {
+      mathType: 'add',
+    },
+  },
+  {
+    type: 'subtract',
+    nodeType: 'math',
+    label: 'Subtract',
+    description: 'Subtract two values (A - B)',
+    category: 'math',
+    subcategory: 'Operators',
+    icon: 'Minus',
+    color: '#14b8a6',
+    defaultData: {
+      mathType: 'subtract',
+    },
+  },
+  {
+    type: 'multiply',
+    nodeType: 'math',
+    label: 'Multiply',
+    description: 'Multiply two values (A × B)',
+    category: 'math',
+    subcategory: 'Operators',
+    icon: 'X',
+    color: '#14b8a6',
+    defaultData: {
+      mathType: 'multiply',
+    },
+  },
+  {
+    type: 'divide',
+    nodeType: 'math',
+    label: 'Divide',
+    description: 'Divide two values (A ÷ B)',
+    category: 'math',
+    subcategory: 'Operators',
+    icon: 'Divide',
+    color: '#14b8a6',
+    defaultData: {
+      mathType: 'divide',
+    },
+  },
+  {
+    type: 'number',
+    nodeType: 'math',
+    label: 'Number',
+    description: 'A constant number value',
+    category: 'math',
+    subcategory: 'Values',
+    icon: 'Hash',
+    color: '#0ea5e9',
+    defaultData: {
+      mathType: 'number',
+      value: 0,
+    },
+  },
+  {
+    type: 'advancedMath',
+    nodeType: 'math',
+    label: 'Advanced Math',
+    description: 'Advanced math functions (sqrt, abs, sin, cos, etc.)',
+    category: 'math',
+    subcategory: 'Functions',
+    icon: 'Function',
+    color: '#a855f7',
+    defaultData: {
+      mathType: 'advancedMath',
+      mathFunction: 'sqrt',
+    },
+  },
+];
+
+// =============================================================================
+// RISK NODES
+// =============================================================================
+
+export const RISK_NODES: NodeCatalogItem[] = [
+  {
+    type: 'risk_max_drawdown',
+    nodeType: 'risk',
+    label: 'Max Drawdown',
+    description: 'Protect account from drawdown',
+    category: 'risk',
+    subcategory: 'Account Protection',
+    icon: 'ShieldAlert',
+    color: '#ef4444',
+    defaultData: {
+      riskType: 'maxDrawdown',
+      value: 10,
+    },
+  },
+  {
+    type: 'risk_daily_loss_limit',
+    nodeType: 'risk',
+    label: 'Daily Loss Limit',
+    description: 'Limit daily losses',
+    category: 'risk',
+    subcategory: 'Account Protection',
+    icon: 'ShieldOff',
+    color: '#ef4444',
+    defaultData: {
+      riskType: 'dailyLossLimit',
+      value: 2,
+    },
+  },
+  {
+    type: 'risk_position_percent',
+    nodeType: 'risk',
+    label: 'Position %',
+    description: 'Size by % of capital',
+    category: 'risk',
+    subcategory: 'Sizing',
+    icon: 'PieChart',
+    color: '#f97316',
+    defaultData: {
+      riskType: 'positionPercent',
+      percentage: 2,
+    },
+  },
+  {
+    type: 'risk_kelly_criterion',
+    nodeType: 'risk',
+    label: 'Kelly Criterion',
+    description: 'Optimal position sizing',
+    category: 'risk',
+    subcategory: 'Sizing',
+    icon: 'Calculator',
+    color: '#f97316',
+    defaultData: {
+      riskType: 'kellyCriterion',
+    },
+  },
+  {
+    type: 'risk_trailing_stop',
+    nodeType: 'risk',
+    label: 'Trailing Stop',
+    description: 'Dynamic stop loss',
+    category: 'risk',
+    subcategory: 'Trade Management',
+    icon: 'TrendingUp',
+    color: '#f97316',
+    defaultData: {
+      riskType: 'trailingStop',
+      value: 20, // pips/points
+    },
+  },
+];
+
+// =============================================================================
+// TRADE INFO NODES
+// =============================================================================
+
+export const TRADE_INFO_NODES: NodeCatalogItem[] = [
+  {
+    type: 'trade_entry_price',
+    nodeType: 'tradeInfo',
+    label: 'Entry Price',
+    description: 'Get trade entry price',
+    category: 'tradeInfo',
+    subcategory: 'Price',
+    icon: 'DollarSign',
+    color: '#8b5cf6',
+    defaultData: {
+      tradeInfoType: 'entryPrice',
+    },
+  },
+  {
+    type: 'trade_position_size',
+    nodeType: 'tradeInfo',
+    label: 'Position Size',
+    description: 'Get current position size',
+    category: 'tradeInfo',
+    subcategory: 'Info',
+    icon: 'Hash',
+    color: '#8b5cf6',
+    defaultData: {
+      tradeInfoType: 'positionSize',
+    },
+  },
+  {
+    type: 'trade_pnl',
+    nodeType: 'tradeInfo',
+    label: 'Trade PnL',
+    description: 'Get current trade PnL',
+    category: 'tradeInfo',
+    subcategory: 'Info',
+    icon: 'TrendingUp',
+    color: '#8b5cf6',
+    defaultData: {
+      tradeInfoType: 'pnl',
+    },
+  },
+  {
+    type: 'trade_duration',
+    nodeType: 'tradeInfo',
+    label: 'Trade Duration',
+    description: 'Time since entry',
+    category: 'tradeInfo',
+    subcategory: 'Time',
+    icon: 'Clock',
+    color: '#8b5cf6',
+    defaultData: {
+      tradeInfoType: 'tradeDuration',
+    },
+  },
+];
+
+// =============================================================================
 // COMPLETE CATALOG
 // =============================================================================
 
@@ -1079,6 +1570,9 @@ export const NODE_CATALOG: NodeCatalogItem[] = [
   ...ENVIRONMENT_NODES,
   ...CONTROL_NODES,
   ...VARIABLE_NODES,
+  ...MATH_NODES,
+  ...RISK_NODES,
+  ...TRADE_INFO_NODES,
 ];
 
 // Helper to get nodes by category
