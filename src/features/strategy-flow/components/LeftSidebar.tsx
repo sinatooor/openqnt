@@ -234,8 +234,9 @@ CategorySection.displayName = 'CategorySection';
 // =============================================================================
 
 export const LeftSidebar = memo(() => {
-  const { addNode, setSearchQuery, searchQuery, leftSidebarWidth } = useStrategyFlowStore();
+  const { addNode, setSearchQuery, searchQuery, leftSidebarWidth, setLeftSidebarOpen } = useStrategyFlowStore();
   const [activeCategory, setActiveCategory] = useState<string>('recent');
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -259,13 +260,26 @@ export const LeftSidebar = memo(() => {
     }
   };
 
-  // Scroll To Function
-  const scrollToCategory = (id: string) => {
-    setActiveCategory(id);
-    const element = categoryRefs.current[id];
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Scroll To Function with Toggle Logic
+  const handleCategoryClick = (id: string) => {
+    if (activeCategory === id && !isCollapsed) {
+      // Toggle closed if clicking currently active category
+      setIsCollapsed(true);
+      return;
     }
+
+    if (isCollapsed) {
+      setIsCollapsed(false);
+    }
+
+    // Slight delay to allow expansion before scrolling
+    setTimeout(() => {
+      setActiveCategory(id);
+      const element = categoryRefs.current[id];
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, isCollapsed ? 150 : 0);
   };
 
   const handleDragStart = (e: DragEvent, item: NodeCatalogItem) => {
@@ -279,8 +293,8 @@ export const LeftSidebar = memo(() => {
 
   return (
     <div
-      style={{ width: leftSidebarWidth || 340 }} // Respect store width, default to 340px
-      className="flex h-full bg-background/60 backdrop-blur-xl border-r border-white/10 overflow-hidden"
+      style={{ width: isCollapsed ? 50 : (leftSidebarWidth || 340) }} // Collapsed width = 50px
+      className="flex h-full bg-background/60 backdrop-blur-xl border-r border-white/10 overflow-hidden transition-all duration-300 ease-in-out"
     >
 
       {/* 1. Left Fixed Icon Sidebar */}
@@ -293,31 +307,30 @@ export const LeftSidebar = memo(() => {
               <Tooltip key={cat.id}>
                 <TooltipTrigger asChild>
                   <button
-                    onClick={() => scrollToCategory(cat.id)}
+                    onClick={() => handleCategoryClick(cat.id)}
                     className={cn(
                       "flex items-center justify-center w-9 h-9 rounded-md transition-all duration-200 group relative",
-                      activeCategory === cat.id
+                      activeCategory === cat.id && !isCollapsed
                         ? "bg-white/10 text-white shadow-sm"
                         : "text-muted-foreground/60 hover:bg-white/5 hover:text-foreground"
                     )}
                   >
-                    <cat.icon className={cn("w-4 h-4", activeCategory === cat.id && "fill-current/10")} />
-                    {activeCategory === cat.id && (
+                    <cat.icon className={cn("w-4 h-4 transition-colors", activeCategory === cat.id && !isCollapsed && "fill-current/10")} />
+                    {activeCategory === cat.id && !isCollapsed && (
                       <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-r-full" />
                     )}
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right" className="font-medium bg-popover text-popover-foreground text-xs">
-                  {cat.label}
+                  {cat.label} {activeCategory === cat.id && !isCollapsed ? '(Click to close)' : ''}
                 </TooltipContent>
               </Tooltip>
             ))}
           </TooltipProvider>
         </div>
 
-        {/* Bottom Fixed Items (Settings, Profile, etc.) */}
+        {/* Bottom Fixed Items */}
         <div className="flex flex-col items-center gap-1 p-1.5 border-t border-white/5 bg-black/20">
-
           <TooltipProvider delayDuration={0} side="right">
             {[
               { id: 'settings', icon: Settings, label: 'Settings' },
@@ -345,9 +358,12 @@ export const LeftSidebar = memo(() => {
 
       {/* 2. Right Scrollable Content */}
       <div
-        className="flex-1 flex flex-col h-full overflow-hidden bg-transparent"
+        className={cn(
+          "flex-1 flex flex-col h-full overflow-hidden bg-transparent transition-opacity duration-200",
+          isCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
+        )}
       >
-        {/* Search Bar (Optional Header) */}
+        {/* Search Bar */}
         <div className="p-3 border-b border-white/5 bg-transparent z-10">
           <div className="relative group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
@@ -364,7 +380,7 @@ export const LeftSidebar = memo(() => {
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-auto p-2 scroll-smooth"
+          className="flex-1 overflow-y-auto p-2 scroll-smooth no-scrollbar"
         >
           {TOOL_CATEGORIES.map((cat) => (
             <CategorySection
