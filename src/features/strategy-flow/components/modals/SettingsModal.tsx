@@ -26,23 +26,23 @@ interface SettingsModalProps {
 
 export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) => {
   const { showGrid, toggleGrid } = useStrategyFlowStore();
-  
+
   const [settings, setSettings] = useState({
     // Canvas Settings
     snapToGrid: true,
     gridSize: 16,
     showMinimap: true,
     animateEdges: true,
-    
+
     // Visual Settings
     nodeWidth: 220,
     edgeType: 'smoothstep',
-    
+
     // Behavior Settings
     autoSave: true,
     autoSaveInterval: 30,
     confirmDelete: true,
-    
+
     // Keyboard Settings
     enableShortcuts: true,
   });
@@ -59,28 +59,28 @@ export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) =
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[550px] bg-[#1e1e1e] border-white/10 text-white">
+      <DialogContent className="sm:max-w-xl bg-card/80 backdrop-blur-xl border-border/50 text-foreground">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings className="w-5 h-5 text-purple-400" />
             Strategy Flow Settings
           </DialogTitle>
-          <DialogDescription className="text-white/60">
+          <DialogDescription className="text-muted-foreground">
             Customize your strategy builder experience.
           </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="canvas" className="mt-4">
-          <TabsList className="bg-[#2a2a2a] border-white/10 w-full">
-            <TabsTrigger value="canvas" className="flex-1 data-[state=active]:bg-white/10">
+          <TabsList className="bg-secondary border-border w-full">
+            <TabsTrigger value="canvas" className="flex-1 data-[state=active]:bg-accent">
               <Grid3X3 className="w-4 h-4 mr-2" />
               Canvas
             </TabsTrigger>
-            <TabsTrigger value="visual" className="flex-1 data-[state=active]:bg-white/10">
+            <TabsTrigger value="visual" className="flex-1 data-[state=active]:bg-accent">
               <Palette className="w-4 h-4 mr-2" />
               Visual
             </TabsTrigger>
-            <TabsTrigger value="keyboard" className="flex-1 data-[state=active]:bg-white/10">
+            <TabsTrigger value="keyboard" className="flex-1 data-[state=active]:bg-accent">
               <Keyboard className="w-4 h-4 mr-2" />
               Shortcuts
             </TabsTrigger>
@@ -89,36 +89,36 @@ export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) =
           <TabsContent value="canvas" className="space-y-4 mt-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-white">Show Grid</Label>
-                <p className="text-xs text-white/50">Display background grid dots</p>
+                <Label className="text-foreground">Show Grid</Label>
+                <p className="text-xs text-muted-foreground">Display background grid dots</p>
               </div>
-              <Switch 
-                checked={showGrid} 
+              <Switch
+                checked={showGrid}
                 onCheckedChange={toggleGrid}
               />
             </div>
 
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-white">Snap to Grid</Label>
-                <p className="text-xs text-white/50">Align nodes to grid when dragging</p>
+                <Label className="text-foreground">Snap to Grid</Label>
+                <p className="text-xs text-muted-foreground">Align nodes to grid when dragging</p>
               </div>
-              <Switch 
-                checked={settings.snapToGrid} 
+              <Switch
+                checked={settings.snapToGrid}
                 onCheckedChange={(v) => updateSetting('snapToGrid', v)}
               />
             </div>
 
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-white">Grid Size</Label>
-                <p className="text-xs text-white/50">Size of grid cells in pixels</p>
+                <Label className="text-foreground">Grid Size</Label>
+                <p className="text-xs text-muted-foreground">Size of grid cells in pixels</p>
               </div>
               <Input
                 type="number"
                 value={settings.gridSize}
                 onChange={(e) => updateSetting('gridSize', parseInt(e.target.value))}
-                className="w-20 bg-[#2a2a2a] border-white/10"
+                className="w-20 bg-secondary border-border"
                 min={8}
                 max={64}
               />
@@ -126,22 +126,22 @@ export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) =
 
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-white">Show Minimap</Label>
-                <p className="text-xs text-white/50">Display overview map in corner</p>
+                <Label className="text-foreground">Show Minimap</Label>
+                <p className="text-xs text-muted-foreground">Display overview map in corner</p>
               </div>
-              <Switch 
-                checked={settings.showMinimap} 
+              <Switch
+                checked={settings.showMinimap}
                 onCheckedChange={(v) => updateSetting('showMinimap', v)}
               />
             </div>
 
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-white">Animate Connections</Label>
-                <p className="text-xs text-white/50">Show flow animation on edges</p>
+                <Label className="text-foreground">Animate Connections</Label>
+                <p className="text-xs text-muted-foreground">Show flow animation on edges</p>
               </div>
-              <Switch 
-                checked={settings.animateEdges} 
+              <Switch
+                checked={settings.animateEdges}
                 onCheckedChange={(v) => updateSetting('animateEdges', v)}
               />
             </div>
@@ -150,14 +150,14 @@ export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) =
           <TabsContent value="visual" className="space-y-4 mt-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-white">Node Width</Label>
-                <p className="text-xs text-white/50">Default width of new nodes</p>
+                <Label className="text-foreground">Node Width</Label>
+                <p className="text-xs text-muted-foreground">Default width of new nodes</p>
               </div>
               <Input
                 type="number"
                 value={settings.nodeWidth}
                 onChange={(e) => updateSetting('nodeWidth', parseInt(e.target.value))}
-                className="w-20 bg-[#2a2a2a] border-white/10"
+                className="w-20 bg-secondary border-border"
                 min={150}
                 max={400}
               />
@@ -165,11 +165,11 @@ export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) =
 
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-white">Auto-save</Label>
-                <p className="text-xs text-white/50">Automatically save your work</p>
+                <Label className="text-foreground">Auto-save</Label>
+                <p className="text-xs text-muted-foreground">Automatically save your work</p>
               </div>
-              <Switch 
-                checked={settings.autoSave} 
+              <Switch
+                checked={settings.autoSave}
                 onCheckedChange={(v) => updateSetting('autoSave', v)}
               />
             </div>
@@ -177,14 +177,14 @@ export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) =
             {settings.autoSave && (
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-white">Auto-save Interval</Label>
-                  <p className="text-xs text-white/50">Seconds between saves</p>
+                  <Label className="text-foreground">Auto-save Interval</Label>
+                  <p className="text-xs text-muted-foreground">Seconds between saves</p>
                 </div>
                 <Input
                   type="number"
                   value={settings.autoSaveInterval}
                   onChange={(e) => updateSetting('autoSaveInterval', parseInt(e.target.value))}
-                  className="w-20 bg-[#2a2a2a] border-white/10"
+                  className="w-20 bg-secondary border-border"
                   min={10}
                   max={300}
                 />
@@ -193,11 +193,11 @@ export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) =
 
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-white">Confirm Delete</Label>
-                <p className="text-xs text-white/50">Ask before deleting nodes</p>
+                <Label className="text-foreground">Confirm Delete</Label>
+                <p className="text-xs text-muted-foreground">Ask before deleting nodes</p>
               </div>
-              <Switch 
-                checked={settings.confirmDelete} 
+              <Switch
+                checked={settings.confirmDelete}
                 onCheckedChange={(v) => updateSetting('confirmDelete', v)}
               />
             </div>
@@ -206,45 +206,45 @@ export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) =
           <TabsContent value="keyboard" className="space-y-4 mt-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-white">Enable Shortcuts</Label>
-                <p className="text-xs text-white/50">Use keyboard shortcuts</p>
+                <Label className="text-foreground">Enable Shortcuts</Label>
+                <p className="text-xs text-muted-foreground">Use keyboard shortcuts</p>
               </div>
-              <Switch 
-                checked={settings.enableShortcuts} 
+              <Switch
+                checked={settings.enableShortcuts}
                 onCheckedChange={(v) => updateSetting('enableShortcuts', v)}
               />
             </div>
 
             <div className="mt-4 space-y-2">
-              <Label className="text-white/70 text-sm">Keyboard Shortcuts</Label>
-              <div className="bg-[#2a2a2a] rounded-lg p-3 space-y-2 text-sm">
+              <Label className="text-muted-foreground text-sm">Keyboard Shortcuts</Label>
+              <div className="bg-secondary rounded-lg p-3 space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-white/70">Delete Node</span>
-                  <kbd className="px-2 py-0.5 bg-white/10 rounded text-white/80">Delete</kbd>
+                  <span className="text-muted-foreground">Delete Node</span>
+                  <kbd className="px-2 py-0.5 bg-accent rounded text-foreground/80">Delete</kbd>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-white/70">Duplicate Node</span>
-                  <kbd className="px-2 py-0.5 bg-white/10 rounded text-white/80">Ctrl+D</kbd>
+                  <span className="text-muted-foreground">Duplicate Node</span>
+                  <kbd className="px-2 py-0.5 bg-accent rounded text-foreground/80">Ctrl+D</kbd>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-white/70">Undo</span>
-                  <kbd className="px-2 py-0.5 bg-white/10 rounded text-white/80">Ctrl+Z</kbd>
+                  <span className="text-muted-foreground">Undo</span>
+                  <kbd className="px-2 py-0.5 bg-accent rounded text-foreground/80">Ctrl+Z</kbd>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-white/70">Redo</span>
-                  <kbd className="px-2 py-0.5 bg-white/10 rounded text-white/80">Ctrl+Y</kbd>
+                  <span className="text-muted-foreground">Redo</span>
+                  <kbd className="px-2 py-0.5 bg-accent rounded text-foreground/80">Ctrl+Y</kbd>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-white/70">Pan Mode</span>
-                  <kbd className="px-2 py-0.5 bg-white/10 rounded text-white/80">H</kbd>
+                  <span className="text-muted-foreground">Pan Mode</span>
+                  <kbd className="px-2 py-0.5 bg-accent rounded text-foreground/80">H</kbd>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-white/70">Toggle Grid</span>
-                  <kbd className="px-2 py-0.5 bg-white/10 rounded text-white/80">G</kbd>
+                  <span className="text-muted-foreground">Toggle Grid</span>
+                  <kbd className="px-2 py-0.5 bg-accent rounded text-foreground/80">G</kbd>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-white/70">Fit View</span>
-                  <kbd className="px-2 py-0.5 bg-white/10 rounded text-white/80">Ctrl+1</kbd>
+                  <span className="text-muted-foreground">Fit View</span>
+                  <kbd className="px-2 py-0.5 bg-accent rounded text-foreground/80">Ctrl+1</kbd>
                 </div>
               </div>
             </div>
@@ -252,14 +252,14 @@ export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) =
         </Tabs>
 
         <DialogFooter className="mt-6">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => onOpenChange(false)}
-            className="border-white/10 text-white/70 hover:bg-white/10"
+            className="border-border text-muted-foreground hover:bg-accent"
           >
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={handleSave}
             className="bg-purple-600 hover:bg-purple-700"
           >

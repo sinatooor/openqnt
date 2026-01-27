@@ -267,12 +267,12 @@ const DIFFICULTY_COLORS: Record<string, string> = {
 export const TemplatesDialog = memo(({ open, onOpenChange }: TemplatesDialogProps) => {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  
+
   const { clearCanvas } = useStrategyFlowStore();
 
   const filteredTemplates = useMemo(() => {
     return STRATEGY_TEMPLATES.filter(t => {
-      const matchesSearch = !search || 
+      const matchesSearch = !search ||
         t.name.toLowerCase().includes(search.toLowerCase()) ||
         t.description.toLowerCase().includes(search.toLowerCase());
       const matchesCategory = !selectedCategory || t.category === selectedCategory;
@@ -282,10 +282,10 @@ export const TemplatesDialog = memo(({ open, onOpenChange }: TemplatesDialogProp
 
   const handleLoadTemplate = (template: StrategyTemplate) => {
     const store = useStrategyFlowStore.getState();
-    
+
     // Clear current canvas and load template
     store.clearCanvas();
-    
+
     // Add nodes
     template.nodes.forEach(node => {
       store.addNode(
@@ -305,20 +305,20 @@ export const TemplatesDialog = memo(({ open, onOpenChange }: TemplatesDialogProp
 
     // Note: Edges would need to be reconnected based on new node IDs
     // This is a simplified implementation
-    
+
     store.setStrategyName(template.name);
     onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] bg-[#1e1e1e] border-white/10 text-white max-h-[80vh]">
+      <DialogContent className="sm:max-w-4xl bg-card/80 backdrop-blur-xl border-border/50 text-foreground max-h-[80vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Star className="w-5 h-5 text-yellow-400" />
             Strategy Templates
           </DialogTitle>
-          <DialogDescription className="text-white/60">
+          <DialogDescription className="text-muted-foreground">
             Choose a pre-built strategy template to get started quickly.
           </DialogDescription>
         </DialogHeader>
@@ -326,12 +326,12 @@ export const TemplatesDialog = memo(({ open, onOpenChange }: TemplatesDialogProp
         {/* Search and Filters */}
         <div className="flex items-center gap-3 mt-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search templates..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 bg-[#2a2a2a] border-white/10"
+              className="pl-9 bg-secondary border-border"
             />
           </div>
         </div>
@@ -342,7 +342,7 @@ export const TemplatesDialog = memo(({ open, onOpenChange }: TemplatesDialogProp
             variant={selectedCategory === null ? 'secondary' : 'outline'}
             size="sm"
             onClick={() => setSelectedCategory(null)}
-            className="border-white/10"
+            className="border-border"
           >
             All
           </Button>
@@ -352,7 +352,7 @@ export const TemplatesDialog = memo(({ open, onOpenChange }: TemplatesDialogProp
               variant={selectedCategory === cat ? 'secondary' : 'outline'}
               size="sm"
               onClick={() => setSelectedCategory(cat)}
-              className="border-white/10 capitalize"
+              className="border-border capitalize"
             >
               {CATEGORY_ICONS[cat]}
               <span className="ml-1">{cat}</span>
@@ -366,25 +366,25 @@ export const TemplatesDialog = memo(({ open, onOpenChange }: TemplatesDialogProp
             {filteredTemplates.map(template => (
               <div
                 key={template.id}
-                className="p-4 bg-[#2a2a2a] rounded-lg border border-white/10 hover:border-purple-500/50 transition-colors group"
+                className="p-4 bg-secondary rounded-lg border border-border hover:border-purple-500/50 transition-colors group"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-medium text-white">{template.name}</h3>
+                      <h3 className="font-medium text-foreground">{template.name}</h3>
                       {template.featured && (
                         <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
                       )}
                     </div>
-                    <p className="text-sm text-white/60 mb-3">{template.description}</p>
+                    <p className="text-sm text-muted-foreground mb-3">{template.description}</p>
                     <div className="flex items-center gap-2 flex-wrap">
                       <Badge className={DIFFICULTY_COLORS[template.difficulty]}>
                         {template.difficulty}
                       </Badge>
-                      <Badge variant="outline" className="border-white/20 text-white/60">
+                      <Badge variant="outline" className="border-border text-muted-foreground">
                         {template.indicators.length} indicators
                       </Badge>
-                      <Badge variant="outline" className="border-white/20 text-white/60 capitalize">
+                      <Badge variant="outline" className="border-border text-muted-foreground capitalize">
                         {template.category}
                       </Badge>
                     </div>
@@ -402,7 +402,7 @@ export const TemplatesDialog = memo(({ open, onOpenChange }: TemplatesDialogProp
             ))}
 
             {filteredTemplates.length === 0 && (
-              <div className="text-center py-12 text-white/50">
+              <div className="text-center py-12 text-muted-foreground">
                 No templates match your search.
               </div>
             )}

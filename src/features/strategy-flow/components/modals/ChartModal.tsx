@@ -48,9 +48,9 @@ const INTERVALS = [
   { value: 'W', label: '1W' },
 ];
 
-export const ChartModal = memo(({ 
-  open, 
-  onOpenChange, 
+export const ChartModal = memo(({
+  open,
+  onOpenChange,
   symbol: initialSymbol = 'BTCUSDT',
   interval: initialInterval = 'D',
 }: ChartModalProps) => {
@@ -63,12 +63,11 @@ export const ChartModal = memo(({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent 
-        className={`bg-[#1e1e1e] border-white/10 text-white p-0 ${
-          isFullscreen ? 'max-w-[95vw] h-[90vh]' : 'max-w-[800px] h-[600px]'
-        }`}
+      <DialogContent
+        className={`bg-card/80 backdrop-blur-xl border-border/50 text-foreground p-0 ${isFullscreen ? 'max-w-[95vw] h-[90vh]' : 'max-w-4xl h-[600px]'
+          }`}
       >
-        <DialogHeader className="px-4 py-3 border-b border-white/10">
+        <DialogHeader className="px-4 py-3 border-b border-border">
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-green-400" />
@@ -76,20 +75,20 @@ export const ChartModal = memo(({
             </DialogTitle>
             <div className="flex items-center gap-2">
               <Select value={symbol} onValueChange={setSymbol}>
-                <SelectTrigger className="w-32 bg-[#2a2a2a] border-white/10 h-8">
+                <SelectTrigger className="w-32 bg-secondary border-border h-8">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-[#2a2a2a] border-white/10">
+                <SelectContent className="bg-secondary border-border">
                   {SYMBOLS.map(s => (
                     <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <Select value={interval} onValueChange={setInterval}>
-                <SelectTrigger className="w-20 bg-[#2a2a2a] border-white/10 h-8">
+                <SelectTrigger className="w-20 bg-secondary border-border h-8">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-[#2a2a2a] border-white/10">
+                <SelectContent className="bg-secondary border-border">
                   {INTERVALS.map(i => (
                     <SelectItem key={i.value} value={i.value}>{i.label}</SelectItem>
                   ))}
@@ -98,7 +97,7 @@ export const ChartModal = memo(({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-white/70"
+                className="h-8 w-8 text-muted-foreground"
                 onClick={() => setIsFullscreen(!isFullscreen)}
               >
                 {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}

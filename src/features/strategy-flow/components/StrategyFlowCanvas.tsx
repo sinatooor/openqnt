@@ -28,10 +28,10 @@ import { RightPropertyPanel } from './RightPropertyPanel';
 import { ContextMenu } from './ContextMenu';
 import { CodeViewPanel } from './CodeViewPanel';
 import { AIChatPanel } from './AIChatPanel';
-import { 
-  BacktestModal, 
-  SettingsModal, 
-  TemplatesDialog, 
+import {
+  BacktestModal,
+  SettingsModal,
+  TemplatesDialog,
   SearchNodesDialog,
   ChartModal,
   ProfileModal,
@@ -80,7 +80,7 @@ const EmptyState = () => (
   <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
     <div className="text-center max-w-lg pointer-events-auto animate-in fade-in duration-500">
       <div className="mb-8">
-        <div className="w-24 h-24 mx-auto bg-gradient-to-br from-primary/20 via-purple-500/20 to-blue-500/20 rounded-3xl flex items-center justify-center shadow-trading-lg hover-lift">
+        <div className="w-24 h-24 mx-auto bg-primary/10 rounded-3xl flex items-center justify-center shadow-trading-lg hover-lift">
           <Boxes className="w-12 h-12 text-primary" />
         </div>
       </div>
@@ -172,13 +172,12 @@ const StrategyValidationBadge = ({ nodes, edges }: { nodes: StrategyFlowNode[]; 
   if (nodes.length === 0) return null;
 
   return (
-    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs ${
-      validation.isValid 
-        ? 'bg-green-500/20 text-green-400' 
-        : validation.errors.length > 0 
-          ? 'bg-red-500/20 text-red-400'
-          : 'bg-amber-500/20 text-amber-400'
-    }`}>
+    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs ${validation.isValid
+      ? 'bg-green-500/20 text-green-400'
+      : validation.errors.length > 0
+        ? 'bg-red-500/20 text-red-400'
+        : 'bg-amber-500/20 text-amber-400'
+      }`}>
       {validation.isValid ? (
         <>
           <CheckCircle2 className="w-3.5 h-3.5" />
@@ -203,12 +202,12 @@ const StrategyValidationBadge = ({ nodes, edges }: { nodes: StrategyFlowNode[]; 
 const StrategyFlowCanvasInner = () => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition, zoomIn, zoomOut, fitView } = useReactFlow();
-  
+
   // Panel visibility states
   const [showCodePanel, setShowCodePanel] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
-  
+
   // Modal states
   const [showBacktest, setShowBacktest] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -219,7 +218,7 @@ const StrategyFlowCanvasInner = () => {
   const [showJournal, setShowJournal] = useState(false);
   const [showScreener, setShowScreener] = useState(false);
   const [showLiveTrading, setShowLiveTrading] = useState(false);
-  
+
   const {
     nodes,
     edges,
@@ -282,7 +281,7 @@ const StrategyFlowCanvasInner = () => {
     event.preventDefault();
     if (isLocked) return;
 
-    const nodeTypeData = event.dataTransfer.getData('application/reactflow');
+    const nodeTypeData = event.dataTransfer.getData('application/strategyflow');
     if (!nodeTypeData) return;
 
     try {
@@ -310,7 +309,7 @@ const StrategyFlowCanvasInner = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
-      const { selectedNodeId, duplicateNode, deleteNode, undo, redo, togglePanMode, toggleGrid } = 
+      const { selectedNodeId, duplicateNode, deleteNode, undo, redo, togglePanMode, toggleGrid } =
         useStrategyFlowStore.getState();
 
       // Delete
@@ -355,9 +354,9 @@ const StrategyFlowCanvasInner = () => {
   }, []);
 
   return (
-    <div 
+    <div
       ref={reactFlowWrapper}
-      className="w-full h-full bg-gradient-to-br from-[#0f0f10] via-[#13131a] to-[#0f0f10]"
+      className="w-full h-full bg-background"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
@@ -381,7 +380,7 @@ const StrategyFlowCanvasInner = () => {
           return isValidConnection(sourceNode, targetNode);
         }}
         selectionMode={SelectionMode.Partial}
-        panOnDrag={isPanMode ? true : [1, 2]}
+        panOnDrag={true}
         selectNodesOnDrag={!isPanMode}
         nodesDraggable={!isLocked}
         nodesConnectable={!isLocked}
@@ -390,8 +389,7 @@ const StrategyFlowCanvasInner = () => {
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.1}
         maxZoom={4}
-        snapToGrid
-        snapGrid={[16, 16]}
+        snapToGrid={false}
         proOptions={{ hideAttribution: true }}
       >
         {/* Grid Background */}
@@ -411,26 +409,16 @@ const StrategyFlowCanvasInner = () => {
           zoomable
           pannable
           position="bottom-right"
+          maskColor="hsla(var(--background), 0.8)"
           style={{
-            backgroundColor: 'rgba(15,15,16,0.9)',
-            border: '1px solid rgba(255,255,255,0.1)',
+            backgroundColor: 'hsl(var(--card))',
+            border: '1px solid hsl(var(--border))',
             borderRadius: 12,
           }}
-          className="!m-4"
+          className="!m-4 pointer-events-auto"
         />
 
-        {/* Controls (zoom buttons) */}
-        <Controls
-          position="bottom-right"
-          style={{
-            bottom: 120,
-            right: 16,
-          }}
-          className="!bg-card/90 !border-border/50 !rounded-lg !shadow-lg"
-          showZoom
-          showFitView
-          showInteractive={false}
-        />
+
 
         {/* ========== FLOATING TOOLBAR ========== */}
 

@@ -27,15 +27,15 @@ export const SearchNodesDialog = memo(({ open, onOpenChange }: SearchNodesDialog
   const [search, setSearch] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  
+
   const { addNode } = useStrategyFlowStore();
 
   // Filter nodes based on search
   const filteredNodes = useMemo(() => {
     if (!search.trim()) return NODE_CATALOG.slice(0, 20); // Show first 20 when empty
-    
+
     const query = search.toLowerCase();
-    return NODE_CATALOG.filter(node => 
+    return NODE_CATALOG.filter(node =>
       node.label.toLowerCase().includes(query) ||
       node.description.toLowerCase().includes(query) ||
       node.type.toLowerCase().includes(query) ||
@@ -88,7 +88,7 @@ export const SearchNodesDialog = memo(({ open, onOpenChange }: SearchNodesDialog
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-[#1e1e1e] border-white/10 text-white p-0">
+      <DialogContent className="sm:max-w-[500px] bg-card/80 backdrop-blur-xl border-border/50 text-foreground p-0">
         <DialogHeader className="px-4 pt-4 pb-0">
           <DialogTitle className="sr-only">Search Nodes</DialogTitle>
         </DialogHeader>
@@ -96,14 +96,14 @@ export const SearchNodesDialog = memo(({ open, onOpenChange }: SearchNodesDialog
         {/* Search Input */}
         <div className="px-4 pb-2">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               ref={inputRef}
               placeholder="Search nodes... (e.g., RSI, crossover, buy)"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="pl-9 bg-[#2a2a2a] border-white/10 text-lg h-12"
+              className="pl-9 bg-secondary border-border text-lg h-12"
               autoFocus
             />
           </div>
@@ -121,9 +121,8 @@ export const SearchNodesDialog = memo(({ open, onOpenChange }: SearchNodesDialog
                   key={`${node.type}-${index}`}
                   onClick={() => handleSelectNode(node)}
                   onMouseEnter={() => setSelectedIndex(index)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left ${
-                    isSelected ? 'bg-purple-500/20' : 'hover:bg-white/5'
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left ${isSelected ? 'bg-purple-500/20' : 'hover:bg-accent'
+                    }`}
                 >
                   <div
                     className="w-8 h-8 rounded-lg flex items-center justify-center"
@@ -134,9 +133,9 @@ export const SearchNodesDialog = memo(({ open, onOpenChange }: SearchNodesDialog
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-white">{node.label}</span>
-                      <span className="text-xs text-white/40 capitalize">{node.category}</span>
+                      <span className="text-xs text-muted-foreground capitalize">{node.category}</span>
                     </div>
-                    <p className="text-xs text-white/50 truncate">{node.description}</p>
+                    <p className="text-xs text-muted-foreground truncate">{node.description}</p>
                   </div>
                   {isSelected && (
                     <ArrowRight className="w-4 h-4 text-purple-400" />
@@ -146,7 +145,7 @@ export const SearchNodesDialog = memo(({ open, onOpenChange }: SearchNodesDialog
             })}
 
             {filteredNodes.length === 0 && (
-              <div className="text-center py-8 text-white/50">
+              <div className="text-center py-8 text-muted-foreground">
                 No nodes found matching "{search}"
               </div>
             )}
@@ -154,10 +153,10 @@ export const SearchNodesDialog = memo(({ open, onOpenChange }: SearchNodesDialog
         </ScrollArea>
 
         {/* Keyboard hints */}
-        <div className="px-4 py-2 border-t border-white/10 flex items-center gap-4 text-xs text-white/40">
-          <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">↑↓</kbd> Navigate</span>
-          <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">Enter</kbd> Add</span>
-          <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded">Esc</kbd> Close</span>
+        <div className="px-4 py-2 border-t border-border flex items-center gap-4 text-xs text-muted-foreground">
+          <span><kbd className="px-1.5 py-0.5 bg-secondary rounded">↑↓</kbd> Navigate</span>
+          <span><kbd className="px-1.5 py-0.5 bg-secondary rounded">Enter</kbd> Add</span>
+          <span><kbd className="px-1.5 py-0.5 bg-secondary rounded">Esc</kbd> Close</span>
         </div>
       </DialogContent>
     </Dialog>
