@@ -16,13 +16,14 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Search, TrendingUp, Zap, Shield, Clock, Star, Download } from 'lucide-react';
-import { useStrategyFlowStore } from '../../store/strategyFlowStore';
+import { useStrategyFlowStore, EDGE_DATA_TYPE_COLORS } from '../../store/strategyFlowStore';
 import {
   INDICATOR_NODES,
   CONDITION_NODES,
   ACTION_NODES,
 } from '../../catalog/nodeCatalog';
 import { StrategyFlowNode, StrategyFlowEdge } from '../../types';
+import { getHandleConfigs } from '../../utils/handleUtils';
 
 interface TemplatesDialogProps {
   open: boolean;
@@ -78,9 +79,9 @@ const STRATEGY_TEMPLATES: StrategyTemplate[] = [
       },
     ],
     edges: [
-      { id: 'e1', source: 'sma-fast', target: 'crossover' },
-      { id: 'e2', source: 'sma-slow', target: 'crossover' },
-      { id: 'e3', source: 'crossover', target: 'buy' },
+      { id: 'e1', source: 'sma-fast', sourceHandle: 'output', target: 'crossover', targetHandle: 'input-a' },
+      { id: 'e2', source: 'sma-slow', sourceHandle: 'output', target: 'crossover', targetHandle: 'input-b' },
+      { id: 'e3', source: 'crossover', sourceHandle: 'output', target: 'buy', targetHandle: 'trigger' },
     ],
   },
   {
@@ -98,21 +99,28 @@ const STRATEGY_TEMPLATES: StrategyTemplate[] = [
         data: { label: 'RSI', indicatorType: 'rsi', timeframe: '60', params: { period: 14 } },
       },
       {
+        id: 'constant-30',
+        type: 'math',
+        position: { x: 100, y: 280 },
+        data: { label: '30', mathType: 'number', value: 30 },
+      },
+      {
         id: 'threshold',
         type: 'condition',
-        position: { x: 350, y: 150 },
-        data: { label: 'RSI < 30', conditionType: 'threshold', operator: '<', value: 30 },
+        position: { x: 350, y: 180 },
+        data: { label: 'RSI < 30', conditionType: 'compare', operator: '<' },
       },
       {
         id: 'buy',
         type: 'action',
-        position: { x: 600, y: 150 },
+        position: { x: 600, y: 180 },
         data: { label: 'Buy', actionType: 'order', direction: 'long', size: 10, sizeType: 'percent' },
       },
     ],
     edges: [
-      { id: 'e1', source: 'rsi', target: 'threshold' },
-      { id: 'e2', source: 'threshold', target: 'buy' },
+      { id: 'e1', source: 'rsi', sourceHandle: 'output', target: 'threshold', targetHandle: 'input-a' },
+      { id: 'e2', source: 'constant-30', sourceHandle: 'output', target: 'threshold', targetHandle: 'input-b' },
+      { id: 'e3', source: 'threshold', sourceHandle: 'output', target: 'buy', targetHandle: 'trigger' },
     ],
   },
   {
@@ -144,8 +152,9 @@ const STRATEGY_TEMPLATES: StrategyTemplate[] = [
       },
     ],
     edges: [
-      { id: 'e1', source: 'macd', target: 'crossover' },
-      { id: 'e2', source: 'crossover', target: 'buy' },
+      { id: 'e1', source: 'macd', sourceHandle: 'line', target: 'crossover', targetHandle: 'input-a' },
+      { id: 'e2', source: 'macd', sourceHandle: 'signal', target: 'crossover', targetHandle: 'input-b' },
+      { id: 'e3', source: 'crossover', sourceHandle: 'output', target: 'buy', targetHandle: 'trigger' },
     ],
   },
   {
@@ -182,9 +191,9 @@ const STRATEGY_TEMPLATES: StrategyTemplate[] = [
       },
     ],
     edges: [
-      { id: 'e1', source: 'bb', target: 'compare' },
-      { id: 'e2', source: 'price', target: 'compare' },
-      { id: 'e3', source: 'compare', target: 'buy' },
+      { id: 'e1', source: 'price', sourceHandle: 'output', target: 'compare', targetHandle: 'input-a' },
+      { id: 'e2', source: 'bb', sourceHandle: 'upper', target: 'compare', targetHandle: 'input-b' },
+      { id: 'e3', source: 'compare', sourceHandle: 'output', target: 'buy', targetHandle: 'trigger' },
     ],
   },
   {
@@ -239,13 +248,13 @@ const STRATEGY_TEMPLATES: StrategyTemplate[] = [
       },
     ],
     edges: [
-      { id: 'e1', source: 'ema-fast', target: 'cross1' },
-      { id: 'e2', source: 'ema-medium', target: 'cross1' },
-      { id: 'e3', source: 'ema-medium', target: 'cross2' },
-      { id: 'e4', source: 'ema-slow', target: 'cross2' },
-      { id: 'e5', source: 'cross1', target: 'and' },
-      { id: 'e6', source: 'cross2', target: 'and' },
-      { id: 'e7', source: 'and', target: 'buy' },
+      { id: 'e1', source: 'ema-fast', sourceHandle: 'output', target: 'cross1', targetHandle: 'input-a' },
+      { id: 'e2', source: 'ema-medium', sourceHandle: 'output', target: 'cross1', targetHandle: 'input-b' },
+      { id: 'e3', source: 'ema-medium', sourceHandle: 'output', target: 'cross2', targetHandle: 'input-a' },
+      { id: 'e4', source: 'ema-slow', sourceHandle: 'output', target: 'cross2', targetHandle: 'input-b' },
+      { id: 'e5', source: 'cross1', sourceHandle: 'output', target: 'and', targetHandle: 'input-a' },
+      { id: 'e6', source: 'cross2', sourceHandle: 'output', target: 'and', targetHandle: 'input-b' },
+      { id: 'e7', source: 'and', sourceHandle: 'output', target: 'buy', targetHandle: 'trigger' },
     ],
   },
 ];
@@ -283,29 +292,71 @@ export const TemplatesDialog = memo(({ open, onOpenChange }: TemplatesDialogProp
   const handleLoadTemplate = (template: StrategyTemplate) => {
     const store = useStrategyFlowStore.getState();
 
-    // Clear current canvas and load template
+    // Clear current canvas
     store.clearCanvas();
 
-    // Add nodes
+    // Create a mapping from template node IDs to new node IDs
+    const nodeIdMap: Record<string, string> = {};
+    const newNodes: StrategyFlowNode[] = [];
+
+    // Create nodes with new IDs
     template.nodes.forEach(node => {
-      store.addNode(
-        {
-          type: (node.data as any).indicatorType || (node.data as any).conditionType || (node.data as any).actionType || (node.data as any).environmentType || 'unknown',
-          nodeType: node.type as any,
-          label: node.data.label as string,
-          description: node.data.description as string || '',
-          category: 'indicators',
-          icon: 'Activity',
-          color: '#8b5cf6',
-          defaultData: node.data as any,
-        },
-        node.position
-      );
+      const newId = `${node.type}-${Math.random().toString(36).substring(2, 8)}`;
+      nodeIdMap[node.id] = newId;
+      
+      newNodes.push({
+        ...node,
+        id: newId,
+      });
     });
 
-    // Note: Edges would need to be reconnected based on new node IDs
-    // This is a simplified implementation
+    // Create edges with proper colors and remapped IDs
+    const newEdges: StrategyFlowEdge[] = template.edges.map(edge => {
+      const newSourceId = nodeIdMap[edge.source];
+      const newTargetId = nodeIdMap[edge.target];
+      
+      // Find source node to determine edge color
+      const sourceTemplateNode = template.nodes.find(n => n.id === edge.source);
+      let edgeColor = EDGE_DATA_TYPE_COLORS.default;
+      
+      if (sourceTemplateNode) {
+        const nodeType = sourceTemplateNode.type || '';
+        const subType = (sourceTemplateNode.data as any)?.indicatorType ||
+          (sourceTemplateNode.data as any)?.conditionType ||
+          (sourceTemplateNode.data as any)?.actionType ||
+          (sourceTemplateNode.data as any)?.environmentType ||
+          (sourceTemplateNode.data as any)?.mathType;
+        
+        const handleConfigs = getHandleConfigs(nodeType, subType);
+        
+        // Find the specific source handle if specified, otherwise use first source handle
+        const sourceHandleConfig = edge.sourceHandle 
+          ? handleConfigs.find(h => h.id === edge.sourceHandle && h.type === 'source')
+          : handleConfigs.find(h => h.type === 'source');
+        
+        if (sourceHandleConfig?.dataType) {
+          edgeColor = EDGE_DATA_TYPE_COLORS[sourceHandleConfig.dataType] || edgeColor;
+        }
+      }
 
+      return {
+        ...edge,
+        id: `edge-${Math.random().toString(36).substring(2, 8)}`,
+        source: newSourceId,
+        target: newTargetId,
+        type: 'bezier',
+        animated: false,
+        style: {
+          stroke: edgeColor,
+          strokeWidth: 2,
+        },
+      };
+    });
+
+    // Set nodes and edges directly via onNodesChange and onEdgesChange
+    store.onNodesChange(newNodes.map(n => ({ type: 'add' as const, item: n })));
+    store.onEdgesChange(newEdges.map(e => ({ type: 'add' as const, item: e })));
+    
     store.setStrategyName(template.name);
     onOpenChange(false);
   };

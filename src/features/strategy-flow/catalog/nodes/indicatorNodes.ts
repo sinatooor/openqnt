@@ -152,7 +152,7 @@ export const INDICATOR_NODES: NodeCatalogItem[] = [
         category: 'indicators',
         subcategory: 'Trend',
         icon: 'TrendingUp',
-        color: '#10b981',
+        color: '#8b5cf6',
         defaultData: { indicatorType: 'adx', timeframe: '60', params: { period: 14 } },
     },
     {

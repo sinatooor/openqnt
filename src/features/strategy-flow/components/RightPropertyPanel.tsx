@@ -34,6 +34,9 @@ import {
   EnvironmentNodeData,
   ControlNodeData,
   VariableNodeData,
+  MathNodeData,
+  RiskNodeData,
+  TradeInfoNodeData,
   TIMEFRAME_OPTIONS,
 } from '../types';
 
@@ -666,6 +669,151 @@ const VariableProperties = memo(({ nodeId, data }: VariablePropertiesProps) => {
 VariableProperties.displayName = 'VariableProperties';
 
 // =============================================================================
+// MATH PROPERTIES
+// =============================================================================
+
+interface MathPropertiesProps {
+  nodeId: string;
+  data: MathNodeData;
+}
+
+const MathProperties = memo(({ nodeId, data }: MathPropertiesProps) => {
+  const { updateNodeData } = useStrategyFlowStore();
+
+  switch (data.mathType) {
+    case 'number':
+      return (
+        <NumberInput
+          label="Value"
+          value={data.value || 0}
+          onChange={(v) => updateNodeData(nodeId, { value: v })}
+          step={0.01}
+          description="The numeric constant value"
+        />
+      );
+
+    case 'advancedMath':
+      return (
+        <SelectInput
+          label="Function"
+          value={data.mathFunction || 'sqrt'}
+          onChange={(v) => updateNodeData(nodeId, { mathFunction: v })}
+          options={[
+            { value: 'sqrt', label: 'Square Root (√)' },
+            { value: 'abs', label: 'Absolute Value' },
+            { value: 'sin', label: 'Sine' },
+            { value: 'cos', label: 'Cosine' },
+            { value: 'tan', label: 'Tangent' },
+            { value: 'log', label: 'Logarithm' },
+            { value: 'exp', label: 'Exponential' },
+            { value: 'floor', label: 'Floor' },
+            { value: 'ceil', label: 'Ceiling' },
+            { value: 'round', label: 'Round' },
+          ]}
+        />
+      );
+
+    default:
+      return (
+        <div className="text-sm text-muted-foreground">
+          <p>Connect two numeric inputs to perform {data.mathType} operation.</p>
+        </div>
+      );
+  }
+});
+
+MathProperties.displayName = 'MathProperties';
+
+// =============================================================================
+// RISK PROPERTIES
+// =============================================================================
+
+interface RiskPropertiesProps {
+  nodeId: string;
+  data: RiskNodeData;
+}
+
+const RiskProperties = memo(({ nodeId, data }: RiskPropertiesProps) => {
+  const { updateNodeData } = useStrategyFlowStore();
+
+  switch (data.riskType) {
+    case 'maxDrawdown':
+    case 'dailyLossLimit':
+      return (
+        <SliderInput
+          label="Limit (%)"
+          value={data.value || 10}
+          onChange={(v) => updateNodeData(nodeId, { value: v })}
+          min={1}
+          max={100}
+        />
+      );
+
+    case 'positionPercent':
+      return (
+        <SliderInput
+          label="Position Size (%)"
+          value={data.percentage || 10}
+          onChange={(v) => updateNodeData(nodeId, { percentage: v })}
+          min={1}
+          max={100}
+        />
+      );
+
+    case 'fixedAmount':
+      return (
+        <NumberInput
+          label="Amount"
+          value={data.value || 100}
+          onChange={(v) => updateNodeData(nodeId, { value: v })}
+          min={1}
+          step={1}
+          description="Fixed position size in units"
+        />
+      );
+
+    case 'trailingStop':
+      return (
+        <NumberInput
+          label="Distance (points)"
+          value={data.value || 10}
+          onChange={(v) => updateNodeData(nodeId, { value: v })}
+          min={1}
+          step={1}
+        />
+      );
+
+    default:
+      return (
+        <div className="text-sm text-muted-foreground">
+          <p>Configure {data.riskType} settings.</p>
+        </div>
+      );
+  }
+});
+
+RiskProperties.displayName = 'RiskProperties';
+
+// =============================================================================
+// TRADE INFO PROPERTIES
+// =============================================================================
+
+interface TradeInfoPropertiesProps {
+  nodeId: string;
+  data: TradeInfoNodeData;
+}
+
+const TradeInfoProperties = memo(({ nodeId, data }: TradeInfoPropertiesProps) => {
+  return (
+    <div className="text-sm text-muted-foreground">
+      <p>This node outputs the {data.tradeInfoType?.replace(/([A-Z])/g, ' $1').toLowerCase().trim()} of the current trade.</p>
+    </div>
+  );
+});
+
+TradeInfoProperties.displayName = 'TradeInfoProperties';
+
+// =============================================================================
 // MAIN COMPONENT
 // =============================================================================
 
@@ -702,6 +850,12 @@ export const RightPropertyPanel = memo(() => {
         return <ControlProperties nodeId={selectedNode.id} data={data as ControlNodeData} />;
       case 'variable':
         return <VariableProperties nodeId={selectedNode.id} data={data as VariableNodeData} />;
+      case 'math':
+        return <MathProperties nodeId={selectedNode.id} data={data as MathNodeData} />;
+      case 'risk':
+        return <RiskProperties nodeId={selectedNode.id} data={data as RiskNodeData} />;
+      case 'tradeInfo':
+        return <TradeInfoProperties nodeId={selectedNode.id} data={data as TradeInfoNodeData} />;
       case 'environment':
         return (
           <div className="text-sm text-muted-foreground">
