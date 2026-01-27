@@ -8,13 +8,16 @@ import { Node, Edge, Viewport } from '@xyflow/react';
 // NODE CATEGORIES
 // =============================================================================
 
-export type NodeCategory = 
+export type NodeCategory =
   | 'indicators'
   | 'conditions'
   | 'actions'
   | 'environment'
   | 'variables'
-  | 'control';
+  | 'control'
+  | 'math'
+  | 'risk'
+  | 'tradeInfo';
 
 // =============================================================================
 // INDICATOR NODE TYPES
@@ -117,6 +120,21 @@ export type VariableType =
   | 'return';        // Return from function
 
 // =============================================================================
+// MATH NODE TYPES
+// =============================================================================
+
+export type MathType =
+  | 'add'            // A + B
+  | 'subtract'       // A - B
+  | 'multiply'       // A * B
+  | 'divide'         // A / B
+  | 'number'         // Literal number
+  | 'advancedMath';  // sqrt, abs, sin, cos, etc.
+
+export type AdvancedMathFunction =
+  | 'sqrt' | 'abs' | 'sin' | 'cos' | 'tan' | 'log' | 'exp' | 'floor' | 'ceil' | 'round';
+
+// =============================================================================
 // NODE DATA INTERFACES
 // =============================================================================
 
@@ -183,6 +201,48 @@ export interface VariableNodeData extends BaseNodeData {
   functionName?: string;
 }
 
+// Math Node Data
+export interface MathNodeData extends BaseNodeData {
+  mathType: MathType;
+  value?: number;                    // For 'number' type
+  mathFunction?: AdvancedMathFunction; // For 'advancedMath' type
+}
+
+// =============================================================================
+// RISK NODE TYPES
+// =============================================================================
+
+export type RiskType =
+  | 'maxDrawdown'
+  | 'dailyLossLimit'
+  | 'positionPercent'
+  | 'kellyCriterion'
+  | 'fixedAmount'
+  | 'trailingStop'
+  | 'scaleIn'
+  | 'scaleOut';
+
+export interface RiskNodeData extends BaseNodeData {
+  riskType: RiskType;
+  value?: number;
+  percentage?: number;
+}
+
+// =============================================================================
+// TRADE INFO NODE TYPES
+// =============================================================================
+
+export type TradeInfoType =
+  | 'entryPrice'
+  | 'positionSize'
+  | 'pnl'
+  | 'tradeDuration';
+
+export interface TradeInfoNodeData extends BaseNodeData {
+  tradeInfoType: TradeInfoType;
+  tradeId?: string;
+}
+
 // Union type for all node data
 export type StrategyNodeData =
   | IndicatorNodeData
@@ -190,7 +250,10 @@ export type StrategyNodeData =
   | ActionNodeData
   | EnvironmentNodeData
   | ControlNodeData
-  | VariableNodeData;
+  | VariableNodeData
+  | MathNodeData
+  | RiskNodeData
+  | TradeInfoNodeData;
 
 // =============================================================================
 // STRATEGY FLOW NODE TYPES
@@ -203,6 +266,9 @@ export type StrategyFlowNodeType =
   | 'environment'
   | 'control'
   | 'variable'
+  | 'math'
+  | 'risk'
+  | 'tradeInfo'
   | 'comment';
 
 // ReactFlow Node with our data
@@ -220,7 +286,7 @@ export interface SidebarItem {
   tooltip: string;
 }
 
-export type LeftSidebarTab = 
+export type LeftSidebarTab =
   | 'nodes'      // Node palette
   | 'search'     // Search blocks
   | 'templates'  // Strategy templates
@@ -246,23 +312,23 @@ export interface StrategyFlowState {
   nodes: StrategyFlowNode[];
   edges: StrategyFlowEdge[];
   viewport: Viewport;
-  
+
   // Selection
   selectedNodeId: string | null;
-  
+
   // Sidebar State
   leftSidebarOpen: boolean;
   leftSidebarTab: LeftSidebarTab;
   rightPanelOpen: boolean;
-  
+
   // Strategy Metadata
   strategyName: string;
   strategyDescription: string;
   isModified: boolean;
-  
+
   // Execution State
   isRunning: boolean;
-  
+
   // History
   canUndo: boolean;
   canRedo: boolean;

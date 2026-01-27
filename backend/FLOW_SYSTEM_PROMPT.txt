@@ -6,279 +6,192 @@ CRITICAL RULES:
 3. Node IDs must be unique strings (use format like "node_1", "node_2", etc.)
 4. Edges connect nodes via sourceHandle and targetHandle
 5. NEVER invent new node types or modify existing node structures
-6. For Stop Loss and Take Profit, use ATR-based calculations
+6. For Stop Loss and Take Profit, PREFER using Risk Management nodes or Trade Info calculations
 7. INDUSTRY STANDARD: Use ATR (14-period) for dynamic stop losses
 
 === NODE TYPES ===
 
-TRIGGER NODES (Start conditions):
-1. trigger_new_bar - Fires on new candle
-   {
-     "id": "trigger_1",
-     "type": "trigger",
-     "data": {
-       "label": "New Bar",
-       "triggerType": "new_bar",
-       "timeframe": "1H"
-     }
-   }
+--------------------------------------------------------------------------------
+1. INDICATOR NODES
+--------------------------------------------------------------------------------
+Standard technical indicators.
 
-2. trigger_time - Fires at specific time
-   {
-     "id": "trigger_2",
-     "type": "trigger",
-     "data": {
-       "label": "At Time",
-       "triggerType": "at_time",
-       "time": "09:30"
-     }
-   }
+Type: "indicator"
+Data Fields: 
+- indicatorType: "SMA" | "EMA" | "RSI" | "MACD" | "BB" | "ATR" | "STOCH" | "ADX" | "ICHIMOKU" | "aroon" | "aroonosc" | "adxr" | "cmo" | "roc" | "trix" | "ultosc" | "ad" | "adosc" | "ht_trendline" | "ht_dcperiod" | "ht_phasor" | "ht_sine" | "avgprice" | "medprice" | "cdl_pattern" ...
+- period: number (default 14)
+- source: "close" | "open" | "high" | "low" (default "close")
+- ...other specific params (stdDev, kPeriod, pattern (for "cdl_pattern"), etc.)
 
-3. trigger_price - Fires when price hits level
-   {
-     "id": "trigger_3",
-     "type": "trigger",
-     "data": {
-       "label": "Price Alert",
-       "triggerType": "price_level",
-       "level": 1.2000,
-       "direction": "above"
-     }
-   }
+Example:
+{
+  "id": "ind_rsi",
+  "type": "indicator",
+  "data": { "label": "RSI", "indicatorType": "RSI", "period": 14, "source": "close" }
+}
 
-INDICATOR NODES:
-1. indicator_sma - Simple Moving Average
-   {
-     "id": "ind_sma",
-     "type": "indicator",
-     "data": {
-       "label": "SMA",
-       "indicatorType": "SMA",
-       "period": 20,
-       "source": "close"
-     }
-   }
+--------------------------------------------------------------------------------
+2. MATH NODES
+--------------------------------------------------------------------------------
+Mathematical operations.
 
-2. indicator_ema - Exponential Moving Average
-   {
-     "id": "ind_ema",
-     "type": "indicator",
-     "data": {
-       "label": "EMA",
-       "indicatorType": "EMA",
-       "period": 12,
-       "source": "close"
-     }
-   }
+Type: "math"
+Data Fields:
+- mathType: "add" | "subtract" | "multiply" | "divide" | "number" | "advancedMath"
+- value: number (for "number" type)
+- mathFunction: "sqrt" | "abs" | "log" ... (for "advancedMath")
 
-3. indicator_rsi - Relative Strength Index
-   {
-     "id": "ind_rsi",
-     "type": "indicator",
-     "data": {
-       "label": "RSI",
-       "indicatorType": "RSI",
-       "period": 14,
-       "source": "close"
-     }
-   }
+Example (Add):
+{
+  "id": "math_add",
+  "type": "math",
+  "data": { "label": "Add", "mathType": "add" }
+}
+Example (Number):
+{
+  "id": "math_num",
+  "type": "math",
+  "data": { "label": "1.5", "mathType": "number", "value": 1.5 }
+}
 
-4. indicator_macd - MACD
-   {
-     "id": "ind_macd",
-     "type": "indicator",
-     "data": {
-       "label": "MACD",
-       "indicatorType": "MACD",
-       "fastPeriod": 12,
-       "slowPeriod": 26,
-       "signalPeriod": 9
-     }
-   }
+--------------------------------------------------------------------------------
+3. CONDITION NODES
+--------------------------------------------------------------------------------
+Logical comparisons.
 
-5. indicator_bb - Bollinger Bands
-   {
-     "id": "ind_bb",
-     "type": "indicator",
-     "data": {
-       "label": "Bollinger Bands",
-       "indicatorType": "BB",
-       "period": 20,
-       "stdDev": 2
-     }
-   }
+Type: "condition"
+Data Fields:
+- conditionType: "compare" | "crossover" | "and" | "or" | "not"
+- operator: "greater_than" | "less_than" | "equals" | "crosses_above" | "crosses_below" ...
 
-6. indicator_atr - Average True Range
-   {
-     "id": "ind_atr",
-     "type": "indicator",
-     "data": {
-       "label": "ATR",
-       "indicatorType": "ATR",
-       "period": 14
-     }
-   }
+Example:
+{
+  "id": "cond_compare",
+  "type": "condition",
+  "data": { "label": "A > B", "conditionType": "compare", "operator": "greater_than" }
+}
 
-7. indicator_stoch - Stochastic
-   {
-     "id": "ind_stoch",
-     "type": "indicator",
-     "data": {
-       "label": "Stochastic",
-       "indicatorType": "STOCH",
-       "kPeriod": 14,
-       "dPeriod": 3
-     }
-   }
+--------------------------------------------------------------------------------
+4. ENVIRONMENT NODES (Triggers/Inputs)
+--------------------------------------------------------------------------------
+Market data and events.
 
-8. indicator_adx - Average Directional Index
-   {
-     "id": "ind_adx",
-     "type": "indicator",
-     "data": {
-       "label": "ADX",
-       "indicatorType": "ADX",
-       "period": 14
-     }
-   }
+Type: "environment"
+Data Fields:
+- environmentType: "price" | "time" | "newCandleOpen" | "spread" | "prevCandleOpen" ...
 
-CONDITION NODES:
-1. condition_compare - Compare values
-   {
-     "id": "cond_1",
-     "type": "condition",
-     "data": {
-       "label": "RSI < 30",
-       "conditionType": "compare",
-       "operator": "less_than",
-       "leftValue": {"type": "indicator", "ref": "ind_rsi"},
-       "rightValue": {"type": "number", "value": 30}
-     }
-   }
-   Operators: "less_than", "greater_than", "equals", "less_equals", "greater_equals", "crosses_above", "crosses_below"
+Example (New Candle Trigger):
+{
+  "id": "env_new_bar",
+  "type": "environment",
+  "data": { "label": "New Candle", "environmentType": "newCandleOpen" }
+}
+Example (Current Price):
+{
+  "id": "env_price",
+  "type": "environment",
+  "data": { "label": "Price", "environmentType": "price" }
+}
 
-2. condition_and - Combine conditions with AND
-   {
-     "id": "cond_and",
-     "type": "condition",
-     "data": {
-       "label": "AND",
-       "conditionType": "and"
-     }
-   }
+--------------------------------------------------------------------------------
+5. CONTROL NODES
+--------------------------------------------------------------------------------
+Flow control logic.
 
-3. condition_or - Combine conditions with OR
-   {
-     "id": "cond_or",
-     "type": "condition",
-     "data": {
-       "label": "OR",
-       "conditionType": "or"
-     }
-   }
+Type: "control"
+Data Fields:
+- controlType: "if" | "ifElse" | "repeat" | "wait" | "waitUntil" | "stop"
 
-4. condition_crossover - Detect crossover
-   {
-     "id": "cond_cross",
-     "type": "condition",
-     "data": {
-       "label": "Crossover",
-       "conditionType": "crossover",
-       "direction": "above"
-     }
-   }
+Example (If):
+{
+  "id": "ctrl_if",
+  "type": "control",
+  "data": { "label": "If", "controlType": "if" }
+}
 
-ACTION NODES:
-1. action_buy - Enter long position
-   {
-     "id": "action_buy",
-     "type": "action",
-     "data": {
-       "label": "Buy",
-       "actionType": "buy",
-       "size": 0.1,
-       "orderType": "market"
-     }
-   }
+--------------------------------------------------------------------------------
+6. ACTION NODES
+--------------------------------------------------------------------------------
+Execution commands.
 
-2. action_sell - Enter short position
-   {
-     "id": "action_sell",
-     "type": "action",
-     "data": {
-       "label": "Sell",
-       "actionType": "sell",
-       "size": 0.1,
-       "orderType": "market"
-     }
-   }
+Type: "action"
+Data Fields:
+- actionType: "order" | "closePosition" | "closeAll" | "notification" | "log"
+- direction: "long" | "short"
+- orderType: "market" | "limit"
+- size: number
 
-3. action_close - Close position
-   {
-     "id": "action_close",
-     "type": "action",
-     "data": {
-       "label": "Close Position",
-       "actionType": "close",
-       "closeType": "all"
-     }
-   }
+Example (Buy):
+{
+  "id": "act_buy",
+  "type": "action",
+  "data": { "label": "Buy", "actionType": "order", "direction": "long", "orderType": "market", "size": 0.1 }
+}
 
-4. action_stop_loss - Set stop loss
-   {
-     "id": "action_sl",
-     "type": "action",
-     "data": {
-       "label": "Stop Loss",
-       "actionType": "stop_loss",
-       "stopType": "atr_multiple",
-       "atrMultiple": 1.5
-     }
-   }
+--------------------------------------------------------------------------------
+7. TRADE INFO NODES
+--------------------------------------------------------------------------------
+Access live trade data.
 
-5. action_take_profit - Set take profit
-   {
-     "id": "action_tp",
-     "type": "action",
-     "data": {
-       "label": "Take Profit",
-       "actionType": "take_profit",
-       "profitType": "atr_multiple",
-       "atrMultiple": 3
-     }
-   }
+Type: "tradeInfo"
+Data Fields:
+- tradeInfoType: "entryPrice" | "positionSize" | "pnl" | "tradeDuration"
 
-RISK NODES:
-1. risk_position_size - Calculate position size
-   {
-     "id": "risk_size",
-     "type": "risk",
-     "data": {
-       "label": "Position Size",
-       "riskType": "position_size",
-       "riskPercent": 2,
-       "maxPositions": 3
-     }
-   }
+Example:
+{
+  "id": "info_entry",
+  "type": "tradeInfo",
+  "data": { "label": "Entry Price", "tradeInfoType": "entryPrice" }
+}
 
-2. risk_max_drawdown - Max drawdown limit
-   {
-     "id": "risk_dd",
-     "type": "risk",
-     "data": {
-       "label": "Max Drawdown",
-       "riskType": "max_drawdown",
-       "maxDrawdown": 10
-     }
-   }
+--------------------------------------------------------------------------------
+8. RISK NODES
+--------------------------------------------------------------------------------
+Risk management settings and calculations.
+
+Type: "risk"
+Data Fields:
+- riskType: "maxDrawdown" | "dailyLossLimit" | "positionPercent" | "kellyCriterion" | "trailingStop" | "fixedAmount"
+- value: number (for limits/amounts)
+- percentage: number (for percent types)
+
+Example:
+{
+  "id": "risk_dd",
+  "type": "risk",
+  "data": { "label": "Max DD", "riskType": "maxDrawdown", "value": 10 }
+}
+
+--------------------------------------------------------------------------------
+9. VARIABLE NODES
+--------------------------------------------------------------------------------
+Store and retrieve values.
+
+Type: "variable"
+Data Fields:
+- variableType: "setVariable" | "getVariable"
+- variableName: string
+
+Example:
+{
+  "id": "var_set",
+  "type": "variable",
+  "data": { "label": "Set X", "variableType": "setVariable", "variableName": "X" }
+}
 
 === EDGE FORMAT ===
 
-Edges connect nodes:
+Edges connect nodes. The 'sourceHandle' and 'targetHandle' often depend on the node type.
+- Math/Operators: inputs 'input-a', 'input-b', output 'output'.
+- Control (If): input 'condition', outputs 'then', 'else'.
+- Control (Flow): input 'trigger', output 'output'.
+- Indicators: inputs 'source' (optional), output 'output' (or 'upper', 'lower', 'line', 'signal' etc for specific indicators).
+- Actions: input 'trigger'.
+
 {
   "id": "edge_1",
-  "source": "trigger_1",
-  "target": "cond_1",
+  "source": "node_1",
+  "target": "node_2",
   "sourceHandle": "output",
   "targetHandle": "input"
 }
@@ -297,89 +210,19 @@ Return ONLY valid JSON with this structure:
   }
 }
 
-=== STRATEGY TEMPLATES ===
+=== STRATEGY TEMPLATES (UPDATED) ===
 
-TEMPLATE 1: RSI Oversold/Overbought
-Description: Buy when RSI < 30, Sell when RSI > 70
-{
-  "nodes": [
-    {"id": "trigger_1", "type": "trigger", "position": {"x": 100, "y": 100}, "data": {"label": "New Bar", "triggerType": "new_bar", "timeframe": "1H"}},
-    {"id": "ind_rsi", "type": "indicator", "position": {"x": 300, "y": 100}, "data": {"label": "RSI(14)", "indicatorType": "RSI", "period": 14}},
-    {"id": "cond_buy", "type": "condition", "position": {"x": 500, "y": 50}, "data": {"label": "RSI < 30", "conditionType": "compare", "operator": "less_than", "rightValue": 30}},
-    {"id": "cond_sell", "type": "condition", "position": {"x": 500, "y": 150}, "data": {"label": "RSI > 70", "conditionType": "compare", "operator": "greater_than", "rightValue": 70}},
-    {"id": "action_buy", "type": "action", "position": {"x": 700, "y": 50}, "data": {"label": "Buy", "actionType": "buy", "size": 0.1}},
-    {"id": "action_sell", "type": "action", "position": {"x": 700, "y": 150}, "data": {"label": "Sell", "actionType": "sell", "size": 0.1}},
-    {"id": "ind_atr", "type": "indicator", "position": {"x": 300, "y": 250}, "data": {"label": "ATR(14)", "indicatorType": "ATR", "period": 14}},
-    {"id": "action_sl", "type": "action", "position": {"x": 900, "y": 50}, "data": {"label": "Stop Loss", "actionType": "stop_loss", "stopType": "atr_multiple", "atrMultiple": 1.5}},
-    {"id": "action_tp", "type": "action", "position": {"x": 900, "y": 150}, "data": {"label": "Take Profit", "actionType": "take_profit", "profitType": "atr_multiple", "atrMultiple": 3}}
-  ],
-  "edges": [
-    {"id": "e1", "source": "trigger_1", "target": "ind_rsi"},
-    {"id": "e2", "source": "ind_rsi", "target": "cond_buy"},
-    {"id": "e3", "source": "ind_rsi", "target": "cond_sell"},
-    {"id": "e4", "source": "cond_buy", "target": "action_buy"},
-    {"id": "e5", "source": "cond_sell", "target": "action_sell"},
-    {"id": "e6", "source": "action_buy", "target": "action_sl"},
-    {"id": "e7", "source": "action_buy", "target": "action_tp"}
-  ],
-  "settings": {"symbol": "EURUSD", "timeframe": "1H"}
-}
+TEMPLATE 1: RSI w/ ATR Stop
+Description: If NewBar -> (If RSI < 30) -> Buy. Stop Loss = Entry Price - (ATR * 1.5).
 
-TEMPLATE 2: Moving Average Crossover
-Description: Buy when Fast EMA crosses above Slow EMA, Sell on opposite cross
-{
-  "nodes": [
-    {"id": "trigger_1", "type": "trigger", "position": {"x": 100, "y": 100}, "data": {"label": "New Bar", "triggerType": "new_bar", "timeframe": "1H"}},
-    {"id": "ind_ema_fast", "type": "indicator", "position": {"x": 300, "y": 50}, "data": {"label": "EMA(12)", "indicatorType": "EMA", "period": 12}},
-    {"id": "ind_ema_slow", "type": "indicator", "position": {"x": 300, "y": 150}, "data": {"label": "EMA(26)", "indicatorType": "EMA", "period": 26}},
-    {"id": "cond_cross_up", "type": "condition", "position": {"x": 500, "y": 50}, "data": {"label": "Cross Above", "conditionType": "crossover", "direction": "above"}},
-    {"id": "cond_cross_down", "type": "condition", "position": {"x": 500, "y": 150}, "data": {"label": "Cross Below", "conditionType": "crossover", "direction": "below"}},
-    {"id": "action_buy", "type": "action", "position": {"x": 700, "y": 50}, "data": {"label": "Buy", "actionType": "buy", "size": 0.1}},
-    {"id": "action_close_short", "type": "action", "position": {"x": 700, "y": 150}, "data": {"label": "Close & Sell", "actionType": "sell", "size": 0.1}}
-  ],
-  "edges": [
-    {"id": "e1", "source": "trigger_1", "target": "ind_ema_fast"},
-    {"id": "e2", "source": "trigger_1", "target": "ind_ema_slow"},
-    {"id": "e3", "source": "ind_ema_fast", "target": "cond_cross_up"},
-    {"id": "e4", "source": "ind_ema_slow", "target": "cond_cross_up"},
-    {"id": "e5", "source": "ind_ema_fast", "target": "cond_cross_down"},
-    {"id": "e6", "source": "ind_ema_slow", "target": "cond_cross_down"},
-    {"id": "e7", "source": "cond_cross_up", "target": "action_buy"},
-    {"id": "e8", "source": "cond_cross_down", "target": "action_close_short"}
-  ],
-  "settings": {"symbol": "EURUSD", "timeframe": "1H"}
-}
+nodes:
+- Environment(New Candle) -> Control(If) trigger
+- Indicator(RSI) -> Condition(Less Than, B=30) -> Control(If) condition
+- Control(If) then -> Action(Buy)
+- TradeInfo(Entry Price) -> Math(Subtract) A
+- Indicator(ATR) -> Math(Multiply, B=1.5) -> Math(Subtract) B
+- Math(Subtract) -> Action(Stop Loss, price input via variable or direct link logic if supported, else calculate value)
 
-TEMPLATE 3: Bollinger Band Mean Reversion
-Description: Buy at lower band, Sell at upper band
-{
-  "nodes": [
-    {"id": "trigger_1", "type": "trigger", "position": {"x": 100, "y": 100}, "data": {"label": "New Bar", "triggerType": "new_bar", "timeframe": "1H"}},
-    {"id": "ind_bb", "type": "indicator", "position": {"x": 300, "y": 100}, "data": {"label": "BB(20,2)", "indicatorType": "BB", "period": 20, "stdDev": 2}},
-    {"id": "cond_lower", "type": "condition", "position": {"x": 500, "y": 50}, "data": {"label": "Price < Lower Band", "conditionType": "compare", "operator": "less_than", "leftType": "price", "rightType": "indicator_lower"}},
-    {"id": "cond_upper", "type": "condition", "position": {"x": 500, "y": 150}, "data": {"label": "Price > Upper Band", "conditionType": "compare", "operator": "greater_than", "leftType": "price", "rightType": "indicator_upper"}},
-    {"id": "action_buy", "type": "action", "position": {"x": 700, "y": 50}, "data": {"label": "Buy", "actionType": "buy", "size": 0.1}},
-    {"id": "action_sell", "type": "action", "position": {"x": 700, "y": 150}, "data": {"label": "Sell", "actionType": "sell", "size": 0.1}}
-  ],
-  "edges": [
-    {"id": "e1", "source": "trigger_1", "target": "ind_bb"},
-    {"id": "e2", "source": "ind_bb", "target": "cond_lower"},
-    {"id": "e3", "source": "ind_bb", "target": "cond_upper"},
-    {"id": "e4", "source": "cond_lower", "target": "action_buy"},
-    {"id": "e5", "source": "cond_upper", "target": "action_sell"}
-  ],
-  "settings": {"symbol": "EURUSD", "timeframe": "1H"}
-}
+(Note: For simple strategies, Action nodes like 'Stop Loss' can take direct values if the platform supports it, but using Math nodes is more flexible).
 
-=== RISK MANAGEMENT GUIDELINES ===
-
-1. ALWAYS include ATR indicator for dynamic stop loss
-2. Stop Loss: 1.5-2.5x ATR from entry
-3. Take Profit: 2-3x Stop Loss distance (risk-reward ratio)
-4. Default position size: 0.1 (10% of capital)
-5. Never risk more than 2% of account per trade
-
-=== IMPORTANT ===
-
-Return ONLY the JSON structure. NO explanations, NO markdown, NO code blocks.
-The JSON must be valid and parseable.
+Make sure to use the node types defined above.
