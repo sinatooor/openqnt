@@ -1,0 +1,1187 @@
+{
+  "version": "2.0.0",
+  "description": "Complete node definitions for Strategy Flow with Python code templates",
+  "nodes": {
+    "sma": {
+      "type": "sma",
+      "nodeType": "indicator",
+      "label": "SMA",
+      "description": "Simple Moving Average - average price over N periods",
+      "category": "indicators",
+      "subcategory": "Moving Averages",
+      "icon": "TrendingUp",
+      "color": "#8b5cf6",
+      "pythonCode": "talib.SMA({{price}}, timeperiod={{period}})",
+      "backtraderCode": "bt.indicators.SMA(self.data.{{price}}, period={{period}})",
+      "inputs": [
+        { "id": "price", "label": "Price", "dataType": "number", "required": true, "default": "close" }
+      ],
+      "outputs": [
+        { "id": "value", "label": "Value", "dataType": "number" }
+      ],
+      "params": [
+        { "id": "period", "label": "Period", "type": "number", "default": 14, "min": 1, "max": 500, "canDetach": true },
+        { "id": "priceType", "label": "Price Type", "type": "select", "default": "close", "options": ["close", "open", "high", "low", "hl2", "hlc3", "ohlc4"] }
+      ],
+      "connections": {
+        "canConnectTo": ["condition", "math", "indicator", "variable"],
+        "canReceiveFrom": ["environment", "indicator", "math", "variable"]
+      }
+    },
+    "ema": {
+      "type": "ema",
+      "nodeType": "indicator",
+      "label": "EMA",
+      "description": "Exponential Moving Average - weighted average favoring recent prices",
+      "category": "indicators",
+      "subcategory": "Moving Averages",
+      "icon": "TrendingUp",
+      "color": "#8b5cf6",
+      "pythonCode": "talib.EMA({{price}}, timeperiod={{period}})",
+      "backtraderCode": "bt.indicators.EMA(self.data.{{price}}, period={{period}})",
+      "inputs": [
+        { "id": "price", "label": "Price", "dataType": "number", "required": true, "default": "close" }
+      ],
+      "outputs": [
+        { "id": "value", "label": "Value", "dataType": "number" }
+      ],
+      "params": [
+        { "id": "period", "label": "Period", "type": "number", "default": 14, "min": 1, "max": 500, "canDetach": true },
+        { "id": "priceType", "label": "Price Type", "type": "select", "default": "close", "options": ["close", "open", "high", "low"] }
+      ],
+      "connections": {
+        "canConnectTo": ["condition", "math", "indicator", "variable"],
+        "canReceiveFrom": ["environment", "indicator", "math", "variable"]
+      }
+    },
+    "dema": {
+      "type": "dema",
+      "nodeType": "indicator",
+      "label": "DEMA",
+      "description": "Double Exponential Moving Average - reduced lag EMA",
+      "category": "indicators",
+      "subcategory": "Moving Averages",
+      "icon": "TrendingUp",
+      "color": "#8b5cf6",
+      "pythonCode": "talib.DEMA({{price}}, timeperiod={{period}})",
+      "backtraderCode": "bt.indicators.DEMA(self.data.{{price}}, period={{period}})",
+      "inputs": [
+        { "id": "price", "label": "Price", "dataType": "number", "required": true, "default": "close" }
+      ],
+      "outputs": [
+        { "id": "value", "label": "Value", "dataType": "number" }
+      ],
+      "params": [
+        { "id": "period", "label": "Period", "type": "number", "default": 14, "min": 1, "max": 500, "canDetach": true }
+      ],
+      "connections": {
+        "canConnectTo": ["condition", "math", "indicator", "variable"],
+        "canReceiveFrom": ["environment", "indicator", "math", "variable"]
+      }
+    },
+    "tema": {
+      "type": "tema",
+      "nodeType": "indicator",
+      "label": "TEMA",
+      "description": "Triple Exponential Moving Average - minimal lag",
+      "category": "indicators",
+      "subcategory": "Moving Averages",
+      "icon": "TrendingUp",
+      "color": "#8b5cf6",
+      "pythonCode": "talib.TEMA({{price}}, timeperiod={{period}})",
+      "backtraderCode": "bt.indicators.TEMA(self.data.{{price}}, period={{period}})",
+      "inputs": [
+        { "id": "price", "label": "Price", "dataType": "number", "required": true, "default": "close" }
+      ],
+      "outputs": [
+        { "id": "value", "label": "Value", "dataType": "number" }
+      ],
+      "params": [
+        { "id": "period", "label": "Period", "type": "number", "default": 14, "min": 1, "max": 500, "canDetach": true }
+      ],
+      "connections": {
+        "canConnectTo": ["condition", "math", "indicator", "variable"],
+        "canReceiveFrom": ["environment", "indicator", "math", "variable"]
+      }
+    },
+    "rsi": {
+      "type": "rsi",
+      "nodeType": "indicator",
+      "label": "RSI",
+      "description": "Relative Strength Index - momentum oscillator (0-100)",
+      "category": "indicators",
+      "subcategory": "Oscillators",
+      "icon": "Activity",
+      "color": "#06b6d4",
+      "pythonCode": "talib.RSI({{price}}, timeperiod={{period}})",
+      "backtraderCode": "bt.indicators.RSI(self.data.{{price}}, period={{period}})",
+      "inputs": [
+        { "id": "price", "label": "Price", "dataType": "number", "required": true, "default": "close" }
+      ],
+      "outputs": [
+        { "id": "value", "label": "Value", "dataType": "number" }
+      ],
+      "params": [
+        { "id": "period", "label": "Period", "type": "number", "default": 14, "min": 2, "max": 100, "canDetach": true }
+      ],
+      "connections": {
+        "canConnectTo": ["condition", "math", "variable"],
+        "canReceiveFrom": ["environment", "math", "variable"]
+      }
+    },
+    "stochastic": {
+      "type": "stochastic",
+      "nodeType": "indicator",
+      "label": "Stochastic",
+      "description": "Stochastic Oscillator - momentum indicator comparing close to range",
+      "category": "indicators",
+      "subcategory": "Oscillators",
+      "icon": "Activity",
+      "color": "#06b6d4",
+      "pythonCode": "talib.STOCH({{high}}, {{low}}, {{close}}, fastk_period={{kPeriod}}, slowk_period={{slowK}}, slowd_period={{dPeriod}})",
+      "backtraderCode": "bt.indicators.Stochastic(self.data, period={{kPeriod}}, period_dfast={{slowK}}, period_dslow={{dPeriod}})",
+      "inputs": [
+        { "id": "high", "label": "High", "dataType": "number", "required": true, "default": "high" },
+        { "id": "low", "label": "Low", "dataType": "number", "required": true, "default": "low" },
+        { "id": "close", "label": "Close", "dataType": "number", "required": true, "default": "close" }
+      ],
+      "outputs": [
+        { "id": "k", "label": "%K", "dataType": "number" },
+        { "id": "d", "label": "%D", "dataType": "number" }
+      ],
+      "params": [
+        { "id": "kPeriod", "label": "%K Period", "type": "number", "default": 14, "min": 1, "max": 100, "canDetach": true },
+        { "id": "slowK", "label": "Slow %K", "type": "number", "default": 3, "min": 1, "max": 50 },
+        { "id": "dPeriod", "label": "%D Period", "type": "number", "default": 3, "min": 1, "max": 50, "canDetach": true }
+      ],
+      "connections": {
+        "canConnectTo": ["condition", "math", "variable"],
+        "canReceiveFrom": ["environment", "math", "variable"]
+      }
+    },
+    "cci": {
+      "type": "cci",
+      "nodeType": "indicator",
+      "label": "CCI",
+      "description": "Commodity Channel Index - measures deviation from average",
+      "category": "indicators",
+      "subcategory": "Oscillators",
+      "icon": "Activity",
+      "color": "#06b6d4",
+      "pythonCode": "talib.CCI({{high}}, {{low}}, {{close}}, timeperiod={{period}})",
+      "backtraderCode": "bt.indicators.CCI(self.data, period={{period}})",
+      "inputs": [
+        { "id": "high", "label": "High", "dataType": "number", "required": true },
+        { "id": "low", "label": "Low", "dataType": "number", "required": true },
+        { "id": "close", "label": "Close", "dataType": "number", "required": true }
+      ],
+      "outputs": [
+        { "id": "value", "label": "Value", "dataType": "number" }
+      ],
+      "params": [
+        { "id": "period", "label": "Period", "type": "number", "default": 20, "min": 1, "max": 100, "canDetach": true }
+      ],
+      "connections": {
+        "canConnectTo": ["condition", "math", "variable"],
+        "canReceiveFrom": ["environment", "math", "variable"]
+      }
+    },
+    "mfi": {
+      "type": "mfi",
+      "nodeType": "indicator",
+      "label": "MFI",
+      "description": "Money Flow Index - volume-weighted RSI",
+      "category": "indicators",
+      "subcategory": "Oscillators",
+      "icon": "Activity",
+      "color": "#06b6d4",
+      "pythonCode": "talib.MFI({{high}}, {{low}}, {{close}}, {{volume}}, timeperiod={{period}})",
+      "backtraderCode": "bt.indicators.MoneyFlowIndicator(self.data, period={{period}})",
+      "inputs": [
+        { "id": "high", "label": "High", "dataType": "number", "required": true },
+        { "id": "low", "label": "Low", "dataType": "number", "required": true },
+        { "id": "close", "label": "Close", "dataType": "number", "required": true },
+        { "id": "volume", "label": "Volume", "dataType": "number", "required": true }
+      ],
+      "outputs": [
+        { "id": "value", "label": "Value", "dataType": "number" }
+      ],
+      "params": [
+        { "id": "period", "label": "Period", "type": "number", "default": 14, "min": 1, "max": 100, "canDetach": true }
+      ],
+      "connections": {
+        "canConnectTo": ["condition", "math", "variable"],
+        "canReceiveFrom": ["environment", "math", "variable"]
+      }
+    },
+    "macd": {
+      "type": "macd",
+      "nodeType": "indicator",
+      "label": "MACD",
+      "description": "Moving Average Convergence Divergence - trend and momentum",
+      "category": "indicators",
+      "subcategory": "Trend",
+      "icon": "BarChart2",
+      "color": "#f59e0b",
+      "pythonCode": "talib.MACD({{price}}, fastperiod={{fastPeriod}}, slowperiod={{slowPeriod}}, signalperiod={{signalPeriod}})",
+      "backtraderCode": "bt.indicators.MACD(self.data.{{price}}, period_me1={{fastPeriod}}, period_me2={{slowPeriod}}, period_signal={{signalPeriod}})",
+      "inputs": [
+        { "id": "price", "label": "Price", "dataType": "number", "required": true, "default": "close" }
+      ],
+      "outputs": [
+        { "id": "line", "label": "MACD Line", "dataType": "number" },
+        { "id": "signal", "label": "Signal Line", "dataType": "number" },
+        { "id": "histogram", "label": "Histogram", "dataType": "number" }
+      ],
+      "params": [
+        { "id": "fastPeriod", "label": "Fast Period", "type": "number", "default": 12, "min": 1, "max": 100, "canDetach": true },
+        { "id": "slowPeriod", "label": "Slow Period", "type": "number", "default": 26, "min": 1, "max": 200, "canDetach": true },
+        { "id": "signalPeriod", "label": "Signal Period", "type": "number", "default": 9, "min": 1, "max": 50, "canDetach": true }
+      ],
+      "connections": {
+        "canConnectTo": ["condition", "math", "variable"],
+        "canReceiveFrom": ["environment", "math", "variable"]
+      }
+    },
+    "adx": {
+      "type": "adx",
+      "nodeType": "indicator",
+      "label": "ADX",
+      "description": "Average Directional Index - trend strength (0-100)",
+      "category": "indicators",
+      "subcategory": "Trend",
+      "icon": "TrendingUp",
+      "color": "#f59e0b",
+      "pythonCode": "talib.ADX({{high}}, {{low}}, {{close}}, timeperiod={{period}})",
+      "backtraderCode": "bt.indicators.AverageDirectionalMovementIndex(self.data, period={{period}})",
+      "inputs": [
+        { "id": "high", "label": "High", "dataType": "number", "required": true },
+        { "id": "low", "label": "Low", "dataType": "number", "required": true },
+        { "id": "close", "label": "Close", "dataType": "number", "required": true }
+      ],
+      "outputs": [
+        { "id": "value", "label": "ADX", "dataType": "number" }
+      ],
+      "params": [
+        { "id": "period", "label": "Period", "type": "number", "default": 14, "min": 1, "max": 100, "canDetach": true }
+      ],
+      "connections": {
+        "canConnectTo": ["condition", "math", "variable"],
+        "canReceiveFrom": ["environment", "math", "variable"]
+      }
+    },
+    "sar": {
+      "type": "sar",
+      "nodeType": "indicator",
+      "label": "Parabolic SAR",
+      "description": "Stop and Reverse - trailing stop indicator",
+      "category": "indicators",
+      "subcategory": "Trend",
+      "icon": "GitCommit",
+      "color": "#a855f7",
+      "pythonCode": "talib.SAR({{high}}, {{low}}, acceleration={{step}}, maximum={{max}})",
+      "backtraderCode": "bt.indicators.ParabolicSAR(self.data, period={{period}}, af={{step}}, afmax={{max}})",
+      "inputs": [
+        { "id": "high", "label": "High", "dataType": "number", "required": true },
+        { "id": "low", "label": "Low", "dataType": "number", "required": true }
+      ],
+      "outputs": [
+        { "id": "value", "label": "SAR", "dataType": "number" }
+      ],
+      "params": [
+        { "id": "step", "label": "Step", "type": "number", "default": 0.02, "min": 0.001, "max": 0.5, "step": 0.01, "canDetach": true },
+        { "id": "max", "label": "Max", "type": "number", "default": 0.2, "min": 0.01, "max": 1.0, "step": 0.01, "canDetach": true }
+      ],
+      "connections": {
+        "canConnectTo": ["condition", "math", "action", "variable"],
+        "canReceiveFrom": ["environment", "math", "variable"]
+      }
+    },
+    "bb": {
+      "type": "bb",
+      "nodeType": "indicator",
+      "label": "Bollinger Bands",
+      "description": "Volatility bands around moving average",
+      "category": "indicators",
+      "subcategory": "Bands",
+      "icon": "Maximize2",
+      "color": "#ec4899",
+      "pythonCode": "talib.BBANDS({{price}}, timeperiod={{period}}, nbdevup={{deviation}}, nbdevdn={{deviation}})",
+      "backtraderCode": "bt.indicators.BollingerBands(self.data.{{price}}, period={{period}}, devfactor={{deviation}})",
+      "inputs": [
+        { "id": "price", "label": "Price", "dataType": "number", "required": true, "default": "close" }
+      ],
+      "outputs": [
+        { "id": "upper", "label": "Upper Band", "dataType": "number" },
+        { "id": "middle", "label": "Middle Band", "dataType": "number" },
+        { "id": "lower", "label": "Lower Band", "dataType": "number" }
+      ],
+      "params": [
+        { "id": "period", "label": "Period", "type": "number", "default": 20, "min": 2, "max": 200, "canDetach": true },
+        { "id": "deviation", "label": "Std Dev", "type": "number", "default": 2, "min": 0.5, "max": 5, "step": 0.1, "canDetach": true }
+      ],
+      "connections": {
+        "canConnectTo": ["condition", "math", "action", "variable"],
+        "canReceiveFrom": ["environment", "math", "variable"]
+      }
+    },
+    "keltner": {
+      "type": "keltner",
+      "nodeType": "indicator",
+      "label": "Keltner Channel",
+      "description": "ATR-based price channel",
+      "category": "indicators",
+      "subcategory": "Bands",
+      "icon": "Maximize2",
+      "color": "#ec4899",
+      "pythonCode": "# Keltner: EMA ± ATR * multiplier\nema = talib.EMA({{price}}, timeperiod={{period}})\natr = talib.ATR(high, low, close, timeperiod={{period}})\nupper = ema + atr * {{multiplier}}\nlower = ema - atr * {{multiplier}}",
+      "backtraderCode": "bt.indicators.KeltnerChannel(self.data, period={{period}}, devfactor={{multiplier}})",
+      "inputs": [
+        { "id": "price", "label": "Price", "dataType": "number", "required": true, "default": "close" }
+      ],
+      "outputs": [
+        { "id": "upper", "label": "Upper", "dataType": "number" },
+        { "id": "middle", "label": "Middle", "dataType": "number" },
+        { "id": "lower", "label": "Lower", "dataType": "number" }
+      ],
+      "params": [
+        { "id": "period", "label": "Period", "type": "number", "default": 20, "min": 2, "max": 200, "canDetach": true },
+        { "id": "multiplier", "label": "Multiplier", "type": "number", "default": 2, "min": 0.5, "max": 5, "step": 0.1, "canDetach": true }
+      ],
+      "connections": {
+        "canConnectTo": ["condition", "math", "action", "variable"],
+        "canReceiveFrom": ["environment", "math", "variable"]
+      }
+    },
+    "atr": {
+      "type": "atr",
+      "nodeType": "indicator",
+      "label": "ATR",
+      "description": "Average True Range - volatility measure",
+      "category": "indicators",
+      "subcategory": "Volatility",
+      "icon": "Zap",
+      "color": "#f97316",
+      "pythonCode": "talib.ATR({{high}}, {{low}}, {{close}}, timeperiod={{period}})",
+      "backtraderCode": "bt.indicators.ATR(self.data, period={{period}})",
+      "inputs": [
+        { "id": "high", "label": "High", "dataType": "number", "required": true },
+        { "id": "low", "label": "Low", "dataType": "number", "required": true },
+        { "id": "close", "label": "Close", "dataType": "number", "required": true }
+      ],
+      "outputs": [
+        { "id": "value", "label": "ATR", "dataType": "number" }
+      ],
+      "params": [
+        { "id": "period", "label": "Period", "type": "number", "default": 14, "min": 1, "max": 100, "canDetach": true }
+      ],
+      "connections": {
+        "canConnectTo": ["condition", "math", "action", "risk", "variable"],
+        "canReceiveFrom": ["environment", "math", "variable"]
+      }
+    },
+    "obv": {
+      "type": "obv",
+      "nodeType": "indicator",
+      "label": "OBV",
+      "description": "On Balance Volume - cumulative volume indicator",
+      "category": "indicators",
+      "subcategory": "Volume",
+      "icon": "BarChart",
+      "color": "#3b82f6",
+      "pythonCode": "talib.OBV({{close}}, {{volume}})",
+      "backtraderCode": "bt.indicators.OnBalanceVolume(self.data)",
+      "inputs": [
+        { "id": "close", "label": "Close", "dataType": "number", "required": true },
+        { "id": "volume", "label": "Volume", "dataType": "number", "required": true }
+      ],
+      "outputs": [
+        { "id": "value", "label": "OBV", "dataType": "number" }
+      ],
+      "params": [],
+      "connections": {
+        "canConnectTo": ["condition", "math", "variable"],
+        "canReceiveFrom": ["environment", "math", "variable"]
+      }
+    },
+    "vwap": {
+      "type": "vwap",
+      "nodeType": "indicator",
+      "label": "VWAP",
+      "description": "Volume Weighted Average Price",
+      "category": "indicators",
+      "subcategory": "Volume",
+      "icon": "BarChart",
+      "color": "#3b82f6",
+      "pythonCode": "# VWAP = cumsum(price * volume) / cumsum(volume)\nnp.cumsum({{price}} * {{volume}}) / np.cumsum({{volume}})",
+      "backtraderCode": "bt.indicators.VWAP(self.data)",
+      "inputs": [
+        { "id": "price", "label": "Price", "dataType": "number", "required": true, "default": "close" },
+        { "id": "volume", "label": "Volume", "dataType": "number", "required": true }
+      ],
+      "outputs": [
+        { "id": "value", "label": "VWAP", "dataType": "number" }
+      ],
+      "params": [],
+      "connections": {
+        "canConnectTo": ["condition", "math", "action", "variable"],
+        "canReceiveFrom": ["environment", "math", "variable"]
+      }
+    },
+    "compare": {
+      "type": "compare",
+      "nodeType": "condition",
+      "label": "Compare",
+      "description": "Compare two values (>, <, ==, etc.)",
+      "category": "conditions",
+      "subcategory": "Comparison",
+      "icon": "GitCompare",
+      "color": "#06b6d4",
+      "pythonCode": "{{inputA}} {{operator}} {{inputB}}",
+      "backtraderCode": "self.{{inputA}} {{operator}} self.{{inputB}}",
+      "inputs": [
+        { "id": "inputA", "label": "A", "dataType": "number", "required": true },
+        { "id": "inputB", "label": "B", "dataType": "number", "required": true }
+      ],
+      "outputs": [
+        { "id": "result", "label": "Result", "dataType": "boolean" }
+      ],
+      "params": [
+        { "id": "operator", "label": "Operator", "type": "select", "default": ">", "options": [">", ">=", "<", "<=", "==", "!="] }
+      ],
+      "connections": {
+        "canConnectTo": ["action", "control", "condition", "variable"],
+        "canReceiveFrom": ["indicator", "environment", "math", "variable"]
+      }
+    },
+    "crossover": {
+      "type": "crossover",
+      "nodeType": "condition",
+      "label": "Crossover",
+      "description": "Detects when A crosses above B",
+      "category": "conditions",
+      "subcategory": "Comparison",
+      "icon": "ArrowUpRight",
+      "color": "#06b6d4",
+      "pythonCode": "({{inputA}}[-2] <= {{inputB}}[-2]) and ({{inputA}}[-1] > {{inputB}}[-1])",
+      "backtraderCode": "bt.indicators.CrossOver(self.{{inputA}}, self.{{inputB}})",
+      "inputs": [
+        { "id": "inputA", "label": "Fast", "dataType": "number", "required": true },
+        { "id": "inputB", "label": "Slow", "dataType": "number", "required": true }
+      ],
+      "outputs": [
+        { "id": "result", "label": "Signal", "dataType": "signal" }
+      ],
+      "params": [],
+      "connections": {
+        "canConnectTo": ["action", "control", "condition", "variable"],
+        "canReceiveFrom": ["indicator", "environment", "math", "variable"]
+      }
+    },
+    "crossunder": {
+      "type": "crossunder",
+      "nodeType": "condition",
+      "label": "Crossunder",
+      "description": "Detects when A crosses below B",
+      "category": "conditions",
+      "subcategory": "Comparison",
+      "icon": "ArrowDownRight",
+      "color": "#06b6d4",
+      "pythonCode": "({{inputA}}[-2] >= {{inputB}}[-2]) and ({{inputA}}[-1] < {{inputB}}[-1])",
+      "backtraderCode": "bt.indicators.CrossDown(self.{{inputA}}, self.{{inputB}})",
+      "inputs": [
+        { "id": "inputA", "label": "Fast", "dataType": "number", "required": true },
+        { "id": "inputB", "label": "Slow", "dataType": "number", "required": true }
+      ],
+      "outputs": [
+        { "id": "result", "label": "Signal", "dataType": "signal" }
+      ],
+      "params": [],
+      "connections": {
+        "canConnectTo": ["action", "control", "condition", "variable"],
+        "canReceiveFrom": ["indicator", "environment", "math", "variable"]
+      }
+    },
+    "threshold": {
+      "type": "threshold",
+      "nodeType": "condition",
+      "label": "Threshold",
+      "description": "Check if value is above/below threshold",
+      "category": "conditions",
+      "subcategory": "Comparison",
+      "icon": "Minus",
+      "color": "#06b6d4",
+      "pythonCode": "{{input}} {{operator}} {{value}}",
+      "backtraderCode": "self.{{input}}[0] {{operator}} {{value}}",
+      "inputs": [
+        { "id": "input", "label": "Input", "dataType": "number", "required": true }
+      ],
+      "outputs": [
+        { "id": "result", "label": "Result", "dataType": "boolean" }
+      ],
+      "params": [
+        { "id": "operator", "label": "Operator", "type": "select", "default": "<", "options": [">", ">=", "<", "<=", "==", "!="] },
+        { "id": "value", "label": "Value", "type": "number", "default": 30, "canDetach": true }
+      ],
+      "connections": {
+        "canConnectTo": ["action", "control", "condition", "variable"],
+        "canReceiveFrom": ["indicator", "environment", "math", "variable"]
+      }
+    },
+    "and": {
+      "type": "and",
+      "nodeType": "condition",
+      "label": "AND",
+      "description": "Logical AND - both inputs must be true",
+      "category": "conditions",
+      "subcategory": "Logic",
+      "icon": "Layers",
+      "color": "#06b6d4",
+      "pythonCode": "({{inputA}}) and ({{inputB}})",
+      "backtraderCode": "self.{{inputA}} and self.{{inputB}}",
+      "inputs": [
+        { "id": "inputA", "label": "A", "dataType": "boolean", "required": true },
+        { "id": "inputB", "label": "B", "dataType": "boolean", "required": true }
+      ],
+      "outputs": [
+        { "id": "result", "label": "Result", "dataType": "boolean" }
+      ],
+      "params": [],
+      "connections": {
+        "canConnectTo": ["action", "control", "condition", "variable"],
+        "canReceiveFrom": ["condition", "variable"]
+      }
+    },
+    "or": {
+      "type": "or",
+      "nodeType": "condition",
+      "label": "OR",
+      "description": "Logical OR - either input can be true",
+      "category": "conditions",
+      "subcategory": "Logic",
+      "icon": "Layers",
+      "color": "#06b6d4",
+      "pythonCode": "({{inputA}}) or ({{inputB}})",
+      "backtraderCode": "self.{{inputA}} or self.{{inputB}}",
+      "inputs": [
+        { "id": "inputA", "label": "A", "dataType": "boolean", "required": true },
+        { "id": "inputB", "label": "B", "dataType": "boolean", "required": true }
+      ],
+      "outputs": [
+        { "id": "result", "label": "Result", "dataType": "boolean" }
+      ],
+      "params": [],
+      "connections": {
+        "canConnectTo": ["action", "control", "condition", "variable"],
+        "canReceiveFrom": ["condition", "variable"]
+      }
+    },
+    "not": {
+      "type": "not",
+      "nodeType": "condition",
+      "label": "NOT",
+      "description": "Logical NOT - inverts the input",
+      "category": "conditions",
+      "subcategory": "Logic",
+      "icon": "X",
+      "color": "#06b6d4",
+      "pythonCode": "not ({{input}})",
+      "backtraderCode": "not self.{{input}}",
+      "inputs": [
+        { "id": "input", "label": "Input", "dataType": "boolean", "required": true }
+      ],
+      "outputs": [
+        { "id": "result", "label": "Result", "dataType": "boolean" }
+      ],
+      "params": [],
+      "connections": {
+        "canConnectTo": ["action", "control", "condition", "variable"],
+        "canReceiveFrom": ["condition", "variable"]
+      }
+    },
+    "order": {
+      "type": "order",
+      "nodeType": "action",
+      "label": "Order",
+      "description": "Place a buy or sell order",
+      "category": "actions",
+      "subcategory": "Trading",
+      "icon": "ShoppingCart",
+      "color": "#10b981",
+      "pythonCode": "self.{{direction}}(size={{size}})",
+      "backtraderCode": "self.{{direction}}(size={{size}})",
+      "inputs": [
+        { "id": "trigger", "label": "Trigger", "dataType": "signal", "required": true }
+      ],
+      "outputs": [],
+      "params": [
+        { "id": "direction", "label": "Direction", "type": "select", "default": "buy", "options": ["buy", "sell"] },
+        { "id": "size", "label": "Size (%)", "type": "number", "default": 10, "min": 0.1, "max": 100, "canDetach": true },
+        { "id": "orderType", "label": "Order Type", "type": "select", "default": "market", "options": ["market", "limit", "stop"] },
+        { "id": "limitPrice", "label": "Limit Price", "type": "number", "canDetach": true, "showIf": { "orderType": "limit" } }
+      ],
+      "connections": {
+        "canConnectTo": ["action", "control"],
+        "canReceiveFrom": ["condition", "control", "variable"]
+      }
+    },
+    "closePosition": {
+      "type": "closePosition",
+      "nodeType": "action",
+      "label": "Close Position",
+      "description": "Close an open position",
+      "category": "actions",
+      "subcategory": "Trading",
+      "icon": "XCircle",
+      "color": "#10b981",
+      "pythonCode": "self.position.close()",
+      "backtraderCode": "self.close()",
+      "inputs": [
+        { "id": "trigger", "label": "Trigger", "dataType": "signal", "required": true }
+      ],
+      "outputs": [],
+      "params": [],
+      "connections": {
+        "canConnectTo": ["action", "control"],
+        "canReceiveFrom": ["condition", "control", "variable"]
+      }
+    },
+    "stopLoss": {
+      "type": "stopLoss",
+      "nodeType": "action",
+      "label": "Stop Loss",
+      "description": "Set stop loss for position",
+      "category": "actions",
+      "subcategory": "Risk Management",
+      "icon": "Shield",
+      "color": "#ef4444",
+      "pythonCode": "sl=self.data.Close[-1] * (1 - {{percentage}} / 100)",
+      "backtraderCode": "self.sell(exectype=bt.Order.Stop, price=self.data.close[0] * (1 - {{percentage}} / 100))",
+      "inputs": [
+        { "id": "trigger", "label": "Trigger", "dataType": "signal", "required": false }
+      ],
+      "outputs": [],
+      "params": [
+        { "id": "percentage", "label": "% Distance", "type": "number", "default": 2, "min": 0.1, "max": 50, "canDetach": true },
+        { "id": "atrMultiplier", "label": "ATR Multiplier", "type": "number", "default": 0, "min": 0, "max": 10, "canDetach": true }
+      ],
+      "connections": {
+        "canConnectTo": ["action"],
+        "canReceiveFrom": ["condition", "indicator", "math", "variable"]
+      }
+    },
+    "takeProfit": {
+      "type": "takeProfit",
+      "nodeType": "action",
+      "label": "Take Profit",
+      "description": "Set take profit for position",
+      "category": "actions",
+      "subcategory": "Risk Management",
+      "icon": "Target",
+      "color": "#10b981",
+      "pythonCode": "tp=self.data.Close[-1] * (1 + {{percentage}} / 100)",
+      "backtraderCode": "self.sell(exectype=bt.Order.Limit, price=self.data.close[0] * (1 + {{percentage}} / 100))",
+      "inputs": [
+        { "id": "trigger", "label": "Trigger", "dataType": "signal", "required": false }
+      ],
+      "outputs": [],
+      "params": [
+        { "id": "percentage", "label": "% Distance", "type": "number", "default": 4, "min": 0.1, "max": 100, "canDetach": true },
+        { "id": "riskRewardRatio", "label": "R:R Ratio", "type": "number", "default": 2, "min": 0.5, "max": 10, "canDetach": true }
+      ],
+      "connections": {
+        "canConnectTo": ["action"],
+        "canReceiveFrom": ["condition", "indicator", "math", "variable"]
+      }
+    },
+    "trailingStop": {
+      "type": "trailingStop",
+      "nodeType": "action",
+      "label": "Trailing Stop",
+      "description": "Dynamic stop loss that follows price",
+      "category": "actions",
+      "subcategory": "Risk Management",
+      "icon": "TrendingUp",
+      "color": "#ef4444",
+      "pythonCode": "# Trailing stop implementation\ntrail_amount={{percentage}} / 100",
+      "backtraderCode": "self.sell(exectype=bt.Order.StopTrail, trailpercent={{percentage}} / 100)",
+      "inputs": [
+        { "id": "trigger", "label": "Trigger", "dataType": "signal", "required": false }
+      ],
+      "outputs": [],
+      "params": [
+        { "id": "percentage", "label": "% Distance", "type": "number", "default": 2, "min": 0.1, "max": 20, "canDetach": true }
+      ],
+      "connections": {
+        "canConnectTo": ["action"],
+        "canReceiveFrom": ["condition", "indicator", "math", "variable"]
+      }
+    },
+    "price": {
+      "type": "price",
+      "nodeType": "environment",
+      "label": "Price",
+      "description": "Current market price",
+      "category": "environment",
+      "subcategory": "Market Data",
+      "icon": "DollarSign",
+      "color": "#3b82f6",
+      "pythonCode": "self.data.{{priceType}}[-1]",
+      "backtraderCode": "self.data.{{priceType}}[0]",
+      "inputs": [],
+      "outputs": [
+        { "id": "value", "label": "Price", "dataType": "number" }
+      ],
+      "params": [
+        { "id": "priceType", "label": "Type", "type": "select", "default": "close", "options": ["close", "open", "high", "low"] },
+        { "id": "shift", "label": "Shift", "type": "number", "default": 0, "min": 0, "max": 100, "canDetach": true }
+      ],
+      "connections": {
+        "canConnectTo": ["indicator", "condition", "math", "action", "variable"],
+        "canReceiveFrom": []
+      }
+    },
+    "spread": {
+      "type": "spread",
+      "nodeType": "environment",
+      "label": "Spread",
+      "description": "Current bid-ask spread",
+      "category": "environment",
+      "subcategory": "Market Data",
+      "icon": "ArrowLeftRight",
+      "color": "#3b82f6",
+      "pythonCode": "# Spread approximation\n(self.data.High[-1] - self.data.Low[-1]) * 0.1",
+      "backtraderCode": "# Spread not directly available in backtrader",
+      "inputs": [],
+      "outputs": [
+        { "id": "value", "label": "Spread", "dataType": "number" }
+      ],
+      "params": [],
+      "connections": {
+        "canConnectTo": ["condition", "math", "variable"],
+        "canReceiveFrom": []
+      }
+    },
+    "time": {
+      "type": "time",
+      "nodeType": "environment",
+      "label": "Time",
+      "description": "Current bar time",
+      "category": "environment",
+      "subcategory": "Time",
+      "icon": "Clock",
+      "color": "#3b82f6",
+      "pythonCode": "self.data.datetime.datetime()",
+      "backtraderCode": "self.data.datetime.datetime(0)",
+      "inputs": [],
+      "outputs": [
+        { "id": "hour", "label": "Hour", "dataType": "number" },
+        { "id": "dayOfWeek", "label": "Day", "dataType": "number" }
+      ],
+      "params": [],
+      "connections": {
+        "canConnectTo": ["condition", "variable"],
+        "canReceiveFrom": []
+      }
+    },
+    "add": {
+      "type": "add",
+      "nodeType": "math",
+      "label": "Add",
+      "description": "Add two numbers",
+      "category": "math",
+      "subcategory": "Arithmetic",
+      "icon": "Plus",
+      "color": "#f97316",
+      "pythonCode": "({{inputA}}) + ({{inputB}})",
+      "backtraderCode": "({{inputA}}) + ({{inputB}})",
+      "inputs": [
+        { "id": "inputA", "label": "A", "dataType": "number", "required": true },
+        { "id": "inputB", "label": "B", "dataType": "number", "required": true }
+      ],
+      "outputs": [
+        { "id": "result", "label": "Result", "dataType": "number" }
+      ],
+      "params": [],
+      "connections": {
+        "canConnectTo": ["indicator", "condition", "math", "action", "variable"],
+        "canReceiveFrom": ["indicator", "environment", "math", "variable"]
+      }
+    },
+    "subtract": {
+      "type": "subtract",
+      "nodeType": "math",
+      "label": "Subtract",
+      "description": "Subtract B from A",
+      "category": "math",
+      "subcategory": "Arithmetic",
+      "icon": "Minus",
+      "color": "#f97316",
+      "pythonCode": "({{inputA}}) - ({{inputB}})",
+      "backtraderCode": "({{inputA}}) - ({{inputB}})",
+      "inputs": [
+        { "id": "inputA", "label": "A", "dataType": "number", "required": true },
+        { "id": "inputB", "label": "B", "dataType": "number", "required": true }
+      ],
+      "outputs": [
+        { "id": "result", "label": "Result", "dataType": "number" }
+      ],
+      "params": [],
+      "connections": {
+        "canConnectTo": ["indicator", "condition", "math", "action", "variable"],
+        "canReceiveFrom": ["indicator", "environment", "math", "variable"]
+      }
+    },
+    "multiply": {
+      "type": "multiply",
+      "nodeType": "math",
+      "label": "Multiply",
+      "description": "Multiply two numbers",
+      "category": "math",
+      "subcategory": "Arithmetic",
+      "icon": "X",
+      "color": "#f97316",
+      "pythonCode": "({{inputA}}) * ({{inputB}})",
+      "backtraderCode": "({{inputA}}) * ({{inputB}})",
+      "inputs": [
+        { "id": "inputA", "label": "A", "dataType": "number", "required": true },
+        { "id": "inputB", "label": "B", "dataType": "number", "required": true }
+      ],
+      "outputs": [
+        { "id": "result", "label": "Result", "dataType": "number" }
+      ],
+      "params": [],
+      "connections": {
+        "canConnectTo": ["indicator", "condition", "math", "action", "variable"],
+        "canReceiveFrom": ["indicator", "environment", "math", "variable"]
+      }
+    },
+    "divide": {
+      "type": "divide",
+      "nodeType": "math",
+      "label": "Divide",
+      "description": "Divide A by B",
+      "category": "math",
+      "subcategory": "Arithmetic",
+      "icon": "Divide",
+      "color": "#f97316",
+      "pythonCode": "({{inputA}}) / ({{inputB}}) if {{inputB}} != 0 else 0",
+      "backtraderCode": "({{inputA}}) / ({{inputB}}) if {{inputB}} != 0 else 0",
+      "inputs": [
+        { "id": "inputA", "label": "A", "dataType": "number", "required": true },
+        { "id": "inputB", "label": "B", "dataType": "number", "required": true }
+      ],
+      "outputs": [
+        { "id": "result", "label": "Result", "dataType": "number" }
+      ],
+      "params": [],
+      "connections": {
+        "canConnectTo": ["indicator", "condition", "math", "action", "variable"],
+        "canReceiveFrom": ["indicator", "environment", "math", "variable"]
+      }
+    },
+    "number": {
+      "type": "number",
+      "nodeType": "math",
+      "label": "Number",
+      "description": "A constant number value",
+      "category": "math",
+      "subcategory": "Constants",
+      "icon": "Hash",
+      "color": "#f97316",
+      "pythonCode": "{{value}}",
+      "backtraderCode": "{{value}}",
+      "inputs": [],
+      "outputs": [
+        { "id": "value", "label": "Value", "dataType": "number" }
+      ],
+      "params": [
+        { "id": "value", "label": "Value", "type": "number", "default": 0 }
+      ],
+      "connections": {
+        "canConnectTo": ["indicator", "condition", "math", "action", "variable"],
+        "canReceiveFrom": []
+      }
+    },
+    "positionPercent": {
+      "type": "positionPercent",
+      "nodeType": "risk",
+      "label": "Position Size %",
+      "description": "Calculate position size as percentage of equity",
+      "category": "risk",
+      "subcategory": "Position Sizing",
+      "icon": "Percent",
+      "color": "#ef4444",
+      "pythonCode": "equity * {{percentage}} / 100",
+      "backtraderCode": "self.broker.getcash() * {{percentage}} / 100",
+      "inputs": [],
+      "outputs": [
+        { "id": "size", "label": "Size", "dataType": "number" }
+      ],
+      "params": [
+        { "id": "percentage", "label": "Percentage", "type": "number", "default": 2, "min": 0.1, "max": 100, "canDetach": true }
+      ],
+      "connections": {
+        "canConnectTo": ["action", "math", "variable"],
+        "canReceiveFrom": ["math", "variable"]
+      }
+    },
+    "maxDrawdown": {
+      "type": "maxDrawdown",
+      "nodeType": "risk",
+      "label": "Max Drawdown",
+      "description": "Limit maximum drawdown",
+      "category": "risk",
+      "subcategory": "Risk Limits",
+      "icon": "TrendingDown",
+      "color": "#ef4444",
+      "pythonCode": "# Check if drawdown exceeds limit\ncurrent_drawdown > {{limit}}",
+      "backtraderCode": "self.stats.drawdown.drawdown[0] > {{limit}}",
+      "inputs": [],
+      "outputs": [
+        { "id": "exceeded", "label": "Exceeded", "dataType": "boolean" }
+      ],
+      "params": [
+        { "id": "limit", "label": "Limit %", "type": "number", "default": 10, "min": 1, "max": 50, "canDetach": true }
+      ],
+      "connections": {
+        "canConnectTo": ["condition", "action", "variable"],
+        "canReceiveFrom": ["math", "variable"]
+      }
+    },
+    "setVariable": {
+      "type": "setVariable",
+      "nodeType": "variable",
+      "label": "Set Variable",
+      "description": "Store a value in a variable",
+      "category": "variables",
+      "subcategory": "Variables",
+      "icon": "Box",
+      "color": "#6b7280",
+      "pythonCode": "self.{{name}} = {{value}}",
+      "backtraderCode": "self.{{name}} = {{value}}",
+      "inputs": [
+        { "id": "value", "label": "Value", "dataType": "any", "required": true }
+      ],
+      "outputs": [],
+      "params": [
+        { "id": "name", "label": "Name", "type": "text", "default": "myVar" }
+      ],
+      "connections": {
+        "canConnectTo": ["action", "control"],
+        "canReceiveFrom": ["indicator", "environment", "math", "condition", "variable"]
+      }
+    },
+    "getVariable": {
+      "type": "getVariable",
+      "nodeType": "variable",
+      "label": "Get Variable",
+      "description": "Retrieve a variable value",
+      "category": "variables",
+      "subcategory": "Variables",
+      "icon": "Box",
+      "color": "#6b7280",
+      "pythonCode": "self.{{name}}",
+      "backtraderCode": "self.{{name}}",
+      "inputs": [],
+      "outputs": [
+        { "id": "value", "label": "Value", "dataType": "any" }
+      ],
+      "params": [
+        { "id": "name", "label": "Name", "type": "text", "default": "myVar" }
+      ],
+      "connections": {
+        "canConnectTo": ["indicator", "condition", "math", "action", "variable"],
+        "canReceiveFrom": []
+      }
+    },
+    "if": {
+      "type": "if",
+      "nodeType": "control",
+      "label": "If",
+      "description": "Execute if condition is true",
+      "category": "control",
+      "subcategory": "Flow Control",
+      "icon": "GitBranch",
+      "color": "#6b7280",
+      "pythonCode": "if {{condition}}:",
+      "backtraderCode": "if {{condition}}:",
+      "inputs": [
+        { "id": "condition", "label": "Condition", "dataType": "boolean", "required": true }
+      ],
+      "outputs": [
+        { "id": "then", "label": "Then", "dataType": "signal" }
+      ],
+      "params": [],
+      "connections": {
+        "canConnectTo": ["action", "control", "variable"],
+        "canReceiveFrom": ["condition", "variable"]
+      }
+    },
+    "ifElse": {
+      "type": "ifElse",
+      "nodeType": "control",
+      "label": "If/Else",
+      "description": "Branch based on condition",
+      "category": "control",
+      "subcategory": "Flow Control",
+      "icon": "GitBranch",
+      "color": "#6b7280",
+      "pythonCode": "if {{condition}}:\n    # then\nelse:\n    # else",
+      "backtraderCode": "if {{condition}}:\n    # then\nelse:\n    # else",
+      "inputs": [
+        { "id": "condition", "label": "Condition", "dataType": "boolean", "required": true }
+      ],
+      "outputs": [
+        { "id": "then", "label": "Then", "dataType": "signal" },
+        { "id": "else", "label": "Else", "dataType": "signal" }
+      ],
+      "params": [],
+      "connections": {
+        "canConnectTo": ["action", "control", "variable"],
+        "canReceiveFrom": ["condition", "variable"]
+      }
+    },
+    "entryPrice": {
+      "type": "entryPrice",
+      "nodeType": "tradeInfo",
+      "label": "Entry Price",
+      "description": "Get the entry price of current position",
+      "category": "tradeInfo",
+      "subcategory": "Position Info",
+      "icon": "DollarSign",
+      "color": "#a855f7",
+      "pythonCode": "self.position.price",
+      "backtraderCode": "self.position.price",
+      "inputs": [],
+      "outputs": [
+        { "id": "price", "label": "Price", "dataType": "number" }
+      ],
+      "params": [],
+      "connections": {
+        "canConnectTo": ["condition", "math", "action", "variable"],
+        "canReceiveFrom": []
+      }
+    },
+    "positionSize": {
+      "type": "positionSize",
+      "nodeType": "tradeInfo",
+      "label": "Position Size",
+      "description": "Get the size of current position",
+      "category": "tradeInfo",
+      "subcategory": "Position Info",
+      "icon": "Layers",
+      "color": "#a855f7",
+      "pythonCode": "self.position.size",
+      "backtraderCode": "self.position.size",
+      "inputs": [],
+      "outputs": [
+        { "id": "size", "label": "Size", "dataType": "number" }
+      ],
+      "params": [],
+      "connections": {
+        "canConnectTo": ["condition", "math", "action", "variable"],
+        "canReceiveFrom": []
+      }
+    },
+    "pnl": {
+      "type": "pnl",
+      "nodeType": "tradeInfo",
+      "label": "P&L",
+      "description": "Get unrealized profit/loss",
+      "category": "tradeInfo",
+      "subcategory": "Position Info",
+      "icon": "TrendingUp",
+      "color": "#a855f7",
+      "pythonCode": "(self.data.Close[-1] - self.position.price) * self.position.size",
+      "backtraderCode": "self.position.size * (self.data.close[0] - self.position.price)",
+      "inputs": [],
+      "outputs": [
+        { "id": "pnl", "label": "P&L", "dataType": "number" }
+      ],
+      "params": [],
+      "connections": {
+        "canConnectTo": ["condition", "math", "action", "variable"],
+        "canReceiveFrom": []
+      }
+    }
+  },
+  "categories": {
+    "indicators": {
+      "label": "Indicators",
+      "icon": "Activity",
+      "color": "#8b5cf6",
+      "subcategories": ["Moving Averages", "Oscillators", "Trend", "Bands", "Volatility", "Volume"]
+    },
+    "conditions": {
+      "label": "Conditions",
+      "icon": "GitBranch",
+      "color": "#06b6d4",
+      "subcategories": ["Comparison", "Logic"]
+    },
+    "actions": {
+      "label": "Actions",
+      "icon": "Zap",
+      "color": "#10b981",
+      "subcategories": ["Trading", "Risk Management"]
+    },
+    "environment": {
+      "label": "Environment",
+      "icon": "Globe",
+      "color": "#3b82f6",
+      "subcategories": ["Market Data", "Time"]
+    },
+    "math": {
+      "label": "Math",
+      "icon": "Calculator",
+      "color": "#f97316",
+      "subcategories": ["Arithmetic", "Constants"]
+    },
+    "risk": {
+      "label": "Risk",
+      "icon": "Shield",
+      "color": "#ef4444",
+      "subcategories": ["Position Sizing", "Risk Limits"]
+    },
+    "variables": {
+      "label": "Variables",
+      "icon": "Box",
+      "color": "#6b7280",
+      "subcategories": ["Variables"]
+    },
+    "control": {
+      "label": "Control",
+      "icon": "GitBranch",
+      "color": "#6b7280",
+      "subcategories": ["Flow Control"]
+    },
+    "tradeInfo": {
+      "label": "Trade Info",
+      "icon": "Info",
+      "color": "#a855f7",
+      "subcategories": ["Position Info"]
+    }
+  },
+  "dataTypes": {
+    "number": {
+      "label": "Number",
+      "color": "#8b5cf6",
+      "description": "Numeric value (price, indicator value, etc.)"
+    },
+    "boolean": {
+      "label": "Boolean",
+      "color": "#f59e0b",
+      "description": "True/False value"
+    },
+    "signal": {
+      "label": "Signal",
+      "color": "#06b6d4",
+      "description": "Trading signal (buy/sell trigger)"
+    },
+    "any": {
+      "label": "Any",
+      "color": "#6b7280",
+      "description": "Any data type"
+    }
+  }
+}
