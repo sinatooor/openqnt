@@ -2,7 +2,169 @@
  * Handle configuration utilities for strategy nodes
  */
 
-import { HandleConfig } from '../types';
+import { HandleConfig, StrategyFlowNode, StrategyFlowEdge, StrategyNodeData } from '../types';
+
+/**
+ * Extract the subType from a node's data based on its type
+ */
+export const getNodeSubType = (node: StrategyFlowNode): string | undefined => {
+  const data = node.data as Record<string, unknown>;
+  return (
+    data?.indicatorType as string ||
+    data?.conditionType as string ||
+    data?.actionType as string ||
+    data?.mathType as string ||
+    data?.controlType as string ||
+    data?.riskType as string ||
+    data?.variableType as string ||
+    data?.environmentType as string ||
+    data?.tradeInfoType as string ||
+    data?.llmType as string
+  );
+};
+
+/**
+ * Normalize legacy handle IDs to current format
+ */
+const normalizeHandleId = (handleId: string | undefined | null): string | undefined => {
+  if (!handleId) return undefined;
+  
+  // Map legacy handle IDs to current format
+  const legacyMap: Record<string, string> = {
+    'inputA': 'input-a',
+    'inputB': 'input-b',
+    'input_a': 'input-a',
+    'input_b': 'input-b',
+    // 'output' is acceptable as an alias for 'value' in some contexts
+  };
+  
+  return legacyMap[handleId] || handleId;
+};
+
+/**
+ * Repair edges by filling in missing sourceHandle/targetHandle
+ * This ensures data flows correctly between nodes
+ */
+export const repairEdges = (
+  nodes: StrategyFlowNode[],
+  edges: StrategyFlowEdge[]
+): StrategyFlowEdge[] => {
+  return edges.map(edge => {
+    const sourceNode = nodes.find(n => n.id === edge.source);
+    const targetNode = nodes.find(n => n.id === edge.target);
+
+    if (!sourceNode || !targetNode) return edge;
+
+    const sourceSubType = getNodeSubType(sourceNode);
+    const targetSubType = getNodeSubType(targetNode);
+
+    const sourceHandles = getHandleConfigs(sourceNode.type || '', sourceSubType);
+    const targetHandles = getHandleConfigs(targetNode.type || '', targetSubType);
+
+    // Get source handles (outputs)
+    const sourceOutputs = sourceHandles.filter(h => h.type === 'source');
+    // Get target handles (inputs)
+    const targetInputs = targetHandles.filter(h => h.type === 'target');
+
+    // Normalize any legacy handle IDs first
+    let repairedSourceHandle = normalizeHandleId(edge.sourceHandle);
+    let repairedTargetHandle = normalizeHandleId(edge.targetHandle);
+
+    // Auto-fill sourceHandle if missing and node has outputs
+    if (!repairedSourceHandle && sourceOutputs.length > 0) {
+      // If single output, use it directly
+      if (sourceOutputs.length === 1) {
+        repairedSourceHandle = sourceOutputs[0].id;
+      } else {
+        // For multi-output nodes, try to find 'output' or 'value' as default
+        const defaultHandle = sourceOutputs.find(h => h.id === 'output' || h.id === 'value');
+        if (defaultHandle) {
+          repairedSourceHandle = defaultHandle.id;
+        } else {
+          // Use the first source handle
+          repairedSourceHandle = sourceOutputs[0].id;
+        }
+      }
+    }
+
+    // Auto-fill targetHandle if missing and node has inputs
+    if (!repairedTargetHandle && targetInputs.length > 0) {
+      // If single input, use it directly
+      if (targetInputs.length === 1) {
+        repairedTargetHandle = targetInputs[0].id;
+      } else {
+        // For multi-input nodes (like conditions with input-a, input-b),
+        // try to infer based on existing edges
+        const existingEdgesToTarget = edges.filter(e => e.target === edge.target && e.id !== edge.id);
+        const usedHandles = existingEdgesToTarget.map(e => e.targetHandle).filter(Boolean);
+
+        // Find first unused input handle
+        const availableHandle = targetInputs.find(h => !usedHandles.includes(h.id));
+        if (availableHandle) {
+          repairedTargetHandle = availableHandle.id;
+        } else {
+          // Fallback: use 'trigger' for actions, 'input-a' for conditions
+          const triggerHandle = targetInputs.find(h => h.id === 'trigger');
+          const inputAHandle = targetInputs.find(h => h.id === 'input-a');
+          repairedTargetHandle = triggerHandle?.id || inputAHandle?.id || targetInputs[0].id;
+        }
+      }
+    }
+
+    // Return repaired edge if anything changed
+    if (repairedSourceHandle !== edge.sourceHandle || repairedTargetHandle !== edge.targetHandle) {
+      return {
+        ...edge,
+        sourceHandle: repairedSourceHandle,
+        targetHandle: repairedTargetHandle,
+      };
+    }
+
+    return edge;
+  });
+};
+
+/**
+ * Validate edges and return warnings for ambiguous connections
+ */
+export const validateEdgeHandles = (
+  nodes: StrategyFlowNode[],
+  edges: StrategyFlowEdge[]
+): string[] => {
+  const warnings: string[] = [];
+
+  edges.forEach(edge => {
+    const sourceNode = nodes.find(n => n.id === edge.source);
+    const targetNode = nodes.find(n => n.id === edge.target);
+
+    if (!sourceNode || !targetNode) return;
+
+    const sourceSubType = getNodeSubType(sourceNode);
+    const targetSubType = getNodeSubType(targetNode);
+
+    const sourceHandles = getHandleConfigs(sourceNode.type || '', sourceSubType);
+    const targetHandles = getHandleConfigs(targetNode.type || '', targetSubType);
+
+    const sourceOutputs = sourceHandles.filter(h => h.type === 'source');
+    const targetInputs = targetHandles.filter(h => h.type === 'target');
+
+    // Warn if multi-output node doesn't have explicit sourceHandle
+    if (sourceOutputs.length > 1 && !edge.sourceHandle) {
+      warnings.push(
+        `Edge from "${(sourceNode.data as StrategyNodeData).label}" has multiple outputs but no specific handle selected.`
+      );
+    }
+
+    // Warn if multi-input node doesn't have explicit targetHandle
+    if (targetInputs.length > 1 && !edge.targetHandle) {
+      warnings.push(
+        `Edge to "${(targetNode.data as StrategyNodeData).label}" has multiple inputs but no specific handle selected.`
+      );
+    }
+  });
+
+  return warnings;
+};
 
 export const getHandleConfigs = (nodeType: string, subType?: string): HandleConfig[] => {
     switch (nodeType) {
@@ -122,7 +284,7 @@ export const getHandleConfigs = (nodeType: string, subType?: string): HandleConf
             }
             // Default: single output for simple indicators
             return [
-                { id: 'output', type: 'source', position: 'right', label: 'Value', dataType: 'number' },
+                { id: 'value', type: 'source', position: 'right', label: 'Value', dataType: 'number' },
             ];
 
         case 'condition':
@@ -167,7 +329,7 @@ export const getHandleConfigs = (nodeType: string, subType?: string): HandleConf
 
         case 'environment':
             return [
-                { id: 'output', type: 'source', position: 'right', label: 'Value', dataType: 'number' },
+                { id: 'value', type: 'source', position: 'right', label: 'Value', dataType: 'number' },
             ];
 
         case 'control':

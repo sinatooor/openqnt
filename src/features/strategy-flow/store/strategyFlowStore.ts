@@ -22,7 +22,7 @@ import {
   StrategyFlowNodeType,
   NodeCatalogItem,
 } from '../types';
-import { getHandleConfigs } from '../utils/handleUtils';
+import { getHandleConfigs, repairEdges, getNodeSubType, validateEdgeHandles } from '../utils/handleUtils';
 
 // =============================================================================
 // EDGE COLOR MAPPING BY DATA TYPE
@@ -249,6 +249,10 @@ export const validateStrategy = (
     }
   }
 
+  // Add edge handle validation warnings
+  const handleWarnings = validateEdgeHandles(nodes, edges);
+  warnings.push(...handleWarnings);
+
   return {
     isValid: errors.length === 0,
     errors,
@@ -366,6 +370,10 @@ interface StrategyFlowActions {
   exportStrategy: () => string;
   importStrategy: (json: string) => void;
   clearCanvas: () => void;
+
+  // Direct setters for AI-generated nodes
+  setNodes: (nodes: StrategyFlowNode[]) => void;
+  setEdges: (edges: StrategyFlowEdge[]) => void;
 
   // Search
   setSearchQuery: (query: string) => void;
@@ -580,19 +588,60 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
         }
 
         get().saveToHistory();
+        
+        // Auto-populate handles if not provided
+        let finalSourceHandle = connection.sourceHandle ?? undefined;
+        let finalTargetHandle = connection.targetHandle ?? undefined;
+        
+        // Auto-fill sourceHandle if missing
+        if (!finalSourceHandle && sourceNode) {
+          const sourceSubType = getNodeSubType(sourceNode);
+          const handles = getHandleConfigs(sourceNode.type || '', sourceSubType);
+          const sourceOutputs = handles.filter(h => h.type === 'source');
+          if (sourceOutputs.length === 1) {
+            finalSourceHandle = sourceOutputs[0].id;
+          } else if (sourceOutputs.length > 1) {
+            // Prefer 'output' or 'value' as default
+            const defaultHandle = sourceOutputs.find(h => h.id === 'output' || h.id === 'value');
+            finalSourceHandle = defaultHandle?.id || sourceOutputs[0].id;
+          }
+        }
+        
+        // Auto-fill targetHandle if missing
+        if (!finalTargetHandle && targetNode) {
+          const targetSubType = getNodeSubType(targetNode);
+          const handles = getHandleConfigs(targetNode.type || '', targetSubType);
+          const targetInputs = handles.filter(h => h.type === 'target');
+          if (targetInputs.length === 1) {
+            finalTargetHandle = targetInputs[0].id;
+          } else if (targetInputs.length > 1) {
+            // Check which handles are already used
+            const existingEdges = get().edges.filter(e => e.target === connection.target);
+            const usedHandles = existingEdges.map(e => e.targetHandle).filter(Boolean);
+            const availableHandle = targetInputs.find(h => !usedHandles.includes(h.id));
+            if (availableHandle) {
+              finalTargetHandle = availableHandle.id;
+            } else {
+              // Fallback: use 'trigger' for actions, 'input-a' for conditions
+              const triggerHandle = targetInputs.find(h => h.id === 'trigger');
+              const inputAHandle = targetInputs.find(h => h.id === 'input-a');
+              finalTargetHandle = triggerHandle?.id || inputAHandle?.id || targetInputs[0].id;
+            }
+          }
+        }
+        
         const newEdge: StrategyFlowEdge = {
           id: `edge-${generateId()}`,
           source: connection.source,
           target: connection.target,
-          sourceHandle: connection.sourceHandle ?? undefined,
-          targetHandle: connection.targetHandle ?? undefined,
+          sourceHandle: finalSourceHandle,
+          targetHandle: finalTargetHandle,
           type: 'bezier',
           animated: false,
           style: {
             stroke: edgeColor,
             strokeWidth: 2,
           },
-        
         };
 
         set({
@@ -750,14 +799,20 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
       importStrategy: (json) => {
         try {
           const data = JSON.parse(json);
+          const nodes: StrategyFlowNode[] = data.nodes || [];
+          // Repair edges to ensure all sourceHandle/targetHandle are populated
+          const repairedEdges = repairEdges(nodes, data.edges || []);
+          
           get().saveToHistory();
           set({
-            nodes: data.nodes || [],
-            edges: data.edges || [],
+            nodes,
+            edges: repairedEdges,
             strategyName: data.name || 'Imported Strategy',
             strategyDescription: data.description || '',
             isModified: true,
           });
+          
+          console.log(`Imported strategy with ${nodes.length} nodes and ${repairedEdges.length} edges (repaired)`);
         } catch (error) {
           console.error('Failed to import strategy:', error);
           throw new Error('Invalid strategy file');
@@ -771,6 +826,29 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
           edges: [],
           selectedNodeId: null,
           rightPanelOpen: false,
+          isModified: true,
+        });
+      },
+
+      // =========================================================================
+      // DIRECT SETTERS FOR AI-GENERATED NODES
+      // =========================================================================
+
+      setNodes: (nodes) => {
+        get().saveToHistory();
+        set({
+          nodes,
+          isModified: true,
+        });
+      },
+
+      setEdges: (edges) => {
+        get().saveToHistory();
+        // Repair edges to ensure all sourceHandle/targetHandle are populated
+        const nodes = get().nodes;
+        const repairedEdges = repairEdges(nodes, edges);
+        set({
+          edges: repairedEdges,
           isModified: true,
         });
       },
