@@ -17,7 +17,8 @@ export type NodeCategory =
   | 'control'
   | 'math'
   | 'risk'
-  | 'tradeInfo';
+  | 'tradeInfo'
+  | 'llm';
 
 // =============================================================================
 // INDICATOR NODE TYPES
@@ -208,6 +209,13 @@ export interface MathNodeData extends BaseNodeData {
   mathFunction?: AdvancedMathFunction; // For 'advancedMath' type
 }
 
+// LLM Node Data
+export interface LLMNodeData extends BaseNodeData {
+  prompt: string;
+  schema?: Record<string, unknown>;
+  fallback?: Record<string, unknown>;
+}
+
 // =============================================================================
 // RISK NODE TYPES
 // =============================================================================
@@ -253,7 +261,8 @@ export type StrategyNodeData =
   | VariableNodeData
   | MathNodeData
   | RiskNodeData
-  | TradeInfoNodeData;
+  | TradeInfoNodeData
+  | LLMNodeData;
 
 // =============================================================================
 // STRATEGY FLOW NODE TYPES
@@ -269,6 +278,7 @@ export type StrategyFlowNodeType =
   | 'math'
   | 'risk'
   | 'tradeInfo'
+  | 'llm'
   | 'comment';
 
 // ReactFlow Node with our data

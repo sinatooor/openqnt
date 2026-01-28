@@ -12,6 +12,7 @@ export { VariableNode } from './VariableNode';
 export { MathNode } from './MathNode';
 export { RiskNode } from './RiskNode';
 export { TradeInfoNode } from './TradeInfoNode';
+export { LLMNode } from './LLMNode';
 
 import { IndicatorNode } from './IndicatorNode';
 import { ConditionNode } from './ConditionNode';
@@ -22,6 +23,7 @@ import { VariableNode } from './VariableNode';
 import { MathNode } from './MathNode';
 import { RiskNode } from './RiskNode';
 import { TradeInfoNode } from './TradeInfoNode';
+import { LLMNode } from './LLMNode';
 
 // Node type registry for ReactFlow
 export const nodeTypes = {
@@ -34,4 +36,5 @@ export const nodeTypes = {
   math: MathNode,
   risk: RiskNode,
   tradeInfo: TradeInfoNode,
+  llm: LLMNode,
 };

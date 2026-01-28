@@ -24,6 +24,10 @@ const categoryColors: Record<NodeCategory, string> = {
   environment: 'bg-blue-500/20 border-blue-500/50 text-blue-400',
   variables: 'bg-pink-500/20 border-pink-500/50 text-pink-400',
   control: 'bg-slate-500/20 border-slate-500/50 text-slate-400',
+  math: 'bg-teal-500/20 border-teal-500/50 text-teal-400',
+  risk: 'bg-red-500/20 border-red-500/50 text-red-400',
+  tradeInfo: 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400',
+  llm: 'bg-purple-500/20 border-purple-500/50 text-purple-400',
 };
 
 const categoryLabels: Record<NodeCategory, string> = {
@@ -33,6 +37,10 @@ const categoryLabels: Record<NodeCategory, string> = {
   environment: '⚡ Environment',
   variables: '📦 Variables',
   control: '🔧 Control Flow',
+  math: '🧮 Math',
+  risk: '🛡️ Risk',
+  tradeInfo: '📈 Trade Info',
+  llm: '✨ LLM',
 };
 
 export const NodePalette = memo(({ isOpen, onClose }: NodePaletteProps) => {
@@ -70,6 +78,10 @@ export const NodePalette = memo(({ isOpen, onClose }: NodePaletteProps) => {
       environment: [],
       variables: [],
       control: [],
+      math: [],
+      risk: [],
+      tradeInfo: [],
+      llm: [],
     };
     filteredNodes.forEach((n) => groups[n.category].push(n));
     return groups;

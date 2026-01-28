@@ -56,8 +56,12 @@ const VALID_CONNECTIONS: Record<string, string[]> = {
   environment: ['condition', 'action', 'variable'],
   condition: ['action', 'control', 'condition'],
   action: ['action', 'control'],
-  control: ['action', 'control'],
+  control: ['action', 'control', 'condition'],
   variable: ['condition', 'action', 'variable', 'control'],
+  math: ['condition', 'action', 'math', 'variable'],
+  risk: ['action', 'variable'],
+  tradeInfo: ['condition', 'action', 'math'],
+  llm: ['condition', 'action', 'variable', 'math'],
 };
 
 /**
@@ -74,7 +78,42 @@ export const isValidConnection = (
   const targetType = targetNode.type || '';
 
   const validTargets = VALID_CONNECTIONS[sourceType];
-  return validTargets ? validTargets.includes(targetType) : false;
+  if (!validTargets || !validTargets.includes(targetType)) return false;
+
+  const sourceSubType = (sourceNode.data as Record<string, unknown>)?.indicatorType as string ||
+    (sourceNode.data as Record<string, unknown>)?.conditionType as string ||
+    (sourceNode.data as Record<string, unknown>)?.actionType as string ||
+    (sourceNode.data as Record<string, unknown>)?.mathType as string ||
+    (sourceNode.data as Record<string, unknown>)?.controlType as string ||
+    (sourceNode.data as Record<string, unknown>)?.riskType as string ||
+    (sourceNode.data as Record<string, unknown>)?.variableType as string ||
+    (sourceNode.data as Record<string, unknown>)?.environmentType as string;
+
+  const targetSubType = (targetNode.data as Record<string, unknown>)?.indicatorType as string ||
+    (targetNode.data as Record<string, unknown>)?.conditionType as string ||
+    (targetNode.data as Record<string, unknown>)?.actionType as string ||
+    (targetNode.data as Record<string, unknown>)?.mathType as string ||
+    (targetNode.data as Record<string, unknown>)?.controlType as string ||
+    (targetNode.data as Record<string, unknown>)?.riskType as string ||
+    (targetNode.data as Record<string, unknown>)?.variableType as string ||
+    (targetNode.data as Record<string, unknown>)?.environmentType as string;
+
+  const sourceHandles = getHandleConfigs(sourceType, sourceSubType);
+  const targetHandles = getHandleConfigs(targetType, targetSubType);
+
+  const sourceHandle = sourceHandles.find(h => h.type === 'source');
+  const targetHandle = targetHandles.find(h => h.type === 'target');
+
+  const sourceTypeData = sourceHandle?.dataType || 'any';
+  const targetTypeData = targetHandle?.dataType || 'any';
+
+  if (sourceTypeData === 'any' || targetTypeData === 'any') return true;
+  if (sourceTypeData === targetTypeData) return true;
+  if ((sourceTypeData === 'signal' && targetTypeData === 'boolean') ||
+      (sourceTypeData === 'boolean' && targetTypeData === 'signal')) {
+    return true;
+  }
+  return false;
 };
 
 /**
@@ -137,6 +176,78 @@ export const validateStrategy = (
       warnings.push(`"${action.data.label}" action has no trigger connected to it.`);
     }
   });
+
+  // Type checking
+  edges.forEach(edge => {
+    const sourceNode = nodes.find(n => n.id === edge.source);
+    const targetNode = nodes.find(n => n.id === edge.target);
+    if (!sourceNode || !targetNode) return;
+
+    const sourceSubType = (sourceNode.data as Record<string, unknown>)?.indicatorType as string ||
+      (sourceNode.data as Record<string, unknown>)?.conditionType as string ||
+      (sourceNode.data as Record<string, unknown>)?.actionType as string ||
+      (sourceNode.data as Record<string, unknown>)?.mathType as string ||
+      (sourceNode.data as Record<string, unknown>)?.controlType as string ||
+      (sourceNode.data as Record<string, unknown>)?.riskType as string ||
+      (sourceNode.data as Record<string, unknown>)?.variableType as string ||
+      (sourceNode.data as Record<string, unknown>)?.environmentType as string;
+
+    const targetSubType = (targetNode.data as Record<string, unknown>)?.indicatorType as string ||
+      (targetNode.data as Record<string, unknown>)?.conditionType as string ||
+      (targetNode.data as Record<string, unknown>)?.actionType as string ||
+      (targetNode.data as Record<string, unknown>)?.mathType as string ||
+      (targetNode.data as Record<string, unknown>)?.controlType as string ||
+      (targetNode.data as Record<string, unknown>)?.riskType as string ||
+      (targetNode.data as Record<string, unknown>)?.variableType as string ||
+      (targetNode.data as Record<string, unknown>)?.environmentType as string;
+
+    const sourceHandles = getHandleConfigs(sourceNode.type || '', sourceSubType);
+    const targetHandles = getHandleConfigs(targetNode.type || '', targetSubType);
+    const sourceHandle = sourceHandles.find(h => h.id === edge.sourceHandle) || sourceHandles.find(h => h.type === 'source');
+    const targetHandle = targetHandles.find(h => h.id === edge.targetHandle) || targetHandles.find(h => h.type === 'target');
+
+    const sourceType = sourceHandle?.dataType || 'any';
+    const targetType = targetHandle?.dataType || 'any';
+
+    const compatible = sourceType === 'any' || targetType === 'any' ||
+      sourceType === targetType ||
+      (sourceType === 'signal' && targetType === 'boolean') ||
+      (sourceType === 'boolean' && targetType === 'signal');
+
+    if (!compatible) {
+      errors.push(`Type mismatch: ${sourceNode.data.label} (${sourceType}) → ${targetNode.data.label} (${targetType})`);
+    }
+  });
+
+  // Cycle detection
+  const adjacency = new Map<string, string[]>();
+  nodes.forEach(n => adjacency.set(n.id, []));
+  edges.forEach(e => {
+    const list = adjacency.get(e.source) || [];
+    list.push(e.target);
+    adjacency.set(e.source, list);
+  });
+
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  const hasCycle = (nodeId: string): boolean => {
+    if (visiting.has(nodeId)) return true;
+    if (visited.has(nodeId)) return false;
+    visiting.add(nodeId);
+    for (const next of adjacency.get(nodeId) || []) {
+      if (hasCycle(next)) return true;
+    }
+    visiting.delete(nodeId);
+    visited.add(nodeId);
+    return false;
+  };
+
+  for (const node of nodes) {
+    if (hasCycle(node.id)) {
+      errors.push('Cycle detected in strategy graph. Remove loops or enable allowCycles.');
+      break;
+    }
+  }
 
   return {
     isValid: errors.length === 0,
@@ -406,6 +517,44 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
         if (!isValidConnection(sourceNode, targetNode)) {
           console.warn(`Invalid connection: ${sourceNode?.type} → ${targetNode?.type}`);
           return; // Silently reject invalid connections
+        }
+
+        // Validate handle type compatibility when possible
+        if (sourceNode && targetNode) {
+          const sourceSubType = (sourceNode.data as Record<string, unknown>)?.indicatorType as string ||
+            (sourceNode.data as Record<string, unknown>)?.conditionType as string ||
+            (sourceNode.data as Record<string, unknown>)?.actionType as string ||
+            (sourceNode.data as Record<string, unknown>)?.mathType as string ||
+            (sourceNode.data as Record<string, unknown>)?.controlType as string ||
+            (sourceNode.data as Record<string, unknown>)?.riskType as string ||
+            (sourceNode.data as Record<string, unknown>)?.variableType as string ||
+            (sourceNode.data as Record<string, unknown>)?.environmentType as string;
+
+          const targetSubType = (targetNode.data as Record<string, unknown>)?.indicatorType as string ||
+            (targetNode.data as Record<string, unknown>)?.conditionType as string ||
+            (targetNode.data as Record<string, unknown>)?.actionType as string ||
+            (targetNode.data as Record<string, unknown>)?.mathType as string ||
+            (targetNode.data as Record<string, unknown>)?.controlType as string ||
+            (targetNode.data as Record<string, unknown>)?.riskType as string ||
+            (targetNode.data as Record<string, unknown>)?.variableType as string ||
+            (targetNode.data as Record<string, unknown>)?.environmentType as string;
+
+          const sourceHandles = getHandleConfigs(sourceNode.type || '', sourceSubType);
+          const targetHandles = getHandleConfigs(targetNode.type || '', targetSubType);
+          const sourceHandle = sourceHandles.find(h => h.id === connection.sourceHandle) || sourceHandles.find(h => h.type === 'source');
+          const targetHandle = targetHandles.find(h => h.id === connection.targetHandle) || targetHandles.find(h => h.type === 'target');
+
+          const sourceType = sourceHandle?.dataType || 'any';
+          const targetType = targetHandle?.dataType || 'any';
+          const compatible = sourceType === 'any' || targetType === 'any' ||
+            sourceType === targetType ||
+            (sourceType === 'signal' && targetType === 'boolean') ||
+            (sourceType === 'boolean' && targetType === 'signal');
+
+          if (!compatible) {
+            console.warn(`Type mismatch: ${sourceType} → ${targetType}`);
+            return;
+          }
         }
 
         // Determine edge color based on source handle's data type
