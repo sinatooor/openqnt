@@ -72,6 +72,30 @@ CCI RULES:
 - Oversold: < -100, Overbought: > +100
 - BUY: CCI < -100, SELL: CCI > +100
 
+MFI (MONEY FLOW INDEX) RULES (Range 0-100):
+- Oversold zone: MFI < 20 → BUY opportunity
+- Overbought zone: MFI > 80 → SELL opportunity
+- WRONG: Buy when MFI > 80 → FIX: Change to MFI < 20
+- Unlike RSI, MFI incorporates volume for confirmation
+
+DEMARKER RULES (Range 0-1):
+- Oversold zone: DeMarker < 0.3 → BUY opportunity
+- Overbought zone: DeMarker > 0.7 → SELL opportunity
+- WRONG: Using 30/70 thresholds → FIX: Use 0.3/0.7 (decimal scale)
+
+FORCE INDEX RULES:
+- Positive Force Index = Bullish pressure (buying)
+- Negative Force Index = Bearish pressure (selling)
+- BUY: Force crosses above 0 from negative
+- SELL: Force crosses below 0 from positive
+- Combine with MA for smoothing (13-period common)
+
+PARABOLIC SAR RULES:
+- SAR below price = Uptrend → LONG position
+- SAR above price = Downtrend → SHORT position
+- BUY: Price > SAR, SELL: Price < SAR
+- Best in trending markets, avoid in ranging conditions
+
 RISK MANAGEMENT RULES:
 - Every entry SHOULD have stop-loss
 - Risk:Reward ratio should be at least 1:2
@@ -91,6 +115,12 @@ COMMON MISTAKES TO FIX:
 4. Buy at resistance, sell at support → Invert
 5. MACD: Comparing histogram to 0 when should compare line vs signal
 6. Same COMPONENT in multi-output indicators → Use different components
+7. Scale mismatch: Comparing price-based (SMA, EMA, Price) with oscillators (RSI, Stochastic) → Never compare different scales
+8. Duplicate TRADE_IDs in multiple trade_order blocks → Each trade needs a unique ID
+9. Missing stop-loss after trade entry → Add ATR-based stop loss
+10. Using TIMEFRAME="1h" instead of "60" → Always use minute values
+11. DeMarker thresholds: Using 30/70 instead of 0.3/0.7 → DeMarker uses decimal scale (0-1)
+12. MFI thresholds: Using 30/70 instead of 20/80 → MFI uses 20/80 not 30/70
 
 AVAILABLE BLOCKS:
 {{BLOCK_REFERENCE}}

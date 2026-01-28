@@ -764,31 +764,35 @@ XML:
 <block type="environment_is_market_open"></block>
 
 environment_prev_open_price: Previous candle open
-Fields: SHIFT (bars back, default 1)
+Mutation params: shift="1" (bars back, default 1)
 XML:
 <block type="environment_prev_open_price">
-  <field name="SHIFT">1</field>
+  <mutation shift="1"></mutation>
+  <field name="TIMEFRAME">60</field>
 </block>
 
 environment_prev_close_price: Previous candle close
-Fields: SHIFT (bars back, default 1)
+Mutation params: shift="1" (bars back, default 1)
 XML:
 <block type="environment_prev_close_price">
-  <field name="SHIFT">1</field>
+  <mutation shift="1"></mutation>
+  <field name="TIMEFRAME">60</field>
 </block>
 
 environment_prev_high_price: Previous candle high
-Fields: SHIFT (bars back, default 1)
+Mutation params: shift="1" (bars back, default 1)
 XML:
 <block type="environment_prev_high_price">
-  <field name="SHIFT">1</field>
+  <mutation shift="1"></mutation>
+  <field name="TIMEFRAME">60</field>
 </block>
 
 environment_prev_low_price: Previous candle low
-Fields: SHIFT (bars back, default 1)
+Mutation params: shift="1" (bars back, default 1)
 XML:
 <block type="environment_prev_low_price">
-  <field name="SHIFT">1</field>
+  <mutation shift="1"></mutation>
+  <field name="TIMEFRAME">60</field>
 </block>
 
 environment_new_candle_open: Detect new candle opened
