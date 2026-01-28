@@ -6,7 +6,10 @@ Ensures the keys match what the Frontend expects (based on backtest_result.json)
 import pytest
 import json
 import os
-from backend.nautilus_adapter import run_nautilus_backtest
+try:
+    from nautilus_adapter import run_nautilus_backtest
+except ImportError:
+    from backend.nautilus_adapter import run_nautilus_backtest
 
 def test_json_structure_compliance():
     """Compare generated result structure with reference JSON."""
