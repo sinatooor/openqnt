@@ -61,12 +61,16 @@ const connectionLineStyle = {
 // MiniMap node colors
 const nodeColor = (node: { type?: string }) => {
   const colors: Record<string, string> = {
-    trigger: '#f59e0b',
     indicator: '#8b5cf6',
     condition: '#a855f7',
     action: '#10b981',
     risk: '#ef4444',
-    utility: '#64748b',
+    environment: '#6366f1',
+    control: '#64748b',
+    variable: '#ec4899',
+    math: '#14b8a6',
+    tradeInfo: '#06b6d4',
+    llm: '#a855f7',
   };
   return colors[node.type || ''] || '#6366f1';
 };

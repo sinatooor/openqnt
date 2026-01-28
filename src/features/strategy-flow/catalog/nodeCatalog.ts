@@ -11,6 +11,7 @@ export { VARIABLE_NODES } from './nodes/variableNodes';
 export { MATH_NODES } from './nodes/mathNodes';
 export { RISK_NODES } from './nodes/riskNodes';
 export { TRADE_INFO_NODES } from './nodes/tradeInfoNodes';
+export { LLM_NODES } from './nodes/llmNodes';
 
 import { INDICATOR_NODES } from './nodes/indicatorNodes';
 import { CONDITION_NODES } from './nodes/conditionNodes';
@@ -21,6 +22,7 @@ import { VARIABLE_NODES } from './nodes/variableNodes';
 import { MATH_NODES } from './nodes/mathNodes';
 import { RISK_NODES } from './nodes/riskNodes';
 import { TRADE_INFO_NODES } from './nodes/tradeInfoNodes';
+import { LLM_NODES } from './nodes/llmNodes';
 import { NodeCatalogItem } from '../types';
 
 // Complete catalog of all nodes
@@ -34,6 +36,7 @@ export const NODE_CATALOG: NodeCatalogItem[] = [
   ...MATH_NODES,
   ...RISK_NODES,
   ...TRADE_INFO_NODES,
+  ...LLM_NODES,
 ];
 
 // Helper to get nodes by category

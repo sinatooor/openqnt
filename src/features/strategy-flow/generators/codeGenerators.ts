@@ -110,6 +110,9 @@ export function generatePythonCode(
         case 'action':
           actions.push(generatePythonAction(node.data as ActionNodeData, node.id, leverage));
           break;
+        case 'llm':
+          warnings.push('LLM nodes are supported via server-side compiler only.');
+          break;
         case 'variable':
           const varData = node.data as VariableNodeData;
           if (varData.variableName) variables.add(varData.variableName);
@@ -351,6 +354,9 @@ export function generateMQL5Code(
         case 'action':
           actions.push(generateMQLAction(node.data as ActionNodeData, node.id, leverage));
           break;
+        case 'llm':
+          warnings.push('LLM nodes are supported via server-side compiler only.');
+          break;
       }
     } catch (e) {
       errors.push(`Error processing node ${node.id}: ${e}`);
@@ -518,6 +524,9 @@ export function generateNautilusCode(
           break;
         case 'action':
           actions.push(generateNautilusAction(node.data as ActionNodeData, node.id));
+          break;
+        case 'llm':
+          warnings.push('LLM nodes are supported via server-side compiler only.');
           break;
       }
     } catch (e) {

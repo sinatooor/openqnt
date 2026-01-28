@@ -240,6 +240,12 @@ export const getHandleConfigs = (nodeType: string, subType?: string): HandleConf
                 { id: 'output', type: 'source', position: 'right', label: 'Value', dataType: 'number' },
             ];
 
+        case 'llm':
+            return [
+                { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
+                { id: 'output', type: 'source', position: 'right', label: 'JSON', dataType: 'any' },
+            ];
+
         default:
             return [];
     }
