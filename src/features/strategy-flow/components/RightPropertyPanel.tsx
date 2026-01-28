@@ -9,7 +9,6 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -31,18 +30,91 @@ import {
   IndicatorNodeData, 
   ActionNodeData, 
   ConditionNodeData,
-  EnvironmentNodeData,
   ControlNodeData,
   VariableNodeData,
   MathNodeData,
   RiskNodeData,
   TradeInfoNodeData,
+  LLMNodeData,
   TIMEFRAME_OPTIONS,
 } from '../types';
 
 // =============================================================================
 // PROPERTY EDITORS
 // =============================================================================
+
+// =============================================================================
+// DETACHABLE PARAMETER COMPONENT
+// =============================================================================
+
+interface DetachableInputProps {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  onDetachedChange: (detached: boolean) => void;
+  isDetached: boolean;
+  min?: number;
+  max?: number;
+  step?: number;
+  description?: string;
+  canDetach?: boolean;
+}
+
+const DetachableInput = memo(({ 
+  label, 
+  value, 
+  onChange, 
+  onDetachedChange,
+  isDetached,
+  min, 
+  max, 
+  step = 1, 
+  description,
+  canDetach = true
+}: DetachableInputProps) => (
+  <div className="space-y-2">
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <Label className="text-xs text-muted-foreground">{label}</Label>
+        {canDetach && (
+          <button
+            onClick={() => onDetachedChange(!isDetached)}
+            className={cn(
+              "px-1.5 py-0.5 text-[9px] rounded transition-colors",
+              isDetached 
+                ? "bg-purple-500/20 text-purple-400 border border-purple-500/30" 
+                : "bg-white/5 text-muted-foreground hover:bg-white/10"
+            )}
+            title={isDetached ? "Click to use fixed value" : "Click to use node input"}
+          >
+            {isDetached ? "⚡ Edge" : "📌 Fixed"}
+          </button>
+        )}
+      </div>
+      {!isDetached && (
+        <Input
+          type="number"
+          value={value}
+          onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+          min={min}
+          max={max}
+          step={step}
+          className="w-20 h-7 text-right text-sm"
+        />
+      )}
+    </div>
+    {isDetached && (
+      <div className="px-2 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded text-[10px] text-purple-300">
+        Value from connected edge. Connect a node to this parameter's input handle.
+      </div>
+    )}
+    {description && !isDetached && (
+      <p className="text-[10px] text-muted-foreground/70">{description}</p>
+    )}
+  </div>
+));
+
+DetachableInput.displayName = 'DetachableInput';
 
 interface NumberInputProps {
   label: string;
@@ -814,6 +886,65 @@ const TradeInfoProperties = memo(({ nodeId, data }: TradeInfoPropertiesProps) =>
 TradeInfoProperties.displayName = 'TradeInfoProperties';
 
 // =============================================================================
+// LLM PROPERTIES
+// =============================================================================
+
+interface LLMPropertiesProps {
+  nodeId: string;
+  data: LLMNodeData;
+}
+
+const LLMProperties = memo(({ nodeId, data }: LLMPropertiesProps) => {
+  const { updateNodeData } = useStrategyFlowStore();
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label className="text-xs text-muted-foreground">Prompt</Label>
+        <Input
+          value={data.prompt || ''}
+          onChange={(e) => updateNodeData(nodeId, { prompt: e.target.value })}
+          placeholder="Describe the decision the model should make"
+          className="text-sm"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label className="text-xs text-muted-foreground">Schema (JSON)</Label>
+        <Input
+          value={JSON.stringify(data.schema || {})}
+          onChange={(e) => {
+            try {
+              updateNodeData(nodeId, { schema: JSON.parse(e.target.value) });
+            } catch {
+              // ignore invalid JSON while typing
+            }
+          }}
+          placeholder='{"shouldTrade": "boolean"}'
+          className="text-sm font-mono"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label className="text-xs text-muted-foreground">Fallback (JSON)</Label>
+        <Input
+          value={JSON.stringify(data.fallback || {})}
+          onChange={(e) => {
+            try {
+              updateNodeData(nodeId, { fallback: JSON.parse(e.target.value) });
+            } catch {
+              // ignore invalid JSON while typing
+            }
+          }}
+          placeholder='{"shouldTrade": false}'
+          className="text-sm font-mono"
+        />
+      </div>
+    </div>
+  );
+});
+
+LLMProperties.displayName = 'LLMProperties';
+
+// =============================================================================
 // MAIN COMPONENT
 // =============================================================================
 
@@ -856,6 +987,8 @@ export const RightPropertyPanel = memo(() => {
         return <RiskProperties nodeId={selectedNode.id} data={data as RiskNodeData} />;
       case 'tradeInfo':
         return <TradeInfoProperties nodeId={selectedNode.id} data={data as TradeInfoNodeData} />;
+      case 'llm':
+        return <LLMProperties nodeId={selectedNode.id} data={data as LLMNodeData} />;
       case 'environment':
         return (
           <div className="text-sm text-muted-foreground">
