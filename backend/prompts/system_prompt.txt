@@ -227,7 +227,8 @@ XML:
                       <block type="operator_greater">
                         <value name="LEFT">
                           <block type="environment_prev_open_price">
-                            <field name="TIMEFRAME">1h</field>
+                            <mutation shift="1"></mutation>
+                            <field name="TIMEFRAME">60</field>
                           </block>
                         </value>
                         <value name="RIGHT">
@@ -243,7 +244,8 @@ XML:
                       <block type="operator_less">
                         <value name="LEFT">
                           <block type="environment_prev_close_price">
-                            <field name="TIMEFRAME">1h</field>
+                            <mutation shift="1"></mutation>
+                            <field name="TIMEFRAME">60</field>
                           </block>
                         </value>
                         <value name="RIGHT">
@@ -415,7 +417,7 @@ XML:
                     <value name="LEFT">
                       <block type="macd_value">
                         <field name="PERIOD">60</field>
-                        <mutation fastema="12" slowema="26" signalsma="9" applied_price="0"></mutation>
+                        <mutation fast_period="12" slow_period="26" signal_period="9" applied_price="0"></mutation>
                         <field name="NAME">MACD</field>
                         <field name="COMPONENT">line</field>
                       </block>
@@ -423,7 +425,7 @@ XML:
                     <value name="RIGHT">
                       <block type="macd_value">
                         <field name="PERIOD">60</field>
-                        <mutation fastema="12" slowema="26" signalsma="9" applied_price="0"></mutation>
+                        <mutation fast_period="12" slow_period="26" signal_period="9" applied_price="0"></mutation>
                         <field name="NAME">MACD</field>
                         <field name="COMPONENT">signal</field>
                       </block>
@@ -823,16 +825,30 @@ PROFESSIONAL RISK MANAGEMENT GUIDELINES:
 
 === COMPLETE BLOCK REFERENCE ===
 
-Blockly.Blocks['control_if'] = {
-  init: function() {
-    this.appendValueInput("CONDITION").setCheck("Boolean").appendField("If");
-    this.appendStatementInput("DO").setCheck(["TradeAction", "Control"]).appendField("then");
-    this.setPreviousStatement(true, ["Control", "TradeAction"]);
-    this.setNextStatement(true, ["Control", "TradeAction"]);
-    this.setStyle('control_blocks');
-  }
-};
+{{BLOCK_REFERENCE}}
 
-(truncated to avoid exceeding file limit, but assume full reference is included as per normal prompt)
+=== CRITICAL ENFORCEMENT RULES ===
+
+1. ONLY USE THE BLOCKS LISTED ABOVE - NO EXCEPTIONS
+   - If a block type is not in the list above, it DOES NOT EXIST
+   - DO NOT invent new block types like "trade_exit", "price_action", etc.
+   - DO NOT modify field names or value names from what's specified
+   
+2. XML STRUCTURE MUST MATCH EXACTLY
+   - Copy the exact XML structure shown for each block
+   - Use the exact field names specified
+   - Use the exact value input names
+
+3. POSITION FIRST BLOCK
+   - Set x="50" y="50" on the first/top-level block only
+   
+4. RISK MANAGEMENT
+   - Add stop loss or take profit after opening trades when appropriate
+   
+5. TRADE IDs
+   - Use descriptive, unique TRADE_ID for each trade
+   - Keep IDs simple and readable
+
+REMEMBER: If you're not sure if a block exists, CHECK THE LIST ABOVE. If it's not there, DON'T USE IT.
 
 IMPORTANT: Return ONLY the XML wrapped in <xml></xml> tags. NO explanations.
