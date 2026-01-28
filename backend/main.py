@@ -92,14 +92,16 @@ DEEPSEEK_MODEL = "deepseek-chat"       # Fast, cheaper - good for code generatio
 # ============================================================
 # Gemini Model Configuration  
 # ============================================================
-# Change this to switch Gemini models:
-GEMINI_MODEL = "gemini-3-flash-preview"  # Fast and capable (RECOMMENDED)
-# GEMINI_MODEL = "gemini-1.5-pro"   # More capable but slower
-# GEMINI_MODEL = "gemini-1.5-flash" # Fastest option
+# Available models (verified 2026-01-28):
+# - gemini-2.5-pro (best capability)
+# - gemini-2.5-flash (fast)
+# - gemini-2.0-flash (stable)
+# - gemini-3-pro-preview (matches original edge function)
+GEMINI_MODEL = "gemini-2.5-pro"  # Best capability with large context window
 
 # Primary LLM Provider: "gemini" or "deepseek"
 # This determines which model is used for strategy generation
-PRIMARY_LLM = "gemini"  # <-- CHANGE THIS TO SWITCH PRIMARY MODEL
+PRIMARY_LLM = "gemini"  # <-- Using working Gemini Flash model
 
 # ============================================================
 # RAG + GCG Prompts
@@ -202,6 +204,9 @@ from routers import mcpt
 app.include_router(mcpt.router)
 from routers import strategy_flow
 app.include_router(strategy_flow.router)
+# New Strategy Flow v2 module with backtrader
+from strategy_flow.router import router as strategy_flow_v2_router
+app.include_router(strategy_flow_v2_router)
 
 
 # ============================================================
@@ -476,6 +481,185 @@ class ScreeningRequest(BaseModel):
     days_back: int = 365
 
 
+class GenerateStrategyRequest(BaseModel):
+    message: str
+    currentWorkspace: Optional[str] = None
+    blockXml: Optional[str] = None
+    mode: str = "fast"  # "fast" or "slow"
+
+
+# ============================================================
+# GENERATE STRATEGY ENDPOINT
+# ============================================================
+
+@app.post("/generate-strategy")
+async def generate_strategy(req: GenerateStrategyRequest):
+    """
+    Generate a Blockly XML strategy from natural language.
+    This is the main AI-powered strategy generation endpoint.
+    """
+    import time
+    start_time = time.time()
+    
+    try:
+        # Log request details (matching original edge function)
+        block_count = len(re.findall(r'<block ', req.currentWorkspace or ''))
+        workspace_size_kb = len(req.currentWorkspace or '') / 1024
+        print(f"Generating strategy for: {req.message[:100]}...")
+        print(f"Has existing workspace: {bool(req.currentWorkspace)} ({block_count} blocks, {workspace_size_kb:.1f}KB)")
+        print(f"Has specific block attached: {bool(req.blockXml)}")
+        print(f"Is modification request: {bool(req.currentWorkspace)}")
+        
+        # Determine which block reference to use and build system prompt
+        if USE_RAG_FOR_BLOCKS:
+            # Use RAG-retrieved blocks (subset based on query)
+            block_ref = await get_rag_blocks(req.message, n_results=25)
+            system_prompt = SYSTEM_PROMPT_TEMPLATE.replace("{{BLOCK_REFERENCE}}", block_ref)
+            print(f"[RAG] Using {len(block_ref)} chars of selective block reference")
+        else:
+            # Use full block reference (matches original edge function behavior)
+            system_prompt = SYSTEM_PROMPT
+            print(f"[FULL] Using complete block reference ({len(BLOCK_REFERENCE)} chars)")
+        
+        # Build user message - MUST match original Supabase edge function format
+        if req.currentWorkspace:
+            # Modification request - matches original edge function
+            user_message = f"""Here is my current trading strategy workspace:
+
+{req.currentWorkspace}
+
+Please modify it according to this request: {req.message}
+
+IMPORTANT: You MUST only use blocks from the list provided in the system prompt. Do not invent new blocks. Return ONLY the complete updated XML wrapped in <xml></xml> tags. No explanations."""
+        else:
+            # New strategy request - matches original edge function with step-by-step thinking
+            user_message = f"""Generate Blockly XML for this trading strategy: {req.message}
+
+IMPORTANT: You MUST only use the blocks listed in the system prompt. Do not invent new blocks. Return ONLY the XML wrapped in <xml></xml> tags. No explanations.
+
+BEFORE GENERATING XML, THINK STEP-BY-STEP:
+1. What is the requested timeframe? (Set 'period' attribute to this value in minutes, e.g., 60 for 1h)
+2. What is the trade size? (Set 'SIZE' to 0.1 unless specified)
+3. What indicators are needed?"""
+        
+        # Add context from attached block (matches original edge function)
+        if req.blockXml:
+            user_message += f"\n\nThe user has shared a specific Blockly block with you. Here is the XML structure:\n\n{req.blockXml}\n\nPlease focus on this block when generating or modifying the strategy."
+        
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message}
+        ]
+        
+        # Call LLM based on configuration, with fallback to DeepSeek if Gemini overloaded
+        if PRIMARY_LLM == "gemini":
+            try:
+                response_text = await call_gemini(messages, temperature=0.3)
+            except HTTPException as e:
+                if e.status_code == 503:
+                    print("[LLM] Gemini overloaded, falling back to DeepSeek...")
+                    response_text = await call_deepseek(messages, temperature=0.3)
+                else:
+                    raise
+        else:
+            response_text = await call_deepseek(messages, temperature=0.3)
+        
+        # Extract XML from response
+        xml_content = extract_xml(response_text)
+        
+        if not xml_content:
+            raise HTTPException(status_code=400, detail="Failed to generate valid XML")
+        
+        # Apply common fixes
+        xml_content = apply_common_fixes(xml_content)
+        
+        # Validate XML structure
+        is_valid, issues = validate_xml_structure(xml_content)
+        
+        # Check for crossover issues
+        crossover_valid, crossover_issues = check_crossover_valid(xml_content)
+        
+        # Check for scale compatibility issues
+        scale_valid, scale_issues = check_scale_compatibility(xml_content)
+        if not scale_valid:
+            print(f"[VALIDATION] Scale compatibility warnings: {scale_issues}")
+            issues.extend(scale_issues)
+        
+        # Check for duplicate TRADE_IDs
+        trade_id_valid, trade_id_issues = check_duplicate_trade_ids(xml_content)
+        if not trade_id_valid:
+            print(f"[VALIDATION] Duplicate TRADE_ID warnings: {trade_id_issues}")
+            issues.extend(trade_id_issues)
+        
+        was_rationalized = False
+        
+        # Fix crossover issues if found
+        if not crossover_valid:
+            xml_content, was_fixed = fix_crossover_indicators(xml_content)
+            if was_fixed:
+                was_rationalized = True
+        
+        # Log generated XML details (matching original edge function)
+        generated_block_count = len(re.findall(r'<block ', xml_content))
+        print(f"Generated XML validated: {generated_block_count} blocks, {len(xml_content)} chars")
+        print(f"XML preview: {xml_content[:200]}...")
+        
+        # For slow mode, run rationalization pass
+        if req.mode == "slow" and is_valid:
+            try:
+                rationalize_messages = [
+                    {"role": "system", "content": RATIONALIZATION_PROMPT},
+                    {"role": "user", "content": f"Review and optimize this strategy XML:\n\n{xml_content}"}
+                ]
+                
+                rationalized_response = await call_deepseek(rationalize_messages, temperature=0.2)
+                rationalized_xml = extract_xml(rationalized_response)
+                
+                if rationalized_xml:
+                    rat_valid, _ = validate_xml_structure(rationalized_xml)
+                    if rat_valid:
+                        xml_content = rationalized_xml
+                        was_rationalized = True
+            except Exception as e:
+                print(f"Rationalization failed (non-fatal): {e}")
+        
+        duration_ms = (time.time() - start_time) * 1000
+        
+        # Log successful generation
+        log_strategy_generation(
+            mode=req.mode,
+            user_prompt=req.message[:200],
+            generated_xml=xml_content[:500],
+            ai_model=PRIMARY_LLM,
+            duration_ms=duration_ms,
+            success=True,
+            ai_fixed=was_rationalized
+        )
+        
+        return {
+            "xml": xml_content,
+            "autoFixed": not is_valid,
+            "wasRationalized": was_rationalized,
+            "issues": issues if not is_valid else []
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        duration_ms = (time.time() - start_time) * 1000
+        log_error(e, "generate_strategy")
+        log_strategy_generation(
+            mode=req.mode,
+            user_prompt=req.message[:200],
+            generated_xml="",
+            ai_model=PRIMARY_LLM,
+            duration_ms=duration_ms,
+            success=False,
+            error=str(e)
+        )
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/screen")
 async def screen_market(req: ScreeningRequest):
     """
@@ -685,8 +869,12 @@ def load_prompt(filename: str, replacements: Optional[Dict[str, str]] = None) ->
         print(f"Error loading prompt {filename}: {e}")
         return ""
 
+# Load block reference for full-blocks mode
 BLOCK_REFERENCE = load_prompt("block_reference.txt")
-SYSTEM_PROMPT = load_prompt("system_prompt.txt", {"BLOCK_REFERENCE": BLOCK_REFERENCE})
+# Load system prompt template (keep {{BLOCK_REFERENCE}} placeholder for runtime replacement)
+SYSTEM_PROMPT_TEMPLATE = load_prompt("system_prompt.txt")
+# Pre-build full system prompt for non-RAG mode
+SYSTEM_PROMPT = SYSTEM_PROMPT_TEMPLATE.replace("{{BLOCK_REFERENCE}}", BLOCK_REFERENCE)
 RATIONALIZATION_PROMPT = load_prompt("rationalization_prompt.txt", {"BLOCK_REFERENCE": BLOCK_REFERENCE})
 
 
@@ -776,6 +964,96 @@ def check_crossover_valid(xml: str) -> Tuple[bool, List[str]]:
                 if left_p and right_p and left_p.group(1) == right_p.group(1):
                     issues.append(f"Identical {left_ind.group(1)} indicators with ma_period={left_p.group(1)}")
                     
+    return (len(issues) == 0, issues)
+
+
+def check_duplicate_trade_ids(xml: str) -> Tuple[bool, List[str]]:
+    """Check for duplicate TRADE_IDs which would cause trade management issues."""
+    issues = []
+    
+    # Find all TRADE_ID definitions in trade_order blocks
+    trade_order_ids = re.findall(
+        r'<block type="trade_order"[^>]*>[\s\S]*?<field name="TRADE_ID">([^<]+)</field>',
+        xml
+    )
+    
+    # Check for duplicates
+    seen = {}
+    for trade_id in trade_order_ids:
+        if trade_id in seen:
+            seen[trade_id] += 1
+        else:
+            seen[trade_id] = 1
+    
+    duplicates = {k: v for k, v in seen.items() if v > 1}
+    if duplicates:
+        for trade_id, count in duplicates.items():
+            issues.append(f"Duplicate TRADE_ID '{trade_id}' used {count} times - each trade should have a unique ID")
+    
+    return (len(issues) == 0, issues)
+
+
+def check_scale_compatibility(xml: str) -> Tuple[bool, List[str]]:
+    """Check for scale compatibility issues (e.g., comparing price vs oscillator).
+    
+    PRICE-BASED indicators (values in price range, e.g., 1.0500 for EURUSD):
+    - ta_sma, ta_ema, ta_smma, ta_lwma, ta_dema, ta_tema, ta_frama, ta_vidya, ta_ama
+    - ta_bb (all components), ta_envelopes, ta_donchian, ta_keltner
+    - ta_ichimoku (all components), alligator, ta_sar, ta_vwap
+    - environment_price, environment_prev_*_price
+    
+    OSCILLATOR indicators (fixed range, e.g., 0-100 or -100 to 0):
+    - ta_rsi (0-100), ta_stochastic (0-100), ta_mfi (0-100)
+    - ta_williams_r (-100 to 0), ta_cci (unbounded but centered at 0)
+    - ta_demarker (0-1), ta_adx (0-100), ta_momentum (centered at 100)
+    """
+    issues = []
+    
+    PRICE_BASED = {
+        'ta_sma', 'ta_ema', 'ta_smma', 'ta_lwma', 'ta_dema', 'ta_tema', 
+        'ta_frama', 'ta_vidya', 'ta_ama', 'ta_bb', 'ta_envelopes', 
+        'ta_donchian', 'ta_keltner', 'ta_ichimoku', 'alligator', 'ta_sar', 
+        'ta_vwap', 'ta_highest', 'ta_lowest', 'environment_price',
+        'environment_prev_open_price', 'environment_prev_close_price',
+        'environment_prev_high_price', 'environment_prev_low_price',
+        'trade_entry_price'
+    }
+    
+    OSCILLATORS = {
+        'ta_rsi', 'ta_stochastic', 'ta_mfi', 'ta_williams_r', 'ta_cci',
+        'ta_demarker', 'ta_adx', 'ta_adxwilder', 'ta_momentum', 'ta_rvi',
+        'ta_ao', 'ta_ac', 'ta_trix', 'ta_force', 'ta_chaikin', 'gator',
+        'ta_dmi', 'ta_osma', 'macd_value', 'ta_bearspower', 'ta_bullspower'
+    }
+    
+    # Find comparison blocks
+    comparison_pattern = r'<block type="(operator_greater|operator_less|operator_greater_equals|operator_less_equals)"[^>]*>([\s\S]*?)</block>'
+    
+    for match in re.finditer(comparison_pattern, xml):
+        content = match.group(2)
+        
+        left_match = re.search(r'<value name="LEFT">([\s\S]*?)</value>', content)
+        right_match = re.search(r'<value name="RIGHT">([\s\S]*?)</value>', content)
+        
+        if left_match and right_match:
+            left_content = left_match.group(1)
+            right_content = right_match.group(1)
+            
+            # Extract block types from each side
+            left_blocks = set(re.findall(r'<block type="([^"]+)"', left_content))
+            right_blocks = set(re.findall(r'<block type="([^"]+)"', right_content))
+            
+            left_is_price = bool(left_blocks & PRICE_BASED)
+            left_is_osc = bool(left_blocks & OSCILLATORS)
+            right_is_price = bool(right_blocks & PRICE_BASED)
+            right_is_osc = bool(right_blocks & OSCILLATORS)
+            
+            # Check for mismatched scales
+            if (left_is_price and right_is_osc) or (left_is_osc and right_is_price):
+                left_type = next(iter(left_blocks & (PRICE_BASED | OSCILLATORS)), 'unknown')
+                right_type = next(iter(right_blocks & (PRICE_BASED | OSCILLATORS)), 'unknown')
+                issues.append(f"Scale mismatch: comparing {left_type} (price-based) with {right_type} (oscillator)")
+    
     return (len(issues) == 0, issues)
 
 
@@ -938,7 +1216,7 @@ async def call_deepseek(
 async def call_gemini(
     messages: list[dict],
     temperature: float = 0.3,
-    max_tokens: int = 4000,
+    max_tokens: int = 8192,  # Increased for complex strategy generation
     model: str = None
 ) -> str:
     """Call Google Gemini API and return the response content.
@@ -963,12 +1241,7 @@ async def call_gemini(
     try:
         client = genai.Client(api_key=api_key)
         
-        # Convert OpenAI-style messages to Gemini format (string concatenation for simplicity)
-        # The SDK supports list of messages but string prompt is often more robust for simple generation
-        # Let's reconstruct the conversation for the SDK
-        
-        # Simple approach: concatenate system + user messages
-        # (For advanced chat, we should use client.chats.create, but here safe to just prompt)
+        # Convert OpenAI-style messages to Gemini format
         full_prompt = ""
         for msg in messages:
             role = msg["role"]
@@ -980,19 +1253,84 @@ async def call_gemini(
             elif role == "assistant":
                 full_prompt += f"Model: {content}\n\n"
         
-        response = client.models.generate_content(
-            model=target_model,
-            contents=full_prompt,
-            config={
-                "temperature": temperature,
-                "max_output_tokens": max_tokens
-            }
-        )
+        # Define model fallback chain (verified available 2026-01-28)
+        # Prioritize user-requested model, then fall back to working models
+        fallback_models = [
+            target_model,  # Primary requested model
+            "gemini-2.5-pro",  # Best capability, large context
+            "gemini-2.5-flash",  # Fast fallback  
+            "gemini-2.0-flash",  # Stable fallback
+        ]
         
-        return response.text
+        # Remove duplicates while preserving order
+        unique_models = []
+        seen = set()
+        for m in fallback_models:
+            if m not in seen:
+                unique_models.append(m)
+                seen.add(m)
+        
+        last_error = None
+        
+        # Try each model in sequence
+        for current_model in unique_models:
+            try:
+                # Run synchronous Gemini API call in thread pool with timeout
+                def _sync_generate():
+                    return client.models.generate_content(
+                        model=current_model,
+                        contents=full_prompt,
+                        config={
+                            "temperature": temperature,
+                            "max_output_tokens": max_tokens
+                        }
+                    )
+                
+                loop = asyncio.get_event_loop()
+                # 180 second timeout for large prompts (matching DeepSeek timeout)
+                response = await asyncio.wait_for(
+                    loop.run_in_executor(None, _sync_generate),
+                    timeout=180.0
+                )
+                
+                print(f"[LLM] Successfully generated with {current_model}")
+                return response.text
+                
+            except asyncio.TimeoutError:
+                last_error = TimeoutError(f"Timeout waiting for {current_model}")
+                print(f"⚠️ {current_model} timed out after 180s, trying next model...")
+                continue
+                
+            except Exception as e:
+                last_error = e
+                error_msg = str(e)
+                
+                # Check for overload/availability errors (503, 500, 429)
+                is_overloaded = "503" in error_msg or "overloaded" in error_msg.lower() or "429" in error_msg
+                
+                if is_overloaded:
+                    print(f"⚠️ {current_model} overloaded/unavailable, trying next model... (Error: {error_msg[:100]})")
+                    continue
+                
+                # If it's a different error (e.g. auth), raise immediately
+                log_error(e, f"call_gemini({current_model})")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Gemini API error ({current_model}): {error_msg}"
+                )
+        
+        # If all models failed
+        if last_error:
+            log_error(last_error, "call_gemini_all_failed")
+            raise HTTPException(
+                status_code=503,
+                detail=f"All Gemini models overloaded. Last error: {str(last_error)}"
+            )
 
+    except HTTPException:
+        raise
     except Exception as e:
-        log_error(e, "call_gemini")
+        log_error(e, "call_gemini_fatal")
         raise HTTPException(
             status_code=500,
             detail=f"Gemini API error: {str(e)}"
@@ -1177,11 +1515,28 @@ async def call_deepseek_reasoning(
 
 
 def extract_xml(content: str) -> str:
-    """Extract XML content from response, handling markdown blocks."""
+    """Extract XML content from response, handling markdown blocks.
+    
+    Matches original Supabase edge function behavior:
+    - Validates response isn't just whitespace
+    - Validates response size (max 1MB)
+    - Extracts XML from markdown code blocks
+    - Extracts XML using regex if needed
+    """
     if not content:
         return ""
-        
+    
     cleaned = content.strip()
+    
+    # Validate response isn't just whitespace (matching original)
+    if not cleaned:
+        print("Warning: AI returned empty response")
+        return ""
+    
+    # Validate response size (max 1MB, matching original)
+    if len(cleaned) > 1024 * 1024:
+        print("Warning: AI response is too large (>1MB)")
+        return ""
     
     # Remove markdown code blocks if present
     if cleaned.startswith("```"):
@@ -1189,8 +1544,14 @@ def extract_xml(content: str) -> str:
         lines = cleaned.split("\n")
         if lines[0].strip().startswith("```"):
             lines = lines[1:]
-        if lines[-1].strip().startswith("```"):
+        if lines and lines[-1].strip().startswith("```"):
             lines = lines[:-1]
         cleaned = "\n".join(lines)
-        
+    
+    # Extract XML content from response using regex (matching original)
+    # In case AI added explanation text before/after
+    xml_match = re.search(r'<xml[^>]*>[\s\S]*</xml>', cleaned, re.IGNORECASE)
+    if xml_match:
+        cleaned = xml_match.group(0)
+    
     return cleaned
