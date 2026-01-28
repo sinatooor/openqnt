@@ -192,3 +192,6 @@ http://localhost:8000/docs
 how to run backend?
 cd backend && source venv/bin/activate && uvicorn main:app --reload --port 8000
 
+how to get the gemini models?
+https://generativelanguage.googleapis.com/v1beta/models?key=
+
