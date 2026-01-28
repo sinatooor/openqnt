@@ -305,6 +305,18 @@ export const LeftSidebar = memo(() => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
+  // Filter categories based on search query
+  const filteredCategories = searchQuery.trim()
+    ? TOOL_CATEGORIES.map(cat => ({
+        ...cat,
+        nodes: cat.nodes.filter(node =>
+          node.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          node.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          node.type.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      })).filter(cat => cat.nodes.length > 0)
+    : TOOL_CATEGORIES;
+
   // Scroll Spy Logic
   const handleScroll = () => {
     if (!scrollContainerRef.current) return;
@@ -312,7 +324,7 @@ export const LeftSidebar = memo(() => {
     const scrollPosition = scrollContainerRef.current.scrollTop + 100; // Offset for stickiness
 
     // Find current active section
-    for (const cat of TOOL_CATEGORIES) {
+    for (const cat of filteredCategories) {
       const element = categoryRefs.current[cat.id];
       if (element) {
         const { offsetTop, offsetHeight } = element;
@@ -447,15 +459,22 @@ export const LeftSidebar = memo(() => {
             onScroll={handleScroll}
             className="flex-1 overflow-y-auto p-2 scroll-smooth no-scrollbar"
           >
-            {TOOL_CATEGORIES.map((cat) => (
-              <CategorySection
-                key={cat.id}
-                category={cat}
-                onDragStart={handleDragStart}
-                onNodeClick={handleNodeClick}
-                setRef={(el) => (categoryRefs.current[cat.id] = el)}
-              />
-            ))}
+            {filteredCategories.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-32 text-muted-foreground/50">
+                <Search className="w-8 h-8 mb-2 opacity-50" />
+                <p className="text-xs">No tools found for "{searchQuery}"</p>
+              </div>
+            ) : (
+              filteredCategories.map((cat) => (
+                <CategorySection
+                  key={cat.id}
+                  category={cat}
+                  onDragStart={handleDragStart}
+                  onNodeClick={handleNodeClick}
+                  setRef={(el) => (categoryRefs.current[cat.id] = el)}
+                />
+              ))
+            )}
 
             {/* Bottom Padding for scroll */}
             <div className="h-24" />
