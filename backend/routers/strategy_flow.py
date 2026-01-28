@@ -10,6 +10,11 @@ import os
 import httpx
 from pathlib import Path
 
+from flow.compiler import compile_flow_strategy, validate_flow_strategy
+from engine.backtester import BacktestEngine
+from engine.monte_carlo import run_monte_carlo
+from data_service import MarketDataService
+
 router = APIRouter(prefix="/api/flow", tags=["flow"])
 
 # ============================================================
@@ -50,6 +55,29 @@ class SaveFlowStrategyRequest(BaseModel):
     nodes: List[Dict[str, Any]]
     edges: List[Dict[str, Any]]
     settings: Optional[Dict[str, Any]] = None
+
+
+class CompileFlowRequest(BaseModel):
+    nodes: List[Dict[str, Any]]
+    edges: List[Dict[str, Any]]
+    settings: Optional[Dict[str, Any]] = None
+
+
+class BacktestFlowRequest(BaseModel):
+    nodes: List[Dict[str, Any]]
+    edges: List[Dict[str, Any]]
+    settings: Optional[Dict[str, Any]] = None
+    symbol: str = "EURUSD"
+    start_date: str = "2024-01-01"
+    end_date: str = "2024-06-30"
+    initial_cash: float = 100000.0
+
+
+class MonteCarloRequest(BaseModel):
+    equity_curve: List[Dict[str, Any]]
+    trades: List[Dict[str, Any]]
+    iterations: int = 1000
+    method: str = "trade_shuffle"
 
 # ============================================================
 # Load Flow System Prompt
@@ -184,6 +212,77 @@ async def convert_flow_to_code(req: ConvertFlowRequest):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/compile")
+async def compile_flow(req: CompileFlowRequest):
+    """
+    Compile Flow nodes/edges into deterministic Python code.
+    """
+    result = compile_flow_strategy(req.nodes, req.edges, settings=req.settings)
+    return {
+        "success": result.validation.is_valid,
+        "code": result.python_code,
+        "compiled": result.compiled,
+        "errors": result.validation.errors,
+        "warnings": result.validation.warnings,
+    }
+
+
+@router.post("/backtest")
+async def backtest_flow(req: BacktestFlowRequest):
+    """
+    Run a bar-based backtest using the Flow runtime engine.
+    """
+    settings = {**(req.settings or {}), "symbol": req.symbol}
+    compile_result = compile_flow_strategy(req.nodes, req.edges, settings=settings)
+    if not compile_result.validation.is_valid:
+        return {
+            "success": False,
+            "errors": compile_result.validation.errors,
+            "warnings": compile_result.validation.warnings,
+        }
+
+    data_service = MarketDataService(fmp_api_key=os.getenv("FMP_API_KEY"))
+    data = data_service.get_data(
+        symbol=req.symbol,
+        start_date=req.start_date,
+        end_date=req.end_date,
+        timeframe="1h",
+    )
+    if data.empty:
+        raise HTTPException(status_code=400, detail="No market data found for backtest.")
+
+    engine = BacktestEngine(initial_cash=req.initial_cash)
+    result = engine.run(
+        strategy_code=compile_result.python_code,
+        data=data,
+        symbol=req.symbol,
+    )
+
+    return {
+        "success": True,
+        "equity_curve": result.equity_curve,
+        "drawdown_curve": result.drawdown_curve,
+        "trades": result.trades,
+        "fills": result.fills,
+        "metrics": result.metrics,
+        "per_bar": result.per_bar,
+    }
+
+
+@router.post("/monte-carlo")
+async def monte_carlo(req: MonteCarloRequest):
+    """
+    Run Monte Carlo simulation on backtest outputs.
+    """
+    report = run_monte_carlo(
+        equity_curve=req.equity_curve,
+        trades=req.trades,
+        iterations=req.iterations,
+        method=req.method,
+    )
+    return {"success": True, "report": report.__dict__}
 
 
 def generate_python_code(indicators: list, conditions: list, actions: list, settings: dict) -> str:
