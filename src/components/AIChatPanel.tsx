@@ -297,7 +297,7 @@ export const AIChatPanel = ({ onBlocksGenerated, getCurrentWorkspaceXml, getSele
                 }
 
                 const response = await fetch(
-                    `http://localhost:8000/agent/chat`,
+                    `http://localhost:8000/api/agent/chat`,
                     {
                         method: "POST",
                         headers: {

@@ -64,7 +64,7 @@ export const PortfolioDashboard = () => {
     const { data: trades = [], isLoading: loadingTrades } = useQuery<Trade[]>({
         queryKey: ['portfolio-trades'],
         queryFn: async () => {
-            const res = await fetch(`${API_BASE_URL}/trades`);
+            const res = await fetch(`${API_BASE_URL}/api/trades`);
             if (!res.ok) throw new Error('Failed to fetch trades');
             return res.json();
         }
@@ -74,7 +74,7 @@ export const PortfolioDashboard = () => {
     const { data: summary, isLoading: loadingSummary } = useQuery<TradeSummary>({
         queryKey: ['trade-summary'],
         queryFn: async () => {
-            const res = await fetch(`${API_BASE_URL}/trades/summary`);
+            const res = await fetch(`${API_BASE_URL}/api/trades/summary`);
             if (!res.ok) throw new Error('Failed to fetch summary');
             return res.json();
         }
