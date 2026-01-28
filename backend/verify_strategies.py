@@ -7,8 +7,12 @@ from datetime import datetime
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from backend import local_database as db
-from backend.routers import strategies_v2
+try:
+    import local_database as db
+    from routers import strategies_v2
+except ImportError:
+    from backend import local_database as db
+    from backend.routers import strategies_v2
 
 # Wrapper for request objects since router expects Pydantic models
 class MockRequest:

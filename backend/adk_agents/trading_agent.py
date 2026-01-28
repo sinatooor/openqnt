@@ -107,7 +107,7 @@ from .tools.screener_tools import (
 # Main Trading Agent
 trading_agent = Agent(
     name="trading_agent",
-    model="gemini-2.0-flash",
+    model="gemini-3-flash-preview",  # Updated to use working model
     description="AI trading assistant that can analyze markets, create custom indicators, execute trades, and manage integrations",
     instruction="""You are an expert AI trading assistant with access to powerful tools.
 
@@ -312,7 +312,7 @@ User: "Buy 0.1 lots of EURUSD"
 # Specialized sub-agents for more focused tasks
 research_agent = Agent(
     name="research_agent",
-    model="gemini-2.0-flash",
+    model="gemini-3-flash-preview",  # Updated to use working model
     description="Market research and news analysis agent",
     instruction="""You are a market research specialist.
     
@@ -333,7 +333,7 @@ Be concise and focus on actionable insights.
 
 indicator_agent = Agent(
     name="indicator_agent", 
-    model="gemini-2.0-flash",
+    model="gemini-3-flash-preview",  # Updated to use working model
     description="Custom indicator creation and management agent",
     instruction="""You are a technical analysis expert.
 
