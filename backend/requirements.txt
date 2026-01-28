@@ -16,7 +16,10 @@ numpy
 # Trading & Backtesting
 nautilus_trader
 backtesting
+backtrader
 trading-ig
+python-binance
+TA-Lib
 
 # Database
 sqlalchemy
