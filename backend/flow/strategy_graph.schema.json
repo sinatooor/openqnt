@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ppm.example.com/schemas/strategy-graph.schema.json",
+  "title": "StrategyGraph",
+  "type": "object",
+  "required": ["nodes", "edges"],
+  "properties": {
+    "version": { "type": "string" },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "settings": { "type": "object" },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "position", "data"],
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string" },
+          "position": {
+            "type": "object",
+            "required": ["x", "y"],
+            "properties": {
+              "x": { "type": "number" },
+              "y": { "type": "number" }
+            }
+          },
+          "data": { "type": "object" }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "source", "target"],
+        "properties": {
+          "id": { "type": "string" },
+          "source": { "type": "string" },
+          "target": { "type": "string" },
+          "sourceHandle": { "type": ["string", "null"] },
+          "targetHandle": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}
