@@ -5,13 +5,7 @@
  */
 
 import { memo, useState, useCallback } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { WindowModal } from './WindowModal';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -261,20 +255,23 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl h-[700px] bg-card/80 backdrop-blur-xl border-border/50 text-foreground p-0 flex flex-col">
-        <DialogHeader className="p-6 pb-0">
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <TrendingUp className="w-5 h-5 text-purple-400" />
-            Backtest Strategy
-          </DialogTitle>
-          <DialogDescription className="text-muted-foreground">
-            Configure parameters and run a historical simulation
-          </DialogDescription>
-        </DialogHeader>
+    <WindowModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Backtest Strategy"
+      icon={<TrendingUp className="w-5 h-5" />}
+      defaultWidth={900}
+      defaultHeight={700}
+      minWidth={600}
+      minHeight={500}
+    >
+      <div className="flex flex-col h-full">
+        <p className="text-sm text-muted-foreground px-6 pt-2">
+          Configure parameters and run a historical simulation
+        </p>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'config' | 'results')} className="flex-1 flex flex-col">
-          <TabsList className="mx-6 bg-secondary border border-border">
+          <TabsList className="mx-4 mt-2 bg-secondary border border-border">
             <TabsTrigger value="config" className="flex items-center gap-1.5 data-[state=active]:bg-purple-600">
               <Settings2 className="w-3.5 h-3.5" />
               Configuration
@@ -614,8 +611,8 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
             </TabsContent>
           </ScrollArea>
         </Tabs>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </WindowModal>
   );
 });
 

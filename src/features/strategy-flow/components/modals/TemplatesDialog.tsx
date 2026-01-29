@@ -4,18 +4,12 @@
  */
 
 import { memo, useState, useMemo } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { WindowModal } from './WindowModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, TrendingUp, Zap, Shield, Clock, Star, Download } from 'lucide-react';
+import { Search, TrendingUp, Zap, Shield, Clock, Star, Download, Layers } from 'lucide-react';
 import { useStrategyFlowStore, EDGE_DATA_TYPE_COLORS } from '../../store/strategyFlowStore';
 import {
   INDICATOR_NODES,
@@ -362,20 +356,23 @@ export const TemplatesDialog = memo(({ open, onOpenChange }: TemplatesDialogProp
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl bg-card/80 backdrop-blur-xl border-border/50 text-foreground max-h-[80vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Star className="w-5 h-5 text-yellow-400" />
-            Strategy Templates
-          </DialogTitle>
-          <DialogDescription className="text-muted-foreground">
-            Choose a pre-built strategy template to get started quickly.
-          </DialogDescription>
-        </DialogHeader>
+    <WindowModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Strategy Templates"
+      icon={<Layers className="w-5 h-5 text-yellow-400" />}
+      defaultWidth={900}
+      defaultHeight={700}
+      minWidth={600}
+      minHeight={400}
+    >
+      <div className="p-4">
+        <p className="text-sm text-muted-foreground mb-4">
+          Choose a pre-built strategy template to get started quickly.
+        </p>
 
         {/* Search and Filters */}
-        <div className="flex items-center gap-3 mt-2">
+        <div className="flex items-center gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -459,8 +456,8 @@ export const TemplatesDialog = memo(({ open, onOpenChange }: TemplatesDialogProp
             )}
           </div>
         </ScrollArea>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </WindowModal>
   );
 });
 

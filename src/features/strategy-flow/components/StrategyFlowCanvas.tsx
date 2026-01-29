@@ -30,11 +30,9 @@ import { CodeViewPanel } from './CodeViewPanel';
 import { AIChatPanel } from './AIChatPanel';
 import {
   BacktestModal,
-  SettingsModal,
   TemplatesDialog,
   SearchNodesDialog,
   ChartModal,
-  ProfileModal,
   JournalModal,
   ScreenerModal,
   LiveTradingPanel,
@@ -235,11 +233,9 @@ const StrategyFlowCanvasInner = () => {
 
   // Modal states
   const [showBacktest, setShowBacktest] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showChart, setShowChart] = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
   const [showJournal, setShowJournal] = useState(false);
   const [showScreener, setShowScreener] = useState(false);
   const [showLiveTrading, setShowLiveTrading] = useState(false);
@@ -455,8 +451,6 @@ const StrategyFlowCanvasInner = () => {
             onOpenChart={() => setShowChart(true)}
             onOpenCode={() => setShowCodePanel(!showCodePanel)}
             onOpenAI={() => setShowAIPanel(!showAIPanel)}
-            onOpenSettings={() => setShowSettings(true)}
-            onOpenProfile={() => setShowProfile(true)}
             onOpenJournal={() => setShowJournal(true)}
             onOpenScreener={() => setShowScreener(true)}
             onOpenLiveTrading={() => setShowLiveTrading(true)}
@@ -540,11 +534,9 @@ const StrategyFlowCanvasInner = () => {
 
       {/* Modals */}
       <BacktestModal open={showBacktest} onOpenChange={setShowBacktest} />
-      <SettingsModal open={showSettings} onOpenChange={setShowSettings} />
       <TemplatesDialog open={showTemplates} onOpenChange={setShowTemplates} />
       <SearchNodesDialog open={showSearch} onOpenChange={setShowSearch} />
       <ChartModal open={showChart} onOpenChange={setShowChart} />
-      <ProfileModal open={showProfile} onOpenChange={setShowProfile} />
       <JournalModal open={showJournal} onOpenChange={setShowJournal} />
       <ScreenerModal open={showScreener} onOpenChange={setShowScreener} />
       <LiveTradingPanel open={showLiveTrading} onOpenChange={setShowLiveTrading} />

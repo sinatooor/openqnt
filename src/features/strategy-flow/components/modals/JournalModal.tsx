@@ -5,12 +5,7 @@
 
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { WindowModal } from './WindowModal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -160,14 +155,19 @@ export const JournalModal = ({ open, onOpenChange }: JournalModalProps) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl h-[700px] bg-card/80 backdrop-blur-xl border-border/50 text-foreground p-0 flex flex-col">
-        <DialogHeader className="p-6 pb-0">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2 text-xl">
-              <BookOpen className="w-5 h-5 text-purple-400" />
-              Trade Journal
-            </DialogTitle>
+    <WindowModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Trade Journal"
+      icon={<BookOpen className="w-5 h-5 text-purple-400" />}
+      defaultWidth={900}
+      defaultHeight={700}
+      minWidth={600}
+      minHeight={400}
+    >
+      <div className="flex flex-col h-full">
+        <div className="flex items-center justify-between px-4 py-2 border-b border-border">
+          <div className="flex items-center gap-2">
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -189,10 +189,10 @@ export const JournalModal = ({ open, onOpenChange }: JournalModalProps) => {
               </Button>
             </div>
           </div>
-        </DialogHeader>
+        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-          <TabsList className="mx-6 mt-4 bg-secondary border border-border">
+          <TabsList className="mx-4 mt-2 bg-secondary border border-border">
             <TabsTrigger value="trades" className="data-[state=active]:bg-purple-600">
               <BookOpen className="w-3.5 h-3.5 mr-1.5" />
               Trade History
@@ -367,8 +367,8 @@ export const JournalModal = ({ open, onOpenChange }: JournalModalProps) => {
             </TabsContent>
           </ScrollArea>
         </Tabs>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </WindowModal>
   );
 };
 

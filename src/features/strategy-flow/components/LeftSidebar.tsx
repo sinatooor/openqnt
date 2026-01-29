@@ -40,6 +40,7 @@ import {
   TRADE_INFO_NODES,
 } from '../catalog/nodeCatalog';
 import { NodeCatalogItem } from '../types';
+import { SettingsModal, ProfileModal, JournalModal, HelpModal } from './modals';
 import * as Icons from 'lucide-react';
 
 // =============================================================================
@@ -301,6 +302,10 @@ export const LeftSidebar = memo(() => {
   const { addNode, setSearchQuery, searchQuery, leftSidebarWidth, setLeftSidebarOpen } = useStrategyFlowStore();
   const [activeCategory, setActiveCategory] = useState<string>('recent');
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -408,26 +413,58 @@ export const LeftSidebar = memo(() => {
         {/* Bottom Fixed Items */}
         <div className="flex flex-col items-center gap-1 p-1.5 border-t border-white/5 bg-black/20">
           <TooltipProvider delayDuration={0}>
-            {[
-              { id: 'settings', icon: Settings, label: 'Settings' },
-              { id: 'profile', icon: User, label: 'Profile' },
-              { id: 'history', icon: History, label: 'History' },
-              { id: 'help', icon: HelpCircle, label: 'Docs & Help' },
-            ].map((item) => (
-              <Tooltip key={item.id}>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => console.log(`Open ${item.label}`)}
-                    className="flex items-center justify-center w-9 h-9 rounded-md text-muted-foreground/60 hover:bg-white/5 hover:text-foreground transition-all"
-                  >
-                    <item.icon className="w-4 h-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="font-medium bg-popover text-popover-foreground text-xs">
-                  {item.label}
-                </TooltipContent>
-              </Tooltip>
-            ))}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setShowSettings(true)}
+                  className="flex items-center justify-center w-9 h-9 rounded-md text-muted-foreground/60 hover:bg-white/5 hover:text-foreground transition-all"
+                >
+                  <Settings className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="font-medium bg-popover text-popover-foreground text-xs">
+                Settings
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setShowProfile(true)}
+                  className="flex items-center justify-center w-9 h-9 rounded-md text-muted-foreground/60 hover:bg-white/5 hover:text-foreground transition-all"
+                >
+                  <User className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="font-medium bg-popover text-popover-foreground text-xs">
+                Profile
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setShowHistory(true)}
+                  className="flex items-center justify-center w-9 h-9 rounded-md text-muted-foreground/60 hover:bg-white/5 hover:text-foreground transition-all"
+                >
+                  <History className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="font-medium bg-popover text-popover-foreground text-xs">
+                History
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setShowHelp(true)}
+                  className="flex items-center justify-center w-9 h-9 rounded-md text-muted-foreground/60 hover:bg-white/5 hover:text-foreground transition-all"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="font-medium bg-popover text-popover-foreground text-xs">
+                Docs & Help
+              </TooltipContent>
+            </Tooltip>
           </TooltipProvider>
         </div>
       </div>
@@ -481,6 +518,12 @@ export const LeftSidebar = memo(() => {
           </div>
         </TooltipProvider>
       </div>
+
+      {/* Modals */}
+      <SettingsModal open={showSettings} onOpenChange={setShowSettings} />
+      <ProfileModal open={showProfile} onOpenChange={setShowProfile} />
+      <JournalModal open={showHistory} onOpenChange={setShowHistory} />
+      <HelpModal open={showHelp} onOpenChange={setShowHelp} />
     </div>
   );
 });
