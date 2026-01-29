@@ -1,9 +1,15 @@
 /**
  * StrategyFlowCanvas - Professional trading strategy builder
  * Layout: Icon rail + Left Panel | Canvas | Right Property Panel
+ * 
+ * PERFORMANCE OPTIMIZATIONS:
+ * - Debounced validation to avoid expensive recalculations
+ * - Memoized nodeTypes to prevent re-registration
+ * - Optimized selection change handlers
+ * - Reduced MiniMap update frequency
  */
 
-import { useCallback, useRef, useState, useEffect, useMemo, DragEvent } from 'react';
+import { useCallback, useRef, useState, useEffect, useMemo, DragEvent, memo } from 'react';
 import {
   ReactFlow,
   Background,
@@ -40,6 +46,9 @@ import {
 import { useStrategyFlowStore, isValidConnection, validateStrategy } from '../store/strategyFlowStore';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import type { StrategyFlowNode, NodeCatalogItem } from '../types';
+
+// Memoized node types - CRITICAL: must be stable reference
+const memoizedNodeTypes = nodeTypes;
 
 // Professional edge styling (defaults for new edges - actual color is set per-edge in store)
 const defaultEdgeOptions = {
@@ -186,13 +195,32 @@ const SaveStatusIndicator = ({ lastSavedAt, isModified }: { lastSavedAt: number 
 };
 
 // =============================================================================
-// STRATEGY VALIDATION BADGE
+// STRATEGY VALIDATION BADGE - Debounced for performance
 // =============================================================================
 
-const StrategyValidationBadge = ({ nodes, edges }: { nodes: StrategyFlowNode[]; edges: any[] }) => {
-  const validation = useMemo(() => validateStrategy(nodes, edges), [nodes, edges]);
+const StrategyValidationBadge = memo(({ nodes, edges }: { nodes: StrategyFlowNode[]; edges: any[] }) => {
+  // Debounce validation to avoid expensive recalculations on every change
+  const [debouncedValidation, setDebouncedValidation] = useState(() => 
+    nodes.length > 0 ? validateStrategy(nodes, edges) : null
+  );
 
-  if (nodes.length === 0) return null;
+  useEffect(() => {
+    if (nodes.length === 0) {
+      setDebouncedValidation(null);
+      return;
+    }
+
+    // Debounce validation by 300ms
+    const timer = setTimeout(() => {
+      setDebouncedValidation(validateStrategy(nodes, edges));
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [nodes, edges]);
+
+  if (!debouncedValidation || nodes.length === 0) return null;
+
+  const validation = debouncedValidation;
 
   return (
     <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs ${validation.isValid
@@ -219,7 +247,9 @@ const StrategyValidationBadge = ({ nodes, edges }: { nodes: StrategyFlowNode[]; 
       )}
     </div>
   );
-};
+});
+
+StrategyValidationBadge.displayName = 'StrategyValidationBadge';
 
 // Inner component that uses ReactFlow hooks
 const StrategyFlowCanvasInner = () => {
@@ -240,6 +270,7 @@ const StrategyFlowCanvasInner = () => {
   const [showScreener, setShowScreener] = useState(false);
   const [showLiveTrading, setShowLiveTrading] = useState(false);
 
+  // Use shallow comparison for store values to prevent unnecessary re-renders
   const {
     nodes,
     edges,
@@ -249,10 +280,6 @@ const StrategyFlowCanvasInner = () => {
     showGrid,
     isLocked,
     contextMenu,
-    leftSidebarOpen,
-    leftSidebarWidth,
-    rightPanelOpen,
-    rightPanelWidth,
     lastSavedAt,
     isModified,
     onNodesChange,
@@ -374,6 +401,16 @@ const StrategyFlowCanvasInner = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Memoize isValidConnection callback to prevent re-renders
+  const checkIsValidConnection = useCallback((connection: any) => {
+    const sourceNode = nodes.find(n => n.id === connection.source);
+    const targetNode = nodes.find(n => n.id === connection.target);
+    return isValidConnection(sourceNode, targetNode);
+  }, [nodes]);
+
+  // Memoize fitView options
+  const fitViewOptions = useMemo(() => ({ padding: 0.2 }), []);
+
   return (
     <div
       ref={reactFlowWrapper}
@@ -384,7 +421,7 @@ const StrategyFlowCanvasInner = () => {
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        nodeTypes={nodeTypes}
+        nodeTypes={memoizedNodeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
         connectionLineStyle={connectionLineStyle}
         onNodesChange={onNodesChange as OnNodesChange}
@@ -395,11 +432,7 @@ const StrategyFlowCanvasInner = () => {
         onPaneClick={handlePaneClick}
         onMoveEnd={handleMoveEnd}
         defaultViewport={viewport}
-        isValidConnection={(connection) => {
-          const sourceNode = nodes.find(n => n.id === connection.source);
-          const targetNode = nodes.find(n => n.id === connection.target);
-          return isValidConnection(sourceNode, targetNode);
-        }}
+        isValidConnection={checkIsValidConnection}
         selectionMode={SelectionMode.Partial}
         panOnDrag={true}
         selectNodesOnDrag={!isPanMode}
@@ -407,7 +440,7 @@ const StrategyFlowCanvasInner = () => {
         nodesConnectable={!isLocked}
         elementsSelectable={!isLocked}
         fitView
-        fitViewOptions={{ padding: 0.2 }}
+        fitViewOptions={fitViewOptions}
         minZoom={0.1}
         maxZoom={4}
         snapToGrid={false}

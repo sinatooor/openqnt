@@ -1,10 +1,16 @@
 /**
  * StrategyBaseNode - Base node component for all strategy flow nodes
  * Matches the dark theme design from reference screenshots
+ * 
+ * PERFORMANCE OPTIMIZATIONS:
+ * - Removed useHandleConnections hook (was causing O(n²) re-renders)
+ * - Static handle colors based on data type
+ * - Memoized sub-components
+ * - CSS containment for layout isolation
  */
 
-import { memo, ReactNode, useCallback } from 'react';
-import { Handle, Position, NodeProps, useReactFlow, useHandleConnections } from '@xyflow/react';
+import { memo, ReactNode, useCallback, useMemo } from 'react';
+import { Handle, Position, NodeProps } from '@xyflow/react';
 import { MoreHorizontal, Lock, Copy, Pencil, Trash2, Unlock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -22,14 +28,36 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useStrategyFlowStore } from '../../store/strategyFlowStore';
+import { 
+  useStrategyFlowStore,
+  selectSelectNode,
+  selectDuplicateNode,
+  selectDeleteNode,
+  selectLockNode,
+} from '../../store/strategyFlowStore';
 import { StrategyNodeData, HandleConfig } from '../../types';
 import { getHandleConfigs } from '../../utils/handleUtils';
 
 
 
 // =============================================================================
-// HANDLE COMPONENT
+// DATA TYPE COLORS - Static color mapping for performance
+// =============================================================================
+
+const DATA_TYPE_COLORS: Record<string, string> = {
+  number: '#8b5cf6',    // Purple for numbers/values
+  boolean: '#f59e0b',   // Amber for boolean/logic
+  signal: '#06b6d4',    // Cyan for execution signals
+  any: '#ec4899',       // Pink for any/variables
+  default: '#64748b',   // Slate gray fallback
+};
+
+const getHandleColor = (dataType?: string): string => {
+  return DATA_TYPE_COLORS[dataType || 'default'] || DATA_TYPE_COLORS.default;
+};
+
+// =============================================================================
+// HANDLE COMPONENT - Optimized with static colors
 // =============================================================================
 
 interface NodeHandleProps {
@@ -40,27 +68,41 @@ interface NodeHandleProps {
   selected?: boolean;
 }
 
+// Pre-computed style objects to avoid re-creating on every render
+const createHandleStyle = (offset: number, color: string) => ({
+  top: `${offset}%`,
+  width: 12,
+  height: 12,
+  background: color,
+  border: '2px solid hsl(var(--background))',
+  boxShadow: `0 0 0 2px ${color}`,
+  zIndex: 50,
+});
+
 const NodeHandle = memo(({ config, nodeColor, index, total, selected }: NodeHandleProps) => {
   const isLeft = config.position === 'left';
-  const { getEdge } = useReactFlow();
   
-  // Get connections to determine dynamic color
-  const connections = useHandleConnections({
-    type: config.type as 'source' | 'target',
-    id: config.id
-  });
-
   // Calculate vertical position for multiple handles
   const offset = total > 1 ? ((index + 1) / (total + 1)) * 100 : 50;
 
-  // Determine handle color based on connection
-  let handleColor = nodeColor;
-  if (connections.length > 0) {
-    const edge = getEdge(connections[0].edgeId);
-    if (edge?.style?.stroke) {
-      handleColor = edge.style.stroke;
-    }
-  }
+  // Use data type color if available, otherwise fall back to node color
+  const handleColor = useMemo(() => 
+    config.dataType ? getHandleColor(config.dataType) : nodeColor,
+    [config.dataType, nodeColor]
+  );
+
+  // Memoize style objects to prevent re-renders
+  const handleStyle = useMemo(() => 
+    createHandleStyle(offset, handleColor),
+    [offset, handleColor]
+  );
+
+  const labelStyle = useMemo(() => ({
+    top: `${offset}%`,
+    [isLeft ? 'right' : 'left']: 'calc(100% + 16px)',
+    transform: 'translateY(-180%)',
+    color: handleColor,
+  }), [offset, isLeft, handleColor]);
 
   return (
     <>
@@ -68,31 +110,28 @@ const NodeHandle = memo(({ config, nodeColor, index, total, selected }: NodeHand
         type={config.type}
         position={isLeft ? Position.Left : Position.Right}
         id={config.id}
-        style={{
-          top: `${offset}%`,
-          width: 12,
-          height: 12,
-          background: handleColor,
-          border: '2px solid hsl(var(--background))',
-          boxShadow: `0 0 0 2px ${handleColor}`,
-          zIndex: 50,
-        }}
-        className="!border-2 transition-colors duration-200"
+        style={handleStyle}
+        className="!border-2"
       />
       {selected && (
         <span
           className="absolute text-[10px] font-mono font-medium tracking-tight pointer-events-none whitespace-nowrap"
-          style={{
-            top: `${offset}%`,
-            [isLeft ? 'right' : 'left']: 'calc(100% + 16px)',
-            transform: 'translateY(-180%)',
-            color: handleColor,
-          }}
+          style={labelStyle}
         >
           {config.label}
         </span>
       )}
     </>
+  );
+}, (prevProps, nextProps) => {
+  // Custom comparison for better memoization
+  return (
+    prevProps.config.id === nextProps.config.id &&
+    prevProps.config.dataType === nextProps.config.dataType &&
+    prevProps.nodeColor === nextProps.nodeColor &&
+    prevProps.index === nextProps.index &&
+    prevProps.total === nextProps.total &&
+    prevProps.selected === nextProps.selected
   );
 });
 
@@ -127,15 +166,30 @@ export const StrategyBaseNode = memo(({
   icon,
   children,
 }: StrategyBaseNodeProps) => {
-  const { selectNode, duplicateNode, deleteNode, lockNode } = useStrategyFlowStore();
+  // Use individual selectors for stable references - prevents re-renders when other store parts change
+  const selectNode = useStrategyFlowStore(selectSelectNode);
+  const duplicateNode = useStrategyFlowStore(selectDuplicateNode);
+  const deleteNode = useStrategyFlowStore(selectDeleteNode);
+  const lockNode = useStrategyFlowStore(selectLockNode);
 
-  const handleConfigs = getHandleConfigs(nodeType, subType);
-  const leftHandles = handleConfigs.filter(h => h.position === 'left');
-  const rightHandles = handleConfigs.filter(h => h.position === 'right');
+  // Memoize handle configs to prevent recalculation
+  const { leftHandles, rightHandles } = useMemo(() => {
+    const configs = getHandleConfigs(nodeType, subType);
+    return {
+      leftHandles: configs.filter(h => h.position === 'left'),
+      rightHandles: configs.filter(h => h.position === 'right'),
+    };
+  }, [nodeType, subType]);
 
   const handleClick = useCallback(() => {
     selectNode(id);
   }, [id, selectNode]);
+
+  // Memoize glow style
+  const glowStyle = useMemo(() => 
+    selected ? { boxShadow: `0 0 20px ${color}30` } : undefined,
+    [selected, color]
+  );
 
   return (
     <ContextMenu>
@@ -143,20 +197,19 @@ export const StrategyBaseNode = memo(({
         <div
           onClick={handleClick}
           className="relative min-w-[180px] max-w-[280px] group"
+          style={{ contain: 'layout style' }}
         >
           {/* Visual Card Content - Inner Wrapper handles the styling/overflow */}
           <div
             className={cn(
-              'rounded-xl overflow-hidden transition-all duration-150',
+              'rounded-xl overflow-hidden',
               'bg-[#1a1a1a] border-2',
               selected
                 ? 'border-white/30 shadow-lg shadow-black/50'
                 : 'border-white/10 hover:border-white/20',
               data.locked && 'opacity-75'
             )}
-            style={{
-              boxShadow: selected ? `0 0 20px ${color}30` : undefined,
-            }}
+            style={glowStyle}
           >
             {/* Header */}
             <div
