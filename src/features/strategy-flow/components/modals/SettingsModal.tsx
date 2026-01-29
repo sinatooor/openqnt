@@ -3,14 +3,7 @@
  */
 
 import { memo, useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { WindowModal } from './WindowModal';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -67,19 +60,22 @@ export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) =
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl bg-card/80 backdrop-blur-xl border-border/50 text-foreground">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Settings className="w-5 h-5 text-purple-400" />
-            Strategy Flow Settings
-          </DialogTitle>
-          <DialogDescription className="text-muted-foreground">
-            Customize your strategy builder experience.
-          </DialogDescription>
-        </DialogHeader>
+    <WindowModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Strategy Flow Settings"
+      icon={<Settings className="w-5 h-5" />}
+      defaultWidth={550}
+      defaultHeight={600}
+      minWidth={400}
+      minHeight={400}
+    >
+      <div className="p-6">
+        <p className="text-sm text-muted-foreground mb-4">
+          Customize your strategy builder experience.
+        </p>
 
-        <Tabs defaultValue="canvas" className="mt-4">
+        <Tabs defaultValue="canvas" className="">
           <TabsList className="bg-secondary border-border w-full grid grid-cols-4">
             <TabsTrigger value="canvas" className="data-[state=active]:bg-accent">
               <Grid3X3 className="w-4 h-4 mr-1" />
@@ -383,7 +379,7 @@ export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) =
           </TabsContent>
         </Tabs>
 
-        <DialogFooter className="mt-6">
+        <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-border/50">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
@@ -398,9 +394,9 @@ export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) =
             <Save className="w-4 h-4 mr-2" />
             Save Settings
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </WindowModal>
   );
 });
 

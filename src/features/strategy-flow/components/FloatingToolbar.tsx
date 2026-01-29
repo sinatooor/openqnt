@@ -11,14 +11,12 @@ import {
   LineChart,
   Code2,
   Sparkles,
-  Settings,
   ZoomIn,
   ZoomOut,
   Maximize2,
   Save,
   Download,
   Upload,
-  User,
   BookOpen,
   Search,
   Activity,
@@ -37,8 +35,6 @@ interface FloatingToolbarProps {
   onOpenChart: () => void;
   onOpenCode: () => void;
   onOpenAI: () => void;
-  onOpenSettings: () => void;
-  onOpenProfile: () => void;
   onOpenJournal: () => void;
   onOpenScreener: () => void;
   onOpenLiveTrading: () => void;
@@ -55,8 +51,6 @@ export const FloatingToolbar = memo(({
   onOpenChart,
   onOpenCode,
   onOpenAI,
-  onOpenSettings,
-  onOpenProfile,
   onOpenJournal,
   onOpenScreener,
   onOpenLiveTrading,
@@ -234,19 +228,6 @@ export const FloatingToolbar = memo(({
           <TooltipContent side="bottom" className="text-xs">Trade Journal</TooltipContent>
         </Tooltip>
 
-        {/* Profile */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Toolbar.Button
-              onClick={onOpenProfile}
-              className="p-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-all duration-200 hover:scale-105"
-            >
-              <User className="w-4 h-4" />
-            </Toolbar.Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs">Profile & Settings</TooltipContent>
-        </Tooltip>
-
         <Toolbar.Separator className="w-px h-5 bg-border/50 mx-1" />
 
         {/* Zoom Controls */}
@@ -311,19 +292,6 @@ export const FloatingToolbar = memo(({
             </Toolbar.Button>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="text-xs">Export</TooltipContent>
-        </Tooltip>
-
-        {/* Settings */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Toolbar.Button
-              onClick={onOpenSettings}
-              className="p-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-all duration-200 hover:scale-105"
-            >
-              <Settings className="w-4 h-4" />
-            </Toolbar.Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs">Settings</TooltipContent>
         </Tooltip>
       </Toolbar.Root>
     </TooltipProvider>

@@ -2,6 +2,7 @@
  * Modal exports for Strategy Flow
  */
 
+export { WindowModal } from './WindowModal';
 export { BacktestModal, type BacktestConfig } from './BacktestModal';
 export { SettingsModal } from './SettingsModal';
 export { TemplatesDialog } from './TemplatesDialog';
@@ -11,3 +12,4 @@ export { ProfileModal } from './ProfileModal';
 export { JournalModal } from './JournalModal';
 export { ScreenerModal } from './ScreenerModal';
 export { LiveTradingPanel } from './LiveTradingPanel';
+export { HelpModal } from './HelpModal';

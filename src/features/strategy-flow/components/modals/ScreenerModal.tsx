@@ -4,12 +4,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { WindowModal } from './WindowModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -159,16 +154,17 @@ export const ScreenerModal = ({ open, onOpenChange, onSelectSymbol }: ScreenerMo
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[900px] h-[700px] bg-card/80 backdrop-blur-xl border-border/50 text-foreground p-0 flex flex-col">
-        <DialogHeader className="p-6 pb-0">
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <Search className="w-5 h-5 text-purple-400" />
-            Market Screener
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="flex-1 flex flex-col p-6 pt-4 gap-4">
+    <WindowModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Market Screener"
+      icon={<Search className="w-5 h-5 text-purple-400" />}
+      defaultWidth={900}
+      defaultHeight={700}
+      minWidth={600}
+      minHeight={400}
+    >
+      <div className="flex-1 flex flex-col p-4 gap-4">
           {/* Filters Section */}
           <div className="p-4 bg-secondary rounded-lg border border-border space-y-4">
             <div className="grid grid-cols-4 gap-4">
@@ -368,8 +364,7 @@ export const ScreenerModal = ({ open, onOpenChange, onSelectSymbol }: ScreenerMo
             </ScrollArea>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+    </WindowModal>
   );
 };
 

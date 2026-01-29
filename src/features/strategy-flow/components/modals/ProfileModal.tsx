@@ -4,12 +4,7 @@
  */
 
 import { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { WindowModal } from './WindowModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -132,17 +127,18 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] h-[600px] bg-card/80 backdrop-blur-xl border-border/50 text-foreground p-0">
-        <DialogHeader className="p-6 pb-0">
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <User className="w-5 h-5 text-purple-400" />
-            Profile & Settings
-          </DialogTitle>
-        </DialogHeader>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-          <TabsList className="mx-6 bg-secondary border border-border">
+    <WindowModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Profile & Settings"
+      icon={<User className="w-5 h-5" />}
+      defaultWidth={700}
+      defaultHeight={600}
+      minWidth={500}
+      minHeight={400}
+    >
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
+          <TabsList className="mx-4 mt-2 bg-secondary border border-border">
             <TabsTrigger value="profile" className="flex items-center gap-1.5 data-[state=active]:bg-purple-600">
               <User className="w-3.5 h-3.5" />
               Profile
@@ -442,8 +438,7 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
             </TabsContent>
           </ScrollArea>
         </Tabs>
-      </DialogContent>
-    </Dialog>
+    </WindowModal>
   );
 };
 

@@ -4,12 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { WindowModal } from './WindowModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -263,31 +258,34 @@ export const LiveTradingPanel = ({ open, onOpenChange }: LiveTradingPanelProps) 
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] h-[700px] glass border-border/50 shadow-trading-lg p-0 flex flex-col">
-        <DialogHeader className="p-6 pb-0">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2 text-xl">
-              <Activity className="w-5 h-5 text-purple-400" />
-              Live Trading
-            </DialogTitle>
-            {isRunning && (
-              <Badge 
-                variant="outline" 
-                className={`animate-pulse font-semibold tracking-wide ${
-                  isLiveMode 
-                    ? 'bg-loss/20 text-loss border-loss/40' 
-                    : 'bg-profit/20 text-profit border-profit/40'
-                }`}
-              >
-                <Activity className="w-3 h-3 mr-1.5" />
-                {isLiveMode ? 'LIVE' : 'PAPER'} TRADING
-              </Badge>
-            )}
+    <WindowModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Live Trading"
+      icon={<Activity className="w-5 h-5 text-purple-400" />}
+      defaultWidth={700}
+      defaultHeight={700}
+      minWidth={500}
+      minHeight={400}
+    >
+      <div className="flex flex-col h-full">
+        {isRunning && (
+          <div className="flex justify-end px-4 py-2 border-b border-border">
+            <Badge 
+              variant="outline" 
+              className={`animate-pulse font-semibold tracking-wide ${
+                isLiveMode 
+                  ? 'bg-loss/20 text-loss border-loss/40' 
+                  : 'bg-profit/20 text-profit border-profit/40'
+              }`}
+            >
+              <Activity className="w-3 h-3 mr-1.5" />
+              {isLiveMode ? 'LIVE' : 'PAPER'} TRADING
+            </Badge>
           </div>
-        </DialogHeader>
+        )}
 
-        <ScrollArea className="flex-1 p-6">
+        <ScrollArea className="flex-1 p-4">
           <div className="space-y-6">
             {/* Mode Selection */}
             {!isRunning && (
@@ -591,8 +589,8 @@ export const LiveTradingPanel = ({ open, onOpenChange }: LiveTradingPanelProps) 
             )}
           </div>
         </ScrollArea>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </WindowModal>
   );
 };
 
