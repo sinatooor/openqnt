@@ -1,4 +1,4 @@
-import { memo, useState, useRef, useEffect, DragEvent } from 'react';
+import { memo, useState, useRef, useCallback, useMemo, DragEvent } from 'react';
 import {
   Clock,
   Activity,
@@ -46,12 +46,20 @@ import { SettingsModal, ProfileModal, JournalModal, HelpModal } from './modals';
 import * as Icons from 'lucide-react';
 
 // =============================================================================
-// HELPERS
+// HELPERS - Cached icon lookup for performance
 // =============================================================================
 
-const getNodeIcon = (iconName: string) => {
+// Cache icon lookups to avoid repeated object access
+const iconCache = new Map<string, React.ComponentType<any>>();
+
+const getNodeIcon = (iconName: string): React.ComponentType<any> => {
+  if (iconCache.has(iconName)) {
+    return iconCache.get(iconName)!;
+  }
   // @ts-ignore
-  return Icons[iconName] || Activity;
+  const icon = Icons[iconName] || Activity;
+  iconCache.set(iconName, icon);
+  return icon;
 };
 
 // =============================================================================
@@ -169,47 +177,58 @@ const TOOL_CATEGORIES: SidebarCategory[] = [
 ];
 
 // =============================================================================
-// SUB-COMPONENTS
+// SUB-COMPONENTS - Optimized with memoization
 // =============================================================================
+
+// Static type colors - moved outside component to avoid recreation
+const TYPE_COLORS: Record<string, string> = {
+  'Price Data': 'bg-purple-500/30 text-purple-200',
+  'Number': 'bg-green-500/30 text-green-200',
+  'Boolean': 'bg-yellow-500/30 text-yellow-200',
+  'Trigger': 'bg-blue-500/30 text-blue-200',
+  'Signal': 'bg-cyan-500/30 text-cyan-200',
+  'Value': 'bg-pink-500/30 text-pink-200',
+  'Volume': 'bg-orange-500/30 text-orange-200',
+  'Time': 'bg-indigo-500/30 text-indigo-200',
+  'Size': 'bg-emerald-500/30 text-emerald-200',
+  'Price': 'bg-amber-500/30 text-amber-200',
+  'default': 'bg-gray-500/30 text-gray-200',
+};
+
+const getTypeColor = (type: string) => TYPE_COLORS[type] || TYPE_COLORS['default'];
 
 const DraggableItem = memo(({ item, onDragStart, onNodeClick }: {
   item: NodeCatalogItem;
   onDragStart: (e: DragEvent, item: NodeCatalogItem) => void;
   onNodeClick: (item: NodeCatalogItem) => void;
 }) => {
-  const Icon = getNodeIcon(item.icon);
+  // Memoize icon lookup
+  const Icon = useMemo(() => getNodeIcon(item.icon), [item.icon]);
 
-  // Type badge colors for tooltip
-  const typeColors: Record<string, string> = {
-    'Price Data': 'bg-purple-500/30 text-purple-200',
-    'Number': 'bg-green-500/30 text-green-200',
-    'Boolean': 'bg-yellow-500/30 text-yellow-200',
-    'Trigger': 'bg-blue-500/30 text-blue-200',
-    'Signal': 'bg-cyan-500/30 text-cyan-200',
-    'Value': 'bg-pink-500/30 text-pink-200',
-    'Volume': 'bg-orange-500/30 text-orange-200',
-    'Time': 'bg-indigo-500/30 text-indigo-200',
-    'Size': 'bg-emerald-500/30 text-emerald-200',
-    'Price': 'bg-amber-500/30 text-amber-200',
-    'default': 'bg-gray-500/30 text-gray-200',
-  };
-
-  const getTypeColor = (type: string) => typeColors[type] || typeColors['default'];
+  // Memoize icon style
+  const iconStyle = useMemo(() => ({ 
+    backgroundColor: `${item.color}15`, 
+    color: item.color 
+  }), [item.color]);
 
   const hasIO = (item.inputs?.length ?? 0) > 0 || (item.outputs?.length ?? 0) > 0;
+
+  // Memoize drag handler
+  const handleDrag = useCallback((e: DragEvent) => onDragStart(e, item), [onDragStart, item]);
+  const handleClick = useCallback(() => onNodeClick(item), [onNodeClick, item]);
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <div
           draggable
-          onDragStart={(e) => onDragStart(e, item)}
-          onClick={() => onNodeClick(item)}
-          className="group flex items-center gap-2.5 p-2.5 mb-1.5 bg-card/40 border border-white/5 rounded-lg hover:border-primary/50 hover:bg-white/5 cursor-grab active:cursor-grabbing transition-all shadow-sm hover:shadow-md"
+          onDragStart={handleDrag}
+          onClick={handleClick}
+          className="group flex items-center gap-2.5 p-2.5 mb-1.5 bg-card/40 border border-white/5 rounded-lg hover:border-primary/50 hover:bg-white/5 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md"
         >
           <div
             className="p-1.5 rounded-md shrink-0"
-            style={{ backgroundColor: `${item.color}15`, color: item.color }}
+            style={iconStyle}
           >
             <Icon className="w-4 h-4" />
           </div>
@@ -217,7 +236,7 @@ const DraggableItem = memo(({ item, onDragStart, onNodeClick }: {
             <span className="font-medium text-[13px] text-foreground/90 block">{item.label}</span>
             <p className="text-[10px] text-muted-foreground/70 truncate">{item.description}</p>
           </div>
-          <GripHorizontal className="w-3 h-3 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+          <GripHorizontal className="w-3 h-3 text-muted-foreground/30 opacity-0 group-hover:opacity-100 shrink-0" />
         </div>
       </TooltipTrigger>
       <TooltipContent

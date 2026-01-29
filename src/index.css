@@ -127,6 +127,14 @@ All colors MUST be HSL.
     transition-duration: 200ms;
   }
 
+  /* Disable transitions for ReactFlow elements to improve performance */
+  .react-flow__node,
+  .react-flow__node *,
+  .react-flow__edge,
+  .react-flow__handle {
+    transition: none;
+  }
+
   /* Glassmorphism effect */
   .glass {
     background: rgba(15, 15, 18, 0.8);
@@ -246,6 +254,32 @@ All colors MUST be HSL.
 .pipeline-canvas .react-flow__node {
   border-radius: 8px;
   font-size: 12px;
+}
+
+/* ================================
+   PERFORMANCE OPTIMIZATIONS
+   ================================ */
+
+/* Optimize ReactFlow node rendering with CSS containment */
+.react-flow__node {
+  contain: layout style;
+  will-change: transform;
+}
+
+/* Disable transitions during dragging for smoother performance */
+.react-flow__node.dragging,
+.react-flow__node.dragging * {
+  transition: none !important;
+}
+
+/* Optimize minimap with reduced update frequency */
+.react-flow__minimap {
+  contain: strict;
+}
+
+/* Reduce paint operations for edges */
+.react-flow__edges {
+  contain: layout;
 }
 
 /* Edge animation */

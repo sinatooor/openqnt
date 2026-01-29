@@ -1,9 +1,15 @@
 /**
  * Strategy Flow Store - Zustand store for the ReactFlow-based strategy builder
+ * 
+ * PERFORMANCE NOTES:
+ * - Use selectors to avoid unnecessary re-renders
+ * - Import { useShallow } from 'zustand/react/shallow' for object destructuring
+ * - Prefer individual selectors over destructuring multiple values
  */
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { useShallow } from 'zustand/react/shallow';
 import {
   applyNodeChanges,
   applyEdgeChanges,
@@ -914,7 +920,7 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
 );
 
 // =============================================================================
-// SELECTORS
+// SELECTORS - Use these for performance optimization
 // =============================================================================
 
 export const selectSelectedNode = (state: StrategyFlowState & StrategyFlowActions) => {
@@ -928,3 +934,32 @@ export const selectNodeById = (nodeId: string) => (state: StrategyFlowState & St
 export const selectNodesByType = (nodeType: StrategyFlowNodeType) => (state: StrategyFlowState & StrategyFlowActions) => {
   return state.nodes.filter((node) => node.type === nodeType);
 };
+
+// =============================================================================
+// HOOKS WITH SHALLOW COMPARISON - For better performance
+// =============================================================================
+
+/**
+ * Use this hook when you need multiple store values with shallow comparison
+ * This prevents re-renders when other parts of the store change
+ * 
+ * Example:
+ * const { nodes, edges } = useStrategyFlowStoreShallow(state => ({
+ *   nodes: state.nodes,
+ *   edges: state.edges
+ * }));
+ */
+export const useStrategyFlowStoreShallow = <T>(selector: (state: StrategyFlowState & StrategyFlowActions) => T): T => {
+  return useStrategyFlowStore(useShallow(selector));
+};
+
+// Individual action selectors (stable references)
+export const selectAddNode = (state: StrategyFlowState & StrategyFlowActions) => state.addNode;
+export const selectDeleteNode = (state: StrategyFlowState & StrategyFlowActions) => state.deleteNode;
+export const selectDuplicateNode = (state: StrategyFlowState & StrategyFlowActions) => state.duplicateNode;
+export const selectLockNode = (state: StrategyFlowState & StrategyFlowActions) => state.lockNode;
+export const selectSelectNode = (state: StrategyFlowState & StrategyFlowActions) => state.selectNode;
+export const selectUpdateNodeData = (state: StrategyFlowState & StrategyFlowActions) => state.updateNodeData;
+export const selectOnNodesChange = (state: StrategyFlowState & StrategyFlowActions) => state.onNodesChange;
+export const selectOnEdgesChange = (state: StrategyFlowState & StrategyFlowActions) => state.onEdgesChange;
+export const selectOnConnect = (state: StrategyFlowState & StrategyFlowActions) => state.onConnect;
