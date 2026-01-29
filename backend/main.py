@@ -687,6 +687,35 @@ async def screen_market(req: ScreeningRequest):
 
 
 # ============================================================
+# LLM NODE EXECUTION ENDPOINT
+# ============================================================
+
+from llm_service import LLMNodeRequest, LLMNodeResponse, execute_llm_node
+
+@app.post("/api/llm/execute", response_model=LLMNodeResponse)
+async def execute_llm_node_endpoint(req: LLMNodeRequest):
+    """
+    Execute an LLM node for strategy flow.
+    Supports multiple node types: sentiment analysis, regime detection, NL rules, etc.
+    
+    API keys are passed from the frontend (stored in browser localStorage).
+    Alternatively, can use environment variables as fallback.
+    """
+    try:
+        log_api_request("/api/llm/execute", {"nodeType": req.nodeType, "model": req.model})
+        result = await execute_llm_node(req)
+        return result
+    except Exception as e:
+        log_error(e, "execute_llm_node")
+        return LLMNodeResponse(
+            success=False,
+            error=str(e),
+            model=req.model,
+            result=req.fallback
+        )
+
+
+# ============================================================
 # BACKTEST ENDPOINT (Blockly XML)
 # ============================================================
 

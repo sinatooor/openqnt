@@ -403,6 +403,52 @@ export const getHandleConfigs = (nodeType: string, subType?: string): HandleConf
             ];
 
         case 'llm':
+            // Different handle configs based on LLM node subtype
+            if (subType === 'sentimentAnalysis') {
+                return [
+                    { id: 'text', type: 'target', position: 'left', label: 'Text', dataType: 'any' },
+                    { id: 'score', type: 'source', position: 'right', label: 'Score', dataType: 'number' },
+                    { id: 'signal', type: 'source', position: 'right', label: 'Signal', dataType: 'boolean' },
+                ];
+            }
+            if (subType === 'regimeDetection' || subType === 'marketRegimeClassification') {
+                return [
+                    { id: 'data', type: 'target', position: 'left', label: 'Data', dataType: 'any' },
+                    { id: 'indicators', type: 'target', position: 'left', label: 'Indicators', dataType: 'any' },
+                    { id: 'regime', type: 'source', position: 'right', label: 'Regime', dataType: 'any' },
+                    { id: 'confidence', type: 'source', position: 'right', label: 'Confidence', dataType: 'number' },
+                ];
+            }
+            if (subType === 'nlStrategyRules') {
+                return [
+                    { id: 'context', type: 'target', position: 'left', label: 'Context', dataType: 'any' },
+                    { id: 'signal', type: 'source', position: 'right', label: 'Signal', dataType: 'any' },
+                    { id: 'reasoning', type: 'source', position: 'right', label: 'Reasoning', dataType: 'any' },
+                ];
+            }
+            if (subType === 'parameterTuning') {
+                return [
+                    { id: 'performance', type: 'target', position: 'left', label: 'Performance', dataType: 'any' },
+                    { id: 'params', type: 'target', position: 'left', label: 'Params', dataType: 'any' },
+                    { id: 'suggested', type: 'source', position: 'right', label: 'Suggested', dataType: 'any' },
+                ];
+            }
+            if (subType === 'newsSentimentSignal') {
+                return [
+                    { id: 'symbol', type: 'target', position: 'left', label: 'Symbol', dataType: 'any' },
+                    { id: 'news', type: 'target', position: 'left', label: 'News', dataType: 'any' },
+                    { id: 'signal', type: 'source', position: 'right', label: 'Signal', dataType: 'any' },
+                    { id: 'strength', type: 'source', position: 'right', label: 'Strength', dataType: 'number' },
+                ];
+            }
+            if (subType === 'customCode') {
+                return [
+                    { id: 'data', type: 'target', position: 'left', label: 'Data', dataType: 'any' },
+                    { id: 'context', type: 'target', position: 'left', label: 'Context', dataType: 'any' },
+                    { id: 'result', type: 'source', position: 'right', label: 'Result', dataType: 'any' },
+                ];
+            }
+            // Default LLM decision node
             return [
                 { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
                 { id: 'output', type: 'source', position: 'right', label: 'JSON', dataType: 'any' },

@@ -46,7 +46,7 @@ const categoryLabels: Record<NodeCategory, string> = {
 export const NodePalette = memo(({ isOpen, onClose }: NodePaletteProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedCategories, setExpandedCategories] = useState<Set<NodeCategory>>(
-    new Set(['indicators', 'conditions', 'actions'])
+    new Set(['indicators', 'conditions', 'actions', 'llm'])
   );
   const addNode = useStrategyFlowStore((s) => s.addNode);
 

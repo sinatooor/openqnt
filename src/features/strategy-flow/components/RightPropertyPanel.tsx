@@ -4,13 +4,15 @@
  */
 
 import { memo, useCallback } from 'react';
-import { X, Lock, Unlock, Copy, Trash2, MoreHorizontal } from 'lucide-react';
+import { X, Lock, Unlock, Copy, Trash2, MoreHorizontal, AlertTriangle, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Textarea } from '@/components/ui/textarea';
+import Editor from '@monaco-editor/react';
 import {
   Select,
   SelectContent,
@@ -36,6 +38,9 @@ import {
   RiskNodeData,
   TradeInfoNodeData,
   LLMNodeData,
+  LLM_MODELS,
+  LLMNodeType,
+  LLMModel,
   TIMEFRAME_OPTIONS,
 } from '../types';
 
@@ -889,6 +894,24 @@ TradeInfoProperties.displayName = 'TradeInfoProperties';
 // LLM PROPERTIES
 // =============================================================================
 
+// Load configured API keys to show which models are available
+const getConfiguredProviders = (): Set<string> => {
+  try {
+    const stored = localStorage.getItem('llm-api-keys');
+    if (stored) {
+      const keys = JSON.parse(stored);
+      const configured = new Set<string>();
+      if (keys.openai) configured.add('openai');
+      if (keys.anthropic) configured.add('anthropic');
+      if (keys.google) configured.add('google');
+      return configured;
+    }
+  } catch {
+    // Ignore
+  }
+  return new Set();
+};
+
 interface LLMPropertiesProps {
   nodeId: string;
   data: LLMNodeData;
@@ -896,47 +919,238 @@ interface LLMPropertiesProps {
 
 const LLMProperties = memo(({ nodeId, data }: LLMPropertiesProps) => {
   const { updateNodeData } = useStrategyFlowStore();
+  const configuredProviders = getConfiguredProviders();
+  const llmType = data.llmType || 'llmDecision';
 
+  // Filter models by configured providers
+  const availableModels = LLM_MODELS.filter(m => configuredProviders.has(m.provider));
+  const hasAnyKey = configuredProviders.size > 0;
+
+  // Render custom code editor
+  if (llmType === 'customCode') {
+    return (
+      <div className="space-y-4">
+        {/* Language Selection */}
+        <SelectInput
+          label="Language"
+          value={data.language || 'python'}
+          onChange={(v) => updateNodeData(nodeId, { language: v as 'python' | 'javascript' })}
+          options={[
+            { value: 'python', label: 'Python' },
+            { value: 'javascript', label: 'JavaScript' },
+          ]}
+        />
+
+        {/* Monaco Editor */}
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">Code</Label>
+          <div className="border border-border rounded-md overflow-hidden">
+            <Editor
+              height="300px"
+              language={data.language || 'python'}
+              theme="vs-dark"
+              value={data.code || ''}
+              onChange={(value) => updateNodeData(nodeId, { code: value || '' })}
+              options={{
+                minimap: { enabled: false },
+                fontSize: 12,
+                lineNumbers: 'on',
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+                tabSize: 2,
+                wordWrap: 'on',
+                padding: { top: 8 },
+              }}
+            />
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            Available: data (OHLCV), indicators, context. Return object with signal & confidence.
+          </p>
+        </div>
+
+        {/* Output Schema */}
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">Output Schema (JSON)</Label>
+          <Input
+            value={JSON.stringify(data.schema || {})}
+            onChange={(e) => {
+              try {
+                updateNodeData(nodeId, { schema: JSON.parse(e.target.value) });
+              } catch {
+                // Ignore invalid JSON while typing
+              }
+            }}
+            placeholder='{"signal": "string", "confidence": "number"}'
+            className="text-sm font-mono"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Standard LLM node properties
   return (
     <div className="space-y-4">
+      {/* No API Keys Warning */}
+      {!hasAnyKey && (
+        <div className="flex items-start gap-2 p-2 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+          <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
+          <div className="text-xs text-amber-200">
+            <p className="font-medium">No API keys configured</p>
+            <p className="text-amber-200/80">
+              Go to Settings → LLM to add API keys.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Model Selection */}
+      <div className="space-y-2">
+        <Label className="text-xs text-muted-foreground">Model</Label>
+        <Select 
+          value={data.model || 'gpt-4o-mini'} 
+          onValueChange={(v) => updateNodeData(nodeId, { model: v as LLMModel })}
+        >
+          <SelectTrigger className="h-8 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {LLM_MODELS.map((model) => {
+              const isAvailable = configuredProviders.has(model.provider);
+              return (
+                <SelectItem 
+                  key={model.id} 
+                  value={model.id}
+                  disabled={!isAvailable}
+                  className={!isAvailable ? 'opacity-50' : ''}
+                >
+                  <div className="flex items-center gap-2">
+                    <span>{model.label}</span>
+                    {!isAvailable && (
+                      <span className="text-[10px] text-muted-foreground">(No key)</span>
+                    )}
+                  </div>
+                </SelectItem>
+              );
+            })}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Temperature */}
+      <SliderInput
+        label="Temperature"
+        value={data.temperature ?? 0.3}
+        onChange={(v) => updateNodeData(nodeId, { temperature: v })}
+        min={0}
+        max={1}
+        step={0.1}
+      />
+
+      {/* Prompt */}
       <div className="space-y-2">
         <Label className="text-xs text-muted-foreground">Prompt</Label>
-        <Input
+        <Textarea
           value={data.prompt || ''}
           onChange={(e) => updateNodeData(nodeId, { prompt: e.target.value })}
-          placeholder="Describe the decision the model should make"
-          className="text-sm"
+          placeholder="Describe what the LLM should analyze or decide..."
+          className="min-h-[120px] text-sm resize-none"
         />
       </div>
+
+      {/* Type-specific settings */}
+      {llmType === 'sentimentAnalysis' && (
+        <>
+          <SliderInput
+            label="Sentiment Threshold"
+            value={data.sentimentThreshold ?? 0.3}
+            onChange={(v) => updateNodeData(nodeId, { sentimentThreshold: v })}
+            min={-1}
+            max={1}
+            step={0.1}
+          />
+          <SelectInput
+            label="Sentiment Source"
+            value={data.sentimentSource || 'news'}
+            onChange={(v) => updateNodeData(nodeId, { sentimentSource: v as 'news' | 'social' | 'custom' })}
+            options={[
+              { value: 'news', label: 'News Articles' },
+              { value: 'social', label: 'Social Media' },
+              { value: 'custom', label: 'Custom Input' },
+            ]}
+          />
+        </>
+      )}
+
+      {(llmType === 'regimeDetection' || llmType === 'marketRegimeClassification') && (
+        <NumberInput
+          label="Lookback Period (bars)"
+          value={data.lookbackPeriod ?? 20}
+          onChange={(v) => updateNodeData(nodeId, { lookbackPeriod: v })}
+          min={5}
+          max={200}
+        />
+      )}
+
+      {llmType === 'parameterTuning' && (
+        <SelectInput
+          label="Optimization Goal"
+          value={data.optimizationGoal || 'sharpe'}
+          onChange={(v) => updateNodeData(nodeId, { optimizationGoal: v as 'sharpe' | 'returns' | 'drawdown' })}
+          options={[
+            { value: 'sharpe', label: 'Sharpe Ratio' },
+            { value: 'returns', label: 'Total Returns' },
+            { value: 'drawdown', label: 'Min Drawdown' },
+          ]}
+        />
+      )}
+
+      {llmType === 'newsSentimentSignal' && (
+        <SliderInput
+          label="Signal Threshold"
+          value={data.sentimentThreshold ?? 0.5}
+          onChange={(v) => updateNodeData(nodeId, { sentimentThreshold: v })}
+          min={0}
+          max={1}
+          step={0.1}
+        />
+      )}
+
+      {/* Output Schema */}
       <div className="space-y-2">
-        <Label className="text-xs text-muted-foreground">Schema (JSON)</Label>
+        <Label className="text-xs text-muted-foreground">Output Schema (JSON)</Label>
         <Input
           value={JSON.stringify(data.schema || {})}
           onChange={(e) => {
             try {
               updateNodeData(nodeId, { schema: JSON.parse(e.target.value) });
             } catch {
-              // ignore invalid JSON while typing
+              // Ignore invalid JSON while typing
             }
           }}
           placeholder='{"shouldTrade": "boolean"}'
           className="text-sm font-mono"
         />
       </div>
+
+      {/* Fallback */}
       <div className="space-y-2">
-        <Label className="text-xs text-muted-foreground">Fallback (JSON)</Label>
+        <Label className="text-xs text-muted-foreground">Fallback Value (JSON)</Label>
         <Input
           value={JSON.stringify(data.fallback || {})}
           onChange={(e) => {
             try {
               updateNodeData(nodeId, { fallback: JSON.parse(e.target.value) });
             } catch {
-              // ignore invalid JSON while typing
+              // Ignore invalid JSON while typing
             }
           }}
           placeholder='{"shouldTrade": false}'
           className="text-sm font-mono"
         />
+        <p className="text-[10px] text-muted-foreground">
+          Used when LLM fails or returns invalid response.
+        </p>
       </div>
     </div>
   );
