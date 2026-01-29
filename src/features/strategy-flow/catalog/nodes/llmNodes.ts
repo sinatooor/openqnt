@@ -1,5 +1,5 @@
 /**
- * LLM Nodes - Prompt-based decision nodes
+ * LLM Nodes - AI-powered decision and analysis nodes
  */
 import { NodeCatalogItem } from '../../types';
 
@@ -18,9 +18,189 @@ export const LLM_NODES: NodeCatalogItem[] = [
     color: '#a855f7',
     defaultData: {
       label: 'LLM Decision',
+      llmType: 'llmDecision',
       prompt: 'Decide whether to enter a trade based on context.',
+      model: 'gpt-4o-mini',
+      temperature: 0.3,
       schema: { shouldTrade: 'boolean', confidence: 'number' },
       fallback: { shouldTrade: false, confidence: 0 },
+    },
+  },
+  {
+    type: 'sentimentAnalysis',
+    nodeType: 'llm',
+    label: 'Sentiment Analysis',
+    description: 'Analyze market sentiment from text',
+    tooltip: 'Analyzes news articles, social media, or custom text to determine market sentiment (-1 bearish to +1 bullish).',
+    inputs: ['Text', 'News Feed'],
+    outputs: ['Sentiment Score', 'Signal'],
+    category: 'llm',
+    subcategory: 'Analysis',
+    icon: 'Brain',
+    color: '#ec4899',
+    defaultData: {
+      label: 'Sentiment Analysis',
+      llmType: 'sentimentAnalysis',
+      prompt: 'Analyze the following market news/text and determine the overall sentiment. Return a score from -1 (very bearish) to +1 (very bullish).',
+      model: 'gpt-4o-mini',
+      temperature: 0.2,
+      sentimentThreshold: 0.3,
+      sentimentSource: 'news',
+      schema: { sentiment: 'number', confidence: 'number', summary: 'string' },
+      fallback: { sentiment: 0, confidence: 0, summary: 'No data' },
+    },
+  },
+  {
+    type: 'regimeDetection',
+    nodeType: 'llm',
+    label: 'Regime Detection',
+    description: 'Detect current market regime',
+    tooltip: 'Uses LLM to analyze price action and indicators to classify the current market regime (trending, ranging, volatile).',
+    inputs: ['Market Data', 'Indicators'],
+    outputs: ['Regime', 'Confidence'],
+    category: 'llm',
+    subcategory: 'Analysis',
+    icon: 'Layers',
+    color: '#06b6d4',
+    defaultData: {
+      label: 'Regime Detection',
+      llmType: 'regimeDetection',
+      prompt: 'Analyze the provided market data and indicators. Classify the current market regime as one of: trending_up, trending_down, ranging, or volatile.',
+      model: 'gpt-4o-mini',
+      temperature: 0.2,
+      regimeTypes: ['trending_up', 'trending_down', 'ranging', 'volatile'],
+      lookbackPeriod: 20,
+      schema: { regime: 'string', confidence: 'number', reasoning: 'string' },
+      fallback: { regime: 'ranging', confidence: 0.5, reasoning: 'Default fallback' },
+    },
+  },
+  {
+    type: 'nlStrategyRules',
+    nodeType: 'llm',
+    label: 'NL Strategy Rules',
+    description: 'Natural language strategy rules',
+    tooltip: 'Define trading rules in plain English. The LLM interprets them and generates trading signals.',
+    inputs: ['Market Context'],
+    outputs: ['Signal', 'Reasoning'],
+    category: 'llm',
+    subcategory: 'Strategy',
+    icon: 'FileText',
+    color: '#f59e0b',
+    defaultData: {
+      label: 'NL Strategy Rules',
+      llmType: 'nlStrategyRules',
+      prompt: 'Buy when price is near support and RSI is oversold. Sell when price reaches resistance or RSI is overbought. Use trailing stops.',
+      model: 'gpt-4o',
+      temperature: 0.3,
+      schema: { action: 'string', confidence: 'number', reasoning: 'string' },
+      fallback: { action: 'hold', confidence: 0, reasoning: 'No signal' },
+    },
+  },
+  {
+    type: 'parameterTuning',
+    nodeType: 'llm',
+    label: 'Parameter Tuning',
+    description: 'LLM-suggested parameter optimization',
+    tooltip: 'Uses LLM reasoning to suggest optimal parameters for indicators and strategy rules based on recent performance.',
+    inputs: ['Performance Data', 'Current Params'],
+    outputs: ['Suggested Params'],
+    category: 'llm',
+    subcategory: 'Optimization',
+    icon: 'SlidersHorizontal',
+    color: '#10b981',
+    defaultData: {
+      label: 'Parameter Tuning',
+      llmType: 'parameterTuning',
+      prompt: 'Based on the recent trading performance and current parameters, suggest improved parameter values to optimize the Sharpe ratio.',
+      model: 'gpt-4o',
+      temperature: 0.4,
+      parametersToTune: ['rsiPeriod', 'maPeriod', 'stopLoss'],
+      optimizationGoal: 'sharpe',
+      schema: { suggestedParams: 'object', expectedImprovement: 'number', reasoning: 'string' },
+      fallback: { suggestedParams: {}, expectedImprovement: 0, reasoning: 'No suggestions' },
+    },
+  },
+  {
+    type: 'marketRegimeClassification',
+    nodeType: 'llm',
+    label: 'Market Classification',
+    description: 'Classify market conditions',
+    tooltip: 'Advanced market classification using LLM to analyze multiple factors: volatility, trend strength, volume, and macro conditions.',
+    inputs: ['OHLCV', 'Volume', 'Volatility'],
+    outputs: ['Classification', 'Scores'],
+    category: 'llm',
+    subcategory: 'Analysis',
+    icon: 'BarChart3',
+    color: '#8b5cf6',
+    defaultData: {
+      label: 'Market Classification',
+      llmType: 'marketRegimeClassification',
+      prompt: 'Analyze the market data and classify conditions across multiple dimensions: trend (strong/weak/none), volatility (high/medium/low), momentum (bullish/neutral/bearish).',
+      model: 'gpt-4o-mini',
+      temperature: 0.2,
+      schema: { trend: 'string', volatility: 'string', momentum: 'string', overallScore: 'number' },
+      fallback: { trend: 'none', volatility: 'medium', momentum: 'neutral', overallScore: 0.5 },
+    },
+  },
+  {
+    type: 'newsSentimentSignal',
+    nodeType: 'llm',
+    label: 'News → Signal',
+    description: 'Convert news sentiment to signal',
+    tooltip: 'Fetches and analyzes news headlines to generate trading signals. Filters by relevance and recency.',
+    inputs: ['Symbol', 'News Feed'],
+    outputs: ['Signal', 'Strength'],
+    category: 'llm',
+    subcategory: 'Signals',
+    icon: 'Newspaper',
+    color: '#ef4444',
+    defaultData: {
+      label: 'News → Signal',
+      llmType: 'newsSentimentSignal',
+      prompt: 'Analyze the latest news for the given symbol. Determine if the news is bullish, bearish, or neutral. Consider impact magnitude and relevance.',
+      model: 'gpt-4o-mini',
+      temperature: 0.2,
+      sentimentThreshold: 0.5,
+      schema: { signal: 'string', strength: 'number', keyNews: 'array', reasoning: 'string' },
+      fallback: { signal: 'neutral', strength: 0, keyNews: [], reasoning: 'No news' },
+    },
+  },
+  {
+    type: 'customCode',
+    nodeType: 'llm',
+    label: 'Custom Code',
+    description: 'Custom Python/JS code block',
+    tooltip: 'Write custom Python or JavaScript code that runs server-side. Has access to market data, indicators, and can return trading signals.',
+    inputs: ['Data', 'Context'],
+    outputs: ['Result'],
+    category: 'llm',
+    subcategory: 'Custom',
+    icon: 'Code',
+    color: '#64748b',
+    defaultData: {
+      label: 'Custom Code',
+      llmType: 'customCode',
+      prompt: '',
+      language: 'python',
+      code: `# Custom trading logic
+# Available: data (OHLCV), indicators, context
+
+def execute(data, indicators, context):
+    """
+    Custom trading logic.
+    Return: { "signal": "buy"|"sell"|"hold", "confidence": 0-1 }
+    """
+    close = data['close'][-1]
+    sma = indicators.get('sma', close)
+    
+    if close > sma:
+        return {"signal": "buy", "confidence": 0.7}
+    elif close < sma:
+        return {"signal": "sell", "confidence": 0.7}
+    return {"signal": "hold", "confidence": 0.5}
+`,
+      schema: { signal: 'string', confidence: 'number' },
+      fallback: { signal: 'hold', confidence: 0 },
     },
   },
 ];

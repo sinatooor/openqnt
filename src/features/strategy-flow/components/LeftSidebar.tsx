@@ -16,6 +16,7 @@ import {
   HelpCircle,
   Search,
   GripHorizontal,
+  Sparkles,
   LucideIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -38,6 +39,7 @@ import {
   MATH_NODES,
   RISK_NODES,
   TRADE_INFO_NODES,
+  LLM_NODES,
 } from '../catalog/nodeCatalog';
 import { NodeCatalogItem } from '../types';
 import { SettingsModal, ProfileModal, JournalModal, HelpModal } from './modals';
@@ -155,6 +157,14 @@ const TOOL_CATEGORIES: SidebarCategory[] = [
     color: '#3b82f6',
     nodes: TRADE_INFO_NODES,
     description: 'Position data'
+  },
+  {
+    id: 'llm',
+    label: 'LLM / AI',
+    icon: Sparkles,
+    color: '#a855f7',
+    nodes: LLM_NODES,
+    description: 'AI-powered analysis & signals'
   },
 ];
 

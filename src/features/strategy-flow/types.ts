@@ -209,11 +209,64 @@ export interface MathNodeData extends BaseNodeData {
   mathFunction?: AdvancedMathFunction; // For 'advancedMath' type
 }
 
+// =============================================================================
+// LLM NODE TYPES
+// =============================================================================
+
+export type LLMNodeType =
+  | 'llmDecision'              // Generic LLM decision
+  | 'sentimentAnalysis'        // Analyze market sentiment from text/news
+  | 'regimeDetection'          // Detect market regime (trending/ranging/volatile)
+  | 'nlStrategyRules'          // Natural language strategy rules
+  | 'parameterTuning'          // LLM-suggested parameter optimization
+  | 'marketRegimeClassification' // Classify market conditions
+  | 'newsSentimentSignal'      // Convert news sentiment to trading signal
+  | 'customCode';              // Custom Python/JS code with Monaco editor
+
+export type LLMModelProvider = 'openai' | 'anthropic' | 'google';
+
+export type LLMModel =
+  | 'gpt-4o'
+  | 'gpt-4o-mini'
+  | 'gpt-4-turbo'
+  | 'claude-3-opus'
+  | 'claude-3-sonnet'
+  | 'claude-3-haiku'
+  | 'gemini-pro'
+  | 'gemini-pro-1.5';
+
+export const LLM_MODELS: { id: LLMModel; label: string; provider: LLMModelProvider }[] = [
+  { id: 'gpt-4o', label: 'GPT-4o', provider: 'openai' },
+  { id: 'gpt-4o-mini', label: 'GPT-4o Mini', provider: 'openai' },
+  { id: 'gpt-4-turbo', label: 'GPT-4 Turbo', provider: 'openai' },
+  { id: 'claude-3-opus', label: 'Claude 3 Opus', provider: 'anthropic' },
+  { id: 'claude-3-sonnet', label: 'Claude 3 Sonnet', provider: 'anthropic' },
+  { id: 'claude-3-haiku', label: 'Claude 3 Haiku', provider: 'anthropic' },
+  { id: 'gemini-pro', label: 'Gemini Pro', provider: 'google' },
+  { id: 'gemini-pro-1.5', label: 'Gemini 1.5 Pro', provider: 'google' },
+];
+
 // LLM Node Data
 export interface LLMNodeData extends BaseNodeData {
+  llmType: LLMNodeType;
   prompt: string;
+  model?: LLMModel;
+  temperature?: number;
+  maxTokens?: number;
   schema?: Record<string, unknown>;
   fallback?: Record<string, unknown>;
+  // Sentiment Analysis specific
+  sentimentThreshold?: number;      // -1 to 1, signal when crosses
+  sentimentSource?: 'news' | 'social' | 'custom';
+  // Regime Detection specific
+  regimeTypes?: string[];           // e.g., ['trending', 'ranging', 'volatile']
+  lookbackPeriod?: number;          // bars to analyze
+  // Parameter Tuning specific
+  parametersToTune?: string[];      // which params to optimize
+  optimizationGoal?: 'sharpe' | 'returns' | 'drawdown';
+  // Custom Code specific
+  code?: string;
+  language?: 'python' | 'javascript';
 }
 
 // =============================================================================

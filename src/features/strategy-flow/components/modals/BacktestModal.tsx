@@ -114,6 +114,9 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
   const [result, setResult] = useState<BacktestResult | null>(null);
 
   const { nodes, edges, strategyName } = useStrategyFlowStore();
+  
+  // Check if strategy contains LLM nodes
+  const hasLLMNodes = nodes.some(node => node.type === 'llm');
 
   const [config, setConfig] = useState<BacktestConfig>({
     symbol: 'EURUSD',
@@ -294,6 +297,28 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
           <ScrollArea className="flex-1 p-6">
             {/* Configuration Tab */}
             <TabsContent value="config" className="m-0 space-y-6">
+              {/* LLM Nodes Warning */}
+              {hasLLMNodes && (
+                <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                  <AlertTriangle className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-amber-300">
+                      Strategy contains LLM nodes
+                    </p>
+                    <p className="text-xs text-amber-200/80">
+                      LLM nodes use <strong>current market data and news</strong> to make decisions. 
+                      Backtesting with LLM nodes will reflect today's sentiment and conditions, not historical ones.
+                      This may produce unrealistic results.
+                    </p>
+                    <p className="text-xs text-amber-200/80 mt-2">
+                      <strong>Recommendation:</strong> LLM nodes are best suited for <strong>live trading</strong> where 
+                      they can analyze real-time information. For backtesting, consider replacing them with 
+                      indicator-based logic.
+                    </p>
+                  </div>
+                </div>
+              )}
+              
               {/* Symbol & Timeframe */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
