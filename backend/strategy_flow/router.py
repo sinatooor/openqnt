@@ -38,7 +38,7 @@ class GenerateFlowRequest(BaseModel):
     message: str
     currentNodes: Optional[List[Dict[str, Any]]] = None
     currentEdges: Optional[List[Dict[str, Any]]] = None
-    mode: str = "fast"  # "fast" or "slow"
+    mode: str = "fast"  # "fast", "slow", or "tool-calling"
 
 
 class GenerateFlowResponse(BaseModel):
@@ -51,6 +51,7 @@ class GenerateFlowResponse(BaseModel):
     autoFixed: bool = False
     errors: List[str] = []
     warnings: List[str] = []
+    generationMode: Optional[str] = None  # "prompt" or "tool-calling"
 
 
 class ChatRequest(BaseModel):
@@ -171,7 +172,8 @@ async def generate_flow(req: GenerateFlowRequest):
             message=result.get("message"),
             wasRationalized=result.get("wasRationalized", False),
             autoFixed=result.get("autoFixed", False),
-            warnings=result.get("warnings", [])
+            warnings=result.get("warnings", []),
+            generationMode=result.get("generationMode")
         )
         
     except Exception as e:
@@ -179,6 +181,41 @@ async def generate_flow(req: GenerateFlowRequest):
             success=False,
             errors=[str(e)]
         )
+
+
+@router.get("/generator-info")
+async def generator_info():
+    """
+    Diagnostic endpoint: returns info about the generation system.
+    Shows available modes, dynamic prompt stats, and tool definitions.
+    """
+    try:
+        from .ai_generator import FLOW_SYSTEM_PROMPT
+        from .tool_calling import STRATEGY_TOOLS
+        from .dynamic_prompt import load_catalog_from_typescript
+
+        catalog = load_catalog_from_typescript()
+        total_nodes = sum(len(nodes) for nodes in catalog.values())
+
+        return {
+            "modes": ["fast", "slow", "tool-calling"],
+            "dynamicPrompt": {
+                "active": True,
+                "length": len(FLOW_SYSTEM_PROMPT),
+                "catalogCategories": list(catalog.keys()),
+                "totalNodeTypes": total_nodes,
+            },
+            "toolCalling": {
+                "active": True,
+                "tools": [t["name"] for t in STRATEGY_TOOLS],
+                "totalTools": len(STRATEGY_TOOLS),
+            },
+        }
+    except Exception as e:
+        return {
+            "modes": ["fast", "slow"],
+            "error": str(e),
+        }
 
 
 @router.post("/chat", response_model=ChatResponse)
