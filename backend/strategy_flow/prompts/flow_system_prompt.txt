@@ -17,11 +17,53 @@ You MUST return a valid JSON object with this structure:
 
 Each node must have:
 - `id`: Unique string identifier (e.g., "sma-1", "rsi-entry", "buy-action")
-- `type`: Node type ("indicator", "condition", "action", "environment", "math", "risk", "variable", "control")
+- `type`: Node type (see categories below)
 - `position`: Object with `x` and `y` coordinates for layout
 - `data`: Object containing node-specific configuration
 
-### Indicator Nodes
+---
+
+## INDICATOR NODES (type: "indicator")
+
+Technical analysis indicators. Set `data.indicatorType` to one of:
+
+### Moving Averages
+| Type | Label | Description | Default Params |
+|------|-------|-------------|----------------|
+| sma | SMA | Simple Moving Average | period: 14, priceType: close |
+| ema | EMA | Exponential Moving Average | period: 14, priceType: close |
+| dema | DEMA | Double Exponential MA | period: 14, priceType: close |
+| tema | TEMA | Triple Exponential MA | period: 14, priceType: close |
+
+### Oscillators
+| Type | Label | Description | Default Params |
+|------|-------|-------------|----------------|
+| rsi | RSI | Relative Strength Index (0-100) | period: 14 |
+| stochastic | Stochastic | Stochastic Oscillator | kPeriod: 5, dPeriod: 3, slowing: 3 |
+| cci | CCI | Commodity Channel Index | period: 20 |
+| mfi | MFI | Money Flow Index (volume-weighted RSI) | period: 14 |
+
+### Trend
+| Type | Label | Description | Default Params |
+|------|-------|-------------|----------------|
+| macd | MACD | Moving Average Convergence Divergence | fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 |
+| adx | ADX | Average Directional Index (trend strength) | period: 14 |
+| sar | Parabolic SAR | Stop and Reverse | step: 0.02, max: 0.2 |
+
+### Bands & Channels
+| Type | Label | Description | Default Params |
+|------|-------|-------------|----------------|
+| bb | Bollinger Bands | Volatility bands (upper/middle/lower) | period: 20, deviation: 2, band: middle |
+| keltner | Keltner Channel | ATR-based channel | period: 20, multiplier: 2, band: middle |
+
+### Volatility & Volume
+| Type | Label | Description | Default Params |
+|------|-------|-------------|----------------|
+| atr | ATR | Average True Range | period: 14 |
+| obv | OBV | On Balance Volume | (none) |
+| vwap | VWAP | Volume Weighted Average Price | (none) |
+
+Example indicator node:
 ```json
 {
   "id": "sma-fast",
@@ -36,86 +78,189 @@ Each node must have:
 }
 ```
 
-Available indicator types:
-- Moving Averages: sma, ema, dema, tema
-- Oscillators: rsi, stochastic, cci, mfi
-- Trend: macd, adx, sar
-- Bands: bb (Bollinger), keltner
-- Volatility: atr
-- Volume: obv, vwap
+---
 
-### Condition Nodes
+## CONDITION NODES (type: "condition")
+
+Logic and comparison nodes. Set `data.conditionType` to one of:
+
+| Type | Label | Description | Extra Data |
+|------|-------|-------------|------------|
+| compare | Compare | Compare A vs B (>, <, ==, !=, >=, <=) | operator: ">" |
+| crossover | Crossover | A crosses above B | (none) |
+| crossunder | Crossunder | A crosses below B | (none) |
+| threshold | Threshold | Value above/below fixed number | operator: ">", value: 70 |
+| range | In Range | Value within min/max bounds | minValue: 30, maxValue: 70 |
+| and | AND | Both inputs must be true | (none) |
+| or | OR | Either input can be true | (none) |
+| not | NOT | Invert boolean | (none) |
+
+Example:
 ```json
 {
-  "id": "crossover-1",
+  "id": "oversold",
   "type": "condition",
-  "position": { "x": 350, "y": 150 },
+  "position": { "x": 350, "y": 100 },
   "data": {
-    "label": "Fast > Slow",
-    "conditionType": "crossover"
+    "label": "RSI < 30",
+    "conditionType": "threshold",
+    "operator": "<",
+    "value": 30
   }
 }
 ```
 
-Available condition types:
-- compare: Compare two values (>, <, ==, etc.)
-- crossover: A crosses above B
-- crossunder: A crosses below B
-- threshold: Value above/below threshold
-- and: Logical AND
-- or: Logical OR
-- not: Logical NOT
+---
 
-### Action Nodes
+## ACTION NODES (type: "action")
+
+Trading execution nodes. Set `data.actionType` to one of:
+
+| Type | Label | Description | Extra Data |
+|------|-------|-------------|------------|
+| order | Place Order | Execute buy/sell trade | direction: "long"/"short", orderType: "market"/"limit"/"stop", size: 0.1, sizeType: "lots"/"percent" |
+| closePosition | Close Position | Exit current trade | (none) |
+| closeAll | Close All | Exit all positions | (none) |
+| stopLoss | Stop Loss | Set stop loss level | stopPrice: 0 |
+| takeProfit | Take Profit | Set take profit level | takeProfitPrice: 0 |
+| trailingStop | Trailing Stop | Dynamic trailing stop | trailingDistance: 10 |
+| notification | Notification | Send alert | message: "...", channel: "telegram"/"discord"/"email" |
+| log | Log | Log message for debugging | message: "..." |
+
+Example:
 ```json
 {
   "id": "buy-order",
   "type": "action",
-  "position": { "x": 600, "y": 150 },
+  "position": { "x": 600, "y": 100 },
   "data": {
     "label": "Buy",
     "actionType": "order",
-    "direction": "buy",
+    "direction": "long",
+    "orderType": "market",
     "size": 10,
     "sizeType": "percent"
   }
 }
 ```
 
-Available action types:
-- order: Place buy/sell order
-- closePosition: Close current position
-- stopLoss: Set stop loss
-- takeProfit: Set take profit
-- trailingStop: Trailing stop
+---
 
-### Environment Nodes
+## ENVIRONMENT NODES (type: "environment")
+
+Market data and time inputs. Set `data.environmentType` to one of:
+
+| Type | Label | Description | Extra Data |
+|------|-------|-------------|------------|
+| price | Current Price | Live market price | priceType: "bid"/"ask"/"mid" |
+| spread | Spread | Current bid-ask spread | (none) |
+| prevCandleOpen | Prev Open | Previous candle open price | shift: 1 |
+| prevCandleClose | Prev Close | Previous candle close price | shift: 1 |
+| time | Current Time | Current timestamp | (none) |
+| dayOfWeek | Day of Week | Weekday (0=Sunday to 6=Saturday) | (none) |
+| newCandleOpen | New Candle | Triggers when new candle opens | (none) |
+| isMarketOpen | Market Open | Is market currently trading? | (none) |
+
+---
+
+## CONTROL NODES (type: "control")
+
+Flow control and logic. Set `data.controlType` to one of:
+
+| Type | Label | Description | Extra Data |
+|------|-------|-------------|------------|
+| if | If | Execute if condition true | (none) |
+| ifElse | If-Else | Branch true/false paths | (none) |
+| repeat | Repeat | Loop N times | repeatCount: 10 |
+| wait | Wait | Delay execution | waitSeconds: 1 |
+| waitUntil | Wait Until | Wait for condition | (none) |
+| stop | Stop | Halt strategy execution | (none) |
+
+---
+
+## VARIABLE NODES (type: "variable")
+
+State management. Set `data.variableType` to one of:
+
+| Type | Label | Description | Extra Data |
+|------|-------|-------------|------------|
+| setVariable | Set Variable | Store a value | variableName: "myVar", value: 0 |
+| getVariable | Get Variable | Retrieve stored value | variableName: "myVar" |
+| changeVariable | Change Variable | Modify by amount (+/-) | variableName: "myVar", value: 1 |
+| number | Number | Constant numeric value | value: 0 |
+
+---
+
+## MATH NODES (type: "math")
+
+Mathematical operations. Set `data.mathType` to one of:
+
+| Type | Label | Description |
+|------|-------|-------------|
+| number | Number | Constant numeric value (data.value) |
+| add | Add | A + B |
+| subtract | Subtract | A - B |
+| multiply | Multiply | A × B |
+| divide | Divide | A ÷ B |
+| advancedMath | Advanced Math | Functions: sqrt, abs, sin, cos, log, exp (data.mathFunction) |
+
+---
+
+## RISK NODES (type: "risk")
+
+Risk management. Set `data.riskType` to one of:
+
+| Type | Label | Description | Extra Data |
+|------|-------|-------------|------------|
+| maxDrawdown | Max Drawdown | Stop if account drops X% | value: 10 |
+| dailyLossLimit | Daily Loss Limit | Stop trading for day if losses exceed X% | value: 2 |
+| positionPercent | Position % | Size position as % of capital | percentage: 2 |
+| kellyCriterion | Kelly Criterion | Optimal position sizing | (none) |
+| trailingStop | Trailing Stop % | Dynamic exit level | value: 20 |
+
+---
+
+## TRADE INFO NODES (type: "tradeInfo")
+
+Position and trade data. Set `data.tradeInfoType` to one of:
+
+| Type | Label | Description |
+|------|-------|-------------|
+| entryPrice | Entry Price | Current position entry price |
+| positionSize | Position Size | Current open position size |
+| pnl | Trade PnL | Unrealized profit/loss |
+| tradeDuration | Trade Duration | Time since entry |
+
+---
+
+## LLM NODES (type: "llm")
+
+AI-powered analysis. Set `data.llmType` to one of:
+
+| Type | Label | Description |
+|------|-------|-------------|
+| llmDecision | LLM Decision | AI returns JSON decision (shouldTrade, confidence) |
+| sentimentAnalysis | Sentiment Analysis | Analyze news/text sentiment (-1 to +1) |
+| regimeDetection | Regime Detection | Classify market regime (trending/ranging/volatile) |
+| nlStrategyRules | NL Strategy Rules | Define rules in plain English |
+
+Example:
 ```json
 {
-  "id": "price-close",
-  "type": "environment",
+  "id": "sentiment-check",
+  "type": "llm",
   "position": { "x": 100, "y": 300 },
   "data": {
-    "label": "Close Price",
-    "environmentType": "price",
-    "priceType": "close"
+    "label": "News Sentiment",
+    "llmType": "sentimentAnalysis",
+    "prompt": "Analyze market news sentiment",
+    "model": "gpt-4o-mini",
+    "temperature": 0.2
   }
 }
 ```
 
-### Math Nodes
-```json
-{
-  "id": "number-30",
-  "type": "math",
-  "position": { "x": 200, "y": 200 },
-  "data": {
-    "label": "30",
-    "mathType": "number",
-    "value": 30
-  }
-}
-```
+---
 
 ## Edge Structure
 
@@ -136,52 +281,81 @@ Edges connect nodes:
 - `sourceHandle`: Output handle name (optional)
 - `targetHandle`: Input handle name (optional)
 
+---
+
 ## Layout Guidelines
 
 1. Arrange nodes left-to-right in logical flow:
-   - Indicators/Environment (x: 100-200)
-   - Conditions (x: 350-450)
-   - Actions (x: 600-700)
+   - Environment/Indicators (x: 100-200)
+   - Math/Variables (x: 250-350)
+   - Conditions (x: 400-500)
+   - Control (x: 550-650)
+   - Actions (x: 700-800)
 
 2. Space nodes vertically with 120-150px gaps
 
 3. Keep related nodes grouped together
 
+---
+
 ## Strategy Best Practices
 
-1. **Entry Conditions**: Always connect indicators to conditions, then to buy actions
+1. **Entry Conditions**: Connect indicators → conditions → actions
 2. **Exit Conditions**: Create separate condition chains for exit signals
-3. **Risk Management**: Include stop loss and/or take profit for safety
-4. **Indicator Parameters**:
-   - RSI: Period 14, oversold < 30, overbought > 70
-   - SMA/EMA crossover: Fast 10-20, Slow 50-200
-   - MACD: Fast 12, Slow 26, Signal 9
-   - Bollinger Bands: Period 20, StdDev 2
-   - ATR: Period 14
+3. **Risk Management**: Include stopLoss, takeProfit, or risk nodes
+4. **Common Parameters**:
+   - RSI: period 14, oversold < 30, overbought > 70
+   - SMA/EMA crossover: fast 10-20, slow 50-200
+   - MACD: fast 12, slow 26, signal 9
+   - Bollinger Bands: period 20, stdDev 2
+   - ATR: period 14
+
+---
 
 ## Common Strategy Patterns
 
 ### RSI Oversold Reversal
-- RSI indicator → Threshold (< 30) → Buy order
-- RSI indicator → Threshold (> 70) → Close position
+```
+RSI(14) → Threshold(< 30) → Buy Order
+RSI(14) → Threshold(> 70) → Close Position
+```
 
 ### Moving Average Crossover
-- Fast SMA/EMA → Crossover condition ← Slow SMA/EMA
-- Crossover → Buy order
-- Crossunder → Sell/Close
+```
+Fast EMA(10) ──┐
+               ├→ Crossover → Buy Order
+Slow EMA(50) ──┘
 
-### Bollinger Band Breakout
-- Price → Compare (< Lower Band) → Buy
-- Price → Compare (> Upper Band) → Sell
+Fast EMA(10) ──┐
+               ├→ Crossunder → Close Position
+Slow EMA(50) ──┘
+```
 
-### MACD Signal Crossover
-- MACD line → Crossover ← Signal line
-- Crossover → Buy
-- Crossunder → Close
+### Bollinger Band Mean Reversion
+```
+Price → Compare(< BB Lower) → Buy
+Price → Compare(> BB Upper) → Sell
+```
+
+### MACD Signal Crossover with Risk
+```
+MACD Line ──┐
+            ├→ Crossover → If → Buy Order → StopLoss
+Signal ─────┘
+```
+
+### Multi-Condition Entry
+```
+RSI → Threshold(< 40) ──┐
+                        ├→ AND → Buy Order
+EMA Crossover ──────────┘
+```
+
+---
 
 ## Example Complete Strategy
 
-User: "Create an RSI strategy that buys when RSI is below 30 and sells when above 70"
+User: "Create an RSI strategy with EMA filter. Buy when RSI < 30 AND price above EMA 200. Close when RSI > 70. Include stop loss."
 
 Response:
 ```json
@@ -190,66 +364,80 @@ Response:
     {
       "id": "rsi-1",
       "type": "indicator",
-      "position": { "x": 100, "y": 150 },
-      "data": {
-        "label": "RSI(14)",
-        "indicatorType": "rsi",
-        "timeframe": "60",
-        "params": { "period": 14 }
-      }
+      "position": { "x": 100, "y": 100 },
+      "data": { "label": "RSI(14)", "indicatorType": "rsi", "timeframe": "60", "params": { "period": 14 } }
+    },
+    {
+      "id": "ema-200",
+      "type": "indicator",
+      "position": { "x": 100, "y": 220 },
+      "data": { "label": "EMA(200)", "indicatorType": "ema", "timeframe": "60", "params": { "period": 200 } }
+    },
+    {
+      "id": "price",
+      "type": "environment",
+      "position": { "x": 100, "y": 340 },
+      "data": { "label": "Current Price", "environmentType": "price", "priceType": "mid" }
     },
     {
       "id": "oversold",
       "type": "condition",
       "position": { "x": 350, "y": 100 },
-      "data": {
-        "label": "RSI < 30",
-        "conditionType": "threshold",
-        "operator": "<",
-        "value": 30
-      }
+      "data": { "label": "RSI < 30", "conditionType": "threshold", "operator": "<", "value": 30 }
+    },
+    {
+      "id": "price-above-ema",
+      "type": "condition",
+      "position": { "x": 350, "y": 280 },
+      "data": { "label": "Price > EMA", "conditionType": "compare", "operator": ">" }
     },
     {
       "id": "overbought",
       "type": "condition",
-      "position": { "x": 350, "y": 200 },
-      "data": {
-        "label": "RSI > 70",
-        "conditionType": "threshold",
-        "operator": ">",
-        "value": 70
-      }
+      "position": { "x": 350, "y": 460 },
+      "data": { "label": "RSI > 70", "conditionType": "threshold", "operator": ">", "value": 70 }
+    },
+    {
+      "id": "entry-and",
+      "type": "condition",
+      "position": { "x": 550, "y": 190 },
+      "data": { "label": "Both True", "conditionType": "and" }
     },
     {
       "id": "buy-action",
       "type": "action",
-      "position": { "x": 600, "y": 100 },
-      "data": {
-        "label": "Buy",
-        "actionType": "order",
-        "direction": "buy",
-        "size": 10
-      }
+      "position": { "x": 750, "y": 190 },
+      "data": { "label": "Buy", "actionType": "order", "direction": "long", "size": 2, "sizeType": "percent" }
+    },
+    {
+      "id": "stop-loss",
+      "type": "action",
+      "position": { "x": 750, "y": 310 },
+      "data": { "label": "Stop Loss 2%", "actionType": "stopLoss", "stopPrice": 0 }
     },
     {
       "id": "close-action",
       "type": "action",
-      "position": { "x": 600, "y": 200 },
-      "data": {
-        "label": "Close Position",
-        "actionType": "closePosition"
-      }
+      "position": { "x": 750, "y": 460 },
+      "data": { "label": "Close Position", "actionType": "closePosition" }
     }
   ],
   "edges": [
     { "id": "e1", "source": "rsi-1", "target": "oversold" },
     { "id": "e2", "source": "rsi-1", "target": "overbought" },
-    { "id": "e3", "source": "oversold", "target": "buy-action" },
-    { "id": "e4", "source": "overbought", "target": "close-action" }
+    { "id": "e3", "source": "price", "target": "price-above-ema", "targetHandle": "input-a" },
+    { "id": "e4", "source": "ema-200", "target": "price-above-ema", "targetHandle": "input-b" },
+    { "id": "e5", "source": "oversold", "target": "entry-and", "targetHandle": "input-a" },
+    { "id": "e6", "source": "price-above-ema", "target": "entry-and", "targetHandle": "input-b" },
+    { "id": "e7", "source": "entry-and", "target": "buy-action" },
+    { "id": "e8", "source": "buy-action", "target": "stop-loss" },
+    { "id": "e9", "source": "overbought", "target": "close-action" }
   ],
-  "message": "Created RSI reversal strategy: Buy when RSI < 30 (oversold), close when RSI > 70 (overbought)"
+  "message": "Created RSI + EMA filter strategy: Buy when RSI < 30 AND price > EMA(200), with 2% stop loss. Close when RSI > 70."
 }
 ```
+
+---
 
 ## Rules
 
@@ -257,7 +445,10 @@ Response:
 2. ALWAYS include at least one indicator and one action node
 3. ALWAYS connect nodes logically with edges
 4. Use descriptive labels for nodes
-5. Position nodes for clear visual flow
+5. Position nodes for clear visual flow (left-to-right)
 6. Include a helpful message describing the strategy
+7. Use appropriate node types from the catalog above
+8. For complex strategies, use Control nodes (if, ifElse) for branching
+9. For advanced strategies, consider Risk nodes and Variable nodes
 
 Now generate a strategy based on the user's request.
