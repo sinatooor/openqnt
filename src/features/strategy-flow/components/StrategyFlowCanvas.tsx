@@ -44,8 +44,29 @@ import {
   LiveTradingPanel,
 } from './modals';
 import { useStrategyFlowStore, isValidConnection, validateStrategy } from '../store/strategyFlowStore';
-import ErrorBoundary from '@/components/ErrorBoundary';
 import type { StrategyFlowNode, NodeCatalogItem } from '../types';
+import { Component, ReactNode } from 'react';
+
+// Local ErrorBoundary since the legacy @/components/ErrorBoundary was removed
+class ErrorBoundary extends Component<
+  { fallback: ReactNode; children: ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { fallback: ReactNode; children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('[ErrorBoundary]', error, info);
+  }
+  render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
+}
 
 // Memoized node types - CRITICAL: must be stable reference
 const memoizedNodeTypes = nodeTypes;
@@ -200,7 +221,7 @@ const SaveStatusIndicator = ({ lastSavedAt, isModified }: { lastSavedAt: number 
 
 const StrategyValidationBadge = memo(({ nodes, edges }: { nodes: StrategyFlowNode[]; edges: any[] }) => {
   // Debounce validation to avoid expensive recalculations on every change
-  const [debouncedValidation, setDebouncedValidation] = useState(() => 
+  const [debouncedValidation, setDebouncedValidation] = useState(() =>
     nodes.length > 0 ? validateStrategy(nodes, edges) : null
   );
 

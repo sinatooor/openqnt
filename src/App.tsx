@@ -4,7 +4,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Theme } from "@radix-ui/themes";
-import Index from "./pages/Index";
 import StrategyFlow from "./pages/StrategyFlow";
 import ExecutionDetails from "./pages/ExecutionDetails";
 import NotFound from "./pages/NotFound";
@@ -19,8 +18,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/strategy" element={<StrategyFlow />} />
+            <Route path="/" element={<StrategyFlow />} />
             <Route path="/execution/:id" element={<ExecutionDetails />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

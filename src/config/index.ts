@@ -1,1 +1,1 @@
-export * from './blockly';
+// Config barrel - blockly config removed
