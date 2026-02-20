@@ -1,0 +1,1675 @@
+{
+  "action": [
+    {
+      "type": "order",
+      "nodeType": "action",
+      "label": "Place Order",
+      "description": "Execute a trade",
+      "tooltip": "Open a long or short position with specified size. Choose market, limit, or stop order type.",
+      "inputs": [
+        "Trigger",
+        "Size"
+      ],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "actions",
+      "subcategory": "Orders",
+      "icon": "ShoppingCart",
+      "color": "#10b981",
+      "defaultData": {
+        "actionType": "order",
+        "direction": "long",
+        "orderType": "market",
+        "size": 0.1,
+        "sizeType": "lots"
+      }
+    },
+    {
+      "type": "closePosition",
+      "nodeType": "action",
+      "label": "Close Position",
+      "description": "Exit current trade",
+      "tooltip": "Close the current open position. Use with conditions to implement exit logic.",
+      "inputs": [
+        "Trigger"
+      ],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "actions",
+      "subcategory": "Orders",
+      "icon": "XCircle",
+      "color": "#ef4444",
+      "defaultData": {
+        "actionType": "closePosition"
+      }
+    },
+    {
+      "type": "closeAll",
+      "nodeType": "action",
+      "label": "Close All",
+      "description": "Exit all positions",
+      "tooltip": "Close all open positions at once. Useful for end-of-day or emergency exits.",
+      "inputs": [
+        "Trigger"
+      ],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "actions",
+      "subcategory": "Orders",
+      "icon": "XSquare",
+      "color": "#ef4444",
+      "defaultData": {
+        "actionType": "closeAll"
+      }
+    },
+    {
+      "type": "stopLoss",
+      "nodeType": "action",
+      "label": "Stop Loss",
+      "description": "Set exit on loss",
+      "tooltip": "Automatically exit if price moves against you. Essential for risk management.",
+      "inputs": [
+        "Trigger",
+        "Price"
+      ],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "actions",
+      "subcategory": "Risk Management",
+      "icon": "Shield",
+      "color": "#f59e0b",
+      "defaultData": {
+        "actionType": "stopLoss",
+        "stopPrice": 0
+      }
+    },
+    {
+      "type": "takeProfit",
+      "nodeType": "action",
+      "label": "Take Profit",
+      "description": "Set exit on profit",
+      "tooltip": "Automatically exit when price reaches profit target. Lock in gains.",
+      "inputs": [
+        "Trigger",
+        "Price"
+      ],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "actions",
+      "subcategory": "Risk Management",
+      "icon": "Target",
+      "color": "#22c55e",
+      "defaultData": {
+        "actionType": "takeProfit",
+        "takeProfitPrice": 0
+      }
+    },
+    {
+      "type": "trailingStop",
+      "nodeType": "action",
+      "label": "Trailing Stop",
+      "description": "Dynamic stop loss",
+      "tooltip": "Stop that follows price movement. Locks in profits while allowing upside.",
+      "inputs": [
+        "Trigger"
+      ],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "actions",
+      "subcategory": "Risk Management",
+      "icon": "GitBranch",
+      "color": "#f59e0b",
+      "defaultData": {
+        "actionType": "trailingStop",
+        "trailingDistance": 10
+      }
+    },
+    {
+      "type": "notification",
+      "nodeType": "action",
+      "label": "Notification",
+      "description": "Send alert",
+      "tooltip": "Send alert via Telegram, Discord, or email when conditions are met.",
+      "inputs": [
+        "Trigger"
+      ],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "actions",
+      "subcategory": "Alerts",
+      "icon": "Bell",
+      "color": "#ec4899",
+      "defaultData": {
+        "actionType": "notification",
+        "message": "Signal triggered",
+        "channel": "telegram"
+      }
+    },
+    {
+      "type": "log",
+      "nodeType": "action",
+      "label": "Log",
+      "description": "Log message",
+      "tooltip": "Log a message to console for debugging and strategy analysis.",
+      "inputs": [
+        "Trigger"
+      ],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "actions",
+      "subcategory": "Alerts",
+      "icon": "FileText",
+      "color": "#6b7280",
+      "defaultData": {
+        "actionType": "log",
+        "message": "Log message"
+      }
+    }
+  ],
+  "condition": [
+    {
+      "type": "compare",
+      "nodeType": "condition",
+      "label": "Compare",
+      "description": "Compare two values",
+      "tooltip": "Compare A vs B using operators (>, <, ==, etc.). Returns true/false for use in If nodes.",
+      "inputs": [
+        "Number",
+        "Number"
+      ],
+      "outputs": [
+        "Boolean"
+      ],
+      "category": "conditions",
+      "icon": "GitCompare",
+      "color": "#f59e0b",
+      "defaultData": {
+        "conditionType": "compare",
+        "operator": ">"
+      }
+    },
+    {
+      "type": "crossover",
+      "nodeType": "condition",
+      "label": "Crossover",
+      "description": "A crosses above B",
+      "tooltip": "Triggers when value A crosses above value B. Classic signal for MA crossover strategies.",
+      "inputs": [
+        "Number",
+        "Number"
+      ],
+      "outputs": [
+        "Boolean"
+      ],
+      "category": "conditions",
+      "icon": "ArrowUpRight",
+      "color": "#22c55e",
+      "defaultData": {
+        "conditionType": "crossover"
+      }
+    },
+    {
+      "type": "crossunder",
+      "nodeType": "condition",
+      "label": "Crossunder",
+      "description": "A crosses below B",
+      "tooltip": "Triggers when value A crosses below value B. Used for exit signals or short entries.",
+      "inputs": [
+        "Number",
+        "Number"
+      ],
+      "outputs": [
+        "Boolean"
+      ],
+      "category": "conditions",
+      "icon": "ArrowDownRight",
+      "color": "#ef4444",
+      "defaultData": {
+        "conditionType": "crossunder"
+      }
+    },
+    {
+      "type": "threshold",
+      "nodeType": "condition",
+      "label": "Threshold",
+      "description": "Check against fixed value",
+      "tooltip": "Check if an indicator value is above or below a specific level (e.g., RSI > 70).",
+      "inputs": [
+        "Number"
+      ],
+      "outputs": [
+        "Boolean"
+      ],
+      "category": "conditions",
+      "icon": "Minus",
+      "color": "#f59e0b",
+      "defaultData": {
+        "conditionType": "threshold",
+        "operator": ">",
+        "value": 70
+      }
+    },
+    {
+      "type": "range",
+      "nodeType": "condition",
+      "label": "In Range",
+      "description": "Value within min/max",
+      "tooltip": "Check if value falls between minimum and maximum bounds. Useful for RSI neutral zones.",
+      "inputs": [
+        "Number"
+      ],
+      "outputs": [
+        "Boolean"
+      ],
+      "category": "conditions",
+      "icon": "Maximize2",
+      "color": "#f59e0b",
+      "defaultData": {
+        "conditionType": "range",
+        "minValue": 30,
+        "maxValue": 70
+      }
+    },
+    {
+      "type": "and",
+      "nodeType": "condition",
+      "label": "AND",
+      "description": "Both must be true",
+      "tooltip": "Logical AND: Both conditions must be true. Combine multiple signals for confirmation.",
+      "inputs": [
+        "Boolean",
+        "Boolean"
+      ],
+      "outputs": [
+        "Boolean"
+      ],
+      "category": "conditions",
+      "icon": "Plus",
+      "color": "#6366f1",
+      "defaultData": {
+        "conditionType": "and"
+      }
+    },
+    {
+      "type": "or",
+      "nodeType": "condition",
+      "label": "OR",
+      "description": "Either can be true",
+      "tooltip": "Logical OR: Either condition being true triggers. Use for multiple entry criteria.",
+      "inputs": [
+        "Boolean",
+        "Boolean"
+      ],
+      "outputs": [
+        "Boolean"
+      ],
+      "category": "conditions",
+      "icon": "Slash",
+      "color": "#6366f1",
+      "defaultData": {
+        "conditionType": "or"
+      }
+    },
+    {
+      "type": "not",
+      "nodeType": "condition",
+      "label": "NOT",
+      "description": "Invert condition",
+      "tooltip": "Logical NOT: Inverts true to false and vice versa.",
+      "inputs": [
+        "Boolean"
+      ],
+      "outputs": [
+        "Boolean"
+      ],
+      "category": "conditions",
+      "icon": "X",
+      "color": "#6366f1",
+      "defaultData": {
+        "conditionType": "not"
+      }
+    }
+  ],
+  "control": [
+    {
+      "type": "if",
+      "nodeType": "control",
+      "label": "If",
+      "description": "Conditional execution",
+      "tooltip": "Execute actions only when condition is true. Core building block for strategy logic.",
+      "inputs": [
+        "Boolean"
+      ],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "control",
+      "subcategory": "Conditionals",
+      "icon": "GitBranch",
+      "color": "#f59e0b",
+      "defaultData": {
+        "controlType": "if"
+      }
+    },
+    {
+      "type": "ifElse",
+      "nodeType": "control",
+      "label": "If-Else",
+      "description": "Branch based on condition",
+      "tooltip": "Execute different actions based on condition. True path vs False path.",
+      "inputs": [
+        "Boolean"
+      ],
+      "outputs": [
+        "Then",
+        "Else"
+      ],
+      "category": "control",
+      "subcategory": "Conditionals",
+      "icon": "GitMerge",
+      "color": "#f59e0b",
+      "defaultData": {
+        "controlType": "ifElse"
+      }
+    },
+    {
+      "type": "repeat",
+      "nodeType": "control",
+      "label": "Repeat",
+      "description": "Loop N times",
+      "tooltip": "Repeat actions a specific number of times. Use for grid-based or pyramid entries.",
+      "inputs": [],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "control",
+      "subcategory": "Loops",
+      "icon": "RefreshCw",
+      "color": "#06b6d4",
+      "defaultData": {
+        "controlType": "repeat",
+        "repeatCount": 10
+      }
+    },
+    {
+      "type": "wait",
+      "nodeType": "control",
+      "label": "Wait",
+      "description": "Delay execution",
+      "tooltip": "Pause strategy execution for specified seconds. Add time buffers.",
+      "inputs": [
+        "Trigger"
+      ],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "control",
+      "subcategory": "Timing",
+      "icon": "Timer",
+      "color": "#8b5cf6",
+      "defaultData": {
+        "controlType": "wait",
+        "waitSeconds": 1
+      }
+    },
+    {
+      "type": "waitUntil",
+      "nodeType": "control",
+      "label": "Wait Until",
+      "description": "Wait for condition",
+      "tooltip": "Pause until a condition becomes true. Wait for price levels or time.",
+      "inputs": [
+        "Boolean"
+      ],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "control",
+      "subcategory": "Timing",
+      "icon": "TimerOff",
+      "color": "#8b5cf6",
+      "defaultData": {
+        "controlType": "waitUntil"
+      }
+    },
+    {
+      "type": "stop",
+      "nodeType": "control",
+      "label": "Stop",
+      "description": "Halt strategy",
+      "tooltip": "Immediately stop strategy execution. Emergency brake.",
+      "inputs": [
+        "Trigger"
+      ],
+      "outputs": [],
+      "category": "control",
+      "subcategory": "Flow",
+      "icon": "Square",
+      "color": "#ef4444",
+      "defaultData": {
+        "controlType": "stop"
+      }
+    }
+  ],
+  "environment": [
+    {
+      "type": "price",
+      "nodeType": "environment",
+      "label": "Current Price",
+      "description": "Live market price",
+      "tooltip": "Get current bid, ask, or mid price. Foundation for most trading logic.",
+      "inputs": [],
+      "outputs": [
+        "Number"
+      ],
+      "category": "environment",
+      "subcategory": "Price",
+      "icon": "DollarSign",
+      "color": "#6366f1",
+      "defaultData": {
+        "environmentType": "price",
+        "priceType": "mid"
+      }
+    },
+    {
+      "type": "spread",
+      "nodeType": "environment",
+      "label": "Spread",
+      "description": "Bid-Ask spread",
+      "tooltip": "Current spread in pips. Use to avoid trading during high-spread periods.",
+      "inputs": [],
+      "outputs": [
+        "Number"
+      ],
+      "category": "environment",
+      "subcategory": "Price",
+      "icon": "ArrowLeftRight",
+      "color": "#6366f1",
+      "defaultData": {
+        "environmentType": "spread"
+      }
+    },
+    {
+      "type": "prevCandleOpen",
+      "nodeType": "environment",
+      "label": "Prev Open",
+      "description": "Previous candle open",
+      "tooltip": "Get the open price of a previous candle. Shift parameter controls how many bars back.",
+      "inputs": [],
+      "outputs": [
+        "Number"
+      ],
+      "category": "environment",
+      "subcategory": "Price",
+      "icon": "BarChart2",
+      "color": "#6366f1",
+      "defaultData": {
+        "environmentType": "prevCandleOpen",
+        "shift": 1
+      }
+    },
+    {
+      "type": "prevCandleClose",
+      "nodeType": "environment",
+      "label": "Prev Close",
+      "description": "Previous candle close",
+      "tooltip": "Get the close price of a previous candle. Essential for confirmation signals.",
+      "inputs": [],
+      "outputs": [
+        "Number"
+      ],
+      "category": "environment",
+      "subcategory": "Price",
+      "icon": "BarChart2",
+      "color": "#6366f1",
+      "defaultData": {
+        "environmentType": "prevCandleClose",
+        "shift": 1
+      }
+    },
+    {
+      "type": "time",
+      "nodeType": "environment",
+      "label": "Current Time",
+      "description": "Current timestamp",
+      "tooltip": "Get current time. Use for session-based trading strategies.",
+      "inputs": [],
+      "outputs": [
+        "Time"
+      ],
+      "category": "environment",
+      "subcategory": "Time",
+      "icon": "Clock",
+      "color": "#8b5cf6",
+      "defaultData": {
+        "environmentType": "time"
+      }
+    },
+    {
+      "type": "dayOfWeek",
+      "nodeType": "environment",
+      "label": "Day of Week",
+      "description": "Current weekday (0-6)",
+      "tooltip": "Get day of week (0=Sunday). Filter trades to specific days.",
+      "inputs": [],
+      "outputs": [
+        "Number"
+      ],
+      "category": "environment",
+      "subcategory": "Time",
+      "icon": "Calendar",
+      "color": "#8b5cf6",
+      "defaultData": {
+        "environmentType": "dayOfWeek"
+      }
+    },
+    {
+      "type": "newCandleOpen",
+      "nodeType": "environment",
+      "label": "New Candle",
+      "description": "Candle open trigger",
+      "tooltip": "Triggers once when a new candle opens. Use to run logic only at bar close.",
+      "inputs": [],
+      "outputs": [
+        "Boolean"
+      ],
+      "category": "environment",
+      "subcategory": "Time",
+      "icon": "PlayCircle",
+      "color": "#8b5cf6",
+      "defaultData": {
+        "environmentType": "newCandleOpen"
+      }
+    },
+    {
+      "type": "isMarketOpen",
+      "nodeType": "environment",
+      "label": "Market Open",
+      "description": "Is market trading?",
+      "tooltip": "Check if market is currently open. Prevent trading during closed hours.",
+      "inputs": [],
+      "outputs": [
+        "Boolean"
+      ],
+      "category": "environment",
+      "subcategory": "Time",
+      "icon": "ToggleLeft",
+      "color": "#8b5cf6",
+      "defaultData": {
+        "environmentType": "isMarketOpen"
+      }
+    }
+  ],
+  "indicator": [
+    {
+      "type": "sma",
+      "nodeType": "indicator",
+      "label": "SMA",
+      "description": "Simple Moving Average",
+      "tooltip": "Calculates the average price over N periods. Use to identify trend direction and potential support/resistance levels.",
+      "inputs": [
+        "Price Data"
+      ],
+      "outputs": [
+        "Number"
+      ],
+      "category": "indicators",
+      "subcategory": "Moving Averages",
+      "icon": "TrendingUp",
+      "color": "#8b5cf6",
+      "defaultData": {
+        "indicatorType": "sma",
+        "timeframe": "60",
+        "params": {
+          "period": 14,
+          "priceType": "close"
+        }
+      }
+    },
+    {
+      "type": "ema",
+      "nodeType": "indicator",
+      "label": "EMA",
+      "description": "Exponential Moving Average",
+      "tooltip": "Weighted average giving more importance to recent prices. More responsive to price changes than SMA.",
+      "inputs": [
+        "Price Data"
+      ],
+      "outputs": [
+        "Number"
+      ],
+      "category": "indicators",
+      "subcategory": "Moving Averages",
+      "icon": "TrendingUp",
+      "color": "#8b5cf6",
+      "defaultData": {
+        "indicatorType": "ema",
+        "timeframe": "60",
+        "params": {
+          "period": 14,
+          "priceType": "close"
+        }
+      }
+    },
+    {
+      "type": "dema",
+      "nodeType": "indicator",
+      "label": "DEMA",
+      "description": "Double Exponential Moving Average",
+      "tooltip": "Reduces lag by applying EMA twice. Faster response to price changes.",
+      "inputs": [
+        "Price Data"
+      ],
+      "outputs": [
+        "Number"
+      ],
+      "category": "indicators",
+      "subcategory": "Moving Averages",
+      "icon": "TrendingUp",
+      "color": "#8b5cf6",
+      "defaultData": {
+        "indicatorType": "dema",
+        "timeframe": "60",
+        "params": {
+          "period": 14,
+          "priceType": "close"
+        }
+      }
+    },
+    {
+      "type": "tema",
+      "nodeType": "indicator",
+      "label": "TEMA",
+      "description": "Triple Exponential Moving Average",
+      "tooltip": "Triple smoothing for minimal lag. Best for fast-moving markets.",
+      "inputs": [
+        "Price Data"
+      ],
+      "outputs": [
+        "Number"
+      ],
+      "category": "indicators",
+      "subcategory": "Moving Averages",
+      "icon": "TrendingUp",
+      "color": "#8b5cf6",
+      "defaultData": {
+        "indicatorType": "tema",
+        "timeframe": "60",
+        "params": {
+          "period": 14,
+          "priceType": "close"
+        }
+      }
+    },
+    {
+      "type": "rsi",
+      "nodeType": "indicator",
+      "label": "RSI",
+      "description": "Relative Strength Index",
+      "tooltip": "Measures momentum on a 0-100 scale. Above 70 = overbought, below 30 = oversold.",
+      "inputs": [
+        "Price Data"
+      ],
+      "outputs": [
+        "Number"
+      ],
+      "category": "indicators",
+      "subcategory": "Oscillators",
+      "icon": "Activity",
+      "color": "#06b6d4",
+      "defaultData": {
+        "indicatorType": "rsi",
+        "timeframe": "60",
+        "params": {
+          "period": 14
+        }
+      }
+    },
+    {
+      "type": "stochastic",
+      "nodeType": "indicator",
+      "label": "Stochastic",
+      "description": "Stochastic Oscillator",
+      "tooltip": "Compares closing price to price range. %K and %D lines signal momentum shifts.",
+      "inputs": [
+        "Price Data"
+      ],
+      "outputs": [
+        "%K",
+        "%D"
+      ],
+      "category": "indicators",
+      "subcategory": "Oscillators",
+      "icon": "Activity",
+      "color": "#06b6d4",
+      "defaultData": {
+        "indicatorType": "stochastic",
+        "timeframe": "60",
+        "params": {
+          "kPeriod": 5,
+          "dPeriod": 3,
+          "slowing": 3
+        }
+      }
+    },
+    {
+      "type": "cci",
+      "nodeType": "indicator",
+      "label": "CCI",
+      "description": "Commodity Channel Index",
+      "tooltip": "Measures deviation from average price. +100/-100 indicate overbought/oversold.",
+      "inputs": [
+        "Price Data"
+      ],
+      "outputs": [
+        "Number"
+      ],
+      "category": "indicators",
+      "subcategory": "Oscillators",
+      "icon": "Activity",
+      "color": "#06b6d4",
+      "defaultData": {
+        "indicatorType": "cci",
+        "timeframe": "60",
+        "params": {
+          "period": 20
+        }
+      }
+    },
+    {
+      "type": "mfi",
+      "nodeType": "indicator",
+      "label": "MFI",
+      "description": "Money Flow Index",
+      "tooltip": "Volume-weighted RSI. Measures buying/selling pressure with volume confirmation.",
+      "inputs": [
+        "Price Data",
+        "Volume"
+      ],
+      "outputs": [
+        "Number"
+      ],
+      "category": "indicators",
+      "subcategory": "Oscillators",
+      "icon": "Activity",
+      "color": "#06b6d4",
+      "defaultData": {
+        "indicatorType": "mfi",
+        "timeframe": "60",
+        "params": {
+          "period": 14
+        }
+      }
+    },
+    {
+      "type": "macd",
+      "nodeType": "indicator",
+      "label": "MACD",
+      "description": "Moving Average Convergence Divergence",
+      "tooltip": "Shows relationship between two EMAs. Signal line crossovers indicate momentum shifts.",
+      "inputs": [
+        "Price Data"
+      ],
+      "outputs": [
+        "Line",
+        "Signal",
+        "Histogram"
+      ],
+      "category": "indicators",
+      "subcategory": "Trend",
+      "icon": "BarChart2",
+      "color": "#f59e0b",
+      "defaultData": {
+        "indicatorType": "macd",
+        "timeframe": "60",
+        "params": {
+          "fastPeriod": 12,
+          "slowPeriod": 26,
+          "signalPeriod": 9
+        }
+      }
+    },
+    {
+      "type": "adx",
+      "nodeType": "indicator",
+      "label": "ADX",
+      "description": "Average Directional Index",
+      "tooltip": "Measures trend strength (not direction). Above 25 = strong trend, below 20 = weak/ranging.",
+      "inputs": [
+        "Price Data"
+      ],
+      "outputs": [
+        "Number"
+      ],
+      "category": "indicators",
+      "subcategory": "Trend",
+      "icon": "TrendingUp",
+      "color": "#8b5cf6",
+      "defaultData": {
+        "indicatorType": "adx",
+        "timeframe": "60",
+        "params": {
+          "period": 14
+        }
+      }
+    },
+    {
+      "type": "sar",
+      "nodeType": "indicator",
+      "label": "Parabolic SAR",
+      "description": "Stop and Reverse",
+      "tooltip": "Trailing stop indicator. Dots flip above/below price to signal trend reversals.",
+      "inputs": [
+        "Price Data"
+      ],
+      "outputs": [
+        "Number"
+      ],
+      "category": "indicators",
+      "subcategory": "Trend",
+      "icon": "GitCommit",
+      "color": "#a855f7",
+      "defaultData": {
+        "indicatorType": "sar",
+        "timeframe": "60",
+        "params": {
+          "step": 0.02,
+          "max": 0.2
+        }
+      }
+    },
+    {
+      "type": "bb",
+      "nodeType": "indicator",
+      "label": "Bollinger Bands",
+      "description": "Volatility bands around SMA",
+      "tooltip": "Price bands based on standard deviation. Squeeze indicates low volatility, expansion signals breakout.",
+      "inputs": [
+        "Price Data"
+      ],
+      "outputs": [
+        "Upper",
+        "Middle",
+        "Lower"
+      ],
+      "category": "indicators",
+      "subcategory": "Bands",
+      "icon": "Maximize2",
+      "color": "#ec4899",
+      "defaultData": {
+        "indicatorType": "bb",
+        "timeframe": "60",
+        "params": {
+          "period": 20,
+          "deviation": 2,
+          "band": "middle"
+        }
+      }
+    },
+    {
+      "type": "keltner",
+      "nodeType": "indicator",
+      "label": "Keltner Channel",
+      "description": "ATR-based price channel",
+      "tooltip": "Uses ATR for band width instead of standard deviation. Better for trending markets.",
+      "inputs": [
+        "Price Data"
+      ],
+      "outputs": [
+        "Upper",
+        "Middle",
+        "Lower"
+      ],
+      "category": "indicators",
+      "subcategory": "Bands",
+      "icon": "Maximize2",
+      "color": "#ec4899",
+      "defaultData": {
+        "indicatorType": "keltner",
+        "timeframe": "60",
+        "params": {
+          "period": 20,
+          "multiplier": 2,
+          "band": "middle"
+        }
+      }
+    },
+    {
+      "type": "atr",
+      "nodeType": "indicator",
+      "label": "ATR",
+      "description": "Average True Range",
+      "tooltip": "Measures market volatility. Use for position sizing and stop-loss placement.",
+      "inputs": [
+        "Price Data"
+      ],
+      "outputs": [
+        "Number"
+      ],
+      "category": "indicators",
+      "subcategory": "Volatility",
+      "icon": "Zap",
+      "color": "#f97316",
+      "defaultData": {
+        "indicatorType": "atr",
+        "timeframe": "60",
+        "params": {
+          "period": 14
+        }
+      }
+    },
+    {
+      "type": "obv",
+      "nodeType": "indicator",
+      "label": "OBV",
+      "description": "On Balance Volume",
+      "tooltip": "Cumulative volume indicator. Rising OBV confirms uptrend, falling confirms downtrend.",
+      "inputs": [
+        "Price Data",
+        "Volume"
+      ],
+      "outputs": [
+        "Number"
+      ],
+      "category": "indicators",
+      "subcategory": "Volume",
+      "icon": "BarChart",
+      "color": "#3b82f6",
+      "defaultData": {
+        "indicatorType": "obv",
+        "timeframe": "60",
+        "params": {}
+      }
+    },
+    {
+      "type": "vwap",
+      "nodeType": "indicator",
+      "label": "VWAP",
+      "description": "Volume Weighted Average Price",
+      "tooltip": "Institutional benchmark price. Trading above = bullish, below = bearish.",
+      "inputs": [
+        "Price Data",
+        "Volume"
+      ],
+      "outputs": [
+        "Number"
+      ],
+      "category": "indicators",
+      "subcategory": "Volume",
+      "icon": "BarChart",
+      "color": "#3b82f6",
+      "defaultData": {
+        "indicatorType": "vwap",
+        "timeframe": "60",
+        "params": {}
+      }
+    }
+  ],
+  "llm": [
+    {
+      "type": "llmDecision",
+      "nodeType": "llm",
+      "label": "LLM Decision",
+      "description": "LLM outputs structured JSON",
+      "tooltip": "Runs a prompt and returns a JSON decision object (e.g., {\"shouldTrade\": true}).",
+      "inputs": [
+        "Trigger"
+      ],
+      "outputs": [
+        "JSON"
+      ],
+      "category": "llm",
+      "subcategory": "AI",
+      "icon": "Sparkles",
+      "color": "#a855f7",
+      "defaultData": {
+        "label": "LLM Decision",
+        "llmType": "llmDecision",
+        "prompt": "Decide whether to enter a trade based on context.",
+        "model": "gpt-4o-mini",
+        "temperature": 0.3,
+        "schema": {
+          "shouldTrade": "boolean",
+          "confidence": "number"
+        },
+        "fallback": {
+          "shouldTrade": false,
+          "confidence": 0
+        }
+      }
+    },
+    {
+      "type": "sentimentAnalysis",
+      "nodeType": "llm",
+      "label": "Sentiment Analysis",
+      "description": "Analyze market sentiment from text",
+      "tooltip": "Analyzes news articles, social media, or custom text to determine market sentiment (-1 bearish to +1 bullish).",
+      "inputs": [
+        "Text",
+        "News Feed"
+      ],
+      "outputs": [
+        "Sentiment Score",
+        "Signal"
+      ],
+      "category": "llm",
+      "subcategory": "Analysis",
+      "icon": "Brain",
+      "color": "#ec4899",
+      "defaultData": {
+        "label": "Sentiment Analysis",
+        "llmType": "sentimentAnalysis",
+        "prompt": "Analyze the following market news/text and determine the overall sentiment. Return a score from -1 (very bearish) to +1 (very bullish).",
+        "model": "gpt-4o-mini",
+        "temperature": 0.2,
+        "sentimentThreshold": 0.3,
+        "sentimentSource": "news",
+        "schema": {
+          "sentiment": "number",
+          "confidence": "number",
+          "summary": "string"
+        },
+        "fallback": {
+          "sentiment": 0,
+          "confidence": 0,
+          "summary": "No data"
+        }
+      }
+    },
+    {
+      "type": "regimeDetection",
+      "nodeType": "llm",
+      "label": "Regime Detection",
+      "description": "Detect current market regime",
+      "tooltip": "Uses LLM to analyze price action and indicators to classify the current market regime (trending, ranging, volatile).",
+      "inputs": [
+        "Market Data",
+        "Indicators"
+      ],
+      "outputs": [
+        "Regime",
+        "Confidence"
+      ],
+      "category": "llm",
+      "subcategory": "Analysis",
+      "icon": "Layers",
+      "color": "#06b6d4",
+      "defaultData": {
+        "label": "Regime Detection",
+        "llmType": "regimeDetection",
+        "prompt": "Analyze the provided market data and indicators. Classify the current market regime as one of: trending_up, trending_down, ranging, or volatile.",
+        "model": "gpt-4o-mini",
+        "temperature": 0.2,
+        "regimeTypes": [
+          "trending_up",
+          "trending_down",
+          "ranging",
+          "volatile"
+        ],
+        "lookbackPeriod": 20,
+        "schema": {
+          "regime": "string",
+          "confidence": "number",
+          "reasoning": "string"
+        },
+        "fallback": {
+          "regime": "ranging",
+          "confidence": 0.5,
+          "reasoning": "Default fallback"
+        }
+      }
+    },
+    {
+      "type": "nlStrategyRules",
+      "nodeType": "llm",
+      "label": "NL Strategy Rules",
+      "description": "Natural language strategy rules",
+      "tooltip": "Define trading rules in plain English. The LLM interprets them and generates trading signals.",
+      "inputs": [
+        "Market Context"
+      ],
+      "outputs": [
+        "Signal",
+        "Reasoning"
+      ],
+      "category": "llm",
+      "subcategory": "Strategy",
+      "icon": "FileText",
+      "color": "#f59e0b",
+      "defaultData": {
+        "label": "NL Strategy Rules",
+        "llmType": "nlStrategyRules",
+        "prompt": "Buy when price is near support and RSI is oversold. Sell when price reaches resistance or RSI is overbought. Use trailing stops.",
+        "model": "gpt-4o",
+        "temperature": 0.3,
+        "schema": {
+          "action": "string",
+          "confidence": "number",
+          "reasoning": "string"
+        },
+        "fallback": {
+          "action": "hold",
+          "confidence": 0,
+          "reasoning": "No signal"
+        }
+      }
+    },
+    {
+      "type": "parameterTuning",
+      "nodeType": "llm",
+      "label": "Parameter Tuning",
+      "description": "LLM-suggested parameter optimization",
+      "tooltip": "Uses LLM reasoning to suggest optimal parameters for indicators and strategy rules based on recent performance.",
+      "inputs": [
+        "Performance Data",
+        "Current Params"
+      ],
+      "outputs": [
+        "Suggested Params"
+      ],
+      "category": "llm",
+      "subcategory": "Optimization",
+      "icon": "SlidersHorizontal",
+      "color": "#10b981",
+      "defaultData": {
+        "label": "Parameter Tuning",
+        "llmType": "parameterTuning",
+        "prompt": "Based on the recent trading performance and current parameters, suggest improved parameter values to optimize the Sharpe ratio.",
+        "model": "gpt-4o",
+        "temperature": 0.4,
+        "parametersToTune": [
+          "rsiPeriod",
+          "maPeriod",
+          "stopLoss"
+        ],
+        "optimizationGoal": "sharpe",
+        "schema": {
+          "suggestedParams": "object",
+          "expectedImprovement": "number",
+          "reasoning": "string"
+        },
+        "fallback": {
+          "suggestedParams": {},
+          "expectedImprovement": 0,
+          "reasoning": "No suggestions"
+        }
+      }
+    },
+    {
+      "type": "marketRegimeClassification",
+      "nodeType": "llm",
+      "label": "Market Classification",
+      "description": "Classify market conditions",
+      "tooltip": "Advanced market classification using LLM to analyze multiple factors: volatility, trend strength, volume, and macro conditions.",
+      "inputs": [
+        "OHLCV",
+        "Volume",
+        "Volatility"
+      ],
+      "outputs": [
+        "Classification",
+        "Scores"
+      ],
+      "category": "llm",
+      "subcategory": "Analysis",
+      "icon": "BarChart3",
+      "color": "#8b5cf6",
+      "defaultData": {
+        "label": "Market Classification",
+        "llmType": "marketRegimeClassification",
+        "prompt": "Analyze the market data and classify conditions across multiple dimensions: trend (strong/weak/none), volatility (high/medium/low), momentum (bullish/neutral/bearish).",
+        "model": "gpt-4o-mini",
+        "temperature": 0.2,
+        "schema": {
+          "trend": "string",
+          "volatility": "string",
+          "momentum": "string",
+          "overallScore": "number"
+        },
+        "fallback": {
+          "trend": "none",
+          "volatility": "medium",
+          "momentum": "neutral",
+          "overallScore": 0.5
+        }
+      }
+    },
+    {
+      "type": "newsSentimentSignal",
+      "nodeType": "llm",
+      "label": "News → Signal",
+      "description": "Convert news sentiment to signal",
+      "tooltip": "Fetches and analyzes news headlines to generate trading signals. Filters by relevance and recency.",
+      "inputs": [
+        "Symbol",
+        "News Feed"
+      ],
+      "outputs": [
+        "Signal",
+        "Strength"
+      ],
+      "category": "llm",
+      "subcategory": "Signals",
+      "icon": "Newspaper",
+      "color": "#ef4444",
+      "defaultData": {
+        "label": "News → Signal",
+        "llmType": "newsSentimentSignal",
+        "prompt": "Analyze the latest news for the given symbol. Determine if the news is bullish, bearish, or neutral. Consider impact magnitude and relevance.",
+        "model": "gpt-4o-mini",
+        "temperature": 0.2,
+        "sentimentThreshold": 0.5,
+        "schema": {
+          "signal": "string",
+          "strength": "number",
+          "keyNews": "array",
+          "reasoning": "string"
+        },
+        "fallback": {
+          "signal": "neutral",
+          "strength": 0,
+          "keyNews": [],
+          "reasoning": "No news"
+        }
+      }
+    },
+    {
+      "type": "customCode",
+      "nodeType": "llm",
+      "label": "Custom Code",
+      "description": "Custom Python/JS code block",
+      "tooltip": "Write custom Python or JavaScript code that runs server-side. Has access to market data, indicators, and can return trading signals.",
+      "inputs": [
+        "Data",
+        "Context"
+      ],
+      "outputs": [
+        "Result"
+      ],
+      "category": "llm",
+      "subcategory": "Custom",
+      "icon": "Code",
+      "color": "#64748b",
+      "defaultData": {
+        "label": "Custom Code",
+        "llmType": "customCode",
+        "prompt": "",
+        "language": "python",
+        "code": "`# Custom trading logic\n# Available: data (OHLCV)",
+        "schema": {
+          "signal": "string",
+          "confidence": "number"
+        },
+        "fallback": {
+          "signal": "hold",
+          "confidence": 0
+        }
+      }
+    }
+  ],
+  "math": [
+    {
+      "type": "add",
+      "nodeType": "math",
+      "label": "Add",
+      "description": "A + B",
+      "tooltip": "Add two values together. Use for combining indicators or calculating targets.",
+      "inputs": [
+        "Number",
+        "Number"
+      ],
+      "outputs": [
+        "Number"
+      ],
+      "category": "math",
+      "subcategory": "Operators",
+      "icon": "Plus",
+      "color": "#14b8a6",
+      "defaultData": {
+        "mathType": "add"
+      }
+    },
+    {
+      "type": "subtract",
+      "nodeType": "math",
+      "label": "Subtract",
+      "description": "A - B",
+      "tooltip": "Subtract B from A. Calculate differences or spreads.",
+      "inputs": [
+        "Number",
+        "Number"
+      ],
+      "outputs": [
+        "Number"
+      ],
+      "category": "math",
+      "subcategory": "Operators",
+      "icon": "Minus",
+      "color": "#14b8a6",
+      "defaultData": {
+        "mathType": "subtract"
+      }
+    },
+    {
+      "type": "multiply",
+      "nodeType": "math",
+      "label": "Multiply",
+      "description": "A × B",
+      "tooltip": "Multiply two values. Use for position sizing or ATR-based stops.",
+      "inputs": [
+        "Number",
+        "Number"
+      ],
+      "outputs": [
+        "Number"
+      ],
+      "category": "math",
+      "subcategory": "Operators",
+      "icon": "X",
+      "color": "#14b8a6",
+      "defaultData": {
+        "mathType": "multiply"
+      }
+    },
+    {
+      "type": "divide",
+      "nodeType": "math",
+      "label": "Divide",
+      "description": "A ÷ B",
+      "tooltip": "Divide A by B. Calculate ratios or normalize values.",
+      "inputs": [
+        "Number",
+        "Number"
+      ],
+      "outputs": [
+        "Number"
+      ],
+      "category": "math",
+      "subcategory": "Operators",
+      "icon": "Divide",
+      "color": "#14b8a6",
+      "defaultData": {
+        "mathType": "divide"
+      }
+    },
+    {
+      "type": "advancedMath",
+      "nodeType": "math",
+      "label": "Advanced Math",
+      "description": "sqrt, abs, sin, cos...",
+      "tooltip": "Apply mathematical functions: square root, absolute value, trigonometry.",
+      "inputs": [
+        "Number"
+      ],
+      "outputs": [
+        "Number"
+      ],
+      "category": "math",
+      "subcategory": "Functions",
+      "icon": "Function",
+      "color": "#a855f7",
+      "defaultData": {
+        "mathType": "advancedMath",
+        "mathFunction": "sqrt"
+      }
+    }
+  ],
+  "risk": [
+    {
+      "type": "risk_max_drawdown",
+      "nodeType": "risk",
+      "label": "Max Drawdown",
+      "description": "Account protection",
+      "tooltip": "Stop trading if account drops by X%. Protects capital from catastrophic losses.",
+      "inputs": [],
+      "outputs": [
+        "Number"
+      ],
+      "category": "risk",
+      "subcategory": "Account Protection",
+      "icon": "ShieldAlert",
+      "color": "#ef4444",
+      "defaultData": {
+        "riskType": "maxDrawdown",
+        "value": 10
+      }
+    },
+    {
+      "type": "risk_daily_loss_limit",
+      "nodeType": "risk",
+      "label": "Daily Loss Limit",
+      "description": "Daily stop trading",
+      "tooltip": "Stop trading for the day if losses exceed X%. Prevents revenge trading.",
+      "inputs": [],
+      "outputs": [
+        "Number"
+      ],
+      "category": "risk",
+      "subcategory": "Account Protection",
+      "icon": "ShieldOff",
+      "color": "#ef4444",
+      "defaultData": {
+        "riskType": "dailyLossLimit",
+        "value": 2
+      }
+    },
+    {
+      "type": "risk_position_percent",
+      "nodeType": "risk",
+      "label": "Position %",
+      "description": "Size by capital %",
+      "tooltip": "Calculate position size as percentage of account. Standard risk management.",
+      "inputs": [],
+      "outputs": [
+        "Number"
+      ],
+      "category": "risk",
+      "subcategory": "Sizing",
+      "icon": "PieChart",
+      "color": "#f97316",
+      "defaultData": {
+        "riskType": "positionPercent",
+        "percentage": 2
+      }
+    },
+    {
+      "type": "risk_kelly_criterion",
+      "nodeType": "risk",
+      "label": "Kelly Criterion",
+      "description": "Optimal bet sizing",
+      "tooltip": "Calculate optimal position size based on win rate and reward/risk ratio.",
+      "inputs": [],
+      "outputs": [
+        "Number"
+      ],
+      "category": "risk",
+      "subcategory": "Sizing",
+      "icon": "Calculator",
+      "color": "#f97316",
+      "defaultData": {
+        "riskType": "kellyCriterion"
+      }
+    },
+    {
+      "type": "risk_trailing_stop",
+      "nodeType": "risk",
+      "label": "Trailing Stop %",
+      "description": "Dynamic exit level",
+      "tooltip": "Trailing stop that moves with price. Lock in profits automatically.",
+      "inputs": [],
+      "outputs": [
+        "Number"
+      ],
+      "category": "risk",
+      "subcategory": "Trade Management",
+      "icon": "TrendingUp",
+      "color": "#f97316",
+      "defaultData": {
+        "riskType": "trailingStop",
+        "value": 20
+      }
+    }
+  ],
+  "tradeInfo": [
+    {
+      "type": "trade_entry_price",
+      "nodeType": "tradeInfo",
+      "label": "Entry Price",
+      "description": "Trade entry level",
+      "tooltip": "Get the entry price of current position. Use to calculate distance to SL/TP.",
+      "inputs": [],
+      "outputs": [
+        "Number"
+      ],
+      "category": "tradeInfo",
+      "subcategory": "Price",
+      "icon": "DollarSign",
+      "color": "#8b5cf6",
+      "defaultData": {
+        "tradeInfoType": "entryPrice"
+      }
+    },
+    {
+      "type": "trade_position_size",
+      "nodeType": "tradeInfo",
+      "label": "Position Size",
+      "description": "Current lot size",
+      "tooltip": "Get current open position size. Use for partial closes or scaling.",
+      "inputs": [],
+      "outputs": [
+        "Number"
+      ],
+      "category": "tradeInfo",
+      "subcategory": "Info",
+      "icon": "Hash",
+      "color": "#8b5cf6",
+      "defaultData": {
+        "tradeInfoType": "positionSize"
+      }
+    },
+    {
+      "type": "trade_pnl",
+      "nodeType": "tradeInfo",
+      "label": "Trade PnL",
+      "description": "Current profit/loss",
+      "tooltip": "Get unrealized P&L of current trade. Use for trailing or time-based exits.",
+      "inputs": [],
+      "outputs": [
+        "Number"
+      ],
+      "category": "tradeInfo",
+      "subcategory": "Info",
+      "icon": "TrendingUp",
+      "color": "#8b5cf6",
+      "defaultData": {
+        "tradeInfoType": "pnl"
+      }
+    },
+    {
+      "type": "trade_duration",
+      "nodeType": "tradeInfo",
+      "label": "Trade Duration",
+      "description": "Time in trade",
+      "tooltip": "Get time elapsed since entry. Use for time-based exit rules.",
+      "inputs": [],
+      "outputs": [
+        "Number"
+      ],
+      "category": "tradeInfo",
+      "subcategory": "Time",
+      "icon": "Clock",
+      "color": "#8b5cf6",
+      "defaultData": {
+        "tradeInfoType": "tradeDuration"
+      }
+    }
+  ],
+  "variable": [
+    {
+      "type": "setVariable",
+      "nodeType": "variable",
+      "label": "Set Variable",
+      "description": "Store a value",
+      "tooltip": "Save a value to a named variable. Access it later with Get Variable.",
+      "inputs": [
+        "Value"
+      ],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "variables",
+      "icon": "Edit3",
+      "color": "#ec4899",
+      "defaultData": {
+        "variableType": "setVariable",
+        "variableName": "myVar",
+        "value": 0
+      }
+    },
+    {
+      "type": "getVariable",
+      "nodeType": "variable",
+      "label": "Get Variable",
+      "description": "Retrieve stored value",
+      "tooltip": "Read a previously stored variable value. Use in calculations or conditions.",
+      "inputs": [],
+      "outputs": [
+        "Value"
+      ],
+      "category": "variables",
+      "icon": "Eye",
+      "color": "#ec4899",
+      "defaultData": {
+        "variableType": "getVariable",
+        "variableName": "myVar"
+      }
+    },
+    {
+      "type": "changeVariable",
+      "nodeType": "variable",
+      "label": "Change Variable",
+      "description": "Modify by amount",
+      "tooltip": "Increase or decrease a variable. Useful for counters and tracking.",
+      "inputs": [
+        "Value"
+      ],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "variables",
+      "icon": "PlusCircle",
+      "color": "#ec4899",
+      "defaultData": {
+        "variableType": "changeVariable",
+        "variableName": "myVar",
+        "value": 1
+      }
+    },
+    {
+      "type": "number",
+      "nodeType": "math",
+      "label": "Number",
+      "description": "Constant value",
+      "tooltip": "A fixed numeric value. Use as input to other nodes.",
+      "inputs": [],
+      "outputs": [
+        "Number"
+      ],
+      "category": "variables",
+      "icon": "Hash",
+      "color": "#0ea5e9",
+      "defaultData": {
+        "mathType": "number",
+        "value": 0
+      }
+    }
+  ]
+}

@@ -8,8 +8,6 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import {
   Loader2,
   Send,
@@ -19,6 +17,7 @@ import {
   Blocks,
   X,
   Eye,
+  Wrench,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
@@ -64,7 +63,7 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerateMode, setIsGenerateMode] = useState(true);
-  const [slowMode, setSlowMode] = useState(false);
+  const [genMode, setGenMode] = useState<'fast' | 'slow' | 'tool-calling'>('fast');
   const [generationProgress, setGenerationProgress] = useState<GenerationProgress | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -79,9 +78,11 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
 
   // Simulate generation progress
   const simulateProgress = useCallback(() => {
-    const steps = slowMode ? 5 : 4;
-    const phases = slowMode 
+    const steps = genMode === 'slow' ? 5 : genMode === 'tool-calling' ? 6 : 4;
+    const phases = genMode === 'slow' 
       ? ['Analyzing', 'Building nodes', 'Connecting edges', 'Validating', 'Optimizing']
+      : genMode === 'tool-calling'
+      ? ['Planning', 'Adding indicators', 'Adding conditions', 'Adding actions', 'Connecting nodes', 'Finishing']
       : ['Analyzing', 'Building nodes', 'Connecting edges', 'Finalizing'];
     
     let step = 1;
@@ -97,10 +98,10 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
       } else {
         clearInterval(interval);
       }
-    }, slowMode ? 3000 : 1500);
+    }, genMode === 'slow' ? 3000 : genMode === 'tool-calling' ? 2000 : 1500);
 
     return () => clearInterval(interval);
-  }, [slowMode]);
+  }, [genMode]);
 
   // Add generated nodes to canvas
   const addNodesToCanvas = useCallback((newNodes: StrategyFlowNode[], newEdges: StrategyFlowEdge[], replace: boolean = false) => {
@@ -169,7 +170,7 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
             message: input,
             currentNodes: nodes.length > 0 ? nodes : null,
             currentEdges: edges.length > 0 ? edges : null,
-            mode: slowMode ? 'slow' : 'fast',
+            mode: genMode,
           }),
         });
 
@@ -183,9 +184,11 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
         const data = await response.json();
 
         if (data.success && data.nodes?.length > 0) {
+          const modeLabel = data.generationMode === 'tool-calling' ? ' via tool calling' : '';
           const assistantMessage: Message = {
             role: 'assistant',
-            content: data.message || `Generated strategy with ${data.nodes.length} nodes.` +
+            content: (data.message || `Generated strategy with ${data.nodes.length} nodes.`) +
+              (modeLabel ? `\n\n*Built${modeLabel}.*` : '') +
               (data.wasRationalized ? '\n\n*Strategy was optimized for better logic.*' : '') +
               (data.autoFixed ? '\n\n*Some parameters were auto-corrected.*' : ''),
             nodes: data.nodes,
@@ -286,17 +289,40 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
           </Button>
         </div>
 
-        {/* Slow Mode Toggle (Generate mode only) */}
+        {/* Generation Mode Selector (Generate mode only) */}
         {isGenerateMode && (
-          <div className="flex items-center justify-between px-1">
-            <Label className="text-[10px] text-muted-foreground">
-              {slowMode ? 'Precise' : 'Fast'}
-            </Label>
-            <Switch
-              checked={slowMode}
-              onCheckedChange={setSlowMode}
-              className="scale-75 data-[state=checked]:bg-pink-500"
-            />
+          <div className="flex gap-1 px-1">
+            <button
+              onClick={() => setGenMode('fast')}
+              className={`flex-1 text-[10px] py-1 rounded transition-colors ${
+                genMode === 'fast'
+                  ? 'bg-pink-500/20 text-pink-400 font-medium'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
+              }`}
+            >
+              Fast
+            </button>
+            <button
+              onClick={() => setGenMode('slow')}
+              className={`flex-1 text-[10px] py-1 rounded transition-colors ${
+                genMode === 'slow'
+                  ? 'bg-pink-500/20 text-pink-400 font-medium'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
+              }`}
+            >
+              Precise
+            </button>
+            <button
+              onClick={() => setGenMode('tool-calling')}
+              className={`flex-1 text-[10px] py-1 rounded transition-colors flex items-center justify-center gap-0.5 ${
+                genMode === 'tool-calling'
+                  ? 'bg-purple-500/20 text-purple-400 font-medium'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
+              }`}
+            >
+              <Wrench className="w-2.5 h-2.5" />
+              Tools
+            </button>
           </div>
         )}
       </div>

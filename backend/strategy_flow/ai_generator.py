@@ -2,6 +2,9 @@
 AI Generator for Strategy Flow
 
 Generates flow configurations from natural language using LLMs.
+Supports 3 generation modes:
+  - "fast" / "slow":   Classic prompt-based generation (dynamic prompt from catalog)
+  - "tool-calling":    Gemini/OpenAI function calling for type-safe step-by-step building
 """
 
 import json
@@ -11,7 +14,9 @@ import httpx
 from typing import Any, Dict, List, Optional
 from pathlib import Path
 
-# Load prompts
+# ============================================================
+# Prompt Loading
+# ============================================================
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 
 
@@ -24,8 +29,28 @@ def load_prompt(name: str) -> str:
     return ""
 
 
-FLOW_SYSTEM_PROMPT = load_prompt("flow_system_prompt.txt")
+# Dynamic prompt: auto-generated from TypeScript node catalog (single source of truth)
+try:
+    from .dynamic_prompt import get_system_prompt as _get_dynamic_prompt
+    FLOW_SYSTEM_PROMPT = _get_dynamic_prompt()
+    print(f"[ai_generator] Dynamic prompt loaded ({len(FLOW_SYSTEM_PROMPT)} chars)")
+except Exception as e:
+    # Fallback to static prompt file if dynamic generation fails
+    print(f"[ai_generator] Dynamic prompt failed ({e}), using static prompt")
+    FLOW_SYSTEM_PROMPT = load_prompt("flow_system_prompt.txt")
+
 FLOW_VALIDATION_PROMPT = load_prompt("flow_validation_prompt.txt")
+
+# Tool calling generator (lazy import to avoid circular deps)
+_tool_calling_module = None
+
+
+def _get_tool_calling():
+    global _tool_calling_module
+    if _tool_calling_module is None:
+        from . import tool_calling as tc
+        _tool_calling_module = tc
+    return _tool_calling_module
 
 
 # ============================================================
@@ -197,11 +222,35 @@ async def generate_flow_strategy(
         prompt: User's strategy description
         current_nodes: Existing nodes (for modification)
         current_edges: Existing edges (for modification)
-        mode: "fast" or "slow" (slow includes validation pass)
+        mode: "fast", "slow" (includes validation), or "tool-calling" (function calling)
     
     Returns:
         Dictionary with nodes, edges, message, and metadata
     """
+    # ── Tool-calling mode: use function calling instead of prompt-based ──
+    if mode == "tool-calling":
+        try:
+            tc = _get_tool_calling()
+            result = await tc.generate_with_tools(
+                prompt=prompt,
+                current_nodes=current_nodes,
+                current_edges=current_edges,
+            )
+            # Apply auto-fixes on top of tool-calling result
+            if result.get("success") and result.get("nodes"):
+                nodes, edges, fixes = auto_fix_flow(result["nodes"], result["edges"])
+                result["nodes"] = nodes
+                result["edges"] = edges
+                if fixes:
+                    result["autoFixed"] = True
+                    result.setdefault("fixes", []).extend(fixes)
+            result["generationMode"] = "tool-calling"
+            return result
+        except Exception as e:
+            print(f"[ai_generator] Tool calling failed, falling back to prompt mode: {e}")
+            mode = "fast"  # Fallback to prompt-based
+
+    # ── Prompt-based mode (fast/slow) ──
     # Build context message
     context = ""
     if current_nodes:
@@ -259,7 +308,8 @@ async def generate_flow_strategy(
         "wasRationalized": was_rationalized,
         "autoFixed": len(fixes) > 0,
         "fixes": fixes,
-        "warnings": result.get("warnings", [])
+        "warnings": result.get("warnings", []),
+        "generationMode": "prompt"
     }
 
 
