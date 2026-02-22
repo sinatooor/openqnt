@@ -7,6 +7,8 @@ import { apiLimiter } from './api/middleware/rateLimit.js';
 import healthRouter from './api/routes/health.js';
 import authRouter from './api/routes/auth.js';
 import strategiesRouter from './api/routes/strategies.js';
+import strategyActionsRouter from './api/routes/strategyActions.js';
+import agentRouter from './api/routes/agent.js';
 
 export function createApp() {
     const app = express();
@@ -37,9 +39,10 @@ export function createApp() {
     app.use('/', healthRouter);
     app.use('/api/auth', authRouter);
     app.use('/api/strategies', strategiesRouter);
+    app.use('/api/strategies', strategyActionsRouter); // compile, validate, deploy, pause, backtest
+    app.use('/api/agent', agentRouter);
     // app.use('/api/executions', executionsRouter);
     // app.use('/api/credentials', credentialsRouter);
-    // app.use('/api/agent', agentRouter);
     // app.use('/api/portfolio', portfolioRouter);
     // app.use('/api/notifications', notificationsRouter);
     // app.use('/api/webhooks', webhooksRouter);
