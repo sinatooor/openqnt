@@ -1,0 +1,338 @@
+// Prisma Schema for StrategyFlow AI Agent
+// All 12 tables from the ER diagram
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────
+
+enum SubscriptionTier {
+  free
+  starter
+  pro
+  wealth_manager
+}
+
+enum StrategyStatus {
+  draft
+  active
+  paused
+  archived
+}
+
+enum TriggerType {
+  heartbeat
+  webhook
+  price_alert
+  news
+  manual
+  replay
+}
+
+enum ExecutionStatus {
+  running
+  success
+  error
+  skipped
+  cancelled
+}
+
+enum NodeLogStatus {
+  success
+  error
+  skipped
+  delegated
+}
+
+enum OperationalMode {
+  advisory
+  hitl
+  autonomous
+  simulation
+}
+
+enum NotificationChannel {
+  telegram
+  slack
+  sms
+  email
+  push
+  in_app
+}
+
+enum NotificationType {
+  alert
+  trade_executed
+  hitl_request
+  digest
+  system
+}
+
+enum DeliveryStatus {
+  pending
+  sent
+  delivered
+  failed
+}
+
+// ─── Users ───────────────────────────────────────────────────
+
+model User {
+  id               String           @id @default(uuid())
+  email            String           @unique
+  passwordHash     String           @map("password_hash")
+  name             String?
+  subscriptionTier SubscriptionTier @default(free) @map("subscription_tier")
+  preferences      Json?
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  strategies    Strategy[]
+  credentials   Credential[]
+  portfolios    Portfolio[]
+  agentConfig   AgentConfig?
+  notifications Notification[]
+  executionRuns ExecutionRun[]
+
+  @@map("users")
+}
+
+// ─── Strategies ──────────────────────────────────────────────
+
+model Strategy {
+  id             String         @id @default(uuid())
+  userId         String         @map("user_id")
+  name           String
+  description    String?
+  nodes          Json           // ReactFlow nodes array
+  edges          Json           // ReactFlow edges array
+  settings       Json?          // Strategy settings
+  status         StrategyStatus @default(draft)
+  currentVersion Int            @default(1) @map("current_version")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  versions        StrategyVersion[]
+  executionRuns   ExecutionRun[]
+  backtestResults BacktestResult[]
+
+  @@index([userId])
+  @@map("strategies")
+}
+
+model StrategyVersion {
+  id                String   @id @default(uuid())
+  strategyId        String   @map("strategy_id")
+  versionNumber     Int      @map("version_number")
+  nodesSnapshot     Json     @map("nodes_snapshot")
+  edgesSnapshot     Json     @map("edges_snapshot")
+  settingsSnapshot  Json?    @map("settings_snapshot")
+  changeDescription String?  @map("change_description")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  strategy Strategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  @@unique([strategyId, versionNumber])
+  @@map("strategy_versions")
+}
+
+// ─── Credentials ─────────────────────────────────────────────
+
+model Credential {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  alias        String
+  provider     String   // e.g. alpaca, ig, twilio
+  encryptedKey Bytes    @map("encrypted_key") // AES-256 encrypted
+  iv           Bytes    // Initialization vector
+  metadata     Json?    // Non-sensitive config
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, alias])
+  @@map("credentials")
+}
+
+// ─── Execution ───────────────────────────────────────────────
+
+model ExecutionRun {
+  id                String          @id @default(uuid())
+  strategyId        String          @map("strategy_id")
+  userId            String          @map("user_id")
+  triggerType       TriggerType     @map("trigger_type")
+  status            ExecutionStatus @default(running)
+  durationMs        Int?            @map("duration_ms")
+  triggerData       Json?           @map("trigger_data")
+  summary           Json?
+  nodesExecuted     Int             @default(0) @map("nodes_executed")
+  nodesSkipped      Int             @default(0) @map("nodes_skipped")
+  nodesErrored      Int             @default(0) @map("nodes_errored")
+  pythonDelegations Int             @default(0) @map("python_delegations")
+  startedAt         DateTime        @default(now()) @map("started_at")
+  finishedAt        DateTime?       @map("finished_at")
+
+  strategy      Strategy           @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nodeLogs      ExecutionNodeLog[]
+  notifications Notification[]
+
+  @@index([strategyId])
+  @@index([userId])
+  @@index([startedAt])
+  @@map("execution_runs")
+}
+
+model ExecutionNodeLog {
+  id             String        @id @default(uuid())
+  executionRunId String        @map("execution_run_id")
+  nodeId         String        @map("node_id")       // ReactFlow node ID
+  nodeType       String        @map("node_type")     // indicator|condition|action|...
+  status         NodeLogStatus
+  inputData      Json?         @map("input_data")    // JSON input to this node
+  outputData     Json?         @map("output_data")   // JSON output from this node
+  errorMessage   String?       @map("error_message")
+  durationMs     Int?          @map("duration_ms")
+  executionOrder Int           @map("execution_order")
+  executedAt     DateTime      @default(now()) @map("executed_at")
+
+  executionRun ExecutionRun @relation(fields: [executionRunId], references: [id], onDelete: Cascade)
+
+  @@index([executionRunId])
+  @@map("execution_node_logs")
+}
+
+// ─── Agent Config ────────────────────────────────────────────
+
+model AgentConfig {
+  id                          String          @id @default(uuid())
+  userId                      String          @unique @map("user_id")
+  operationalMode             OperationalMode @default(advisory) @map("operational_mode")
+  heartbeatIntervalSeconds    Int             @default(300) @map("heartbeat_interval_seconds")
+  activeHours                 Json?           @map("active_hours")
+  preCheckRules               Json?           @map("pre_check_rules")
+  maxSingleTradeValue         Float?          @map("max_single_trade_value")
+  maxDailySpend               Float?          @map("max_daily_spend")
+  maxPositionConcentrationPct Float?          @map("max_position_concentration_pct")
+  emergencyKill               Boolean         @default(false) @map("emergency_kill")
+  createdAt                   DateTime        @default(now()) @map("created_at")
+  updatedAt                   DateTime        @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("agent_configs")
+}
+
+// ─── Portfolios ──────────────────────────────────────────────
+
+model Portfolio {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  brokerName      String   @map("broker_name")    // alpaca|ig|ibkr|nordnet
+  accountId       String?  @map("account_id")     // broker account identifier
+  credentialAlias String?  @map("credential_alias")
+  cashBalance     Float    @default(0) @map("cash_balance")
+  totalEquity     Float    @default(0) @map("total_equity")
+  healthScore     Float?   @map("health_score")
+  metadata        Json?
+  lastSyncedAt    DateTime? @map("last_synced_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  positions PortfolioPosition[]
+
+  @@index([userId])
+  @@map("portfolios")
+}
+
+model PortfolioPosition {
+  id            String   @id @default(uuid())
+  portfolioId   String   @map("portfolio_id")
+  symbol        String
+  side          String   // long|short
+  quantity      Float
+  avgEntryPrice Float    @map("avg_entry_price")
+  currentPrice  Float    @default(0) @map("current_price")
+  unrealizedPnl Float    @default(0) @map("unrealized_pnl")
+  realizedPnl   Float    @default(0) @map("realized_pnl")
+  sector        String?
+  weightPct     Float?   @map("weight_pct")
+  openedAt      DateTime? @map("opened_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  portfolio Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@index([portfolioId])
+  @@map("portfolio_positions")
+}
+
+// ─── Notifications ───────────────────────────────────────────
+
+model Notification {
+  id             String              @id @default(uuid())
+  userId         String              @map("user_id")
+  executionRunId String?             @map("execution_run_id")
+  channel        NotificationChannel
+  type           NotificationType
+  title          String
+  body           String
+  deliveryStatus DeliveryStatus      @default(pending) @map("delivery_status")
+  metadata       Json?
+  read           Boolean             @default(false)
+  sentAt         DateTime?           @map("sent_at")
+  readAt         DateTime?           @map("read_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  executionRun ExecutionRun? @relation(fields: [executionRunId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([userId, read])
+  @@map("notifications")
+}
+
+// ─── Market Data (Python-managed, shared via PostgreSQL) ─────
+
+model MarketData {
+  id        BigInt   @id @default(autoincrement())
+  symbol    String
+  timeframe String   // 1m|5m|15m|1h|1d
+  timestamp DateTime
+  open      Float
+  high      Float
+  low       Float
+  close     Float
+  volume    Float
+  fetchedAt DateTime @default(now()) @map("fetched_at")
+
+  @@unique([symbol, timeframe, timestamp])
+  @@index([symbol, timeframe])
+  @@map("market_data")
+}
+
+// ─── Backtest Results ────────────────────────────────────────
+
+model BacktestResult {
+  id          String   @id @default(uuid())
+  strategyId  String   @map("strategy_id")
+  userId      String   @map("user_id")
+  engine      String   // backtrader|backtesting_py|nautilus
+  parameters  Json?    // date range, capital, etc.
+  metrics     Json?    // sharpe, max_dd, win_rate, etc.
+  equityCurve Json?    @map("equity_curve")  // array of {timestamp, equity}
+  tradeLog    Json?    @map("trade_log")     // array of trade objects
+  durationMs  Int?     @map("duration_ms")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  strategy Strategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  @@index([strategyId])
+  @@map("backtest_results")
+}
