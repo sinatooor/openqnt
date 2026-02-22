@@ -1,197 +1,306 @@
-# Project Prometheus (PPM)
+# Project Prometheus (PPM) — StrategyFlow
 
-**Project Prometheus** is an advanced AI-powered algorithmic trading platform that democratizes strategy creation. It combines a visual drag-and-drop interface (Blockly) with a powerful Generative AI engine (Google Gemini/DeepSeek + RAG + Google ADK) to allow users to create, backtest, and deploy trading strategies using natural language or visual blocks.
+**Project Prometheus** is an advanced AI-powered algorithmic trading platform that lets users build, backtest, and autonomously execute trading strategies through a visual node-and-edge builder. Inspired by **n8n**'s workflow automation and **OpenClaw**'s heartbeat daemon, the platform is evolving into a 24/7 autonomous financial AI agent.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Frontend](https://img.shields.io/badge/frontend-React%20%7C%20Vite-61DAFB)
-![Backend](https://img.shields.io/badge/backend-FastAPI%20%7C%20Python-3776AB)
+![Frontend](https://img.shields.io/badge/frontend-React%20%7C%20ReactFlow%20%7C%20TypeScript-61DAFB)
+![Orchestrator](https://img.shields.io/badge/orchestrator-Node.js%20%7C%20BullMQ-339933)
+![Compute](https://img.shields.io/badge/compute-Python%20%7C%20FastAPI-3776AB)
 ![AI](https://img.shields.io/badge/AI-Google%20ADK%20%7C%20Gemini-4285F4)
+
+---
 
 ## 🚀 Key Features
 
-*   **🤖 AI Strategy Generation**: Describe your strategy in plain English (e.g., *"Buy EURUSD when RSI < 30 and price is above SMA 200"*). The system uses **RAG (Retrieval Augmented Generation)** and **Gemini/DeepSeek** to construct a valid visual strategy.
-*   **💬 AI Chat Assistant**: Powered by **Google ADK (Agent Development Kit)** with 15+ tools for market research, custom indicators, and live trading.
-*   **🧩 Visual Builder**: Powered by Google Blockly. Modify AI-generated strategies or build from scratch using typed, validating blocks for Indicators, Logic, and Trade Actions.
-*   **📉 Robust Backtesting**:
-    *   Integrated Python `backtesting.py` engine.
-    *   Supports historical data via `yfinance` and Alpha Vantage.
-    *   Detailed metrics: CAGR, Sharpe, Sortino, Drawdown, and Win Rate.
-*   **⚡ Live Trading**: Direct integration with **IG Markets API** for real-time execution.
-*   **🛡️ Auto-Validation**: Strategies are validated for logic errors and Risk Management rules.
+- **🎨 Visual Strategy Builder** — ReactFlow-based node-and-edge canvas. 10 node categories: Indicators, Conditions, Actions, Environment, Control, Math, Risk, Variables, Trade Info, LLM.
+- **🤖 AI Strategy Generation** — Describe strategies in plain English. Gemini/DeepSeek generates the complete node graph via RAG.
+- **💬 AI Chat Assistant** — Google ADK agents with 15+ tools for market research, sentiment analysis, and live trading control.
+- **📉 Multi-Engine Backtesting** — backtrader, backtesting.py, NautilusTrader. Full metrics: Sharpe, Sortino, CAGR, Drawdown, Win Rate.
+- **⚡ Live Trading** — IG Markets and Nordnet broker integrations.
+- **⏰ Autonomous Heartbeat Agent** *(upcoming)* — BullMQ-powered background agent that monitors markets 24/7, inspired by OpenClaw.
+- **🔗 Webhook Triggers** *(upcoming)* — Event-driven workflow execution, TradingView alert integration.
+- **📋 Execution History** *(upcoming)* — Visual debugger for past workflow runs, n8n-style per-node data inspection.
+
+---
+
+## 🏗️ Architecture
+
+### System Overview
+
+```mermaid
+graph TD
+    User["👤 User"] -->|"Visual Builder / Chat"| Frontend["React + ReactFlow\n(Frontend)"]
+    
+    Frontend -->|"HTTP / WebSocket"| NodeJS["Node.js Orchestrator\n(Express + BullMQ)"]
+
+    subgraph NodeJS_Services["Node.js — Orchestration Layer"]
+        API["REST API\n(Express/Fastify)"]
+        Queue["BullMQ\nJob Queue"]
+        FlowEngine["Flow Compiler\n& Interpreter (TS)"]
+        Webhooks["Webhook Handler"]
+        Notify["Notification\nDispatcher"]
+        Broker["Broker Clients\n(Alpaca · IG · IBKR)"]
+    end
+
+    NodeJS -->|"REST / gRPC\n(compute requests)"| Python["Python Compute\nService (FastAPI)"]
+
+    subgraph Python_Services["Python — Compute Layer"]
+        Backtest["Backtesting Engines\n(backtrader · backtesting.py\n· NautilusTrader)"]
+        Indicators["Indicator Calculator\n(TA-Lib · pandas · numpy)"]
+        ADK["Google ADK Agents\n(Trading · Research)"]
+        RAG["RAG / Vector Search\n(ChromaDB)"]
+        DataProc["Data Processing\n(pandas · yfinance · FMP)"]
+    end
+
+    subgraph Data["Shared Data Layer"]
+        PG[("PostgreSQL\n(strategies · executions\n· portfolio · users)")]
+        Redis[("Redis\n(BullMQ · cache · pub/sub)")]
+        Chroma[("ChromaDB\n(vector store)")]
+    end
+
+    NodeJS --> Data
+    Python --> Data
+```
+
+---
+
+### Heartbeat Agent Pipeline (OpenClaw-Inspired)
+
+```mermaid
+sequenceDiagram
+    participant Beat as BullMQ Scheduler
+    participant Orch as Node.js Orchestrator
+    participant PreCheck as Pre-Check Layer (Node.js)
+    participant Python as Python Compute Service
+    participant Broker as Broker API
+    participant User as 📱 User
+
+    Beat->>Orch: Heartbeat fires (every N mins)
+    Orch->>Orch: Load user strategy (from PostgreSQL)
+    Orch->>PreCheck: Run cheap checks (price threshold, volume spike)
+    
+    alt No condition met
+        PreCheck-->>Orch: HEARTBEAT_OK (silent)
+        Note over Orch: Cycle ends. No LLM call. No notification.
+    else Condition threshold met
+        PreCheck->>Python: POST /compute/indicators {priceData, params}
+        Python-->>PreCheck: {rsi: 28, volume_ratio: 2.3}
+        PreCheck->>Python: POST /compute/ai-analyze {context, news}
+        Python-->>PreCheck: {sentiment: 0.82, action: "buy"}
+        Orch->>Orch: Evaluate strategy nodes (topological order)
+        Orch->>Broker: Execute trade (if autonomous mode)
+        Orch->>User: 📬 Alert via Telegram / Slack / SMS
+    end
+```
+
+---
+
+### Strategy Execution Pipeline
+
+```mermaid
+flowchart LR
+    A["👤 User\nBuilds Strategy"] --> B["ReactFlow Canvas\n(nodes + edges)"]
+    B --> C["Flow Compiler\n(TypeScript)"]
+    C --> D["Compiled JSON\n+ Topological Order"]
+    D --> E{"Execution\nMode"}
+    
+    E -->|"Backtest"| F["Node.js enqueues\nBullMQ job"]
+    F --> G["Python Compute\n(backtrader / backtesting.py)"]
+    G --> H["Results → PostgreSQL"]
+    H --> I["📊 Equity Curve\n& Metrics UI"]
+
+    E -->|"Live / Heartbeat"| J["Node.js\nFlow Interpreter"]
+    J -->|"Indicator nodes"| K["Python\n/compute/indicators"]
+    J -->|"LLM nodes"| L["Python\n/compute/ai-analyze (ADK)"]
+    K --> J
+    L --> J
+    J -->|"Action node"| M["Broker API\n(Alpaca · IG · IBKR)"]
+    M --> N["📬 Notification\n(Telegram · Slack · SMS)"]
+```
+
+---
+
+### n8n-Style Execution History
+
+```mermaid
+flowchart TD
+    Run["ExecutionRun\n(BullMQ job completes)"] --> Log["Node.js logs\nper-node JSON snapshots\n→ PostgreSQL"]
+    Log --> Viewer["Frontend\nExecution Viewer"]
+    
+    Viewer --> Green["🟢 Green node\n= executed OK"]
+    Viewer --> Red["🔴 Red node\n= errored"]
+    Viewer --> Gray["⚫ Gray node\n= skipped (condition false)"]
+    Viewer --> Blue["🔵 Blue node\n= delegated to Python"]
+    Viewer --> Hover["Hover → inspect\nJSON in / JSON out"]
+```
+
+---
+
+### AI Strategy Generation Pipeline
+
+```mermaid
+flowchart LR
+    A["User Prompt\n'RSI oversold + SMA cross'"] --> B["Node.js API\n(POST /generate)"]
+    B --> C{"RAG Lookup\n(ChromaDB)"}
+    C --> D["Relevant node\ndefinitions retrieved"]
+    D --> E["LLM\n(Gemini / DeepSeek)"]
+    E --> F["Generated\nNodes + Edges JSON"]
+    F --> G{"Validator\n(TypeScript)"}
+    G -->|"Invalid"| H["Auto-Fix\nPipeline"]
+    H --> G
+    G -->|"Valid"| I["ReactFlow Canvas\nloads strategy"]
+```
+
+---
 
 ## 🛠️ Technology Stack
 
-### Frontend
-*   **Framework**: React 18 + Vite
-*   **Language**: TypeScript
-*   **UI Components**: ShadCn UI + Tailwind CSS
-*   **Visual Engine**: Google Blockly (Custom blocks for Trading)
-*   **Code Generation**: MQL5 Generator (frontend-side)
+| Layer | Technology | Role |
+|---|---|---|
+| **Frontend** | React 18 + Vite + TypeScript | Visual strategy builder UI |
+| **UI Components** | Shadcn UI + Tailwind CSS | Design system |
+| **Canvas** | ReactFlow (`@xyflow/react`) | Node-and-edge graph editor |
+| **State** | Zustand | Client state management |
+| **Orchestrator** | Node.js + Express/Fastify | API server, workflow orchestration |
+| **Job Queue** | BullMQ + Redis | Heartbeat scheduling, async jobs |
+| **Compute Service** | Python + FastAPI | Backtesting, indicators, AI agents |
+| **Backtesting** | backtrader, backtesting.py, NautilusTrader | Strategy backtesting engines |
+| **AI Orchestration** | Google ADK + Gemini | Autonomous trading agents |
+| **LLM Providers** | Google Gemini + DeepSeek | Strategy generation + analysis |
+| **RAG** | ChromaDB + vector_rag | Block retrieval for AI generation |
+| **Data** | pandas, numpy, TA-Lib, yfinance, FMP | Market data processing |
+| **Database** | PostgreSQL (prod) / SQLite (dev) | Primary data store |
+| **Cache / Events** | Redis | BullMQ broker, pub/sub, caching |
 
-### Backend
-*   **Server**: Python FastAPI
-*   **AI Orchestrator**: Google ADK (Agent Development Kit)
-*   **AI Models**: Google Gemini (`gemini-2.0-flash`) + DeepSeek Chat
-*   **Data/Analysis**: `pandas`, `numpy`, `yfinance`, `backtesting`
+---
 
 ## 📦 Installation & Setup
 
 ### Prerequisites
-*   Node.js v18+
-*   Python 3.10+
-*   Git
+
+- Node.js v18+
+- Python 3.10+
+- Redis
+- Git
 
 ### 1. Clone the Repository
+
 ```bash
 git clone git@github.com:sinatooor/project-prometheus.git
 cd project-prometheus
 ```
 
 ### 2. Frontend Setup
+
 ```bash
 npm install
 npm run dev
+# Access at http://localhost:8080
 ```
-Access the UI at `http://localhost:8080`.
 
-### 3. Backend Setup
+### 3. Python Compute Service
+
 ```bash
 cd backend
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
-# Configure Environment
 cp .env.example .env
-# Edit .env and add:
-#   GEMINI_API_KEY=your_key
-#   DEEPSEEK_API_KEY=your_key (optional)
+# Add: GEMINI_API_KEY, DEEPSEEK_API_KEY, FMP_API_KEY
 ```
 
 ### 4. Running Services
-```bash
-# Terminal 1: FastAPI Backend
-uvicorn main:app --reload --port 8000
 
-# Terminal 2: ADK Web UI (optional)
+```bash
+# Terminal 1 — Python Compute Service
+cd backend && source venv/bin/activate && uvicorn main:app --reload --port 8000
+
+# Terminal 2 — React Frontend
+npm run dev
+
+# Terminal 3 — ADK Web UI (optional, agent debugging)
 adk web --port 8085
+
+# Terminal 4 — Redis (required for BullMQ when orchestrator is set up)
+redis-server
 ```
 
 | Service | URL | Description |
 |---------|-----|-------------|
 | Frontend | http://localhost:8080 | React UI |
-| Backend API | http://localhost:8000/docs | FastAPI Swagger |
+| Python API | http://localhost:8000/docs | FastAPI Swagger (compute) |
 | ADK Web UI | http://localhost:8085 | Google ADK Agent Testing |
 
-## 🏗️ Architecture
+### 5. Docker (Full Stack)
 
-The platform follows a layered architecture with React for the UI, FastAPI for the backend logic, and specialized services for AI and Trading execution.
-
-For a detailed deep-dive, see:
-*   [** Architectural Overview**](ARCHITECTURAL_OVERVIEW.md) - Full system map.
-*   [** Pipelines Reference**](PIPELINES.md) - Detailed data flow diagrams.
-*   [** RAG Pipeline**](RAG_PIPELINE.md) - AI strategy generation internals.
-
-**High-Level Overview:**
-```mermaid
-graph TD
-    User[👤 User] -->|Chat / Prompt| UI[React Frontend]
-    UI -->|Visual Blocks| Blockly[Blockly Workspace]
-    
-    UI -->|API Calls| API[FastAPI Backend :8000]
-    
-    subgraph "Backend Services"
-        API -->|AI Agents| ADK[Google ADK / Gemini]
-        API -->|Strategy Gen| LLM[DeepSeek / RAG]
-        API -->|Execution| Engines[backtesting.py / Nautilus]
-    end
+```bash
+docker-compose up --build
 ```
 
-## 🔄 AI Chat Pipeline
+---
 
-```mermaid
-sequenceDiagram
-    participant User
-    participant Frontend as AIChatPanel
-    participant Backend as FastAPI
-    participant ADK as Google ADK
-    participant Agent as trading_agent
-    participant LLM as Gemini 2.0
+## 🤖 ADK Trading Agent Tools
 
-    User->>Frontend: "What's the news on AAPL?"
-    Frontend->>Backend: POST /conversational-chat
-    Backend->>ADK: Run trading_agent
-    ADK->>Agent: Process with tools
-    Agent->>LLM: search_market_news("AAPL")
-    LLM-->>Agent: Tool result
-    Agent->>LLM: Generate response
-    LLM-->>Agent: Final answer
-    Agent-->>ADK: Response
-    ADK-->>Backend: Text response
-    Backend-->>Frontend: {response: "..."}
-    Frontend-->>User: Display message
-```
+| Category | Tools |
+|---|---|
+| **Market Research** | `search_market_news`, `search_sentiment`, `search_economic_calendar`, `get_market_news` |
+| **Web Research** | `scrape_url_text` |
+| **Custom Indicators** | `create_custom_indicator`, `update`, `delete`, `list`, `get` |
+| **Broker** | `execute_trade`, `get_positions`, `close_position`, `get_account_info`, `get_market_price` |
+| **RAG** | `find_similar_blocks`, `get_block_info`, `list_block_categories` |
+| **Risk & Strategy** | `run_monte_carlo_simulation`, `calculate_position_sizing`, `calculate_risk_metrics`, `calculate_correlation_matrix` |
+| **Analysis** | `scan_candlestick_patterns`, `classify_market_regime` |
+| **Memory** | `save_note`, `read_note`, `list_notes`, `append_to_note` |
+| **Control** | `update_strategy_risk_settings`, `adjust_trade_size`, `emergency_stop_strategy` |
 
-## 🎯 Strategy Generation Pipeline
-
-```mermaid
-flowchart LR
-    A[User Prompt] --> B{Mode?}
-    B -->|Fast| C[DeepSeek]
-    B -->|Pro| D[Gemini]
-    C --> E[Generate XML]
-    D --> E
-    E --> F{Valid?}
-    F -->|No| G[Auto-Fix]
-    G --> E
-    F -->|Yes| H[Load Blocks]
-    H --> I[Blockly Workspace]
-```
-
-## 🤖 ADK Trading Agent
-
-The AI chat uses Google ADK with a `trading_agent` that has access to:
-
-| Tool Category | Tools | Description |
-|---------------|-------|-------------|
-| **Market Research** | `search_market_news`, `search_sentiment`, `search_economic_calendar`, `get_market_news`, `get_general_market_news` | Real-time market data & News |
-| **Web Research** | `scrape_url_text` | Extract content from external URLs |
-| **Indicators** | `create_custom_indicator`, `update`, `delete`, `list`, `get` | Custom indicator CRUD |
-| **Broker** | `execute_trade`, `get_positions`, `close_position`, `get_account_info`, `get_market_price` | IG Markets integration |
-| **RAG** | `find_similar_blocks`, `get_block_info`, `list_block_categories` | Block discovery |
-| **Strategy & Risk** | `run_monte_carlo_simulation`, `calculate_position_sizing`, `generate_trading_plan_template`, `calculate_risk_metrics`, `calculate_correlation_matrix`, `calculate_portfolio_beta` | Advanced Strategy Planning & Risk Analysis |
-| **Analysis** | `scan_candlestick_patterns`, `classify_market_regime` | Technical Pattern & Regime Analysis |
-| **Memory** | `save_note`, `read_note`, `list_notes`, `append_to_note` | Persistent Research Notebook |
-| **Control** | `update_strategy_risk_settings`, `adjust_trade_size`, `emergency_stop_strategy`, `check_active_strategy_status` | Dynamic Strategy Management |
+---
 
 ## 🧪 Testing Suite
 
 | Test Suite | Command | Description |
-|:---|:---|:---|
-| **E2E Test** | `python tests/e2e_test.py` | Full flow: AI Gen → XML → Backtest → Result |
+|---|---|---|
+| **E2E Test** | `python tests/e2e_test.py` | Full flow: AI Gen → Nodes → Backtest → Result |
 | **Stress Test** | `python tests/stress_test.py` | 20 distinct scenarios for stability |
 | **Benchmark** | `python tests/benchmark_test.py` | Validates against ground truth data |
 
-## 🤝 Contributing
-1.  Fork the Project
-2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4.  Push to the Branch (`git push origin feature/AmazingFeature`)
-5.  Open a Pull Request
+---
+
+## 📁 Project Structure
+
+```
+fyer/
+├── src/                          # React Frontend
+│   └── features/strategy-flow/  # ReactFlow strategy builder
+│       ├── catalog/              # Node definitions by category
+│       ├── components/           # Node visual components, panels
+│       ├── generators/           # Python code generators
+│       ├── store/                # Zustand state (strategyFlowStore.ts)
+│       └── types.ts              # TypeScript node/edge types
+├── backend/                      # Python Compute Service (FastAPI)
+│   ├── adk_agents/               # Google ADK agents + tools
+│   ├── flow/                     # Flow compiler + runtime
+│   ├── strategy_flow/            # Strategy API router, backtrader engine
+│   ├── routers/                  # FastAPI route sets
+│   └── main.py                   # FastAPI entry point
+├── prd/                          # Product Requirements Documents
+│   └── StrategyFlow_PRD_v3.md    # Current PRD (Node.js + Python arch)
+├── docker-compose.yml            # Full stack Docker setup
+└── CHANGELOG.md                  # Version history
+```
+
+---
 
 ## 📄 License
-Distributed under the MIT License. See `LICENSE` for more information.
 
+Distributed under the MIT License.
 
+---
 
-## server setup
+## 🤝 Contributing
 
-http://localhost:8000/docs
-
-
-how to run backend?
-cd backend && source venv/bin/activate && uvicorn main:app --reload --port 8000
-
-how to get the gemini models?
-https://generativelanguage.googleapis.com/v1beta/models?key=
-
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
