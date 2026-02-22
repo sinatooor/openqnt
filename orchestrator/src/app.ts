@@ -5,6 +5,8 @@ import { env } from './config/env.js';
 import { logger } from './utils/logger.js';
 import { apiLimiter } from './api/middleware/rateLimit.js';
 import healthRouter from './api/routes/health.js';
+import authRouter from './api/routes/auth.js';
+import strategiesRouter from './api/routes/strategies.js';
 
 export function createApp() {
     const app = express();
@@ -33,10 +35,8 @@ export function createApp() {
 
     // ── Routes ────────────────────────────────────────────────
     app.use('/', healthRouter);
-
-    // Placeholder: additional route groups will be added here as milestones are completed
-    // app.use('/api/auth', authRouter);
-    // app.use('/api/strategies', strategiesRouter);
+    app.use('/api/auth', authRouter);
+    app.use('/api/strategies', strategiesRouter);
     // app.use('/api/executions', executionsRouter);
     // app.use('/api/credentials', credentialsRouter);
     // app.use('/api/agent', agentRouter);
