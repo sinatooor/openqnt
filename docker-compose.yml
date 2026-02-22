@@ -16,7 +16,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      target: development  # Change to 'production' for prod builds
+      target: development # Change to 'production' for prod builds
     container_name: fyer-backend
     ports:
       - "8000:8000"
@@ -52,7 +52,7 @@ services:
       - redis
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -81,10 +81,75 @@ services:
     depends_on:
       - backend
     profiles:
-      - frontend  # Only start with: docker-compose --profile frontend up
+      - frontend # Only start with: docker-compose --profile frontend up
 
   # ===========================================================================
-  # Redis - Caching for LLM responses & rate limiting
+  # Node.js Orchestrator - Primary API + Workflow Engine
+  # ===========================================================================
+  orchestrator:
+    build:
+      context: ./orchestrator
+      dockerfile: Dockerfile
+      target: development
+    container_name: fyer-orchestrator
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/strategyflow
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - COMPUTE_SERVICE_URL=http://backend:8000
+      - FRONTEND_URL=http://localhost:5173
+      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret-change-in-production}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-dev-refresh-secret-change-in-production}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-dev-encryption-key-32-chars-long!}
+      - LOG_LEVEL=info
+    volumes:
+      - ./orchestrator/src:/app/src
+      - ./orchestrator/prisma:/app/prisma
+      - /app/node_modules
+    networks:
+      - fyer-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ===========================================================================
+  # PostgreSQL - Primary Database
+  # ===========================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: fyer-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=strategyflow
+    volumes:
+      - fyer-postgres-data:/var/lib/postgresql/data
+    networks:
+      - fyer-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===========================================================================
+  # Redis - BullMQ broker, caching, pub/sub
   # ===========================================================================
   redis:
     image: redis:7-alpine
@@ -97,7 +162,7 @@ services:
       - fyer-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -152,6 +217,8 @@ volumes:
   fyer-chroma-data:
     driver: local
   fyer-db-data:
+    driver: local
+  fyer-postgres-data:
     driver: local
   fyer-redis-data:
     driver: local
