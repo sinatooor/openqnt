@@ -214,7 +214,7 @@ cp .env.example .env
 
 ```bash
 # Terminal 1 — Python Compute Service
-cd backend && source venv/bin/activate && uvicorn main:app --reload --port 8000
+cd backend && conda activate fyer && uvicorn main:app --reload --port 8000
 
 # Terminal 2 — React Frontend
 npm run dev
