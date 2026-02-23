@@ -7,7 +7,6 @@
  */
 
 import type { CompiledStrategy, InputSource } from './types.js';
-import { computeIndicators, type IndicatorRequest } from '../services/computeClient.js';
 import { logger } from '../utils/logger.js';
 
 // ─── Context Types ───────────────────────────────────────────
@@ -125,7 +124,7 @@ export class FlowInterpreter {
     private nodeOrder: string[];
     private settings: Record<string, any>;
 
-    constructor(private compiled: CompiledStrategy) {
+    constructor(compiled: CompiledStrategy) {
         this.nodeMap = new Map(compiled.nodes.map((n) => [n.id, n]));
         this.inputs = compiled.inputs;
         this.nodeOrder = compiled.nodeOrder;

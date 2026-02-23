@@ -11,7 +11,6 @@ import type {
     CompilationResult,
     CompiledStrategy,
     InputsMap,
-    InputSource,
     IndicatorDef,
 } from './types.js';
 
