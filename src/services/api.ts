@@ -268,6 +268,11 @@ class ApiClient {
     async getComputeHealth() {
         return this.get<any>('/api/ai/health');
     }
+
+    // Research & Quant Tools
+    async runMCPT(params: { symbol: string, startDate: string, endDate: string, timeframe?: string, permutations?: number }) {
+        return this.post<any>('/api/research/mcpt', params);
+    }
 }
 
 // Export singleton instance

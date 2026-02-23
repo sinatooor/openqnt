@@ -119,3 +119,31 @@ export async function checkComputeHealth(): Promise<boolean> {
         return false;
     }
 }
+
+// ─── Research & Quant Tools ──────────────────────────────────
+
+export interface MCPTRequest {
+    symbol: string;
+    startDate: string;
+    endDate: string;
+    timeframe?: string;
+    permutations?: number;
+}
+
+export interface MCPTResponse {
+    pValue: number;
+    permutedPfs: number[];
+    realPf: number;
+    plotImage?: string;
+    success: boolean;
+    error?: string;
+}
+
+export async function runMCPT(
+    request: MCPTRequest
+): Promise<ComputeResponse<MCPTResponse>> {
+    // Note: This endpoint is on the Python backend, outside of the /compute prefix 
+    // because it was already defined that way in the original mcpt router.
+    return computeRequest<MCPTResponse>('/api/mcpt/run', request);
+}
+

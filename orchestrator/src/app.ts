@@ -18,6 +18,7 @@ import notificationsRouter from './api/routes/notifications.js';
 import portfolioRouter from './api/routes/portfolio.js';
 import aiRouter from './api/routes/ai.js';
 import webhooksRouter from './api/routes/webhooks.js';
+import researchRouter from './api/routes/research.js';
 import { getHeartbeatQueue } from './workers/heartbeat.js';
 
 export function createApp() {
@@ -74,6 +75,7 @@ export function createApp() {
     app.use('/api/portfolio', portfolioRouter);
     app.use('/api/ai', aiRouter);
     app.use('/api/webhooks', webhooksRouter);
+    app.use('/api/research', researchRouter);
 
     // ── Error Handler ─────────────────────────────────────────
     app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
