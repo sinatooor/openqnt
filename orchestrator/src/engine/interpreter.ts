@@ -8,6 +8,7 @@
 
 import type { CompiledStrategy, InputSource } from './types.js';
 import { logger } from '../utils/logger.js';
+import { env } from '../config/env.js';
 
 // ─── Context Types ───────────────────────────────────────────
 
@@ -371,8 +372,42 @@ export class FlowInterpreter {
                         const trigInput = this.resolveInput(outputs, nodeId, 'trigger');
                         if (trigInput !== null) trigger = Boolean(trigInput);
                         if (trigger) {
-                            // In full implementation, this would call the Python compute service
-                            nodeOutput = { output: data.fallback ?? {} };
+                            const llmType = data.llmType ?? 'sentimentAnalysis';
+
+                            // Determine the input text from upstream (e.g. news article content)
+                            let textToAnalyze = this.resolveInput(outputs, nodeId, 'input') ?? '';
+                            // Fallback to trigger data if trigger type is news
+                            if (!textToAnalyze && ctx.variables['newsSnippet']) {
+                                textToAnalyze = ctx.variables['newsSnippet'];
+                            } else if (!textToAnalyze && ctx.variables['triggerData']?.contentSnippet) {
+                                textToAnalyze = ctx.variables['triggerData'].contentSnippet;
+                            }
+
+                            try {
+                                const response = await fetch(`${env.COMPUTE_SERVICE_URL}/api/llm/execute`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        type: llmType,
+                                        prompt: data.prompt ?? '',
+                                        text: textToAnalyze,
+                                        context: {}, // Potentially expand context later
+                                        openaiKey: ctx.credentials?.['openai'] ?? '',
+                                        sentimentThreshold: data.sentimentThreshold
+                                    })
+                                });
+
+                                if (!response.ok) {
+                                    throw new Error(`LLM API returned ${response.status}`);
+                                }
+
+                                const llmResult = await response.json() as any;
+                                nodeOutput = llmResult.output ?? { output: llmResult };
+                            } catch (err) {
+                                logger.error({ nodeId, error: err }, 'Failed to delegate LLM node to compute service');
+                                nodeOutput = { output: data.fallback ?? {} };
+                            }
+
                             status = 'delegated';
                             pythonDelegations++;
                         } else {
