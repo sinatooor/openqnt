@@ -315,3 +315,6 @@ good prompot " check folder /prd and then check if everything is build for the a
    - Tests run                                                                                      
                                                                                                     
    use commit and new branches when needed  "
+
+   test@example.com
+   test@example.com
