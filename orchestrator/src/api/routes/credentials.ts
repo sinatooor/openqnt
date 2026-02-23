@@ -109,7 +109,7 @@ router.get('/:id/decrypt', async (req: Request, res: Response) => {
             return;
         }
 
-        const encrypted = credential.encryptedKey.toString('base64');
+        const encrypted = Buffer.from(credential.encryptedKey).toString('base64');
         const decrypted = decrypt(encrypted, env.ENCRYPTION_KEY);
         const keyData = JSON.parse(decrypted);
 
@@ -150,7 +150,7 @@ router.put('/:id', validate(updateCredentialSchema), async (req: Request, res: R
             // Decrypt existing to merge
             let existingKeys = { apiKey: '', apiSecret: '' };
             try {
-                const encrypted = existing.encryptedKey.toString('base64');
+                const encrypted = Buffer.from(existing.encryptedKey).toString('base64');
                 existingKeys = JSON.parse(decrypt(encrypted, env.ENCRYPTION_KEY));
             } catch { /* new credential */ }
 
