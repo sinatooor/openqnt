@@ -4,7 +4,7 @@
  * Centralized HTTP client with error handling, retry logic, and auth.
  */
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+export const API_BASE_URL = import.meta.env.VITE_ORCHESTRATOR_URL || "http://localhost:3000";
 
 interface RequestConfig extends RequestInit {
     retries?: number;
