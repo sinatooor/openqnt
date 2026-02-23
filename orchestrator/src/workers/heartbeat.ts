@@ -144,3 +144,14 @@ export async function closeQueues(): Promise<void> {
     queues.clear();
     logger.info('All queues closed');
 }
+
+// ─── Queue Accessors (for Bull Board) ────────────────────────
+
+export function getHeartbeatQueue(): Queue | null {
+    try {
+        return getQueue(HEARTBEAT_QUEUE);
+    } catch {
+        return null;
+    }
+}
+

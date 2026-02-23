@@ -18,27 +18,22 @@ import { useAuthStore } from "./stores/authStore";
 
 const queryClient = new QueryClient();
 
-function AuthGuard({ children }: { children: React.ReactNode }) {
-    const { isAuthenticated } = useAuthStore();
-    return <>{children}</>;
-}
-
 const ProtectedRoutes = () => {
-    const { isAuthenticated } = useAuthStore();
-    
-    return (
-        <Routes>
-            <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />} />
-            <Route path="/" element={<ProtectedRoute><StrategyFlow /></ProtectedRoute>} />
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/executions" element={<ProtectedRoute><ExecutionHistory /></ProtectedRoute>} />
-            <Route path="/execution/:id" element={<ProtectedRoute><ExecutionDetails /></ProtectedRoute>} />
-            <Route path="/credentials" element={<ProtectedRoute><Credentials /></ProtectedRoute>} />
-            <Route path="/agent" element={<ProtectedRoute><AgentConfig /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-            <Route path="*" element={<NotFound />} />
-        </Routes>
-    );
+  const { isAuthenticated } = useAuthStore();
+
+  return (
+    <Routes>
+      <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />} />
+      <Route path="/" element={<ProtectedRoute><StrategyFlow /></ProtectedRoute>} />
+      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/executions" element={<ProtectedRoute><ExecutionHistory /></ProtectedRoute>} />
+      <Route path="/execution/:id" element={<ProtectedRoute><ExecutionDetails /></ProtectedRoute>} />
+      <Route path="/credentials" element={<ProtectedRoute><Credentials /></ProtectedRoute>} />
+      <Route path="/agent" element={<ProtectedRoute><AgentConfig /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
 };
 
 const App = () => (
