@@ -9,6 +9,11 @@ import authRouter from './api/routes/auth.js';
 import strategiesRouter from './api/routes/strategies.js';
 import strategyActionsRouter from './api/routes/strategyActions.js';
 import agentRouter from './api/routes/agent.js';
+import executionsRouter from './api/routes/executions.js';
+import credentialsRouter from './api/routes/credentials.js';
+import notificationsRouter from './api/routes/notifications.js';
+import portfolioRouter from './api/routes/portfolio.js';
+import aiRouter from './api/routes/ai.js';
 
 export function createApp() {
     const app = express();
@@ -41,12 +46,11 @@ export function createApp() {
     app.use('/api/strategies', strategiesRouter);
     app.use('/api/strategies', strategyActionsRouter); // compile, validate, deploy, pause, backtest
     app.use('/api/agent', agentRouter);
-    // app.use('/api/executions', executionsRouter);
-    // app.use('/api/credentials', credentialsRouter);
-    // app.use('/api/portfolio', portfolioRouter);
-    // app.use('/api/notifications', notificationsRouter);
-    // app.use('/api/webhooks', webhooksRouter);
-    // app.use('/api/ai', aiRouter);
+    app.use('/api/executions', executionsRouter);
+    app.use('/api/credentials', credentialsRouter);
+    app.use('/api/notifications', notificationsRouter);
+    app.use('/api/portfolio', portfolioRouter);
+    app.use('/api/ai', aiRouter);
 
     // ── Error Handler ─────────────────────────────────────────
     app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
