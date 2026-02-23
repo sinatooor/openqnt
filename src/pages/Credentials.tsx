@@ -7,6 +7,22 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { api } from '../services/api';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ConfigProvider, theme as antTheme } from 'antd';
+import {
+    Activity,
+    ArrowRight,
+    Key,
+    Plus,
+    X,
+    Trash2,
+    Lock,
+    Clock,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import CircularProgress from '@mui/material/CircularProgress';
 
 const Credentials = () => {
     const { isAuthenticated } = useAuthStore();
@@ -49,126 +65,191 @@ const Credentials = () => {
     };
 
     return (
-        <div style={styles.container}>
-            <header style={styles.header}>
-                <div>
-                    <h1 style={styles.heading}>🔑 Credential Vault</h1>
-                    <p style={styles.sub}>Your API keys are encrypted with AES-256-GCM at rest</p>
-                </div>
-                <div style={styles.headerActions}>
-                    <button style={styles.addBtn} onClick={() => setShowAdd(!showAdd)}>
-                        {showAdd ? '✕ Cancel' : '+ Add Credential'}
-                    </button>
-                    <button style={styles.backBtn} onClick={() => navigate('/dashboard')}>← Dashboard</button>
-                </div>
-            </header>
-
-            {/* Add Form */}
-            {showAdd && (
-                <form onSubmit={handleAdd} style={styles.addForm}>
-                    <div style={styles.formGrid}>
-                        <div style={styles.field}>
-                            <label style={styles.label}>Alias</label>
-                            <input style={styles.input} value={form.alias} onChange={(e) => setForm({ ...form, alias: e.target.value })} placeholder="e.g. alpaca_paper" required />
+        <ConfigProvider
+            theme={{
+                algorithm: antTheme.darkAlgorithm,
+                token: {
+                    colorPrimary: '#3b82f6',
+                    colorBgContainer: 'transparent',
+                    colorText: '#e2e8f0',
+                    colorTextSecondary: '#94a3b8',
+                    borderRadius: 8,
+                    fontSize: 13,
+                },
+            }}
+        >
+            <div className="min-h-screen bg-background text-foreground flex flex-col">
+                {/* Top Bar */}
+                <header className="sticky top-0 z-30 flex items-center justify-between px-6 py-3 bg-[#252526]/90 backdrop-blur-sm border-b border-white/10">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <Key className="w-5 h-5 text-amber-400" />
+                            <h1 className="text-white font-medium text-sm tracking-tight">
+                                Credential Vault
+                            </h1>
                         </div>
-                        <div style={styles.field}>
-                            <label style={styles.label}>Provider</label>
-                            <select style={styles.input} value={form.provider} onChange={(e) => setForm({ ...form, provider: e.target.value })}>
-                                <option value="alpaca">Alpaca</option>
-                                <option value="ig">IG Markets</option>
-                                <option value="ibkr">Interactive Brokers</option>
-                                <option value="nordnet">Nordnet</option>
-                            </select>
-                        </div>
-                        <div style={styles.field}>
-                            <label style={styles.label}>API Key</label>
-                            <input style={styles.input} type="password" value={form.apiKey} onChange={(e) => setForm({ ...form, apiKey: e.target.value })} placeholder="API Key" required />
-                        </div>
-                        <div style={styles.field}>
-                            <label style={styles.label}>API Secret (optional)</label>
-                            <input style={styles.input} type="password" value={form.apiSecret} onChange={(e) => setForm({ ...form, apiSecret: e.target.value })} placeholder="API Secret" />
-                        </div>
+                        <div className="h-4 w-px bg-white/10" />
+                        <span className="text-white/40 text-xs flex items-center gap-1.5">
+                            <Lock className="w-3.5 h-3.5" />
+                            AES-256-GCM Encrypted
+                        </span>
                     </div>
-                    <button type="submit" style={styles.submitBtn}>🔒 Encrypt & Store</button>
-                </form>
-            )}
 
-            {/* Credentials List */}
-            {loading ? (
-                <p style={styles.empty}>Loading...</p>
-            ) : credentials.length === 0 ? (
-                <div style={styles.emptyState}>
-                    <span style={{ fontSize: 48 }}>🔐</span>
-                    <p style={styles.emptyTitle}>No credentials stored</p>
-                    <p style={styles.empty}>Add your broker API keys to enable live and paper trading.</p>
-                </div>
-            ) : (
-                <div style={styles.grid}>
-                    {credentials.map((cred: any) => (
-                        <div key={cred.id} style={styles.card}>
-                            <div style={styles.cardHeader}>
-                                <span style={styles.providerBadge}>{cred.provider}</span>
-                                <button style={styles.deleteBtn} onClick={() => handleDelete(cred.id)}>🗑</button>
-                            </div>
-                            <h3 style={styles.cardAlias}>{cred.alias}</h3>
-                            <p style={styles.cardMeta}>Added {new Date(cred.createdAt).toLocaleDateString()}</p>
+                    <div className="flex items-center gap-3">
+                        <Button
+                            variant="default"
+                            size="sm"
+                            className="h-8 bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30"
+                            onClick={() => setShowAdd(!showAdd)}
+                        >
+                            {showAdd ? <><X className="w-4 h-4 mr-1.5" />Cancel</> : <><Plus className="w-4 h-4 mr-1.5" />Add Credential</>}
+                        </Button>
+                        <button
+                            onClick={() => navigate('/dashboard')}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+                        >
+                            <ArrowRight className="w-3.5 h-3.5 rotate-180" />
+                            Dashboard
+                        </button>
+                    </div>
+                </header>
+
+                <main className="flex-1 p-6 max-w-6xl w-full mx-auto space-y-6">
+                    {/* Add Form */}
+                    <AnimatePresence>
+                        {showAdd && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="overflow-hidden"
+                            >
+                                <Card className="bg-card/60 backdrop-blur-sm border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.05)] rounded-xl mb-6">
+                                    <form onSubmit={handleAdd}>
+                                        <CardHeader className="pb-4 border-b border-white/5">
+                                            <CardTitle className="text-base flex items-center gap-2">
+                                                <Plus className="w-4 h-4" />
+                                                Store New Credential
+                                            </CardTitle>
+                                            <CardDescription>
+                                                Keys are encrypted on the server before resting in PostgreSQL.
+                                            </CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="pt-6 space-y-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-medium text-muted-foreground">Alias</label>
+                                                    <input
+                                                        className="w-full h-9 rounded-md border border-white/10 bg-black/20 px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                                                        value={form.alias}
+                                                        onChange={(e) => setForm({ ...form, alias: e.target.value })}
+                                                        placeholder="e.g. alpaca_paper"
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-medium text-muted-foreground">Provider</label>
+                                                    <select
+                                                        className="w-full h-9 rounded-md border border-white/10 bg-black/20 px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                                                        value={form.provider}
+                                                        onChange={(e) => setForm({ ...form, provider: e.target.value })}
+                                                    >
+                                                        <option value="alpaca">Alpaca</option>
+                                                        <option value="ig">IG Markets</option>
+                                                        <option value="ibkr">Interactive Brokers</option>
+                                                        <option value="nordnet">Nordnet</option>
+                                                    </select>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-medium text-muted-foreground">API Key</label>
+                                                    <input
+                                                        className="w-full h-9 rounded-md border border-white/10 bg-black/20 px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                                                        type="password"
+                                                        value={form.apiKey}
+                                                        onChange={(e) => setForm({ ...form, apiKey: e.target.value })}
+                                                        placeholder="••••••••••••••••"
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-medium text-muted-foreground">API Secret <span className="text-muted-foreground/50">(optional)</span></label>
+                                                    <input
+                                                        className="w-full h-9 rounded-md border border-white/10 bg-black/20 px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                                                        type="password"
+                                                        value={form.apiSecret}
+                                                        onChange={(e) => setForm({ ...form, apiSecret: e.target.value })}
+                                                        placeholder="••••••••••••••••"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="pt-2">
+                                                <Button type="submit" className="w-full sm:w-auto gap-2 bg-green-600 hover:bg-green-700 text-white">
+                                                    <Lock className="w-4 h-4" />
+                                                    Encrypt & Store
+                                                </Button>
+                                            </div>
+                                        </CardContent>
+                                    </form>
+                                </Card>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Credentials List */}
+                    {loading ? (
+                        <div className="flex flex-col items-center justify-center h-64 gap-3 text-muted-foreground">
+                            <CircularProgress size={32} sx={{ color: 'hsl(45, 93%, 47%)' }} />
+                            <span className="text-sm">Loading vault...</span>
                         </div>
-                    ))}
-                </div>
-            )}
-        </div>
+                    ) : credentials.length === 0 ? (
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-24 text-center">
+                            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-4">
+                                <Key className="w-8 h-8 text-amber-400" />
+                            </div>
+                            <h3 className="text-lg font-medium text-foreground mb-1">Vault is empty</h3>
+                            <p className="text-sm text-muted-foreground max-w-sm">
+                                Securely store your broker API keys here to enable live execution and paper trading.
+                            </p>
+                        </motion.div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {credentials.map((cred: any, i: number) => (
+                                <motion.div
+                                    key={cred.id}
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: i * 0.05 }}
+                                >
+                                    <Card className="bg-card/60 backdrop-blur-sm border-white/5 shadow-trading hover:border-white/10 transition-all group overflow-hidden">
+                                        <CardContent className="p-5">
+                                            <div className="flex justify-between items-start mb-4">
+                                                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 uppercase tracking-wider text-[10px]">
+                                                    {cred.provider}
+                                                </Badge>
+                                                <button
+                                                    onClick={() => handleDelete(cred.id)}
+                                                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-red-400 hover:bg-red-400/10 transition-all"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                            <h3 className="text-lg font-medium text-foreground truncate mb-1" title={cred.alias}>
+                                                {cred.alias}
+                                            </h3>
+                                            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                                <Clock className="w-3 h-3" />
+                                                Added {new Date(cred.createdAt).toLocaleDateString()}
+                                            </p>
+                                        </CardContent>
+                                    </Card>
+                                </motion.div>
+                            ))}
+                        </div>
+                    )}
+                </main>
+            </div>
+        </ConfigProvider>
     );
-};
-
-const styles: Record<string, React.CSSProperties> = {
-    container: {
-        minHeight: '100vh', padding: '32px 48px',
-        background: 'linear-gradient(135deg, #0a0a1a 0%, #0f0f24 100%)',
-        color: '#e2e8f0',
-    },
-    header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 },
-    heading: { fontSize: 28, fontWeight: 700, margin: 0 },
-    sub: { fontSize: 13, color: '#94a3b8', marginTop: 4 },
-    headerActions: { display: 'flex', gap: 8 },
-    addBtn: {
-        padding: '8px 16px', background: 'linear-gradient(135deg, #7c3aed, #6366f1)',
-        border: 'none', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-    },
-    backBtn: {
-        padding: '8px 16px', background: 'rgba(30,30,60,0.6)', border: '1px solid rgba(139,92,246,0.15)',
-        borderRadius: 8, color: '#c4b5fd', fontSize: 13, cursor: 'pointer',
-    },
-    addForm: {
-        padding: 24, background: 'rgba(15,15,30,0.6)', border: '1px solid rgba(139,92,246,0.15)',
-        borderRadius: 12, marginBottom: 24,
-    },
-    formGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 },
-    field: { display: 'flex', flexDirection: 'column' as const, gap: 6 },
-    label: { fontSize: 12, fontWeight: 500, color: '#94a3b8' },
-    input: {
-        padding: '8px 12px', background: 'rgba(30,30,60,0.6)', border: '1px solid rgba(139,92,246,0.2)',
-        borderRadius: 8, color: '#e2e8f0', fontSize: 13, outline: 'none',
-    },
-    submitBtn: {
-        padding: '10px 24px', background: 'linear-gradient(135deg, #22c55e, #16a34a)',
-        border: 'none', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-    },
-    grid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 },
-    card: {
-        padding: 20, background: 'rgba(15,15,30,0.6)', border: '1px solid rgba(139,92,246,0.1)',
-        borderRadius: 12, transition: 'border-color 0.2s',
-    },
-    cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-    providerBadge: {
-        padding: '3px 10px', borderRadius: 4, fontSize: 11, fontWeight: 600,
-        background: 'rgba(139,92,246,0.15)', color: '#c4b5fd', textTransform: 'uppercase' as const,
-    },
-    deleteBtn: { background: 'none', border: 'none', fontSize: 16, cursor: 'pointer', opacity: 0.5 },
-    cardAlias: { fontSize: 16, fontWeight: 600, margin: '0 0 4px' },
-    cardMeta: { fontSize: 12, color: '#64748b', margin: 0 },
-    emptyState: { textAlign: 'center', padding: 60 },
-    emptyTitle: { fontSize: 18, fontWeight: 600, marginTop: 12, marginBottom: 4 },
-    empty: { fontSize: 14, color: '#64748b' },
 };
 
 export default Credentials;
