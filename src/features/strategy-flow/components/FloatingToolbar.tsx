@@ -20,6 +20,7 @@ import {
   BookOpen,
   Search,
   Activity,
+  FlaskConical,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -33,6 +34,7 @@ interface FloatingToolbarProps {
   onOpenTemplates: () => void;
   onOpenBacktest: () => void;
   onOpenChart: () => void;
+  onOpenResearch: () => void;
   onOpenCode: () => void;
   onOpenAI: () => void;
   onOpenJournal: () => void;
@@ -49,6 +51,7 @@ export const FloatingToolbar = memo(({
   onOpenTemplates,
   onOpenBacktest,
   onOpenChart,
+  onOpenResearch,
   onOpenCode,
   onOpenAI,
   onOpenJournal,
@@ -107,11 +110,10 @@ export const FloatingToolbar = memo(({
           <TooltipTrigger asChild>
             <Toolbar.Button
               onClick={onOpenAI}
-              className={`p-2.5 rounded-lg transition-all duration-200 ${
-                showAI 
-                  ? 'bg-primary/20 text-primary shadow-sm' 
+              className={`p-2.5 rounded-lg transition-all duration-200 ${showAI
+                  ? 'bg-primary/20 text-primary shadow-sm'
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent/60 hover:scale-105'
-              }`}
+                }`}
             >
               <Sparkles className="w-4 h-4" />
             </Toolbar.Button>
@@ -154,11 +156,10 @@ export const FloatingToolbar = memo(({
           <TooltipTrigger asChild>
             <Toolbar.Button
               onClick={onOpenCode}
-              className={`p-2.5 rounded-lg transition-all duration-200 ${
-                showCode 
-                  ? 'bg-primary/20 text-primary shadow-sm' 
+              className={`p-2.5 rounded-lg transition-all duration-200 ${showCode
+                  ? 'bg-primary/20 text-primary shadow-sm'
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent/60 hover:scale-105'
-              }`}
+                }`}
             >
               <Code2 className="w-4 h-4" />
             </Toolbar.Button>
@@ -173,17 +174,30 @@ export const FloatingToolbar = memo(({
           <TooltipTrigger asChild>
             <Toolbar.Button
               onClick={onOpenBacktest}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-sm transition-all duration-200 ${
-                isRunning
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-sm transition-all duration-200 ${isRunning
                   ? 'bg-loss/20 text-loss hover:bg-loss/30 hover:scale-105'
                   : 'bg-profit/20 text-profit hover:bg-profit/30 hover:scale-105'
-              }`}
+                }`}
             >
               <Play className="w-3.5 h-3.5" />
               {isRunning ? 'Stop' : 'Backtest'}
             </Toolbar.Button>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="text-xs">Run Backtest</TooltipContent>
+        </Tooltip>
+
+        {/* Research & Quant Tools */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Toolbar.Button
+              onClick={onOpenResearch}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-sm bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-all duration-200 hover:scale-105"
+            >
+              <FlaskConical className="w-3.5 h-3.5" />
+              Research
+            </Toolbar.Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="text-xs">Research & Quant Tools</TooltipContent>
         </Tooltip>
 
         {/* Live Trading */}
