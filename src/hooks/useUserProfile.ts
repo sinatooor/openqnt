@@ -1,9 +1,11 @@
 /**
  * useUserProfile - Custom hook for user profile and saved strategies
- * Uses localStorage for MVP persistence
+ * Uses localStorage for MVP persistence + orchestrator API
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useAuthStore } from '../stores/authStore';
+import { api } from '../services/api';
 
 export interface UserProfile {
     id: string;
@@ -16,9 +18,11 @@ export interface UserProfile {
 export interface SavedStrategy {
     id: string;
     name: string;
-    xml: string;
+    nodes: any[];
+    edges: any[];
     savedAt: string;
-    blockCount: number;
+    status: string;
+    version: number;
 }
 
 interface UserSettings {
@@ -41,44 +45,56 @@ const DEFAULT_SETTINGS: UserSettings = {
     autoSave: true,
 };
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+const BACKEND_URL = import.meta.env.VITE_ORCHESTRATOR_URL || "http://localhost:3000";
 
 export const useUserProfile = () => {
     const [user, setUser] = useState<UserProfile | null>(null);
     const [savedStrategies, setSavedStrategies] = useState<SavedStrategy[]>([]);
     const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
     const [isLoading, setIsLoading] = useState(true);
+    
+    const { user: authUser, isAuthenticated, logout: authLogout } = useAuthStore();
 
-    // Initial load
+    // Sync auth user with local user
     useEffect(() => {
-        const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
-        if (storedUser) {
-            const parsedUser = JSON.parse(storedUser);
-            setUser(parsedUser);
-            fetchStrategies(parsedUser.id);
+        if (authUser && isAuthenticated) {
+            const userProfile: UserProfile = {
+                id: authUser.id,
+                name: authUser.name || authUser.email,
+                email: authUser.email,
+                createdAt: new Date().toISOString(),
+            };
+            setUser(userProfile);
+            fetchStrategies();
+        } else {
+            setUser(null);
+            setSavedStrategies([]);
         }
+        setIsLoading(false);
+    }, [authUser, isAuthenticated]);
 
+    // Load settings from localStorage
+    useEffect(() => {
         const storedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
         if (storedSettings) {
             setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(storedSettings) });
         }
-        setIsLoading(false);
     }, []);
 
-    const fetchStrategies = async (userId: string) => {
+    const fetchStrategies = async () => {
+        if (!isAuthenticated) return;
+        
         try {
-            const res = await fetch(`${BACKEND_URL}/api/strategies?user_id=${userId}`);
-            if (res.ok) {
-                const data = await res.json();
-                // Map DB fields to frontend interface if needed
-                // DB: id, user_id, name, xml, python_code, block_count, saved_at
-                // Frontend: id, name, xml, savedAt, blockCount
-                const strategies: SavedStrategy[] = data.map((s: any) => ({
+            const response = await api.listStrategies();
+            if (response.strategies) {
+                const strategies: SavedStrategy[] = response.strategies.map((s: any) => ({
                     id: s.id,
                     name: s.name,
-                    xml: s.xml,
-                    savedAt: s.saved_at,
-                    blockCount: s.block_count
+                    nodes: [],
+                    edges: [],
+                    savedAt: s.updatedAt,
+                    status: s.status,
+                    version: s.currentVersion,
                 }));
                 setSavedStrategies(strategies);
             }
@@ -87,99 +103,57 @@ export const useUserProfile = () => {
         }
     };
 
-    // Save user to localStorage
-    const saveUserToStorage = (userData: UserProfile | null) => {
-        if (userData) {
-            localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
-        } else {
-            localStorage.removeItem(STORAGE_KEYS.USER);
-            setSavedStrategies([]);
-        }
-        setUser(userData);
-    };
-
-    // Login
+    // Login - use auth store
     const login = useCallback(async (email: string, password: string) => {
-        try {
-            const res = await fetch(`${BACKEND_URL}/api/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                const userProfile: UserProfile = {
-                    id: data.user.id,
-                    name: data.user.name,
-                    email: data.user.email,
-                    createdAt: data.user.created_at
-                };
-                saveUserToStorage(userProfile);
-                fetchStrategies(userProfile.id);
-                return userProfile;
-            } else {
-                throw new Error("Invalid credentials");
-            }
-        } catch (err) {
-            console.error(err);
-            throw err;
-        }
+        // Login is handled by authStore
+        throw new Error("Use authStore.login() instead");
     }, []);
 
-    // Logout
+    // Logout - use auth store
     const logout = useCallback(() => {
-        saveUserToStorage(null);
-    }, []);
+        authLogout();
+    }, [authLogout]);
 
-    // Update user profile (Mock for now, or add endpoint later)
+    // Update user profile
     const updateProfile = useCallback((updates: Partial<UserProfile>) => {
         if (!user) return;
         const updatedUser = { ...user, ...updates };
-        saveUserToStorage(updatedUser);
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updatedUser));
+        setUser(updatedUser);
     }, [user]);
 
     // Save a strategy
-    const saveStrategy = useCallback(async (name: string, xml: string, python_code?: string) => {
-        if (!user) return null;
-
-        const blockCount = (xml.match(/<block /g) || []).length;
+    const saveStrategy = useCallback(async (name: string, nodes: any[], edges: any[]) => {
+        if (!isAuthenticated) {
+            throw new Error("Not authenticated");
+        }
 
         try {
-            const res = await fetch(`${BACKEND_URL}/api/strategies`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user_id: user.id,
-                    name,
-                    xml,
-                    python_code: python_code || "",
-                    block_count: blockCount
-                })
+            const response = await api.saveStrategy({
+                name,
+                nodes,
+                edges,
+                settings: {},
             });
-
-            if (res.ok) {
-                const data = await res.json();
-                // Refresh list
-                await fetchStrategies(user.id);
-                return { id: data.id };
-            }
+            await fetchStrategies();
+            return { id: response.strategy.id };
         } catch (e) {
             console.error("Failed to save strategy", e);
             throw e;
         }
-    }, [user]);
+    }, [isAuthenticated]);
 
     // Delete a strategy
     const deleteStrategy = useCallback(async (id: string) => {
-        if (!user) return;
+        if (!isAuthenticated) return;
+        
         try {
-            await fetch(`${BACKEND_URL}/api/strategies/${id}?user_id=${user.id}`, { method: 'DELETE' });
-            await fetchStrategies(user.id);
+            await api.deleteStrategy(id);
+            await fetchStrategies();
         } catch (e) {
             console.error("Failed to delete", e);
         }
-    }, [user]);
+    }, [isAuthenticated]);
 
     // Update settings
     const updateSettings = useCallback((updates: Partial<UserSettings>) => {
@@ -190,7 +164,7 @@ export const useUserProfile = () => {
 
     return {
         user,
-        isLoggedIn: !!user,
+        isLoggedIn: isAuthenticated,
         isLoading,
         login,
         logout,

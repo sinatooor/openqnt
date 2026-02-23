@@ -18,7 +18,9 @@ export type NodeCategory =
   | 'math'
   | 'risk'
   | 'tradeInfo'
-  | 'llm';
+  | 'llm'
+  | 'triggers'
+  | 'integrations';
 
 // =============================================================================
 // INDICATOR NODE TYPES
@@ -270,6 +272,91 @@ export interface LLMNodeData extends BaseNodeData {
 }
 
 // =============================================================================
+// TRIGGER NODE TYPES (PRD §9.1)
+// =============================================================================
+
+export type TriggerType =
+  | 'heartbeatTrigger'   // Schedule-based (BullMQ repeatable job)
+  | 'webhookTrigger'     // HTTP POST (n8n-style)
+  | 'priceAlertTrigger'  // Price crosses threshold
+  | 'newsTrigger'        // Keyword/topic detection in news
+  | 'brokerEventTrigger'; // Order filled, margin call, etc.
+
+export interface TriggerNodeData extends BaseNodeData {
+  triggerType: TriggerType;
+  // Heartbeat specific
+  intervalMinutes?: number;
+  atMarketOpen?: boolean;
+  atMarketClose?: boolean;
+  specificTime?: string | null;
+  // Webhook specific
+  webhookPath?: string;
+  hmacSecret?: string;
+  expectedFields?: string[];
+  // Price alert specific
+  symbol?: string;
+  condition?: 'crosses_above' | 'crosses_below' | 'equals';
+  priceLevel?: number;
+  // News specific
+  keywords?: string[];
+  sources?: string[];
+  symbols?: string[];
+  minRelevanceScore?: number;
+  // Broker event specific
+  eventTypes?: string[];
+  credentialAlias?: string;
+}
+
+// =============================================================================
+// INTEGRATION NODE TYPES (PRD §9.2)
+// =============================================================================
+
+export type IntegrationType =
+  | 'telegramNode'       // Send/receive Telegram messages
+  | 'slackNode'          // Post to Slack channel
+  | 'emailNode'          // Send email via SendGrid/SMTP
+  | 'smsNode'            // Send SMS via Twilio
+  | 'httpRequestNode'    // Generic HTTP request (n8n-style)
+  | 'databaseQueryNode'  // SQL query
+  | 'codePythonNode'     // Custom Python execution
+  | 'codeJavascriptNode' // Custom JavaScript execution
+  | 'aiAnalysisNode';    // Python ADK agent analysis
+
+export interface IntegrationNodeData extends BaseNodeData {
+  integrationType: IntegrationType;
+  // Communication shared
+  message?: string;
+  credentialAlias?: string;
+  // Telegram specific
+  action?: 'sendMessage' | 'waitForReply';
+  chatId?: string;
+  // Slack specific
+  channel?: string;
+  // Email specific
+  to?: string;
+  subject?: string;
+  body?: string;
+  // SMS specific
+  // HTTP Request specific
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  url?: string;
+  headers?: Record<string, string>;
+  requestBody?: any;
+  authentication?: 'none' | 'basic' | 'bearer' | 'credential';
+  // Database specific
+  query?: string;
+  parameterized?: boolean;
+  // Code specific
+  code?: string;
+  language?: 'python' | 'javascript';
+  // AI specific
+  analysisType?: 'general' | 'sentiment' | 'regime' | 'recommendation';
+  prompt?: string;
+  context?: Record<string, unknown>;
+  model?: string;
+}
+
+// =============================================================================
 // RISK NODE TYPES
 // =============================================================================
 
@@ -315,7 +402,9 @@ export type StrategyNodeData =
   | MathNodeData
   | RiskNodeData
   | TradeInfoNodeData
-  | LLMNodeData;
+  | LLMNodeData
+  | TriggerNodeData
+  | IntegrationNodeData;
 
 // =============================================================================
 // STRATEGY FLOW NODE TYPES
@@ -332,6 +421,8 @@ export type StrategyFlowNodeType =
   | 'risk'
   | 'tradeInfo'
   | 'llm'
+  | 'trigger'
+  | 'integration'
   | 'comment';
 
 // ReactFlow Node with our data

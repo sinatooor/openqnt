@@ -36,3 +36,5 @@ __pycache__/
 *.db
 *.sqlite
 
+n8n-reference/
+openclaw-reference/
