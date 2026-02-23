@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useUserProfile, SavedStrategy } from '@/hooks/useUserProfile';
 import { useStrategyFlowStore } from '../../store/strategyFlowStore';
+import { api } from '@/services/api';
 import { toast } from 'sonner';
 import {
   User,
@@ -75,7 +76,7 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
     updateSettings,
   } = useUserProfile();
 
-  const { strategyName, exportStrategy, importStrategy } = useStrategyFlowStore();
+  const { strategyName, importStrategy } = useStrategyFlowStore();
 
   const handleLogin = async () => {
     if (loginEmail.trim() && loginPassword.trim()) {
@@ -92,19 +93,29 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
 
   const handleSaveStrategy = async () => {
     const name = saveStrategyName.trim() || strategyName;
-    const strategyJson = exportStrategy();
-    if (strategyJson) {
-      await saveStrategy(name, strategyJson);
+    const { nodes, edges } = useStrategyFlowStore.getState();
+    if (nodes && edges) {
+      await saveStrategy(name, nodes, edges);
       setSaveStrategyName('');
       toast.success('Strategy saved');
     }
   };
 
-  const handleLoadStrategy = (strategy: SavedStrategy) => {
+  const handleLoadStrategy = async (saved: SavedStrategy) => {
     try {
-      importStrategy(strategy.xml);
-      toast.success(`Loaded: ${strategy.name}`);
-      onOpenChange(false);
+      // Fetch full strategy from API
+      const response = await api.getStrategy(saved.id);
+      if (response.strategy) {
+        const { nodes, edges } = response.strategy;
+        importStrategy(JSON.stringify({
+          version: '1.0',
+          name: saved.name,
+          nodes,
+          edges,
+        }));
+        toast.success(`Loaded: ${saved.name}`);
+        onOpenChange(false);
+      }
     } catch (e) {
       toast.error('Failed to load strategy');
     }

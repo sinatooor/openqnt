@@ -16,6 +16,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ConfigProvider, theme as antTheme } from 'antd';
+import { motion } from 'framer-motion';
 
 const ExecutionDetails = () => {
   const { id } = useParams();
@@ -84,131 +86,191 @@ const ExecutionDetails = () => {
   if (!executionId) return <div>Invalid ID</div>;
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="max-w-6xl mx-auto space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Workspace
-          </Button>
-          <h1 className="text-lg font-bold tracking-tight">Execution Details</h1>
-          {isLive && (
-            <Badge variant="default" className="bg-green-600 animate-pulse">
-              <Radio className="w-3 h-3 mr-1" />
-              LIVE
-            </Badge>
-          )}
-        </div>
-
-        {loadingExecution ? (
-          <div>Loading execution details...</div>
-        ) : execution ? (
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Strategy Info</span>
-                  <Badge variant={execution.status === 'RUNNING' ? 'default' : 'secondary'}>
-                    {execution.status}
-                  </Badge>
-                </CardTitle>
-                <CardDescription>Configuration and Status</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between items-center border-b pb-2">
-                  <span className="text-muted-foreground flex items-center"><Activity className="w-4 h-4 mr-2" /> Name</span>
-                  <span className="font-semibold">{execution.strategy_name}</span>
-                </div>
-                <div className="flex justify-between items-center border-b pb-2">
-                  <span className="text-muted-foreground flex items-center"><BarChart2 className="w-4 h-4 mr-2" /> Symbol</span>
-                  <span className="font-mono">{execution.symbol}</span>
-                </div>
-                <div className="flex justify-between items-center border-b pb-2">
-                  <span className="text-muted-foreground flex items-center"><Clock className="w-4 h-4 mr-2" /> Start Time</span>
-                  <span>{new Date(execution.start_time).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center pb-2">
-                  <span className="text-muted-foreground">End Time</span>
-                  <span>{execution.end_time ? new Date(execution.end_time).toLocaleString() : 'Running...'}</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Performance Summary</CardTitle>
-                <CardDescription>Session Statistics</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-3 bg-muted/20 rounded-lg">
-                    <p className="text-xs text-muted-foreground mb-1">Total Trades</p>
-                    <p className="text-base font-bold">{allTrades.length}</p>
-                  </div>
-                  <div className="text-center p-3 bg-muted/20 rounded-lg">
-                    <p className="text-xs text-muted-foreground mb-1">Net PnL</p>
-                    <p className={`text-base font-bold ${allTrades.reduce((acc, t) => acc + (t.pnl || 0), 0) >= 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                      ${allTrades.reduce((acc, t) => acc + (t.pnl || 0), 0).toFixed(2)}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+    <ConfigProvider
+      theme={{
+        algorithm: antTheme.darkAlgorithm,
+        token: {
+          colorPrimary: '#3b82f6',
+          colorBgContainer: 'transparent',
+          colorText: '#e2e8f0',
+          colorTextSecondary: '#94a3b8',
+          borderRadius: 8,
+          fontSize: 13,
+        },
+      }}
+    >
+      <div className="min-h-screen bg-background text-foreground flex flex-col">
+        {/* Top Bar matching Dashboard */}
+        <header className="sticky top-0 z-30 flex items-center justify-between px-6 py-3 bg-[#252526]/90 backdrop-blur-sm border-b border-white/10">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Activity className="w-5 h-5 text-primary" />
+              <h1 className="text-white font-medium text-sm tracking-tight">
+                Execution Details
+              </h1>
+            </div>
+            <div className="h-4 w-px bg-white/10" />
+            <span className="text-white/40 text-xs flex items-center gap-2">
+              Run #{executionId}
+              {isLive && (
+                <Badge variant="default" className="bg-green-600/20 text-green-400 border border-green-500/30 animate-pulse text-[10px] px-2 py-0">
+                  <Radio className="w-3 h-3 mr-1" />
+                  LIVE
+                </Badge>
+              )}
+            </span>
           </div>
-        ) : (
-          <div>Execution not found.</div>
-        )}
 
-        {/* Live Trade Feed */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              Live Trade Feed
-              {isLive && <Badge variant="outline" className="text-green-500 border-green-500">Connected</Badge>}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TradeFeed trades={allTrades as TradeEvent[]} isLive={isLive} />
-          </CardContent>
-        </Card>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/executions")} className="text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
+            </Button>
+          </div>
+        </header>
 
-        {/* Trade Log Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Trade Log</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Direction</TableHead>
-                  <TableHead className="text-right">Price</TableHead>
-                  <TableHead className="text-right">Size</TableHead>
-                  <TableHead className="text-right">PnL</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {allTrades.map((trade) => (
-                  <TableRow key={trade.id}>
-                    <TableCell className="font-mono text-xs">{new Date(trade.entry_time).toLocaleTimeString()}</TableCell>
-                    <TableCell className={trade.direction === 'BUY' ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>{trade.direction}</TableCell>
-                    <TableCell className="text-right font-mono">{trade.entry_price.toFixed(5)}</TableCell>
-                    <TableCell className="text-right">{trade.size}</TableCell>
-                    <TableCell className={`text-right font-bold ${trade.pnl && trade.pnl > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {trade.pnl?.toFixed(2) || '-'}
-                    </TableCell>
-                    <TableCell><Badge variant="outline">{trade.status}</Badge></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        <main className="flex-1 p-6 max-w-6xl w-full mx-auto space-y-6">
+
+          {loadingExecution ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              Loading execution details...
+            </div>
+          ) : execution ? (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="grid gap-6 md:grid-cols-2"
+            >
+              <Card className="bg-card/60 backdrop-blur-sm border-border/30 shadow-trading-lg rounded-xl">
+                <CardHeader className="border-b border-white/5 pb-4">
+                  <CardTitle className="flex items-center justify-between text-base">
+                    <span className="flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-primary" />
+                      Strategy Info
+                    </span>
+                    <Badge variant={execution.status === 'RUNNING' ? 'default' : 'secondary'} className={execution.status === 'RUNNING' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : ''}>
+                      {execution.status}
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription>Configuration and Status</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 pt-4">
+                  <div className="flex justify-between items-center pb-2">
+                    <span className="text-muted-foreground text-sm">Name</span>
+                    <span className="font-medium text-sm">{execution.strategy_name}</span>
+                  </div>
+                  <div className="flex justify-between items-center pb-2">
+                    <span className="text-muted-foreground text-sm">Symbol</span>
+                    <span className="font-mono text-sm">{execution.symbol}</span>
+                  </div>
+                  <div className="flex justify-between items-center pb-2">
+                    <span className="text-muted-foreground text-sm flex items-center"><Clock className="w-3.5 h-3.5 mr-1" /> Start</span>
+                    <span className="text-sm">{new Date(execution.start_time).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground text-sm">End</span>
+                    <span className="text-sm">{execution.end_time ? new Date(execution.end_time).toLocaleString() : 'Running...'}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-card/60 backdrop-blur-sm border-border/30 shadow-trading-lg rounded-xl">
+                <CardHeader className="border-b border-white/5 pb-4">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <BarChart2 className="w-4 h-4 text-green-400" />
+                    Performance Summary
+                  </CardTitle>
+                  <CardDescription>Session Statistics</CardDescription>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-4 bg-black/20 border border-white/5 rounded-xl">
+                      <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Total Trades</p>
+                      <p className="text-2xl font-bold font-mono text-foreground">{allTrades.length}</p>
+                    </div>
+                    <div className="text-center p-4 bg-black/20 border border-white/5 rounded-xl">
+                      <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Net PnL</p>
+                      <p className={`text-2xl font-bold font-mono ${allTrades.reduce((acc, t) => acc + (t.pnl || 0), 0) >= 0 ? 'text-green-500' : 'text-red-500'
+                        }`}>
+                        ${allTrades.reduce((acc, t) => acc + (t.pnl || 0), 0).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ) : (
+            <div className="text-muted-foreground">Execution not found.</div>
+          )}
+
+          {/* Live Trade Feed */}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <Card className="bg-card/60 backdrop-blur-sm border-border/30 shadow-trading-lg rounded-xl">
+              <CardHeader className="border-b border-white/5 pb-4">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  Live Trade Feed
+                  {isLive && <Badge variant="outline" className="text-green-500 border-green-500/30 bg-green-500/10">Connected</Badge>}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <TradeFeed trades={allTrades as TradeEvent[]} isLive={isLive} />
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Trade Log Table */}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+            <Card className="bg-card/60 backdrop-blur-sm border-border/30 shadow-trading-lg rounded-xl">
+              <CardHeader className="border-b border-white/5 pb-4">
+                <CardTitle className="text-base">Trade Log</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader className="bg-black/20">
+                    <TableRow className="border-white/5 hover:bg-transparent">
+                      <TableHead className="text-xs text-muted-foreground uppercase">Time</TableHead>
+                      <TableHead className="text-xs text-muted-foreground uppercase">Direction</TableHead>
+                      <TableHead className="text-right text-xs text-muted-foreground uppercase">Price</TableHead>
+                      <TableHead className="text-right text-xs text-muted-foreground uppercase">Size</TableHead>
+                      <TableHead className="text-right text-xs text-muted-foreground uppercase">PnL</TableHead>
+                      <TableHead className="text-xs text-muted-foreground uppercase">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {allTrades.length === 0 ? (
+                      <TableRow className="border-white/5 hover:bg-white/[0.02]">
+                        <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                          No trades recorded
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      allTrades.map((trade) => (
+                        <TableRow key={trade.id} className="border-white/5 hover:bg-white/[0.02]">
+                          <TableCell className="font-mono text-xs text-muted-foreground">{new Date(trade.entry_time).toLocaleTimeString()}</TableCell>
+                          <TableCell className={trade.direction === 'BUY' ? 'text-green-400 font-medium' : 'text-red-400 font-medium'}>{trade.direction}</TableCell>
+                          <TableCell className="text-right font-mono text-xs">{trade.entry_price.toFixed(5)}</TableCell>
+                          <TableCell className="text-right text-sm">{trade.size}</TableCell>
+                          <TableCell className={`text-right font-mono text-xs font-medium ${trade.pnl && trade.pnl > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {trade.pnl?.toFixed(2) || '-'}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={`text-[10px] ${trade.status === 'FILLED' ? 'border-green-500/30 text-green-400 bg-green-500/10' :
+                                'border-white/10 text-muted-foreground bg-white/5'
+                              }`}>
+                              {trade.status}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </main>
       </div>
-    </div>
+    </ConfigProvider>
   );
 };
 
