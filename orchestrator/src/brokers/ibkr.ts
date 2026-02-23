@@ -1,4 +1,5 @@
 import { logger } from '../utils/logger.js';
+import type { Bar } from '../engine/interpreter.js';
 import type {
     BrokerClient,
     BrokerOrder,
@@ -69,5 +70,9 @@ export class IbkrClient implements BrokerClient {
 
     async closeAllPositions(): Promise<BrokerOrderResult[]> {
         return [];
+    }
+
+    async getBars(_symbol: string, _timeframe: string, _limit: number): Promise<Bar[]> {
+        throw new Error('IBKR market data not yet implemented');
     }
 }
