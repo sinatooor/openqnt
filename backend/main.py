@@ -180,7 +180,32 @@ RULES:
 OUTPUT: Valid JSON only, no markdown."""
 
 
-app = FastAPI(title="Strategy Generator API", version="1.0.0")
+app = FastAPI(
+    title="StrategyFlow Compute Service",
+    version="2.0.0",
+    description="Internal compute service — called by the Node.js orchestrator, not by the frontend directly.",
+)
+
+# Deprecation middleware: tag legacy user-facing routes with a warning header
+# so consumers know to migrate to the orchestrator API.
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request as StarletteRequest
+from starlette.responses import Response
+
+class DeprecationMiddleware(BaseHTTPMiddleware):
+    """Adds Deprecation header to all non-/compute endpoints."""
+    async def dispatch(self, request: StarletteRequest, call_next):
+        response = await call_next(request)
+        path = request.url.path
+        if not path.startswith("/compute") and path != "/health":
+            response.headers["Deprecation"] = "true"
+            response.headers["Sunset"] = "2026-06-01"
+            response.headers["X-Deprecation-Notice"] = (
+                "This endpoint is deprecated. Use the Node.js orchestrator API at port 3000 instead."
+            )
+        return response
+
+app.add_middleware(DeprecationMiddleware)
 
 # Include Live Trading Router
 app.include_router(live_trading.router)
@@ -284,10 +309,18 @@ async def export_strategy(req: ExportRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# CORS configuration
+# CORS configuration — restricted to orchestrator and internal Docker network
+# Frontend should NEVER call the Python backend directly; always go through the orchestrator.
+ALLOWED_ORIGINS = [
+    os.getenv("ORCHESTRATOR_URL", "http://localhost:3000"),
+    "http://fyer-orchestrator:3000",   # Docker internal
+    "http://orchestrator:3000",         # Docker service name
+    "http://localhost:5173",            # Allow frontend in dev for backwards compat
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
