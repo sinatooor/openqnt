@@ -145,4 +145,52 @@ router.get('/stats/summary', async (req: Request, res: Response) => {
     }
 });
 
+/** POST /api/executions/:id/replay — re-run a past execution with same or modified params */
+router.post('/:id/replay', async (req: Request, res: Response) => {
+    try {
+        // Load the original execution run
+        const originalRun = await prisma.executionRun.findFirst({
+            where: {
+                id: req.params.id,
+                userId: req.user!.userId,
+            },
+            include: {
+                strategy: { select: { id: true, name: true, nodes: true, edges: true } },
+            },
+        });
+
+        if (!originalRun) {
+            res.status(404).json({ error: 'Execution run not found' });
+            return;
+        }
+
+        // Create a new execution run marked as a replay
+        const replayRun = await prisma.executionRun.create({
+            data: {
+                userId: req.user!.userId,
+                strategyId: originalRun.strategyId,
+                triggerType: 'replay',
+                status: 'running',
+                startedAt: new Date(),
+                triggerData: {
+                    replayOf: originalRun.id,
+                    originalTriggerType: originalRun.triggerType,
+                    originalStartedAt: originalRun.startedAt,
+                    ...(req.body.overrides ?? {}),
+                },
+            },
+        });
+
+        logger.info({ replayRunId: replayRun.id, originalRunId: originalRun.id }, 'Replay execution created');
+
+        res.status(201).json({
+            run: replayRun,
+            message: 'Replay execution created and queued',
+        });
+    } catch (error) {
+        logger.error({ error }, 'Failed to create replay execution');
+        res.status(500).json({ error: 'Failed to create replay execution' });
+    }
+});
+
 export default router;

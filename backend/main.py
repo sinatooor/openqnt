@@ -208,6 +208,10 @@ app.include_router(strategy_flow.router)
 from strategy_flow.router import router as strategy_flow_v2_router
 app.include_router(strategy_flow_v2_router)
 
+# Compute-only endpoints for orchestrator
+from routers.compute import router as compute_router
+app.include_router(compute_router)
+
 
 # ============================================================
 # Root-level health and custom-blocks endpoints
