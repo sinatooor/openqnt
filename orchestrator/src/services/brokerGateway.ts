@@ -5,6 +5,11 @@
  */
 
 import { logger } from '../utils/logger.js';
+import { AlpacaClient } from '../brokers/alpaca.js';
+import { PaperClient } from '../brokers/paper.js';
+import { IGClient } from '../brokers/ig.js';
+import { IbkrClient } from '../brokers/ibkr.js';
+import { NordnetClient } from '../brokers/nordnet.js';
 
 // ─── Broker Interface ────────────────────────────────────────
 
@@ -89,3 +94,10 @@ export function getBrokerClient(name: string): BrokerClient {
 export function getAvailableBrokers(): string[] {
     return [...brokerRegistry.keys()];
 }
+
+// ─── Initialize Registry ─────────────────────────────────────
+registerBroker('alpaca', () => new AlpacaClient());
+registerBroker('paper', () => new PaperClient());
+registerBroker('ig', () => new IGClient());
+registerBroker('ibkr', () => new IbkrClient());
+registerBroker('nordnet', () => new NordnetClient());

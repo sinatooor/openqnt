@@ -9,6 +9,7 @@ import { logger } from '../../utils/logger.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { compileFlowStrategy, validateFlowStrategy } from '../../engine/compiler.js';
 import { deployStrategy, removeStrategy } from '../../workers/heartbeat.js';
+import { env } from '../../config/env.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -151,14 +152,55 @@ router.post('/:id/backtest', async (req: Request, res: Response) => {
             return;
         }
 
-        // For now, return a placeholder. Full implementation in Phase 3.
-        res.json({
-            message: 'Backtest queued',
-            strategyId: strategy.id,
-            status: 'pending',
+        const backtestPayload = {
+            ...req.body,
+            workspaceXml: req.body.workspaceXml || '<xml></xml>', // Fallback for ReactFlow 
+            strategyId: strategy.id
+        };
+
+        logger.info({ strategyId: strategy.id }, 'Proxying backtest request to Python compute service');
+
+        const response = await fetch(`${env.COMPUTE_SERVICE_URL}/backtest`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(backtestPayload)
         });
-    } catch (error) {
-        logger.error({ error }, 'Backtest submission failed');
+
+        if (!response.ok) {
+            throw new Error(`Python compute returned ${response.status}`);
+        }
+
+        const result = await response.json() as any;
+
+        if (!result.success) {
+            throw new Error(result.error ?? 'Backtest failed in Python engine');
+        }
+
+        // Persist BacktestResult
+        const backtestResult = await prisma.backtestResult.create({
+            data: {
+                strategyId: strategy.id,
+                userId: req.user!.userId,
+                engine: req.body.engine ?? 'backtesting.py',
+                parameters: {
+                    symbol: result.symbol,
+                    startDate: result.start_date,
+                    endDate: result.end_date,
+                    initialBalance: result.initial_balance
+                },
+                metrics: result.metrics,
+                equityCurve: result.equity_curve,
+                tradeLog: result.trades,
+            }
+        });
+
+        res.json({
+            message: 'Backtest completed',
+            backtestId: backtestResult.id,
+            result: result
+        });
+    } catch (error: any) {
+        logger.error({ error: error.message }, 'Backtest submission failed');
         res.status(500).json({ error: 'Backtest submission failed' });
     }
 });

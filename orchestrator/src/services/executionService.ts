@@ -12,6 +12,7 @@ import { compileFlowStrategy } from '../engine/compiler.js';
 import { FlowInterpreter, type EvaluationContext, type EvaluationResult, type Bar } from '../engine/interpreter.js';
 import { runPreChecks } from '../engine/preChecks.js';
 import { notificationQueue } from './notificationService.js';
+import { getBrokerClient } from './brokerGateway.js';
 type TriggerType = 'heartbeat' | 'webhook' | 'price_alert' | 'news' | 'manual' | 'replay';
 
 export interface ExecuteStrategyInput {
@@ -171,6 +172,35 @@ export async function executeStrategy(input: ExecuteStrategyInput): Promise<Exec
                 chatId: agentConfig.user.preferences ? (agentConfig.user.preferences as any).telegramChatId : ''
             }
         });
+    } else if (agentConfig.operationalMode === 'autonomous' && result.orderIntents.length > 0) {
+        // Find the portfolio this strategy targets (or pick first)
+        const portfolio = await prisma.portfolio.findFirst({
+            where: { userId: input.userId }
+        });
+
+        if (portfolio) {
+            const broker = getBrokerClient(portfolio.brokerName);
+            if (!broker.isConnected()) {
+                await broker.connect(portfolio.credentialAlias ?? ''); // Assuming alias is used to fetch key internally in production
+            }
+
+            for (const intent of result.orderIntents) {
+                try {
+                    await broker.submitOrder({
+                        symbol: intent.symbol,
+                        side: intent.side.toLowerCase() as any,
+                        type: intent.orderType as any,
+                        quantity: intent.size,
+                        limitPrice: intent.price,
+                        stopPrice: intent.stopLoss
+                    });
+                } catch (error) {
+                    logger.error({ error, symbol: intent.symbol }, 'Failed to submit autonomous order');
+                }
+            }
+        } else {
+            logger.warn({ strategyId: input.strategyId }, 'No portfolio found for autonomous execution');
+        }
     }
 
     return {
