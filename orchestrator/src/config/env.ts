@@ -29,6 +29,15 @@ const envSchema = z.object({
 
     // CORS
     FRONTEND_URL: z.string().default('http://localhost:5173'),
+
+    // Notifications
+    TELEGRAM_BOT_TOKEN: z.string().optional(),
+    SLACK_BOT_TOKEN: z.string().optional(),
+    TWILIO_ACCOUNT_SID: z.string().optional(),
+    TWILIO_AUTH_TOKEN: z.string().optional(),
+    TWILIO_PHONE_NUMBER: z.string().optional(),
+    SENDGRID_API_KEY: z.string().optional(),
+    EMAIL_FROM_ADDRESS: z.string().default('noreply@strategyflow.app'),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -11,6 +11,7 @@ import { logger } from '../utils/logger.js';
 import { compileFlowStrategy } from '../engine/compiler.js';
 import { FlowInterpreter, type EvaluationContext, type EvaluationResult, type Bar } from '../engine/interpreter.js';
 import { runPreChecks } from '../engine/preChecks.js';
+import { notificationQueue } from './notificationService.js';
 type TriggerType = 'heartbeat' | 'webhook' | 'price_alert' | 'news' | 'manual' | 'replay';
 
 export interface ExecuteStrategyInput {
@@ -45,9 +46,10 @@ export async function executeStrategy(input: ExecuteStrategyInput): Promise<Exec
         throw new Error(`Strategy ${input.strategyId} not found`);
     }
 
-    // 2. Load agent config for pre-checks
+    // 2. Load agent config & user for pre-checks and notifications
     const agentConfig = await prisma.agentConfig.findUnique({
         where: { userId: input.userId },
+        include: { user: true }
     });
 
     if (!agentConfig) {
@@ -137,6 +139,39 @@ export async function executeStrategy(input: ExecuteStrategyInput): Promise<Exec
         },
         'Strategy execution completed'
     );
+
+    // 9. Process HITL or advisory notifications based on result
+    if (agentConfig.operationalMode === 'hitl') {
+        await notificationQueue.add('hitl-request', {
+            userId: input.userId,
+            executionRunId: executionRun.id,
+            channel: 'telegram', // Could be dynamic from user prefs
+            type: 'hitl_request',
+            title: `HITL Approval Required: ${strategy.name}`,
+            body: `Strategy "${strategy.name}" wants to execute ${result.orderIntents.length} orders.\n\nPlease approve or reject this execution round.`,
+            telegram: {
+                chatId: agentConfig.user.preferences ? (agentConfig.user.preferences as any).telegramChatId : '', // Required from prefs
+                replyMarkup: {
+                    inline_keyboard: [[
+                        { text: '✅ Approve', callback_data: `approve_${executionRun.id}` },
+                        { text: '❌ Reject', callback_data: `reject_${executionRun.id}` }
+                    ]]
+                }
+            }
+        });
+    } else if (agentConfig.operationalMode === 'advisory' && result.orderIntents.length > 0) {
+        await notificationQueue.add('advisory-alert', {
+            userId: input.userId,
+            executionRunId: executionRun.id,
+            channel: 'telegram',
+            type: 'alert',
+            title: `Advisory Mode Alert: ${strategy.name}`,
+            body: `Strategy "${strategy.name}" generated ${result.orderIntents.length} order intents.\n\nSince agent is in advisory mode, no trades were executed.`,
+            telegram: {
+                chatId: agentConfig.user.preferences ? (agentConfig.user.preferences as any).telegramChatId : ''
+            }
+        });
+    }
 
     return {
         executionRunId: executionRun.id,

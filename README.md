@@ -304,3 +304,14 @@ Distributed under the MIT License.
 3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
+
+
+good prompot " check folder /prd and then check if everything is build for the app, if not continue building    
+   till it is done, it does not matter how much it takes or how many api calls, You can now begin   
+   implementation.                                                                                  
+   Follow the task tree.                                                                            
+   After completing each module, summarize:                                                         
+   - What you built                                                                                 
+   - Tests run                                                                                      
+                                                                                                    
+   use commit and new branches when needed  "
