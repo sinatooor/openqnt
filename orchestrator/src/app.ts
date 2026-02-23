@@ -14,6 +14,7 @@ import credentialsRouter from './api/routes/credentials.js';
 import notificationsRouter from './api/routes/notifications.js';
 import portfolioRouter from './api/routes/portfolio.js';
 import aiRouter from './api/routes/ai.js';
+import webhooksRouter from './api/routes/webhooks.js';
 
 export function createApp() {
     const app = express();
@@ -51,6 +52,7 @@ export function createApp() {
     app.use('/api/notifications', notificationsRouter);
     app.use('/api/portfolio', portfolioRouter);
     app.use('/api/ai', aiRouter);
+    app.use('/api/webhooks', webhooksRouter);
 
     // ── Error Handler ─────────────────────────────────────────
     app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
