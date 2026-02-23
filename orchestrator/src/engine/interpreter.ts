@@ -55,6 +55,8 @@ export interface EvaluationContext {
     variables: Record<string, any>;
     indicatorCache: Record<string, number[]>;
     riskConfig: Record<string, any>;
+    /** Decrypted credentials from the vault, keyed by alias */
+    credentials?: Record<string, string>;
 }
 
 export interface NodeLog {
@@ -167,6 +169,20 @@ export class FlowInterpreter {
 
             const ntype = node.type;
             const data: Record<string, any> = node.data ?? {};
+
+            // ── Credential Resolution (PRD §2.5.4) ──
+            // Resolve {{credentials.X}} patterns in node config values
+            if (ctx.credentials) {
+                for (const [key, value] of Object.entries(data)) {
+                    if (typeof value === 'string' && value.startsWith('{{credentials.') && value.endsWith('}}')) {
+                        const alias = value.slice('{{credentials.'.length, -2);
+                        if (ctx.credentials[alias]) {
+                            data[key] = ctx.credentials[alias];
+                        }
+                    }
+                }
+            }
+
             const startTime = Date.now();
             let nodeOutput: Record<string, any> = {};
             let status: NodeLog['status'] = 'success';
@@ -414,7 +430,28 @@ export class FlowInterpreter {
                     }
 
                     default:
-                        nodeOutput = { output: null };
+                        // ── Trigger & Integration nodes ──
+                        // Triggers are entry points — they don't compute during bar evaluation.
+                        // Integration nodes (Telegram, Slack, HTTP, etc.) pass through to action dispatch.
+                        if (ntype === 'trigger') {
+                            nodeOutput = { output: true };
+                        } else if (ntype === 'integration') {
+                            // Integration nodes need the notification/HTTP dispatch service.
+                            // For now, log and pass through. Full dispatch handled by the orchestrator.
+                            let trigger = true;
+                            const trigInput = this.resolveInput(outputs, nodeId, 'trigger');
+                            if (trigInput !== null) trigger = Boolean(trigInput);
+                            if (trigger) {
+                                nodeOutput = { output: true, dispatched: true };
+                                logger.info({ nodeId, integrationType: data.integrationType }, 'Integration node dispatched');
+                            } else {
+                                nodeOutput = { output: false };
+                                status = 'skipped';
+                                nodesSkipped++;
+                            }
+                        } else {
+                            nodeOutput = { output: null };
+                        }
                 }
 
                 nodesExecuted++;
