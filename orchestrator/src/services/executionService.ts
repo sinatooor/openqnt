@@ -13,6 +13,7 @@ import { FlowInterpreter, type EvaluationContext, type EvaluationResult, type Ba
 import { runPreChecks } from '../engine/preChecks.js';
 import { notificationQueue } from './notificationService.js';
 import { getBrokerClient } from './brokerGateway.js';
+import { computeIndicators } from './computeClient.js';
 type TriggerType = 'heartbeat' | 'webhook' | 'price_alert' | 'news' | 'manual' | 'replay';
 
 export interface ExecuteStrategyInput {
@@ -20,9 +21,9 @@ export interface ExecuteStrategyInput {
     userId: string;
     triggerType: TriggerType;
     triggerData?: Record<string, any>;
-    bar: Bar;
-    history: Bar[];
-    barIndex: number;
+    bar?: Bar;
+    history?: Bar[];
+    barIndex?: number;
 }
 
 export interface ExecuteStrategyOutput {
@@ -63,9 +64,48 @@ export async function executeStrategy(input: ExecuteStrategyInput): Promise<Exec
     const settings = (strategy.settings as Record<string, any>) ?? {};
     const compiled = compileFlowStrategy(nodes, edges, { ...settings, name: strategy.name });
 
+    // Data Fetching Logic (if not provided)
+    let bar = input.bar;
+    let history = input.history ?? [];
+    let barIndex = input.barIndex ?? 0;
+
+    if (!bar) {
+        // Fetch portfolio to get broker credential
+        const portfolioRec = await prisma.portfolio.findFirst({ where: { userId: input.userId } });
+        if (portfolioRec) {
+            try {
+                const broker = getBrokerClient(portfolioRec.brokerName);
+                // In production, fetch decrypted credentials from vault
+                if (!broker.isConnected()) {
+                    await broker.connect(portfolioRec.credentialAlias ?? '');
+                }
+
+                const symbol = (settings.symbol as string) ?? 'SPY';
+                const timeframe = (settings.timeframe as string) ?? '1440'; // Daily default
+
+                // Fetch 200 bars for indicators
+                const bars = await broker.getBars(symbol, timeframe, 200);
+                if (bars.length > 0) {
+                    bar = bars[bars.length - 1];
+                    history = bars;
+                    barIndex = bars.length - 1;
+                }
+            } catch (err) {
+                logger.error({ error: err, strategyId: input.strategyId }, 'Failed to fetch market data');
+            }
+        }
+    }
+
+    if (!bar) {
+        // If still no data (and none provided), we can't execute meaningful logic.
+        // But to avoid crashing if broker fails, we might create a fallback or throw.
+        // Throwing ensures we don't execute on bad data.
+        throw new Error('Market data not available for strategy execution');
+    }
+
     // 4. Run pre-checks
     const portfolio = { cash: 0, equity: 0, positions: {} }; // TODO: load from broker
-    const preChecks = runPreChecks(agentConfig, portfolio, input.bar);
+    const preChecks = runPreChecks(agentConfig, portfolio, bar);
 
     // 5. Create execution run record
     const executionRun = await prisma.executionRun.create({
@@ -80,13 +120,46 @@ export async function executeStrategy(input: ExecuteStrategyInput): Promise<Exec
 
     // 6. Interpret the strategy flow
     const interpreter = new FlowInterpreter(compiled.compiled);
+
+    // Pre-calculate Indicators
+    const indicatorCache: Record<string, number[]> = {};
+    for (const node of compiled.compiled.nodes) {
+        if (node.type === 'indicator') {
+            const data = node.data ?? {};
+            const indicatorType = data.indicatorType;
+            if (!indicatorType) continue;
+
+            try {
+                const priceData = {
+                    open: history.map((b) => b.open),
+                    high: history.map((b) => b.high),
+                    low: history.map((b) => b.low),
+                    close: history.map((b) => b.close),
+                    volume: history.map((b) => b.volume),
+                };
+
+                const response = await computeIndicators({
+                    indicatorType,
+                    params: data,
+                    priceData,
+                });
+
+                for (const [key, values] of Object.entries(response.data.values)) {
+                    indicatorCache[`${node.id}:${key}`] = values;
+                }
+            } catch (err) {
+                logger.error({ error: err, nodeId: node.id }, 'Failed to compute indicator');
+            }
+        }
+    }
+
     const ctx: EvaluationContext = {
-        bar: input.bar,
-        history: input.history,
-        index: input.barIndex,
+        bar,
+        history,
+        index: barIndex,
         portfolio,
         variables: {},
-        indicatorCache: {}, // TODO: populate from Python compute service
+        indicatorCache,
         riskConfig: {},
     };
 

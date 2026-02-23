@@ -5,6 +5,7 @@
 
 import { logger } from '../utils/logger.js';
 import { v4 as uuid } from 'uuid';
+import type { Bar } from '../engine/interpreter.js';
 import type {
     BrokerClient,
     BrokerOrder,
@@ -126,5 +127,9 @@ export class PaperClient implements BrokerClient {
             results.push(await this.closePosition(symbol));
         }
         return results;
+    }
+
+    async getBars(_symbol: string, _timeframe: string, _limit: number): Promise<Bar[]> {
+        throw new Error('Paper trading market data not implemented (use real broker for data)');
     }
 }
