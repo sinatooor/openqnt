@@ -200,6 +200,7 @@ services:
       - fyer-network
     depends_on:
       - backend
+      - orchestrator
     profiles:
       - production
 
