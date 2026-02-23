@@ -41,8 +41,9 @@ export const useAuthStore = create<AuthState>()(
             error: null,
 
             login: async (email: string, password: string) => {
-                // Mock login for testing
-                if (email === 'test@example.com' && password === 'test@example.com') {
+                // Mock login — only available in Vite dev mode, never in production builds
+                if (import.meta.env.DEV && email === 'test@example.com' && password === 'test@example.com') {
+                    console.warn('[Auth] Using mock login — dev mode only');
                     const mockUser = {
                         id: 'test-user-1',
                         email: 'test@example.com',
