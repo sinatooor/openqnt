@@ -41,6 +41,25 @@ export const useAuthStore = create<AuthState>()(
             error: null,
 
             login: async (email: string, password: string) => {
+                // Mock login for testing
+                if (email === 'test@example.com' && password === 'test123') {
+                    const mockUser = {
+                        id: 'test-user-1',
+                        email: 'test@example.com',
+                        name: 'Test User',
+                        subscriptionTier: 'pro',
+                    };
+                    const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0LXVzZXItMSIsIm5hbWUiOiJUZXN0IFVzZXIiLCJpYXQiOjE3MzY3ODAwMDAsImV4cCI6MTczNjc4MzYwMH0.mock';
+                    set({
+                        user: mockUser,
+                        accessToken: mockToken,
+                        refreshToken: 'mock-refresh-token',
+                        isAuthenticated: true,
+                        isLoading: false,
+                    });
+                    return;
+                }
+
                 set({ isLoading: true, error: null });
                 try {
                     const response = await fetch(`${API_BASE_URL}/api/auth/login`, {

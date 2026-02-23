@@ -3,6 +3,7 @@ import { env } from './config/env.js';
 import { logger } from './utils/logger.js';
 import { setupWebSocket } from './api/websocket.js';
 import { startHeartbeatWorker, type HeartbeatJobData } from './workers/heartbeat.js';
+import './workers/notificationWorker.js';
 import { executeStrategy } from './services/executionService.js';
 import type { Bar } from './engine/interpreter.js';
 
