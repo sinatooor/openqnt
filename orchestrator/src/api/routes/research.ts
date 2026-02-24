@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { runMCPT, MCPTRequest } from '../../services/computeClient.js';
 import { logger } from '../../utils/logger.js';
-import { authenticate } from '../middleware/auth.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
 
 // Apply authentication middleware to all research routes
-router.use(authenticate);
+router.use(authMiddleware);
 
 /**
  * POST /api/research/mcpt
@@ -34,10 +34,10 @@ router.post('/mcpt', async (req, res) => {
             return res.status(400).json({ error: result.data.error || 'MCPT failed on compute service' });
         }
 
-        res.json(result.data);
+        return res.json(result.data);
     } catch (error: any) {
         logger.error({ err: error }, 'Error running MCPT');
-        res.status(500).json({ error: error.message || 'Internal server error while running MCPT' });
+        return res.status(500).json({ error: error.message || 'Internal server error while running MCPT' });
     }
 });
 
