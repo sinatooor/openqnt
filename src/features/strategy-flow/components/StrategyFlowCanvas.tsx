@@ -42,6 +42,7 @@ import {
   JournalModal,
   ScreenerModal,
   LiveTradingPanel,
+  ResearchModal,
 } from './modals';
 import { useStrategyFlowStore, isValidConnection, validateStrategy } from '../store/strategyFlowStore';
 import type { StrategyFlowNode, NodeCatalogItem } from '../types';
@@ -290,6 +291,7 @@ const StrategyFlowCanvasInner = () => {
   const [showJournal, setShowJournal] = useState(false);
   const [showScreener, setShowScreener] = useState(false);
   const [showLiveTrading, setShowLiveTrading] = useState(false);
+  const [showResearch, setShowResearch] = useState(false);
 
   // Use shallow comparison for store values to prevent unnecessary re-renders
   const {
@@ -503,6 +505,7 @@ const StrategyFlowCanvasInner = () => {
             onOpenTemplates={() => setShowTemplates(true)}
             onOpenBacktest={() => setShowBacktest(true)}
             onOpenChart={() => setShowChart(true)}
+            onOpenResearch={() => setShowResearch(true)}
             onOpenCode={() => setShowCodePanel(!showCodePanel)}
             onOpenAI={() => setShowAIPanel(!showAIPanel)}
             onOpenJournal={() => setShowJournal(true)}
@@ -591,6 +594,7 @@ const StrategyFlowCanvasInner = () => {
       <TemplatesDialog open={showTemplates} onOpenChange={setShowTemplates} />
       <SearchNodesDialog open={showSearch} onOpenChange={setShowSearch} />
       <ChartModal open={showChart} onOpenChange={setShowChart} />
+      <ResearchModal open={showResearch} onOpenChange={setShowResearch} />
       <JournalModal open={showJournal} onOpenChange={setShowJournal} />
       <ScreenerModal open={showScreener} onOpenChange={setShowScreener} />
       <LiveTradingPanel open={showLiveTrading} onOpenChange={setShowLiveTrading} />

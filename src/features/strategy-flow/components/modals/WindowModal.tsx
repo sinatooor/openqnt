@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 interface WindowModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  title: string;
+  title: ReactNode;
   icon?: ReactNode;
   children: ReactNode;
   defaultWidth?: number;
@@ -54,7 +54,7 @@ export const WindowModal = memo(({
   const [resizeDirection, setResizeDirection] = useState<string | null>(null);
   const [isMaximized, setIsMaximized] = useState(false);
   const [preMaximizeState, setPreMaximizeState] = useState({ position: { x: 0, y: 0 }, size: { width: 0, height: 0 } });
-  
+
   const dragStart = useRef({ x: 0, y: 0 });
   const resizeStart = useRef({ x: 0, y: 0, width: 0, height: 0, posX: 0, posY: 0 });
 
@@ -213,11 +213,11 @@ export const WindowModal = memo(({
   const modalContent = (
     <div className="fixed inset-0 z-[9999] pointer-events-none">
       {/* Backdrop - optional, click to close */}
-      <div 
+      <div
         className="absolute inset-0 bg-black/40 pointer-events-auto"
         onClick={handleClose}
       />
-      
+
       {/* Window */}
       <div
         ref={windowRef}
