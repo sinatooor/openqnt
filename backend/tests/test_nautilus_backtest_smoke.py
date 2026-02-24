@@ -5,7 +5,18 @@ Runs a simple strategy to ensure it executes without crashing.
 """
 import pytest
 import pandas as pd
-from nautilus_adapter import run_nautilus_backtest, NAUTILUS_INSTALLED
+from nautilus_adapter import run_nautilus_backtest, get_nautilus_status, NAUTILUS_INSTALLED
+
+def test_nautilus_status():
+    """Verify get_nautilus_status returns expected structure."""
+    status = get_nautilus_status()
+    assert isinstance(status, dict)
+    assert "installed" in status
+
+    if status["installed"]:
+        assert "version" in status
+    else:
+        assert "error" in status
 
 @pytest.mark.skipif(not NAUTILUS_INSTALLED, reason="NautilusTrader not installed")
 def test_smoke_strategy_execution():
