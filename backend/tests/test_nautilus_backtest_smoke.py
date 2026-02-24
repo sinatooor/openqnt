@@ -23,7 +23,7 @@ def test_smoke_strategy_execution():
     """Run a basic MA crossover-like strategy (logic simplified)."""
     
     # Generate synthetic data
-    dates = pd.date_range("2024-01-01", "2024-01-05", freq="1H")
+    dates = pd.date_range("2024-01-01", "2024-01-05", freq="1h")
     data = pd.DataFrame({
         "timestamp": dates,
         "open": [1.0 + i*0.001 for i in range(len(dates))], # Trending up
