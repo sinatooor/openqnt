@@ -1,6 +1,9 @@
 import express, { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
+import { createBullBoard } from '@bull-board/api';
+import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
+import { ExpressAdapter } from '@bull-board/express';
 import { env } from './config/env.js';
 import { logger } from './utils/logger.js';
 import { apiLimiter } from './api/middleware/rateLimit.js';
@@ -15,6 +18,8 @@ import notificationsRouter from './api/routes/notifications.js';
 import portfolioRouter from './api/routes/portfolio.js';
 import aiRouter from './api/routes/ai.js';
 import webhooksRouter from './api/routes/webhooks.js';
+import researchRouter from './api/routes/research.js';
+import { getHeartbeatQueue } from './workers/heartbeat.js';
 
 export function createApp() {
     const app = express();
@@ -41,6 +46,23 @@ export function createApp() {
         next();
     });
 
+    // ── Bull Board (BullMQ Monitoring Dashboard) ──────────────
+    try {
+        const serverAdapter = new ExpressAdapter();
+        serverAdapter.setBasePath('/admin/queues');
+        const heartbeatQueue = getHeartbeatQueue();
+        if (heartbeatQueue) {
+            createBullBoard({
+                queues: [new BullMQAdapter(heartbeatQueue)],
+                serverAdapter,
+            });
+        }
+        app.use('/admin/queues', serverAdapter.getRouter());
+        logger.info('Bull Board dashboard available at /admin/queues');
+    } catch (err) {
+        logger.warn({ err }, 'Bull Board setup skipped (queue may not be initialized yet)');
+    }
+
     // ── Routes ────────────────────────────────────────────────
     app.use('/', healthRouter);
     app.use('/api/auth', authRouter);
@@ -53,6 +75,7 @@ export function createApp() {
     app.use('/api/portfolio', portfolioRouter);
     app.use('/api/ai', aiRouter);
     app.use('/api/webhooks', webhooksRouter);
+    app.use('/api/research', researchRouter);
 
     // ── Error Handler ─────────────────────────────────────────
     app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
@@ -65,3 +88,4 @@ export function createApp() {
 
     return app;
 }
+
