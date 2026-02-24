@@ -5,6 +5,7 @@
 
 import { useState } from 'react';
 import { WindowModal } from './WindowModal';
+import { BrokerConnectionModal } from './BrokerConnectionModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -63,6 +64,7 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
   const [loginPassword, setLoginPassword] = useState('');
   const [saveStrategyName, setSaveStrategyName] = useState('');
   const [brokerConnections, setBrokerConnections] = useState<Record<string, boolean>>({});
+  const [selectedBroker, setSelectedBroker] = useState<{id: string, name: string} | null>(null);
 
   const {
     user,
@@ -132,12 +134,14 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
   };
 
   const handleConnectBroker = (brokerId: string) => {
-    // TODO: Open broker-specific connection modal
-    toast.info(`Connecting to ${brokerId}...`);
-    setBrokerConnections(prev => ({ ...prev, [brokerId]: true }));
+    const broker = BROKERS.find(b => b.id === brokerId);
+    if (broker) {
+      setSelectedBroker({ id: broker.id, name: broker.name });
+    }
   };
 
   return (
+    <>
     <WindowModal
       open={open}
       onOpenChange={onOpenChange}
@@ -450,6 +454,19 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
           </ScrollArea>
         </Tabs>
     </WindowModal>
+
+    {selectedBroker && (
+      <BrokerConnectionModal
+        open={!!selectedBroker}
+        onOpenChange={(open) => !open && setSelectedBroker(null)}
+        brokerId={selectedBroker.id}
+        brokerName={selectedBroker.name}
+        onConnected={() => {
+          setBrokerConnections(prev => ({ ...prev, [selectedBroker.id]: true }));
+        }}
+      />
+    )}
+    </>
   );
 };
 
