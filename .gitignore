@@ -38,3 +38,6 @@ __pycache__/
 
 n8n-reference/
 openclaw-reference/
+
+# Generated test artifacts
+test_nautilus_chart.html
