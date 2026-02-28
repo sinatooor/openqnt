@@ -35,7 +35,7 @@ def test_json_structure_compliance():
         
     # We can invoke the adapter with dummy data to see what it returns
     import pandas as pd
-    dates = pd.date_range("2024-01-01", "2024-01-02", freq="1H")
+    dates = pd.date_range("2024-01-01", "2024-01-02", freq="1h")
     data = pd.DataFrame({
         "timestamp": dates,
         "open": 1.0, "high": 1.0, "low": 1.0, "close": 1.0, "volume": 100
