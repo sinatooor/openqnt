@@ -27,24 +27,12 @@ async function heartbeatProcessor(job: { data: HeartbeatJobData }) {
     logger.info({ strategyId }, 'Heartbeat tick');
 
     try {
-        const now = new Date();
-        const bar: Bar = {
-            timestamp: now.toISOString(),
-            open: 0,
-            high: 0,
-            low: 0,
-            close: 0,
-            volume: 0,
-            symbol: 'UNKNOWN',
-        };
-
+        // Execute strategy without providing bar/history
+        // executionService will fetch the necessary market data based on strategy settings
         await executeStrategy({
             strategyId,
             userId,
             triggerType: 'heartbeat',
-            bar,
-            history: [],
-            barIndex: 0,
         });
     } catch (error) {
         logger.error({ strategyId, error }, 'Heartbeat execution failed');

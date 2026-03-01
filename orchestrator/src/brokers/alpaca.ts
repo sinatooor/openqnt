@@ -4,6 +4,7 @@
  */
 
 import { logger } from '../utils/logger.js';
+import type { Bar } from '../engine/interpreter.js';
 import type {
     BrokerClient,
     BrokerOrder,
@@ -18,6 +19,7 @@ const LIVE_URL = 'https://api.alpaca.markets';
 export class AlpacaClient implements BrokerClient {
     name = 'alpaca';
     private baseUrl = PAPER_URL;
+    private dataUrl = 'https://data.alpaca.markets/v2';
     private headers: Record<string, string> = {};
     private connected = false;
 
@@ -152,5 +154,37 @@ export class AlpacaClient implements BrokerClient {
         await this.request('DELETE', '/v2/positions');
         logger.warn('All Alpaca positions closed');
         return [];
+    }
+
+    async getBars(symbol: string, timeframe: string, limit: number): Promise<Bar[]> {
+        // Map timeframe to Alpaca format
+        let tf = '1Day';
+        if (timeframe === '1') tf = '1Min';
+        else if (timeframe === '5') tf = '5Min';
+        else if (timeframe === '15') tf = '15Min';
+        else if (timeframe === '60') tf = '1Hour';
+        else if (timeframe === '1440') tf = '1Day';
+
+        const url = `${this.dataUrl}/stocks/${symbol}/bars?timeframe=${tf}&limit=${limit}&adjustment=raw`;
+
+        const response = await fetch(url, {
+            headers: this.headers,
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`Alpaca Data API error: ${response.status} — ${error}`);
+        }
+
+        const data = (await response.json()) as any;
+        return (data.bars || []).map((b: any) => ({
+            timestamp: b.t,
+            open: b.o,
+            high: b.h,
+            low: b.l,
+            close: b.c,
+            volume: b.v,
+            symbol: symbol,
+        }));
     }
 }
