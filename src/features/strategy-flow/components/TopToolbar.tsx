@@ -22,6 +22,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useStrategyFlowStore } from '../store/strategyFlowStore';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { toast } from 'sonner';
 
 interface TopToolbarProps {
   className?: string;
@@ -43,6 +45,8 @@ export const TopToolbar = memo(({
   onOpenAI,
 }: TopToolbarProps) => {
   const {
+    nodes,
+    edges,
     strategyName,
     setStrategyName,
     isModified,
@@ -58,6 +62,8 @@ export const TopToolbar = memo(({
   const [showMenu, setShowMenu] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { isLoggedIn, saveStrategy } = useUserProfile();
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -121,6 +127,19 @@ export const TopToolbar = memo(({
 
   const handleRun = () => {
     setIsRunning(!isRunning);
+  };
+
+  const handleSaveToServer = async () => {
+    try {
+      if (!isLoggedIn) {
+        toast.error('Please sign in to save strategies');
+        return;
+      }
+      await saveStrategy(strategyName, nodes, edges);
+      toast.success('Strategy saved to your account');
+    } catch (error: any) {
+      toast.error(error?.message ?? 'Failed to save strategy');
+    }
   };
 
   return (
@@ -222,7 +241,7 @@ export const TopToolbar = memo(({
         {/* Right: File Operations */}
         <div className="flex items-center gap-1">
           <button
-            onClick={() => {/* Save to server */}}
+            onClick={handleSaveToServer}
             className="p-2 rounded hover:bg-white/10 text-white/70 hover:text-white transition-colors"
             title="Save (Ctrl+S)"
           >

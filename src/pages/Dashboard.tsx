@@ -65,6 +65,7 @@ const Dashboard = () => {
   const [stats, setStats] = useState<any>(null);
   const [strategies, setStrategies] = useState<any[]>([]);
   const [recentRuns, setRecentRuns] = useState<any[]>([]);
+  const [portfolios, setPortfolios] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -80,16 +81,20 @@ const Dashboard = () => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     try {
-      const [statsData, strategiesData, runsData] = await Promise.allSettled([
+      const [statsData, strategiesData, runsData, portfolioData] = await Promise.allSettled([
         api.getExecutionStats(),
         api.listStrategies(),
         api.listExecutions({ page: 1 }),
+        api.getPortfolios(),
       ]);
       if (statsData.status === 'fulfilled') setStats(statsData.value?.stats);
       if (strategiesData.status === 'fulfilled')
         setStrategies(strategiesData.value?.strategies ?? []);
       if (runsData.status === 'fulfilled')
         setRecentRuns(runsData.value?.runs?.slice(0, 8) ?? []);
+      if (portfolioData.status === 'fulfilled') {
+        setPortfolios(portfolioData.value?.portfolios ?? []);
+      }
     } catch {
       /* silent */
     }
@@ -399,6 +404,49 @@ const Dashboard = () => {
                             : 'degraded'
                       }
                     />
+                  </CardContent>
+                </Card>
+
+                {/* Portfolio Snapshot */}
+                <Card className="bg-card/60 backdrop-blur-sm border-border/30 shadow-trading">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-foreground">
+                      <LineChartOutlined className="text-emerald-400" />
+                      Portfolio Snapshot
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-xs">
+                    {portfolios.length === 0 ? (
+                      <p className="text-muted-foreground">
+                        No portfolios connected yet. Connect a broker in Credentials to see live positions.
+                      </p>
+                    ) : (
+                      <>
+                        <p className="text-muted-foreground">
+                          {portfolios.length} portfolio{portfolios.length > 1 ? 's' : ''} connected
+                        </p>
+                        <div className="space-y-2">
+                          {portfolios.slice(0, 3).map((p: any) => (
+                            <div
+                              key={p.id}
+                              className="flex items-center justify-between px-2 py-1.5 rounded-md bg-white/5"
+                            >
+                              <div>
+                                <div className="text-foreground text-xs font-medium">
+                                  {String(p.brokerName || 'Broker').toUpperCase()}
+                                </div>
+                                <div className="text-[11px] text-muted-foreground">
+                                  {p.accountId || 'Account linked'}
+                                </div>
+                              </div>
+                              <Badge className="text-[10px]" variant="outline">
+                                {(p.positions?.length ?? 0)} positions
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </CardContent>
                 </Card>
               </motion.div>
