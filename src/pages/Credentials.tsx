@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import CircularProgress from '@mui/material/CircularProgress';
+import { PAGE_CONTENT_CLASS } from '@/components/PageHeader';
 
 const Credentials = () => {
     const { isAuthenticated } = useAuthStore();
@@ -78,24 +79,18 @@ const Credentials = () => {
                 },
             }}
         >
-            <div className="min-h-screen bg-background text-foreground flex flex-col pb-20">
-                {/* Top Bar */}
-                <header className="sticky top-0 z-30 flex items-center justify-between px-6 py-3 bg-[#252526]/90 backdrop-blur-sm border-b border-white/10">
-                    <div className="flex items-center gap-4">
+            <div className="min-h-screen bg-background text-foreground flex flex-col pt-14">
+                <main className={`flex-1 p-6 ${PAGE_CONTENT_CLASS} space-y-6`}>
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
                         <div className="flex items-center gap-2">
                             <Key className="w-5 h-5 text-amber-400" />
-                            <h1 className="text-white font-medium text-sm tracking-tight">
-                                Credential Vault
-                            </h1>
+                            <h1 className="text-white font-medium text-sm tracking-tight">Credential Vault</h1>
+                            <div className="h-4 w-px bg-white/10" />
+                            <span className="text-white/40 text-xs flex items-center gap-1.5">
+                                <Lock className="w-3.5 h-3.5" />
+                                AES-256-GCM Encrypted
+                            </span>
                         </div>
-                        <div className="h-4 w-px bg-white/10" />
-                        <span className="text-white/40 text-xs flex items-center gap-1.5">
-                            <Lock className="w-3.5 h-3.5" />
-                            AES-256-GCM Encrypted
-                        </span>
-                    </div>
-
-                    <div className="flex items-center gap-3">
                         <Button
                             variant="default"
                             size="sm"
@@ -105,9 +100,6 @@ const Credentials = () => {
                             {showAdd ? <><X className="w-4 h-4 mr-1.5" />Cancel</> : <><Plus className="w-4 h-4 mr-1.5" />Add Credential</>}
                         </Button>
                     </div>
-                </header>
-
-                <main className="flex-1 p-6 max-w-6xl w-full mx-auto space-y-6">
                     {/* Add Form */}
                     <AnimatePresence>
                         {showAdd && (

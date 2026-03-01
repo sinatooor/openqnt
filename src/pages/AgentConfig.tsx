@@ -23,6 +23,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import CircularProgress from '@mui/material/CircularProgress';
+import { PAGE_CONTENT_CLASS } from '@/components/PageHeader';
 
 const MODES = [
     { value: 'advisory', label: 'Advisory', desc: 'Alerts only — no trades executed', icon: <BellRing className="w-6 h-6" />, color: '#3b82f6', colorClass: 'text-blue-500', bgClass: 'bg-blue-500/10', borderClass: 'border-blue-500/50' },
@@ -89,23 +90,15 @@ const AgentConfig = () => {
                 },
             }}
         >
-            <div className="min-h-screen bg-background text-foreground flex flex-col">
-                {/* Top Bar */}
-                <header className="sticky top-0 z-30 flex items-center justify-between px-6 py-3 bg-[#252526]/90 backdrop-blur-sm border-b border-white/10">
-                    <div className="flex items-center gap-4">
+            <div className="min-h-screen bg-background text-foreground flex flex-col pt-14">
+                <main className={`flex-1 p-6 ${PAGE_CONTENT_CLASS} space-y-6`}>
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
                         <div className="flex items-center gap-2">
                             <Settings className="w-5 h-5 text-primary" />
-                            <h1 className="text-white font-medium text-sm tracking-tight">
-                                Agent Configuration
-                            </h1>
+                            <h1 className="text-white font-medium text-sm tracking-tight">Agent Configuration</h1>
+                            <div className="h-4 w-px bg-white/10" />
+                            <span className="text-white/40 text-xs">Control AI behavior</span>
                         </div>
-                        <div className="h-4 w-px bg-white/10" />
-                        <span className="text-white/40 text-xs">
-                            Control AI behavior
-                        </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
                         <button
                             onClick={() => navigate('/dashboard')}
                             className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-colors"
@@ -114,9 +107,6 @@ const AgentConfig = () => {
                             Dashboard
                         </button>
                     </div>
-                </header>
-
-                <main className="flex-1 p-6 max-w-4xl w-full mx-auto space-y-6">
                     {/* Operational Mode */}
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
                         <Card className="bg-card/60 backdrop-blur-sm border-white/5 shadow-trading rounded-xl">
