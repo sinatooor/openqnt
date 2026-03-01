@@ -1,0 +1,94 @@
+/**
+ * AppNavBar - Persistent bottom navigation bar visible on all pages.
+ * Always visible (no auto-hide). Highlights the active route.
+ */
+
+import { useNavigate, useLocation } from 'react-router-dom';
+import {
+    LayoutDashboard,
+    Code2,
+    LineChart,
+    KeyRound,
+    Settings,
+    User,
+} from 'lucide-react';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { useAuthStore } from '@/stores/authStore';
+
+interface NavItemDef {
+    icon: React.ReactNode;
+    label: string;
+    path: string;
+}
+
+const NAV_ITEMS: NavItemDef[] = [
+    { icon: <LayoutDashboard className="w-4 h-4" />, label: 'Dashboard', path: '/dashboard' },
+    { icon: <Code2 className="w-4 h-4" />, label: 'Builder', path: '/' },
+    { icon: <LineChart className="w-4 h-4" />, label: 'Executions', path: '/executions' },
+    { icon: <KeyRound className="w-4 h-4" />, label: 'Credentials', path: '/credentials' },
+    { icon: <Settings className="w-4 h-4" />, label: 'Settings', path: '/settings' },
+];
+
+export const AppNavBar = () => {
+    const navigate = useNavigate();
+    const { pathname } = useLocation();
+    const { user } = useAuthStore();
+
+    // Don't show on login page
+    if (pathname === '/login') return null;
+
+    const isActive = (path: string) => {
+        if (path === '/') return pathname === '/';
+        return pathname.startsWith(path);
+    };
+
+    return (
+        <TooltipProvider delayDuration={200}>
+            <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-[#252526]/95 backdrop-blur-md border border-white/10 rounded-xl px-3 py-2 shadow-2xl shadow-black/40">
+                {NAV_ITEMS.map((item) => {
+                    const active = isActive(item.path);
+                    return (
+                        <Tooltip key={item.path}>
+                            <TooltipTrigger asChild>
+                                <button
+                                    onClick={() => navigate(item.path)}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${active
+                                            ? 'bg-primary/20 text-primary shadow-sm'
+                                            : 'text-white/50 hover:bg-white/5 hover:text-white/80'
+                                        }`}
+                                >
+                                    {item.icon}
+                                    <span className="hidden sm:inline">{item.label}</span>
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-xs">
+                                {item.label}
+                            </TooltipContent>
+                        </Tooltip>
+                    );
+                })}
+
+                {/* User avatar / quick profile indicator */}
+                <div className="h-5 w-px bg-white/10 mx-1" />
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <button
+                            onClick={() => navigate('/settings')}
+                            className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/20 text-primary text-xs font-bold transition-all hover:bg-primary/30"
+                        >
+                            {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || <User className="w-4 h-4" />}
+                        </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs">
+                        {user?.email || 'Profile & Settings'}
+                    </TooltipContent>
+                </Tooltip>
+            </nav>
+        </TooltipProvider>
+    );
+};

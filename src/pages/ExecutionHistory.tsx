@@ -46,7 +46,7 @@ const ExecutionHistory = () => {
                 },
             }}
         >
-            <div className="min-h-screen bg-background text-foreground flex flex-col">
+            <div className="min-h-screen bg-background text-foreground flex flex-col pb-20">
                 {/* Top Bar matching Dashboard */}
                 <header className="sticky top-0 z-30 flex items-center justify-between px-6 py-3 bg-[#252526]/90 backdrop-blur-sm border-b border-white/10">
                     <div className="flex items-center gap-4">
@@ -61,16 +61,6 @@ const ExecutionHistory = () => {
                             {pagination.total} total runs
                         </span>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => navigate('/dashboard')}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-colors"
-                        >
-                            <ArrowRight className="w-3.5 h-3.5 rotate-180" />
-                            Dashboard
-                        </button>
-                    </div>
                 </header>
 
                 <main className="flex-1 p-6 max-w-[1200px] w-full mx-auto space-y-6">
@@ -84,8 +74,8 @@ const ExecutionHistory = () => {
                                 key={status}
                                 onClick={() => setStatusFilter(status)}
                                 className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap border ${statusFilter === status
-                                        ? 'bg-primary/20 border-primary/40 text-primary'
-                                        : 'bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10 hover:text-foreground'
+                                    ? 'bg-primary/20 border-primary/40 text-primary'
+                                    : 'bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10 hover:text-foreground'
                                     }`}
                             >
                                 {status ? status.charAt(0).toUpperCase() + status.slice(1) : 'All Runs'}
@@ -143,9 +133,9 @@ const ExecutionHistory = () => {
                                                     {/* Strategy Name */}
                                                     <div className="flex-[2] flex items-center gap-3">
                                                         <div className={`w-2 h-2 rounded-full ${run.status === 'success' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' :
-                                                                run.status === 'error' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' :
-                                                                    run.status === 'running' ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]' :
-                                                                        'bg-slate-500'
+                                                            run.status === 'error' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' :
+                                                                run.status === 'running' ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]' :
+                                                                    'bg-slate-500'
                                                             }`} />
                                                         <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
                                                             {run.strategy?.name ?? 'Deleted Strategy'}
@@ -213,8 +203,8 @@ const ExecutionHistory = () => {
                                     key={i + 1}
                                     onClick={() => fetchRuns({ page: i + 1, status: statusFilter || undefined })}
                                     className={`w-8 h-8 rounded-md flex items-center justify-center text-sm transition-colors ${pagination.page === i + 1
-                                            ? 'bg-primary text-primary-foreground'
-                                            : 'bg-card border border-border/50 text-muted-foreground hover:bg-white/10 hover:text-foreground'
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-card border border-border/50 text-muted-foreground hover:bg-white/10 hover:text-foreground'
                                         }`}
                                 >
                                     {i + 1}

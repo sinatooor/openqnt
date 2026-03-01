@@ -142,7 +142,7 @@ const Dashboard = () => {
       }}
     >
       <TooltipProvider delayDuration={200}>
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-background pb-20">
           {/* ─── Top Bar (matching strategy builder TopToolbar) ─── */}
           <header className="sticky top-0 z-30 flex items-center justify-between px-6 py-3 bg-[#252526]/90 backdrop-blur-sm border-b border-white/10">
             <div className="flex items-center gap-4">
@@ -301,11 +301,10 @@ const Dashboard = () => {
                             >
                               <div className="flex items-center gap-3">
                                 <div
-                                  className={`w-2 h-2 rounded-full ${
-                                    s.status === 'active'
+                                  className={`w-2 h-2 rounded-full ${s.status === 'active'
                                       ? 'bg-green-400 shadow-[0_0_6px_rgba(34,197,94,0.5)]'
                                       : 'bg-white/20'
-                                  }`}
+                                    }`}
                                 />
                                 <div>
                                   <span className="text-foreground text-sm font-medium group-hover:text-white transition-colors">
@@ -540,38 +539,7 @@ const Dashboard = () => {
             </motion.div>
           </div>
 
-          {/* ─── Bottom Toolbar (matching strategy builder) ─── */}
-          <div className="sticky bottom-4 flex justify-center pointer-events-none z-20">
-            <div className="flex items-center gap-1 bg-[#252526] border border-white/10 rounded-lg px-3 py-2 shadow-xl pointer-events-auto">
-              <NavItem
-                icon={<DashboardOutlined />}
-                label="Dashboard"
-                active
-                onClick={() => {}}
-              />
-              <div className="h-4 w-px bg-white/10 mx-1" />
-              <NavItem
-                icon={<CodeOutlined />}
-                label="Builder"
-                onClick={() => navigate('/')}
-              />
-              <NavItem
-                icon={<LineChartOutlined />}
-                label="Executions"
-                onClick={() => navigate('/executions')}
-              />
-              <NavItem
-                icon={<KeyOutlined />}
-                label="Credentials"
-                onClick={() => navigate('/credentials')}
-              />
-              <NavItem
-                icon={<SettingOutlined />}
-                label="Settings"
-                onClick={() => navigate('/settings')}
-              />
-            </div>
-          </div>
+
         </div>
       </TooltipProvider>
     </ConfigProvider>
@@ -758,33 +726,6 @@ const RunStatusBadge = ({ status }: { status: string }) => {
   );
 };
 
-const NavItem = ({
-  icon,
-  label,
-  active,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  active?: boolean;
-  onClick: () => void;
-}) => (
-  <Tooltip>
-    <TooltipTrigger asChild>
-      <button
-        onClick={onClick}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs transition-colors ${
-          active
-            ? 'bg-white/10 text-white'
-            : 'text-white/50 hover:bg-white/5 hover:text-white/80'
-        }`}
-      >
-        <span className="text-sm">{icon}</span>
-        <span className="hidden sm:inline">{label}</span>
-      </button>
-    </TooltipTrigger>
-    <TooltipContent side="top">{label}</TooltipContent>
-  </Tooltip>
-);
+
 
 export default Dashboard;
