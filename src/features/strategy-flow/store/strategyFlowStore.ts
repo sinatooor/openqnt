@@ -58,16 +58,18 @@ const generateId = () => Math.random().toString(36).substring(2, 8);
  * Key = source node type, Value = array of valid target node types
  */
 const VALID_CONNECTIONS: Record<string, string[]> = {
-  indicator: ['condition', 'action', 'variable'],
-  environment: ['condition', 'action', 'variable'],
-  condition: ['action', 'control', 'condition'],
-  action: ['action', 'control'],
-  control: ['action', 'control', 'condition'],
-  variable: ['condition', 'action', 'variable', 'control'],
-  math: ['condition', 'action', 'math', 'variable'],
-  risk: ['action', 'variable'],
-  tradeInfo: ['condition', 'action', 'math'],
-  llm: ['condition', 'action', 'variable', 'math'],
+  indicator: ['condition', 'action', 'variable', 'integration'],
+  environment: ['condition', 'action', 'variable', 'integration'],
+  condition: ['action', 'control', 'condition', 'integration'],
+  action: ['action', 'control', 'integration'],
+  control: ['action', 'control', 'condition', 'integration'],
+  variable: ['condition', 'action', 'variable', 'control', 'integration'],
+  math: ['condition', 'action', 'math', 'variable', 'integration'],
+  risk: ['action', 'variable', 'integration'],
+  tradeInfo: ['condition', 'action', 'math', 'integration'],
+  llm: ['condition', 'action', 'variable', 'math', 'integration'],
+  trigger: ['condition', 'action', 'control', 'integration', 'variable', 'llm'],
+  integration: ['condition', 'action', 'control', 'integration', 'variable', 'llm'],
 };
 
 /**

@@ -1,43 +1,137 @@
 import { Router } from 'express';
-import { runMCPT, MCPTRequest } from '../../services/computeClient.js';
+import {
+    runMCPT, MCPTRequest,
+    runMonteCarlo, MonteCarloRequest,
+    runHMMRegime, HMMRegimeRequest,
+    runWalkForward, WalkForwardRequest,
+    runVaRCVaR, VaRCVaRRequest,
+    runCointegration, CointegrationRequest,
+    runParamSweep, ParamSweepRequest,
+} from '../../services/computeClient.js';
 import { logger } from '../../utils/logger.js';
-import { authenticate } from '../middleware/auth.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
 
-// Apply authentication middleware to all research routes
-router.use(authenticate);
+router.use(authMiddleware);
 
-/**
- * POST /api/research/mcpt
- * Run a Monte Carlo Permutation Test (MCPT)
- */
+// ─── Monte Carlo Permutation Test (existing) ────────────────
+
 router.post('/mcpt', async (req, res) => {
     try {
         const { symbol, startDate, endDate, timeframe, permutations } = req.body;
-
         if (!symbol || !startDate || !endDate) {
             return res.status(400).json({ error: 'Missing required fields: symbol, startDate, endDate' });
         }
-
         const request: MCPTRequest = {
-            symbol,
-            startDate,
-            endDate,
+            symbol, startDate, endDate,
             timeframe: timeframe || '1d',
             permutations: permutations ? parseInt(permutations) : 100,
         };
-
         const result = await runMCPT(request);
-
         if (!result.data.success) {
-            return res.status(400).json({ error: result.data.error || 'MCPT failed on compute service' });
+            return res.status(400).json({ error: result.data.error || 'MCPT failed' });
         }
-
         res.json(result.data);
     } catch (error: any) {
-        logger.error({ err: error }, 'Error running MCPT');
-        res.status(500).json({ error: error.message || 'Internal server error while running MCPT' });
+        logger.error({ err: error }, 'MCPT failed');
+        res.status(500).json({ error: error.message || 'MCPT failed' });
+    }
+});
+
+// ─── Monte Carlo Simulation ─────────────────────────────────
+
+router.post('/monte-carlo', async (req, res) => {
+    try {
+        const request: MonteCarloRequest = req.body;
+        if (!request.trades?.length && !request.returns?.length) {
+            return res.status(400).json({ error: 'Provide trades or returns' });
+        }
+        const result = await runMonteCarlo(request);
+        res.json(result.data);
+    } catch (error: any) {
+        logger.error({ err: error }, 'Monte Carlo failed');
+        res.status(500).json({ error: error.message || 'Monte Carlo simulation failed' });
+    }
+});
+
+// ─── HMM Regime Detection ───────────────────────────────────
+
+router.post('/hmm-regime', async (req, res) => {
+    try {
+        const request: HMMRegimeRequest = req.body;
+        if (!request.prices?.length || request.prices.length < 30) {
+            return res.status(400).json({ error: 'Need at least 30 price observations' });
+        }
+        const result = await runHMMRegime(request);
+        res.json(result.data);
+    } catch (error: any) {
+        logger.error({ err: error }, 'HMM regime detection failed');
+        res.status(500).json({ error: error.message || 'HMM regime detection failed' });
+    }
+});
+
+// ─── Walk-Forward Analysis ──────────────────────────────────
+
+router.post('/walk-forward', async (req, res) => {
+    try {
+        const request: WalkForwardRequest = req.body;
+        if (!request.returns?.length) {
+            return res.status(400).json({ error: 'Provide returns array' });
+        }
+        const result = await runWalkForward(request);
+        res.json(result.data);
+    } catch (error: any) {
+        logger.error({ err: error }, 'Walk-forward analysis failed');
+        res.status(500).json({ error: error.message || 'Walk-forward analysis failed' });
+    }
+});
+
+// ─── VaR / CVaR ─────────────────────────────────────────────
+
+router.post('/var-cvar', async (req, res) => {
+    try {
+        const request: VaRCVaRRequest = req.body;
+        if (!request.returns?.length || request.returns.length < 10) {
+            return res.status(400).json({ error: 'Need at least 10 return observations' });
+        }
+        const result = await runVaRCVaR(request);
+        res.json(result.data);
+    } catch (error: any) {
+        logger.error({ err: error }, 'VaR/CVaR failed');
+        res.status(500).json({ error: error.message || 'VaR/CVaR computation failed' });
+    }
+});
+
+// ─── Cointegration Test ─────────────────────────────────────
+
+router.post('/cointegration', async (req, res) => {
+    try {
+        const request: CointegrationRequest = req.body;
+        if (!request.pricesA?.length || !request.pricesB?.length) {
+            return res.status(400).json({ error: 'Provide pricesA and pricesB arrays' });
+        }
+        const result = await runCointegration(request);
+        res.json(result.data);
+    } catch (error: any) {
+        logger.error({ err: error }, 'Cointegration test failed');
+        res.status(500).json({ error: error.message || 'Cointegration test failed' });
+    }
+});
+
+// ─── Parameter Sweep ────────────────────────────────────────
+
+router.post('/param-sweep', async (req, res) => {
+    try {
+        const request: ParamSweepRequest = req.body;
+        if (!request.paramValues?.length) {
+            return res.status(400).json({ error: 'Provide paramValues array' });
+        }
+        const result = await runParamSweep(request);
+        res.json(result.data);
+    } catch (error: any) {
+        logger.error({ err: error }, 'Parameter sweep failed');
+        res.status(500).json({ error: error.message || 'Parameter sweep failed' });
     }
 });
 

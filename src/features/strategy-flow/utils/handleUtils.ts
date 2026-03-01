@@ -19,7 +19,9 @@ export const getNodeSubType = (node: StrategyFlowNode): string | undefined => {
     data?.variableType as string ||
     data?.environmentType as string ||
     data?.tradeInfoType as string ||
-    data?.llmType as string
+    data?.llmType as string ||
+    data?.triggerType as string ||
+    data?.integrationType as string
   );
 };
 
@@ -452,6 +454,67 @@ export const getHandleConfigs = (nodeType: string, subType?: string): HandleConf
             return [
                 { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
                 { id: 'output', type: 'source', position: 'right', label: 'JSON', dataType: 'any' },
+            ];
+
+        case 'trigger':
+            if (subType === 'webhookTrigger' || subType === 'newsTrigger' || subType === 'brokerEventTrigger') {
+                return [
+                    { id: 'output', type: 'source', position: 'right', label: 'Signal', dataType: 'signal' },
+                    { id: 'data', type: 'source', position: 'right', label: 'Data', dataType: 'any' },
+                ];
+            }
+            if (subType === 'priceAlertTrigger') {
+                return [
+                    { id: 'output', type: 'source', position: 'right', label: 'Signal', dataType: 'signal' },
+                    { id: 'price', type: 'source', position: 'right', label: 'Price', dataType: 'number' },
+                ];
+            }
+            return [
+                { id: 'output', type: 'source', position: 'right', label: 'Signal', dataType: 'signal' },
+            ];
+
+        case 'integration':
+            if (subType === 'mergeNode') {
+                return [
+                    { id: 'data-a', type: 'target', position: 'left', label: 'A', dataType: 'any' },
+                    { id: 'data-b', type: 'target', position: 'left', label: 'B', dataType: 'any' },
+                    { id: 'output', type: 'source', position: 'right', label: 'Merged', dataType: 'any' },
+                ];
+            }
+            if (subType === 'splitNode') {
+                return [
+                    { id: 'data', type: 'target', position: 'left', label: 'Data', dataType: 'any' },
+                    { id: 'item', type: 'source', position: 'right', label: 'Item', dataType: 'any' },
+                    { id: 'output', type: 'source', position: 'right', label: 'Done', dataType: 'signal' },
+                ];
+            }
+            if (subType === 'filterNode') {
+                return [
+                    { id: 'data', type: 'target', position: 'left', label: 'Data', dataType: 'any' },
+                    { id: 'passed', type: 'source', position: 'right', label: 'Passed', dataType: 'any' },
+                    { id: 'rejected', type: 'source', position: 'right', label: 'Rejected', dataType: 'any' },
+                ];
+            }
+            if (subType === 'hitlNode') {
+                return [
+                    { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
+                    { id: 'data', type: 'target', position: 'left', label: 'Data', dataType: 'any' },
+                    { id: 'approved', type: 'source', position: 'right', label: 'Approved', dataType: 'signal' },
+                    { id: 'rejected', type: 'source', position: 'right', label: 'Rejected', dataType: 'signal' },
+                ];
+            }
+            if (subType === 'aggregateNode' || subType === 'setNode') {
+                return [
+                    { id: 'data', type: 'target', position: 'left', label: 'Data', dataType: 'any' },
+                    { id: 'output', type: 'source', position: 'right', label: 'Data', dataType: 'any' },
+                ];
+            }
+            // Default integration: trigger + data in, data + signal out
+            return [
+                { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
+                { id: 'data', type: 'target', position: 'left', label: 'Data', dataType: 'any' },
+                { id: 'output', type: 'source', position: 'right', label: 'Data', dataType: 'any' },
+                { id: 'signal', type: 'source', position: 'right', label: 'Done', dataType: 'signal' },
             ];
 
         default:

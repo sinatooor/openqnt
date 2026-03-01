@@ -280,7 +280,9 @@ export type TriggerType =
   | 'webhookTrigger'     // HTTP POST (n8n-style)
   | 'priceAlertTrigger'  // Price crosses threshold
   | 'newsTrigger'        // Keyword/topic detection in news
-  | 'brokerEventTrigger'; // Order filled, margin call, etc.
+  | 'brokerEventTrigger' // Order filled, margin call, etc.
+  | 'manualTrigger'      // Explicit "Run now" (n8n Manual Trigger)
+  | 'cronTrigger';       // Cron expression schedule (n8n Schedule Trigger)
 
 export interface TriggerNodeData extends BaseNodeData {
   triggerType: TriggerType;
@@ -305,6 +307,9 @@ export interface TriggerNodeData extends BaseNodeData {
   // Broker event specific
   eventTypes?: string[];
   credentialAlias?: string;
+  // Cron specific
+  cronExpression?: string;
+  timezone?: string;
 }
 
 // =============================================================================
@@ -320,7 +325,13 @@ export type IntegrationType =
   | 'databaseQueryNode'  // SQL query
   | 'codePythonNode'     // Custom Python execution
   | 'codeJavascriptNode' // Custom JavaScript execution
-  | 'aiAnalysisNode';    // Python ADK agent analysis
+  | 'aiAnalysisNode'     // Python ADK agent analysis
+  | 'mergeNode'          // Combine outputs from multiple branches (n8n Merge)
+  | 'splitNode'          // Split one output to multiple branches (n8n Split Out)
+  | 'setNode'            // Set/transform fields on the payload (n8n Set)
+  | 'filterNode'         // Pass through only items matching condition (n8n Filter)
+  | 'aggregateNode'      // Aggregate data — sum, avg, count (n8n Aggregate)
+  | 'hitlNode';          // Human-in-the-Loop approval node
 
 export interface IntegrationNodeData extends BaseNodeData {
   integrationType: IntegrationType;
@@ -506,6 +517,10 @@ export interface NodeCatalogItem {
   inputs?: string[];   // What the node accepts (e.g., ['Price', 'Number'])
   outputs?: string[];  // What the node produces (e.g., ['Number', 'Signal'])
   tooltip?: string;    // Extended trading explanation
+  /** Whether this node supports deterministic backtesting.
+   *  Nodes that depend on live data, LLMs, or external services are not backtestable.
+   *  Default: true for indicators/conditions/math/etc, false for LLM/AI/webhook/news. */
+  backtestEligible?: boolean;
 }
 
 // =============================================================================

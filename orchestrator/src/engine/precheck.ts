@@ -114,6 +114,16 @@ function checkTrigger(trigger: TriggerNodeConfig, market: MarketSnapshot): boole
             // Broker events are pushed via websocket — they fire externally.
             return false;
 
+        case 'manualTrigger':
+            // Manual triggers fire via explicit user action (API call or UI click).
+            // On heartbeat, they never fire.
+            return false;
+
+        case 'cronTrigger':
+            // Cron triggers are managed by BullMQ cron jobs —
+            // on heartbeat, always fire (the scheduling layer handles timing).
+            return true;
+
         default:
             logger.warn({ triggerType: trigger.triggerType }, 'Unknown trigger type in pre-check');
             return false;

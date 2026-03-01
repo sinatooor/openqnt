@@ -152,5 +152,58 @@ export function getNodeDefinition(nodeType: string, nodeData: Record<string, any
         };
     }
 
+    // ── Trigger Nodes ──
+    if (nodeType === 'trigger') {
+        const triggerType = nodeData.triggerType ?? '';
+        if (['webhookTrigger', 'newsTrigger', 'brokerEventTrigger'].includes(triggerType)) {
+            return { inputs: [], outputs: [port('output', 'signal'), port('data', 'any')] };
+        }
+        if (triggerType === 'priceAlertTrigger') {
+            return { inputs: [], outputs: [port('output', 'signal'), port('price', 'number')] };
+        }
+        return { inputs: [], outputs: [port('output', 'signal')] };
+    }
+
+    // ── Integration Nodes ──
+    if (nodeType === 'integration') {
+        const intType = nodeData.integrationType ?? '';
+
+        if (intType === 'mergeNode') {
+            return {
+                inputs: [port('data-a', 'any'), port('data-b', 'any')],
+                outputs: [port('output', 'any')],
+            };
+        }
+        if (intType === 'splitNode') {
+            return {
+                inputs: [port('data', 'any')],
+                outputs: [port('item', 'any'), port('output', 'signal')],
+            };
+        }
+        if (intType === 'filterNode') {
+            return {
+                inputs: [port('data', 'any')],
+                outputs: [port('passed', 'any'), port('rejected', 'any')],
+            };
+        }
+        if (intType === 'aggregateNode' || intType === 'setNode') {
+            return {
+                inputs: [port('data', 'any')],
+                outputs: [port('output', 'any')],
+            };
+        }
+        if (intType === 'hitlNode') {
+            return {
+                inputs: [port('trigger', 'signal'), port('data', 'any', false)],
+                outputs: [port('approved', 'signal'), port('rejected', 'signal')],
+            };
+        }
+        // Communication + Code + HTTP + DB + AI
+        return {
+            inputs: [port('trigger', 'signal', false), port('data', 'any', false)],
+            outputs: [port('output', 'any'), port('signal', 'signal')],
+        };
+    }
+
     return { inputs: [], outputs: [] };
 }

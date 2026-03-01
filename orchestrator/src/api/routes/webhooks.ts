@@ -1,6 +1,12 @@
 /**
  * Webhook handler routes.
  * Receives external webhooks (TradingView, custom) and HITL approval callbacks.
+ *
+ * TradingView integration:
+ *   - URL: POST /api/webhooks/:strategyId
+ *   - Body: JSON with at minimum { "symbol", "action", "price" }
+ *   - Optional HMAC: x-webhook-signature header (sha256=<hex>)
+ *   - If HMAC secret not configured on strategy, signature check is skipped.
  */
 
 import { Router, Request, Response } from 'express';
@@ -11,12 +17,46 @@ import { executeStrategy } from '../../services/executionService.js';
 
 const router = Router();
 
+/**
+ * Map common TradingView alert fields to a normalized payload.
+ * TradingView sends: { symbol, action (buy/sell), price, time, strategy, ... }
+ * We also support: { ticker, close, open, high, low, volume, contracts, position_size, ... }
+ */
+function normalizeTradingViewPayload(body: Record<string, any>): {
+    symbol: string;
+    action: string;
+    price: number;
+    bar: { timestamp: string; open: number; high: number; low: number; close: number; volume: number; symbol: string };
+    extra: Record<string, any>;
+} {
+    const symbol = body.symbol ?? body.ticker ?? body.SYMBOL ?? 'UNKNOWN';
+    const price = Number(body.price ?? body.close ?? body.last ?? 0);
+    const action = (body.action ?? body.order ?? body.side ?? '').toLowerCase();
+
+    const bar = {
+        timestamp: body.time ?? body.timestamp ?? new Date().toISOString(),
+        open: Number(body.open ?? price),
+        high: Number(body.high ?? price),
+        low: Number(body.low ?? price),
+        close: price,
+        volume: Number(body.volume ?? 0),
+        symbol,
+    };
+
+    const knownKeys = new Set(['symbol', 'ticker', 'SYMBOL', 'price', 'close', 'last', 'action', 'order', 'side', 'time', 'timestamp', 'open', 'high', 'low', 'volume']);
+    const extra: Record<string, any> = {};
+    for (const [k, v] of Object.entries(body)) {
+        if (!knownKeys.has(k)) extra[k] = v;
+    }
+
+    return { symbol, action, price, bar, extra };
+}
+
 /** POST /api/webhooks/:strategyId — external webhook trigger */
 router.post('/:strategyId', async (req: Request, res: Response) => {
     try {
         const { strategyId } = req.params;
 
-        // Verify strategy exists and is active
         const strategy = await prisma.strategy.findFirst({
             where: { id: strategyId, status: 'active' },
         });
@@ -27,45 +67,45 @@ router.post('/:strategyId', async (req: Request, res: Response) => {
         }
 
         // Optional HMAC signature verification
-        const signature = req.headers['x-webhook-signature'] as string;
-        if (signature && strategy.settings) {
-            const settings = strategy.settings as Record<string, any>;
-            const secret = settings.webhookSecret;
-            if (secret) {
-                const expected = crypto
-                    .createHmac('sha256', secret)
-                    .update(JSON.stringify(req.body))
-                    .digest('hex');
-                if (signature !== `sha256=${expected}`) {
-                    logger.warn({ strategyId }, 'Webhook signature mismatch');
-                    res.status(401).json({ error: 'Invalid signature' });
-                    return;
-                }
+        // Only enforced if the strategy has a webhookSecret configured.
+        // TradingView does not natively send HMAC, so this is opt-in.
+        const signature = req.headers['x-webhook-signature'] as string | undefined;
+        const settings = (strategy.settings ?? {}) as Record<string, any>;
+        const secret = settings.webhookSecret as string | undefined;
+
+        if (secret) {
+            if (!signature) {
+                logger.warn({ strategyId }, 'Webhook secret configured but no signature sent');
+                res.status(401).json({ error: 'Missing x-webhook-signature header' });
+                return;
+            }
+            const expected = crypto
+                .createHmac('sha256', secret)
+                .update(JSON.stringify(req.body))
+                .digest('hex');
+            if (signature !== `sha256=${expected}` && signature !== expected) {
+                logger.warn({ strategyId }, 'Webhook signature mismatch');
+                res.status(401).json({ error: 'Invalid signature' });
+                return;
             }
         }
 
+        const { symbol, action, price, bar, extra } = normalizeTradingViewPayload(req.body);
+
         logger.info(
-            { strategyId, source: req.headers['user-agent'], bodyKeys: Object.keys(req.body) },
+            { strategyId, symbol, action, price, source: req.headers['user-agent'] },
             'Webhook received'
         );
 
-        // Build a synthetic bar from webhook data (or defaults)
-        const bar = {
-            timestamp: new Date().toISOString(),
-            open: req.body.open ?? req.body.price ?? 0,
-            high: req.body.high ?? req.body.price ?? 0,
-            low: req.body.low ?? req.body.price ?? 0,
-            close: req.body.close ?? req.body.price ?? 0,
-            volume: req.body.volume ?? 0,
-            symbol: req.body.symbol ?? req.body.ticker ?? 'UNKNOWN',
-        };
-
-        // Fire the execution asynchronously
         const result = await executeStrategy({
             strategyId,
             userId: strategy.userId,
             triggerType: 'webhook',
-            triggerData: { body: req.body, headers: req.headers },
+            triggerData: {
+                body: req.body,
+                normalized: { symbol, action, price, extra },
+                source: req.headers['user-agent'],
+            },
             bar,
             history: [bar],
             barIndex: 0,
@@ -74,6 +114,8 @@ router.post('/:strategyId', async (req: Request, res: Response) => {
         res.json({
             message: 'Webhook processed',
             executionRunId: result.executionRunId,
+            symbol,
+            action,
             orderIntents: result.result.orderIntents.length,
         });
     } catch (error) {

@@ -36,6 +36,7 @@ import {
 import { toast } from 'sonner';
 import { useStrategyFlowStore, validateStrategy } from '../../store/strategyFlowStore';
 import { generateBacktestingPyCode } from '../../generators';
+import { NODE_CATALOG } from '../../catalog/nodeCatalog';
 
 interface BacktestModalProps {
   open: boolean;
@@ -117,6 +118,20 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
   
   // Check if strategy contains LLM nodes
   const hasLLMNodes = nodes.some(node => node.type === 'llm');
+
+  // Check backtest eligibility: find all non-backtestable nodes
+  const nonBacktestableNodes = nodes.filter(node => {
+    const data = node.data as Record<string, unknown>;
+    const subType = (
+      data?.indicatorType ?? data?.conditionType ?? data?.actionType ??
+      data?.triggerType ?? data?.integrationType ?? data?.llmType ??
+      data?.mathType ?? data?.controlType ?? data?.riskType ??
+      data?.variableType ?? data?.environmentType ?? data?.tradeInfoType
+    ) as string | undefined;
+    const catalogItem = NODE_CATALOG.find(c => c.type === subType || c.type === node.type);
+    return catalogItem?.backtestEligible === false;
+  });
+  const canBacktest = nonBacktestableNodes.length === 0;
 
   const [config, setConfig] = useState<BacktestConfig>({
     symbol: 'EURUSD',
@@ -297,8 +312,35 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
           <ScrollArea className="flex-1 p-6">
             {/* Configuration Tab */}
             <TabsContent value="config" className="m-0 space-y-6">
-              {/* LLM Nodes Warning */}
-              {hasLLMNodes && (
+              {/* Non-deterministic Nodes Warning */}
+              {!canBacktest && (
+                <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                  <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-red-300">
+                      Backtesting unavailable
+                    </p>
+                    <p className="text-xs text-red-200/80">
+                      Your strategy contains nodes that prevent deterministic backtesting:
+                    </p>
+                    <ul className="text-xs text-red-200/80 list-disc pl-4 mt-1">
+                      {nonBacktestableNodes.map(n => {
+                        const d = n.data as Record<string, unknown>;
+                        const label = (d?.label as string) || n.type;
+                        return <li key={n.id}>{label} ({n.type})</li>;
+                      })}
+                    </ul>
+                    <p className="text-xs text-red-200/80 mt-2">
+                      <strong>Why?</strong> These nodes depend on live data, LLMs, webhooks, or external services 
+                      that cannot be replayed historically. Remove them or replace with indicator-based logic 
+                      to enable backtesting. Use <strong>Simulation mode</strong> for live testing instead.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* LLM Nodes Soft Warning (if somehow marked eligible but still present) */}
+              {canBacktest && hasLLMNodes && (
                 <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
                   <AlertTriangle className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" />
                   <div className="space-y-1">
@@ -309,11 +351,6 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
                       LLM nodes use <strong>current market data and news</strong> to make decisions. 
                       Backtesting with LLM nodes will reflect today's sentiment and conditions, not historical ones.
                       This may produce unrealistic results.
-                    </p>
-                    <p className="text-xs text-amber-200/80 mt-2">
-                      <strong>Recommendation:</strong> LLM nodes are best suited for <strong>live trading</strong> where 
-                      they can analyze real-time information. For backtesting, consider replacing them with 
-                      indicator-based logic.
                     </p>
                   </div>
                 </div>
@@ -448,8 +485,9 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
               <div className="pt-4">
                 <Button
                   onClick={runBacktest}
-                  disabled={isRunning || nodes.length === 0}
-                  className="w-full h-12 bg-primary hover:bg-primary/90 text-lg shadow-md"
+                  disabled={isRunning || nodes.length === 0 || !canBacktest}
+                  title={!canBacktest ? 'Remove non-deterministic nodes (LLM, AI, Webhook, News) to enable backtesting' : ''}
+                  className="w-full h-12 bg-primary hover:bg-primary/90 text-lg shadow-md disabled:opacity-50"
                 >
                   {isRunning ? (
                     <>

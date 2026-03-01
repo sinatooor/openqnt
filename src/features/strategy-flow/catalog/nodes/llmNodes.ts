@@ -16,6 +16,7 @@ export const LLM_NODES: NodeCatalogItem[] = [
     subcategory: 'AI',
     icon: 'Sparkles',
     color: '#a855f7',
+    backtestEligible: false,
     defaultData: {
       label: 'LLM Decision',
       llmType: 'llmDecision',
@@ -38,6 +39,7 @@ export const LLM_NODES: NodeCatalogItem[] = [
     subcategory: 'Analysis',
     icon: 'Brain',
     color: '#ec4899',
+    backtestEligible: false,
     defaultData: {
       label: 'Sentiment Analysis',
       llmType: 'sentimentAnalysis',
@@ -62,6 +64,7 @@ export const LLM_NODES: NodeCatalogItem[] = [
     subcategory: 'Analysis',
     icon: 'Layers',
     color: '#06b6d4',
+    backtestEligible: false,
     defaultData: {
       label: 'Regime Detection',
       llmType: 'regimeDetection',
@@ -86,6 +89,7 @@ export const LLM_NODES: NodeCatalogItem[] = [
     subcategory: 'Strategy',
     icon: 'FileText',
     color: '#f59e0b',
+    backtestEligible: false,
     defaultData: {
       label: 'NL Strategy Rules',
       llmType: 'nlStrategyRules',
@@ -108,6 +112,7 @@ export const LLM_NODES: NodeCatalogItem[] = [
     subcategory: 'Optimization',
     icon: 'SlidersHorizontal',
     color: '#10b981',
+    backtestEligible: false,
     defaultData: {
       label: 'Parameter Tuning',
       llmType: 'parameterTuning',
@@ -132,6 +137,7 @@ export const LLM_NODES: NodeCatalogItem[] = [
     subcategory: 'Analysis',
     icon: 'BarChart3',
     color: '#8b5cf6',
+    backtestEligible: false,
     defaultData: {
       label: 'Market Classification',
       llmType: 'marketRegimeClassification',
@@ -154,6 +160,7 @@ export const LLM_NODES: NodeCatalogItem[] = [
     subcategory: 'Signals',
     icon: 'Newspaper',
     color: '#ef4444',
+    backtestEligible: false,
     defaultData: {
       label: 'News → Signal',
       llmType: 'newsSentimentSignal',
@@ -177,6 +184,7 @@ export const LLM_NODES: NodeCatalogItem[] = [
     subcategory: 'Custom',
     icon: 'Code',
     color: '#64748b',
+    backtestEligible: false,
     defaultData: {
       label: 'Custom Code',
       llmType: 'customCode',
