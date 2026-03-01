@@ -531,28 +531,6 @@ const StrategyFlowCanvasInner = () => {
             </span>
           </div>
         </Panel>
-
-        {/* Bottom Left: Keyboard hints */}
-        <Panel position="bottom-left" className="!m-4">
-          <div className="flex items-center gap-3 px-3 py-2 bg-card/80 backdrop-blur-sm border border-border/30 rounded-lg text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-muted/50 rounded font-mono">B</kbd>
-              Sidebar
-            </span>
-            <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-muted/50 rounded font-mono">I</kbd>
-              AI
-            </span>
-            <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-muted/50 rounded font-mono">/</kbd>
-              Search
-            </span>
-            <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-muted/50 rounded font-mono">⌘D</kbd>
-              Duplicate
-            </span>
-          </div>
-        </Panel>
       </ReactFlow>
 
       {/* Empty State (shown when no nodes) */}
