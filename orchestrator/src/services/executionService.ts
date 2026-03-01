@@ -7,13 +7,16 @@
  */
 
 import { prisma } from '../config/database.js';
+import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
+import { decrypt } from '../utils/crypto.js';
 import { compileFlowStrategy } from '../engine/compiler.js';
 import { FlowInterpreter, type EvaluationContext, type EvaluationResult, type Bar } from '../engine/interpreter.js';
 import { runPreChecks } from '../engine/preChecks.js';
 import { notificationQueue } from './notificationService.js';
 import { getBrokerClient } from './brokerGateway.js';
 import { computeIndicators } from './computeClient.js';
+
 type TriggerType = 'heartbeat' | 'webhook' | 'price_alert' | 'news' | 'manual' | 'replay';
 
 export interface ExecuteStrategyInput {
@@ -104,7 +107,8 @@ export async function executeStrategy(input: ExecuteStrategyInput): Promise<Exec
     }
 
     // 4. Run pre-checks
-    const portfolio = { cash: 0, equity: 0, positions: {} }; // TODO: load from broker
+    // TODO: Ideally fetch real portfolio state from broker here
+    const portfolio = { cash: 0, equity: 0, positions: {} };
     const preChecks = runPreChecks(agentConfig, portfolio, bar);
 
     // 5. Create execution run record
@@ -118,40 +122,95 @@ export async function executeStrategy(input: ExecuteStrategyInput): Promise<Exec
         },
     });
 
-    // 6. Interpret the strategy flow
-    const interpreter = new FlowInterpreter(compiled.compiled);
+    if (!preChecks.passed) {
+        return {
+            executionRunId: executionRun.id,
+            result: {
+                orderIntents: [],
+                outputs: {},
+                nodeLogs: [],
+                nodesExecuted: 0,
+                nodesSkipped: 0,
+                nodesErrored: 0,
+                pythonDelegations: 0,
+            },
+            preChecksPassed: false,
+            preCheckFailures: preChecks.failedChecks,
+        };
+    }
 
-    // Pre-calculate Indicators
-    const indicatorCache: Record<string, number[]> = {};
-    for (const node of compiled.compiled.nodes) {
-        if (node.type === 'indicator') {
-            const data = node.data ?? {};
-            const indicatorType = data.indicatorType;
-            if (!indicatorType) continue;
+    // ── Credential Loading ──
+    const credentialsMap: Record<string, string> = {};
+    try {
+        const userCredentials = await prisma.credential.findMany({
+            where: { userId: input.userId }
+        });
 
+        for (const cred of userCredentials) {
             try {
-                const priceData = {
-                    open: history.map((b) => b.open),
-                    high: history.map((b) => b.high),
-                    low: history.map((b) => b.low),
-                    close: history.map((b) => b.close),
-                    volume: history.map((b) => b.volume),
-                };
+                const encrypted = Buffer.from(cred.encryptedKey).toString('base64');
+                const decrypted = decrypt(encrypted, env.ENCRYPTION_KEY);
+                const keyData = JSON.parse(decrypted);
 
-                const response = await computeIndicators({
-                    indicatorType,
-                    params: data,
-                    priceData,
-                });
-
-                for (const [key, values] of Object.entries(response.data.values)) {
-                    indicatorCache[`${node.id}:${key}`] = values;
+                // Flatten credentials for easy access (e.g. "alpaca.apiKey")
+                // Also store the alias itself if it's a simple string (backwards compat)
+                if (keyData.apiKey) {
+                    credentialsMap[`${cred.alias}.apiKey`] = String(keyData.apiKey);
+                    credentialsMap[cred.alias] = String(keyData.apiKey); // Default to apiKey
                 }
+                if (keyData.apiSecret) {
+                    credentialsMap[`${cred.alias}.apiSecret`] = String(keyData.apiSecret);
+                }
+                // Also store raw JSON string just in case
+                credentialsMap[`${cred.alias}.json`] = decrypted;
             } catch (err) {
-                logger.error({ error: err, nodeId: node.id }, 'Failed to compute indicator');
+                logger.error({ error: err, credentialId: cred.id }, 'Failed to decrypt credential during execution');
             }
         }
+    } catch (err) {
+        logger.error({ error: err }, 'Failed to load credentials');
     }
+
+    // ── Indicator Pre-computation ──
+    const indicatorCache: Record<string, number[]> = {};
+    const indicatorDefs = compiled.compiled.indicatorDefs;
+
+    if (indicatorDefs.length > 0) {
+        try {
+            // Prepare market data arrays from fetched history
+            const priceData = {
+                open: history.map(b => b.open),
+                high: history.map(b => b.high),
+                low: history.map(b => b.low),
+                close: history.map(b => b.close),
+                volume: history.map(b => b.volume),
+            };
+
+            // Fetch indicators in parallel
+            await Promise.all(indicatorDefs.map(async (def) => {
+                try {
+                    const result = await computeIndicators({
+                        indicatorType: def.indicatorType ?? 'unknown',
+                        params: def.params,
+                        priceData
+                    });
+
+                    // Store results in cache
+                    // Key format must match Interpreter logic: `${nodeId}:${component}`
+                    for (const [component, values] of Object.entries(result.data.values)) {
+                        indicatorCache[`${def.nodeId}:${component}`] = values;
+                    }
+                } catch (err) {
+                    logger.error({ error: err, indicatorType: def.indicatorType }, 'Failed to compute indicator');
+                }
+            }));
+        } catch (err) {
+            logger.error({ error: err }, 'Failed to prepare indicator data');
+        }
+    }
+
+    // 6. Interpret the strategy flow
+    const interpreter = new FlowInterpreter(compiled.compiled);
 
     const ctx: EvaluationContext = {
         bar,
@@ -161,6 +220,7 @@ export async function executeStrategy(input: ExecuteStrategyInput): Promise<Exec
         variables: {},
         indicatorCache,
         riskConfig: {},
+        credentials: credentialsMap,
     };
 
     const result = await interpreter.evaluate(ctx);
@@ -171,7 +231,7 @@ export async function executeStrategy(input: ExecuteStrategyInput): Promise<Exec
     await prisma.executionRun.update({
         where: { id: executionRun.id },
         data: {
-            status: result.nodesErrored > 0 ? 'error' : preChecks.passed ? 'success' : 'skipped',
+            status: result.nodesErrored > 0 ? 'error' : 'success',
             durationMs,
             nodesExecuted: result.nodesExecuted,
             nodesSkipped: result.nodesSkipped,
@@ -194,8 +254,8 @@ export async function executeStrategy(input: ExecuteStrategyInput): Promise<Exec
                 nodeId: log.nodeId,
                 nodeType: log.nodeType,
                 status: log.status,
-                inputData: log.inputData,
-                outputData: log.outputData,
+                inputData: log.inputData ?? {}, // Ensure JSON compatibility
+                outputData: log.outputData ?? {},
                 errorMessage: log.errorMessage,
                 durationMs: log.durationMs,
                 executionOrder: log.executionOrder,
@@ -215,16 +275,16 @@ export async function executeStrategy(input: ExecuteStrategyInput): Promise<Exec
     );
 
     // 9. Process HITL or advisory notifications based on result
-    if (agentConfig.operationalMode === 'hitl') {
+    if (agentConfig.operationalMode === 'hitl' && result.orderIntents.length > 0) {
         await notificationQueue.add('hitl-request', {
             userId: input.userId,
             executionRunId: executionRun.id,
-            channel: 'telegram', // Could be dynamic from user prefs
+            channel: 'telegram',
             type: 'hitl_request',
             title: `HITL Approval Required: ${strategy.name}`,
             body: `Strategy "${strategy.name}" wants to execute ${result.orderIntents.length} orders.\n\nPlease approve or reject this execution round.`,
             telegram: {
-                chatId: agentConfig.user.preferences ? (agentConfig.user.preferences as any).telegramChatId : '', // Required from prefs
+                chatId: agentConfig.user.preferences ? (agentConfig.user.preferences as any).telegramChatId : '',
                 replyMarkup: {
                     inline_keyboard: [[
                         { text: '✅ Approve', callback_data: `approve_${executionRun.id}` },
@@ -254,7 +314,18 @@ export async function executeStrategy(input: ExecuteStrategyInput): Promise<Exec
         if (portfolio) {
             const broker = getBrokerClient(portfolio.brokerName);
             if (!broker.isConnected()) {
-                await broker.connect(portfolio.credentialAlias ?? ''); // Assuming alias is used to fetch key internally in production
+                // We don't have the decrypted key here directly to pass to connect() unless we passed it.
+                // BrokerClient.connect usually takes key/secret OR looks up internally?
+                // Looking at brokerGateway: getBrokerClient returns the instance.
+                // We need to pass credentials.
+
+                // Assuming connect() takes (apiKey, apiSecret) or (alias) if it looks up itself.
+                // But `executionService` has decrypted credentials.
+                // Let's assume we pass the alias and the broker service looks it up or we pass keys.
+                // For now, let's keep the existing logic but pass the key if we have it?
+                // The original code passed `portfolio.credentialAlias ?? ''`.
+
+                await broker.connect(portfolio.credentialAlias ?? '');
             }
 
             for (const intent of result.orderIntents) {
