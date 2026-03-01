@@ -1,36 +1,67 @@
 /**
  * Settings Page
- * Account info, preferences, and subscription tier.
+ * General account settings, trading defaults, broker connections, and preferences.
  */
 
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+import { useUserProfile } from '../hooks/useUserProfile';
 import { motion } from 'framer-motion';
 import { ConfigProvider, theme as antTheme } from 'antd';
 import {
     User,
     ArrowRight,
     LogOut,
-    Puzzle,
-    History,
-    Key,
-    Bot,
     Mail,
     Shield,
-    CreditCard
+    CreditCard,
+    Wallet,
+    Link2,
+    CheckCircle,
+    Settings as SettingsIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { BrokerConnectionModal } from '@/features/strategy-flow/components/modals/BrokerConnectionModal';
+
+const BROKERS = [
+    { id: 'ig', name: 'IG Markets', description: 'CFD Trading', logo: '/logo/logo_ig.png' },
+    { id: 'icmarkets', name: 'IC Markets', description: 'Forex & CFDs', logo: '/logo/logo_icmarkets.png' },
+    { id: 'ibkr', name: 'Interactive Brokers', description: 'Global Markets', logo: '/logo/interactivebrokers.png' },
+    { id: 'nordnet', name: 'Nordnet', description: 'Nordic Broker', logo: '/logo/nordnet.png' },
+    { id: 'avanza', name: 'Avanza', description: 'Swedish Stockbroker', logo: '/logo/avanza.png' },
+    { id: 'etoro', name: 'eToro', description: 'Social Trading', logo: '/logo/logo_etoro.png' },
+];
+
+const CONNECTORS = [
+    { id: 'tradingview', name: 'TradingView', description: 'Charting & Alerts', logo: '/logo/logo_tradingview.webp' },
+    { id: 'discord', name: 'Discord Bot', description: 'Notifications', logo: '/logo/logo_discord_small.png' },
+    { id: 'n8n', name: 'n8n', description: 'Workflow automation', logo: '/logo/logo_n8n.png' },
+];
 
 const Settings = () => {
     const { user, logout, isAuthenticated } = useAuthStore();
+    const { settings, updateSettings } = useUserProfile();
     const navigate = useNavigate();
+    const [brokerConnections, setBrokerConnections] = useState<Record<string, boolean>>({});
+    const [selectedBroker, setSelectedBroker] = useState<{ id: string; name: string } | null>(null);
 
     if (!isAuthenticated) {
         navigate('/login');
         return null;
     }
+
+    const handleConnectBroker = (brokerId: string) => {
+        const broker = BROKERS.find(b => b.id === brokerId);
+        if (broker) {
+            setSelectedBroker({ id: broker.id, name: broker.name });
+        }
+    };
 
     return (
         <ConfigProvider
@@ -47,18 +78,17 @@ const Settings = () => {
             }}
         >
             <div className="min-h-screen bg-background text-foreground flex flex-col">
-                {/* Top Bar */}
                 <header className="sticky top-0 z-30 flex items-center justify-between px-6 py-3 bg-[#252526]/90 backdrop-blur-sm border-b border-white/10">
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
-                            <User className="w-5 h-5 text-primary" />
+                            <SettingsIcon className="w-5 h-5 text-primary" />
                             <h1 className="text-white font-medium text-sm tracking-tight">
                                 Settings
                             </h1>
                         </div>
                         <div className="h-4 w-px bg-white/10" />
                         <span className="text-white/40 text-xs">
-                            Account and Preferences
+                            Account, Trading & Connections
                         </span>
                     </div>
 
@@ -73,7 +103,7 @@ const Settings = () => {
                     </div>
                 </header>
 
-                <main className="flex-1 p-6 max-w-4xl w-full mx-auto space-y-6">
+                <main className="flex-1 p-6 max-w-4xl w-full mx-auto space-y-6 pb-24">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Account Card */}
                         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
@@ -81,7 +111,7 @@ const Settings = () => {
                                 <CardHeader className="pb-4 border-b border-white/5">
                                     <CardTitle className="text-base flex items-center gap-2">
                                         <Shield className="w-4 h-4 text-primary" />
-                                        Account Context
+                                        Account
                                     </CardTitle>
                                     <CardDescription>Your personal details and access level.</CardDescription>
                                 </CardHeader>
@@ -110,66 +140,184 @@ const Settings = () => {
                             </Card>
                         </motion.div>
 
-                        {/* Quick Links */}
+                        {/* Trading Defaults & Preferences */}
                         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-                            <Card className="bg-card/60 backdrop-blur-sm border-white/5 shadow-trading rounded-xl h-full flex flex-col">
+                            <Card className="bg-card/60 backdrop-blur-sm border-white/5 shadow-trading rounded-xl h-full">
                                 <CardHeader className="pb-4 border-b border-white/5">
-                                    <CardTitle className="text-base">Quick Links</CardTitle>
-                                    <CardDescription>Navigate to other application areas.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="pt-6 flex-1 flex flex-col gap-2">
-                                    <button onClick={() => navigate('/')} className="flex items-center justify-between w-full px-4 py-3 bg-black/20 hover:bg-white/5 border border-white/5 rounded-lg text-sm text-foreground transition-all group">
-                                        <span className="flex items-center gap-3"><Puzzle className="w-4 h-4 text-blue-400" /> Strategy Builder</span>
-                                        <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                                    </button>
-                                    <button onClick={() => navigate('/executions')} className="flex items-center justify-between w-full px-4 py-3 bg-black/20 hover:bg-white/5 border border-white/5 rounded-lg text-sm text-foreground transition-all group">
-                                        <span className="flex items-center gap-3"><History className="w-4 h-4 text-green-400" /> Execution History</span>
-                                        <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                                    </button>
-                                    <button onClick={() => navigate('/credentials')} className="flex items-center justify-between w-full px-4 py-3 bg-black/20 hover:bg-white/5 border border-white/5 rounded-lg text-sm text-foreground transition-all group">
-                                        <span className="flex items-center gap-3"><Key className="w-4 h-4 text-amber-400" /> Credential Vault</span>
-                                        <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                                    </button>
-                                    <button onClick={() => navigate('/agent')} className="flex items-center justify-between w-full px-4 py-3 bg-black/20 hover:bg-white/5 border border-white/5 rounded-lg text-sm text-foreground transition-all group">
-                                        <span className="flex items-center gap-3"><Bot className="w-4 h-4 text-purple-400" /> Agent Config</span>
-                                        <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                                    </button>
-                                </CardContent>
-                            </Card>
-                        </motion.div>
-
-                        {/* Danger Zone */}
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="md:col-span-2">
-                            <Card className="bg-red-500/5 backdrop-blur-sm border-red-500/20 shadow-trading rounded-xl">
-                                <CardHeader className="pb-4 border-b border-red-500/10">
-                                    <CardTitle className="text-base text-red-500 flex items-center gap-2">
-                                        <LogOut className="w-4 h-4" />
-                                        Danger Zone
+                                    <CardTitle className="text-base flex items-center gap-2">
+                                        <SettingsIcon className="w-4 h-4 text-primary" />
+                                        Trading Defaults
                                     </CardTitle>
+                                    <CardDescription>Default symbol, timeframe, and preferences.</CardDescription>
                                 </CardHeader>
-                                <CardContent className="pt-6">
-                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                                <CardContent className="pt-6 space-y-5">
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <p className="text-sm font-medium text-foreground">Sign Out of Session</p>
-                                            <p className="text-xs text-muted-foreground mt-1">
-                                                This will clear your local session and return you to the login screen.
-                                            </p>
+                                            <Label className="text-muted-foreground text-xs uppercase tracking-wider">Default Symbol</Label>
+                                            <Input
+                                                type="text"
+                                                defaultValue={settings?.defaultSymbol || 'EURUSD'}
+                                                onChange={(e) => updateSettings({ defaultSymbol: e.target.value })}
+                                                className="mt-1.5 bg-black/20 border-white/5"
+                                            />
                                         </div>
-                                        <Button
-                                            variant="destructive"
-                                            className="w-full sm:w-auto bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 gap-2"
-                                            onClick={() => { logout(); navigate('/login'); }}
-                                        >
-                                            <LogOut className="w-4 h-4" />
-                                            Sign Out
-                                        </Button>
+                                        <div>
+                                            <Label className="text-muted-foreground text-xs uppercase tracking-wider">Default Timeframe</Label>
+                                            <Input
+                                                type="text"
+                                                defaultValue={settings?.defaultTimeframe || '1H'}
+                                                onChange={(e) => updateSettings({ defaultTimeframe: e.target.value })}
+                                                className="mt-1.5 bg-black/20 border-white/5"
+                                            />
+                                        </div>
+                                    </div>
+                                    <Separator className="bg-white/5" />
+                                    <div>
+                                        <h4 className="text-sm font-medium mb-3">Preferences</h4>
+                                        <label className="flex items-center gap-3 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                defaultChecked={settings?.autoSave ?? true}
+                                                onChange={(e) => updateSettings({ autoSave: e.target.checked })}
+                                                className="rounded"
+                                            />
+                                            <span className="text-sm">Auto-save strategies</span>
+                                        </label>
                                     </div>
                                 </CardContent>
                             </Card>
                         </motion.div>
                     </div>
+
+                    {/* Brokers & Integrations */}
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                        <Card className="bg-card/60 backdrop-blur-sm border-white/5 shadow-trading rounded-xl">
+                            <CardHeader className="pb-4 border-b border-white/5">
+                                <CardTitle className="text-base flex items-center gap-2">
+                                    <Wallet className="w-4 h-4 text-green-400" />
+                                    Brokers & Integrations
+                                </CardTitle>
+                                <CardDescription>Connect your trading accounts and external services.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="pt-6 space-y-6">
+                                <div>
+                                    <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+                                        <Wallet className="w-3.5 h-3.5 text-green-400" />
+                                        Trading Brokers
+                                    </h4>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                        {BROKERS.map((broker) => (
+                                            <div
+                                                key={broker.id}
+                                                className="flex items-center gap-3 p-3 bg-black/20 rounded-lg border border-white/5"
+                                            >
+                                                <img
+                                                    src={broker.logo}
+                                                    alt={broker.name}
+                                                    className="w-10 h-10 rounded object-contain bg-white/5 p-1"
+                                                    onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
+                                                />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="font-medium text-sm truncate">{broker.name}</div>
+                                                    <div className="text-xs text-muted-foreground">{broker.description}</div>
+                                                </div>
+                                                {brokerConnections[broker.id] ? (
+                                                    <Badge variant="outline" className="bg-green-500/10 text-green-400 border-green-500/30 shrink-0">
+                                                        <CheckCircle className="w-3 h-3 mr-1" />
+                                                        Connected
+                                                    </Badge>
+                                                ) : (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => handleConnectBroker(broker.id)}
+                                                        className="border-white/10 text-xs shrink-0"
+                                                    >
+                                                        Connect
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <Separator className="bg-white/5" />
+
+                                <div>
+                                    <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+                                        <Link2 className="w-3.5 h-3.5 text-purple-400" />
+                                        Integrations
+                                    </h4>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                        {CONNECTORS.map((connector) => (
+                                            <div
+                                                key={connector.id}
+                                                className="flex items-center gap-3 p-3 bg-black/20 rounded-lg border border-white/5"
+                                            >
+                                                <img
+                                                    src={connector.logo}
+                                                    alt={connector.name}
+                                                    className="w-10 h-10 rounded object-contain bg-white/5 p-1"
+                                                    onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
+                                                />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="font-medium text-sm truncate">{connector.name}</div>
+                                                    <div className="text-xs text-muted-foreground">{connector.description}</div>
+                                                </div>
+                                                <Button size="sm" variant="outline" className="border-white/10 text-xs shrink-0">
+                                                    Setup
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+
+                    {/* Danger Zone */}
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+                        <Card className="bg-red-500/5 backdrop-blur-sm border-red-500/20 shadow-trading rounded-xl">
+                            <CardHeader className="pb-4 border-b border-red-500/10">
+                                <CardTitle className="text-base text-red-500 flex items-center gap-2">
+                                    <LogOut className="w-4 h-4" />
+                                    Danger Zone
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-6">
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                                    <div>
+                                        <p className="text-sm font-medium text-foreground">Sign Out of Session</p>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            This will clear your local session and return you to the login screen.
+                                        </p>
+                                    </div>
+                                    <Button
+                                        variant="destructive"
+                                        className="w-full sm:w-auto bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 gap-2"
+                                        onClick={() => { logout(); navigate('/login'); }}
+                                    >
+                                        <LogOut className="w-4 h-4" />
+                                        Sign Out
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
                 </main>
             </div>
+
+            {selectedBroker && (
+                <BrokerConnectionModal
+                    open={!!selectedBroker}
+                    onOpenChange={(open) => !open && setSelectedBroker(null)}
+                    brokerId={selectedBroker.id}
+                    brokerName={selectedBroker.name}
+                    onConnected={() => {
+                        setBrokerConnections(prev => ({ ...prev, [selectedBroker.id]: true }));
+                    }}
+                />
+            )}
         </ConfigProvider>
     );
 };

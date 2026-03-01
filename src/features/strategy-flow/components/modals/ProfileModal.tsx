@@ -1,17 +1,17 @@
 /**
- * ProfileModal - User profile management for Strategy Flow
- * Features: Login/Logout, User Info, Saved Strategies, Settings, Broker Connections
+ * ProfileModal - User profile and strategy management
+ * Features: Login/Logout, User Info, Saved Strategies
+ * General settings, brokers, and integrations are in /settings page.
  */
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { WindowModal } from './WindowModal';
-import { BrokerConnectionModal } from './BrokerConnectionModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useUserProfile, SavedStrategy } from '@/hooks/useUserProfile';
 import { useStrategyFlowStore } from '../../store/strategyFlowStore';
@@ -20,20 +20,15 @@ import { toast } from 'sonner';
 import {
   User,
   FolderOpen,
-  Settings,
-  Link2,
   Trash2,
   Clock,
   LogOut,
   LogIn,
   Save,
   Upload,
-  Mail,
-  CheckCircle,
-  XCircle,
-  Wallet,
   TrendingUp,
-  Shield,
+  Settings,
+  ExternalLink,
 } from 'lucide-react';
 
 interface ProfileModalProps {
@@ -41,30 +36,12 @@ interface ProfileModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-// Broker list with logos
-const BROKERS = [
-  { id: 'ig', name: 'IG Markets', description: 'CFD Trading', logo: '/logo/logo_ig.png' },
-  { id: 'icmarkets', name: 'IC Markets', description: 'Forex & CFDs', logo: '/logo/logo_icmarkets.png' },
-  { id: 'ibkr', name: 'Interactive Brokers', description: 'Global Markets', logo: '/logo/interactivebrokers.png' },
-  { id: 'nordnet', name: 'Nordnet', description: 'Nordic Broker', logo: '/logo/nordnet.png' },
-  { id: 'avanza', name: 'Avanza', description: 'Swedish Stockbroker', logo: '/logo/avanza.png' },
-  { id: 'etoro', name: 'eToro', description: 'Social Trading', logo: '/logo/logo_etoro.png' },
-];
-
-// Connectors list
-const CONNECTORS = [
-  { id: 'tradingview', name: 'TradingView', description: 'Charting & Alerts', logo: '/logo/logo_tradingview.webp' },
-  { id: 'discord', name: 'Discord Bot', description: 'Notifications', logo: '/logo/logo_discord_small.png' },
-  { id: 'n8n', name: 'n8n', description: 'Workflow automation', logo: '/logo/logo_n8n.png' },
-];
-
 export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
   const [activeTab, setActiveTab] = useState('profile');
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [saveStrategyName, setSaveStrategyName] = useState('');
-  const [brokerConnections, setBrokerConnections] = useState<Record<string, boolean>>({});
-  const [selectedBroker, setSelectedBroker] = useState<{id: string, name: string} | null>(null);
+  const navigate = useNavigate();
 
   const {
     user,
@@ -74,8 +51,6 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
     savedStrategies,
     saveStrategy,
     deleteStrategy,
-    settings,
-    updateSettings,
   } = useUserProfile();
 
   const { strategyName, importStrategy } = useStrategyFlowStore();
@@ -105,7 +80,6 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
 
   const handleLoadStrategy = async (saved: SavedStrategy) => {
     try {
-      // Fetch full strategy from API
       const response = await api.getStrategy(saved.id);
       if (response.strategy) {
         const { nodes, edges } = response.strategy;
@@ -133,24 +107,16 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
     });
   };
 
-  const handleConnectBroker = (brokerId: string) => {
-    const broker = BROKERS.find(b => b.id === brokerId);
-    if (broker) {
-      setSelectedBroker({ id: broker.id, name: broker.name });
-    }
-  };
-
   return (
-    <>
     <WindowModal
       open={open}
       onOpenChange={onOpenChange}
-      title="Profile & Settings"
+      title="Profile"
       icon={<User className="w-5 h-5" />}
-      defaultWidth={700}
-      defaultHeight={600}
-      minWidth={500}
-      minHeight={400}
+      defaultWidth={600}
+      defaultHeight={520}
+      minWidth={450}
+      minHeight={350}
     >
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
           <TabsList className="mx-4 mt-2 bg-secondary border border-border">
@@ -161,14 +127,6 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
             <TabsTrigger value="strategies" className="flex items-center gap-1.5 data-[state=active]:bg-purple-600">
               <FolderOpen className="w-3.5 h-3.5" />
               Strategies
-            </TabsTrigger>
-            <TabsTrigger value="brokers" className="flex items-center gap-1.5 data-[state=active]:bg-purple-600">
-              <Wallet className="w-3.5 h-3.5" />
-              Brokers
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-1.5 data-[state=active]:bg-purple-600">
-              <Settings className="w-3.5 h-3.5" />
-              Settings
             </TabsTrigger>
           </TabsList>
 
@@ -182,8 +140,9 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
                       {user?.email?.charAt(0).toUpperCase() || 'U'}
                     </div>
                     <div>
-                      <h3 className="font-semibold text-lg">{user?.email}</h3>
-                      <p className="text-sm text-muted-foreground">Member since {formatDate(user?.createdAt || new Date().toISOString())}</p>
+                      <h3 className="font-semibold text-lg">{user?.name || user?.email}</h3>
+                      <p className="text-sm text-muted-foreground">{user?.email}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Member since {formatDate(user?.createdAt || new Date().toISOString())}</p>
                     </div>
                     <Button
                       variant="outline"
@@ -196,22 +155,22 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
                     </Button>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="p-4 bg-secondary rounded-lg border border-border text-center">
                       <TrendingUp className="w-8 h-8 mx-auto mb-2 text-green-400" />
                       <div className="text-2xl font-bold">{savedStrategies.length}</div>
                       <div className="text-sm text-muted-foreground">Strategies</div>
                     </div>
-                    <div className="p-4 bg-secondary rounded-lg border border-border text-center">
-                      <Shield className="w-8 h-8 mx-auto mb-2 text-blue-400" />
-                      <div className="text-2xl font-bold">{Object.values(brokerConnections).filter(Boolean).length}</div>
-                      <div className="text-sm text-muted-foreground">Brokers</div>
-                    </div>
-                    <div className="p-4 bg-secondary rounded-lg border border-border text-center">
-                      <Link2 className="w-8 h-8 mx-auto mb-2 text-purple-400" />
-                      <div className="text-2xl font-bold">0</div>
-                      <div className="text-sm text-muted-foreground">Integrations</div>
-                    </div>
+                    <button
+                      onClick={() => { onOpenChange(false); navigate('/settings'); }}
+                      className="p-4 bg-secondary rounded-lg border border-border text-center hover:border-primary/50 transition-colors"
+                    >
+                      <Settings className="w-8 h-8 mx-auto mb-2 text-purple-400" />
+                      <div className="text-sm font-medium">Settings</div>
+                      <div className="text-xs text-muted-foreground flex items-center justify-center gap-1 mt-0.5">
+                        Open <ExternalLink className="w-3 h-3" />
+                      </div>
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -254,7 +213,6 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
 
             {/* Strategies Tab */}
             <TabsContent value="strategies" className="m-0 space-y-4">
-              {/* Save Current Strategy */}
               <div className="p-4 bg-secondary rounded-lg border border-border">
                 <h4 className="font-medium mb-3 flex items-center gap-2">
                   <Save className="w-4 h-4 text-purple-400" />
@@ -276,7 +234,6 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
 
               <Separator className="bg-border" />
 
-              {/* Saved Strategies List */}
               <div>
                 <h4 className="font-medium mb-3 flex items-center gap-2">
                   <FolderOpen className="w-4 h-4 text-blue-400" />
@@ -324,149 +281,9 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
                 )}
               </div>
             </TabsContent>
-
-            {/* Brokers Tab */}
-            <TabsContent value="brokers" className="m-0 space-y-4">
-              <div>
-                <h4 className="font-medium mb-3 flex items-center gap-2">
-                  <Wallet className="w-4 h-4 text-green-400" />
-                  Trading Brokers
-                </h4>
-                <div className="grid grid-cols-2 gap-3">
-                  {BROKERS.map((broker) => (
-                    <div
-                      key={broker.id}
-                      className="flex items-center gap-3 p-3 bg-secondary rounded-lg border border-border"
-                    >
-                      <img
-                        src={broker.logo}
-                        alt={broker.name}
-                        className="w-10 h-10 rounded object-contain bg-white/5 p-1"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/placeholder.svg';
-                        }}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm truncate">{broker.name}</div>
-                        <div className="text-xs text-muted-foreground">{broker.description}</div>
-                      </div>
-                      {brokerConnections[broker.id] ? (
-                        <Badge variant="outline" className="bg-green-500/10 text-green-400 border-green-500/30">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Connected
-                        </Badge>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleConnectBroker(broker.id)}
-                          className="border-border text-xs"
-                        >
-                          Connect
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <Separator className="bg-border" />
-
-              <div>
-                <h4 className="font-medium mb-3 flex items-center gap-2">
-                  <Link2 className="w-4 h-4 text-purple-400" />
-                  Integrations
-                </h4>
-                <div className="grid grid-cols-2 gap-3">
-                  {CONNECTORS.map((connector) => (
-                    <div
-                      key={connector.id}
-                      className="flex items-center gap-3 p-3 bg-secondary rounded-lg border border-border"
-                    >
-                      <img
-                        src={connector.logo}
-                        alt={connector.name}
-                        className="w-10 h-10 rounded object-contain bg-white/5 p-1"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/placeholder.svg';
-                        }}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm truncate">{connector.name}</div>
-                        <div className="text-xs text-muted-foreground">{connector.description}</div>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-border text-xs"
-                      >
-                        Setup
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </TabsContent>
-
-            {/* Settings Tab */}
-            <TabsContent value="settings" className="m-0 space-y-4">
-              <div className="space-y-4">
-                <div className="p-4 bg-secondary rounded-lg border border-border">
-                  <h4 className="font-medium mb-3">Default Trading Settings</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-muted-foreground text-sm">Default Symbol</Label>
-                      <Input
-                        type="text"
-                        defaultValue={settings?.defaultSymbol || 'EURUSD'}
-                        onChange={(e) => updateSettings({ defaultSymbol: e.target.value })}
-                        className="bg-background border-border"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground text-sm">Default Timeframe</Label>
-                      <Input
-                        type="text"
-                        defaultValue={settings?.defaultTimeframe || '1H'}
-                        onChange={(e) => updateSettings({ defaultTimeframe: e.target.value })}
-                        className="bg-background border-border"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-secondary rounded-lg border border-border">
-                  <h4 className="font-medium mb-3">Preferences</h4>
-                  <div className="space-y-3">
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        defaultChecked={settings?.autoSave ?? true}
-                        onChange={(e) => updateSettings({ autoSave: e.target.checked })}
-                        className="rounded"
-                      />
-                      <span className="text-sm">Auto-save strategies</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
           </ScrollArea>
         </Tabs>
     </WindowModal>
-
-    {selectedBroker && (
-      <BrokerConnectionModal
-        open={!!selectedBroker}
-        onOpenChange={(open) => !open && setSelectedBroker(null)}
-        brokerId={selectedBroker.id}
-        brokerName={selectedBroker.name}
-        onConnected={() => {
-          setBrokerConnections(prev => ({ ...prev, [selectedBroker.id]: true }));
-        }}
-      />
-    )}
-    </>
   );
 };
 

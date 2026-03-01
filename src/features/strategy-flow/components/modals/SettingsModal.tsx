@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Palette, Grid3X3, Keyboard, Save, Key, Eye, EyeOff, AlertTriangle, Brain, CheckCircle2 } from 'lucide-react';
+import { Settings, Palette, Grid3X3, Keyboard, Save, Eye, EyeOff, Brain, CheckCircle2 } from 'lucide-react';
 import { useStrategyFlowStore } from '../../store/strategyFlowStore';
 import { toast } from 'sonner';
 import { LLM_MODELS, LLMModelProvider } from '../../types';
@@ -52,8 +52,6 @@ export const getLLMApiKey = (provider: LLMModelProvider): string => {
 
 export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) => {
   const { showGrid, toggleGrid } = useStrategyFlowStore();
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [showApiSecret, setShowApiSecret] = useState(false);
   
   // LLM API Keys visibility states
   const [showOpenAIKey, setShowOpenAIKey] = useState(false);
@@ -81,12 +79,6 @@ export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) =
 
     // Keyboard Settings
     enableShortcuts: true,
-
-    // Broker Settings
-    brokerApiKey: '',
-    brokerApiSecret: '',
-    brokerTestnet: true,
-    brokerMaxPositionSize: 10,
   });
 
   const updateSetting = (key: string, value: any) => {
@@ -128,7 +120,7 @@ export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) =
         </p>
 
         <Tabs defaultValue="canvas" className="">
-          <TabsList className="bg-secondary border-border w-full grid grid-cols-5">
+          <TabsList className="bg-secondary border-border w-full grid grid-cols-4">
             <TabsTrigger value="canvas" className="data-[state=active]:bg-accent">
               <Grid3X3 className="w-4 h-4 mr-1" />
               Canvas
@@ -144,10 +136,6 @@ export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) =
             <TabsTrigger value="llm" className="data-[state=active]:bg-accent">
               <Brain className="w-4 h-4 mr-1" />
               LLM
-            </TabsTrigger>
-            <TabsTrigger value="broker" className="data-[state=active]:bg-accent">
-              <Key className="w-4 h-4 mr-1" />
-              Broker
             </TabsTrigger>
           </TabsList>
 
@@ -437,124 +425,6 @@ export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) =
             </div>
           </TabsContent>
 
-          <TabsContent value="broker" className="space-y-4 mt-4">
-            {/* Warning Banner */}
-            <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-              <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
-              <div className="text-xs text-amber-200">
-                <p className="font-medium">Security Notice</p>
-                <p className="text-amber-200/80 mt-1">
-                  API keys are stored locally. Never share your keys or use them on untrusted devices.
-                  Use testnet mode for testing.
-                </p>
-              </div>
-            </div>
-
-            {/* Binance API Key */}
-            <div className="space-y-2">
-              <Label className="text-foreground">Binance API Key</Label>
-              <div className="relative">
-                <Input
-                  type={showApiKey ? 'text' : 'password'}
-                  value={settings.brokerApiKey}
-                  onChange={(e) => updateSetting('brokerApiKey', e.target.value)}
-                  placeholder="Enter your Binance API key"
-                  className="pr-10 bg-secondary border-border"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowApiKey(!showApiKey)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
-                >
-                  {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Binance API Secret */}
-            <div className="space-y-2">
-              <Label className="text-foreground">Binance API Secret</Label>
-              <div className="relative">
-                <Input
-                  type={showApiSecret ? 'text' : 'password'}
-                  value={settings.brokerApiSecret}
-                  onChange={(e) => updateSetting('brokerApiSecret', e.target.value)}
-                  placeholder="Enter your Binance API secret"
-                  className="pr-10 bg-secondary border-border"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowApiSecret(!showApiSecret)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
-                >
-                  {showApiSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Testnet Mode */}
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-foreground">Testnet Mode</Label>
-                <p className="text-xs text-muted-foreground">
-                  Use Binance testnet for paper trading (recommended)
-                </p>
-              </div>
-              <Switch
-                checked={settings.brokerTestnet}
-                onCheckedChange={(v) => updateSetting('brokerTestnet', v)}
-              />
-            </div>
-
-            {/* Max Position Size */}
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-foreground">Max Position Size (%)</Label>
-                <p className="text-xs text-muted-foreground">
-                  Maximum percentage of balance per trade
-                </p>
-              </div>
-              <Input
-                type="number"
-                value={settings.brokerMaxPositionSize}
-                onChange={(e) => updateSetting('brokerMaxPositionSize', parseInt(e.target.value))}
-                className="w-20 bg-secondary border-border"
-                min={1}
-                max={100}
-              />
-            </div>
-
-            {/* Test Connection Button */}
-            <Button
-              variant="outline"
-              onClick={() => {
-                if (!settings.brokerApiKey || !settings.brokerApiSecret) {
-                  toast.error('Please enter API key and secret');
-                  return;
-                }
-                toast.info('Testing connection...', { duration: 2000 });
-                // Would call backend to test connection
-                setTimeout(() => {
-                  toast.success('Connection test feature coming soon');
-                }, 1000);
-              }}
-              className="w-full border-border"
-            >
-              <Key className="w-4 h-4 mr-2" />
-              Test Connection
-            </Button>
-
-            {/* Info about getting API keys */}
-            <div className="text-xs text-muted-foreground p-3 bg-secondary rounded-lg">
-              <p className="font-medium mb-1">How to get API keys:</p>
-              <ol className="list-decimal ml-4 space-y-1">
-                <li>Log in to your Binance account</li>
-                <li>Go to API Management in settings</li>
-                <li>Create a new API key with trading permissions</li>
-                <li>For testnet, visit testnet.binance.vision</li>
-              </ol>
-            </div>
-          </TabsContent>
         </Tabs>
 
         <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-border/50">
