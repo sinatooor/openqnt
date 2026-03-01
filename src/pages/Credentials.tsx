@@ -78,7 +78,7 @@ const Credentials = () => {
                 },
             }}
         >
-            <div className="min-h-screen bg-background text-foreground flex flex-col">
+            <div className="min-h-screen bg-background text-foreground flex flex-col pb-20">
                 {/* Top Bar */}
                 <header className="sticky top-0 z-30 flex items-center justify-between px-6 py-3 bg-[#252526]/90 backdrop-blur-sm border-b border-white/10">
                     <div className="flex items-center gap-4">
@@ -104,13 +104,6 @@ const Credentials = () => {
                         >
                             {showAdd ? <><X className="w-4 h-4 mr-1.5" />Cancel</> : <><Plus className="w-4 h-4 mr-1.5" />Add Credential</>}
                         </Button>
-                        <button
-                            onClick={() => navigate('/dashboard')}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-colors"
-                        >
-                            <ArrowRight className="w-3.5 h-3.5 rotate-180" />
-                            Dashboard
-                        </button>
                     </div>
                 </header>
 
