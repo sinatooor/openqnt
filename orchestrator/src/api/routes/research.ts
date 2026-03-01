@@ -32,10 +32,10 @@ router.post('/mcpt', async (req, res) => {
         if (!result.data.success) {
             return res.status(400).json({ error: result.data.error || 'MCPT failed' });
         }
-        res.json(result.data);
+        return res.json(result.data);
     } catch (error: any) {
         logger.error({ err: error }, 'MCPT failed');
-        res.status(500).json({ error: error.message || 'MCPT failed' });
+        return res.status(500).json({ error: error.message || 'MCPT failed' });
     }
 });
 
@@ -48,10 +48,10 @@ router.post('/monte-carlo', async (req, res) => {
             return res.status(400).json({ error: 'Provide trades or returns' });
         }
         const result = await runMonteCarlo(request);
-        res.json(result.data);
+        return res.json(result.data);
     } catch (error: any) {
         logger.error({ err: error }, 'Monte Carlo failed');
-        res.status(500).json({ error: error.message || 'Monte Carlo simulation failed' });
+        return res.status(500).json({ error: error.message || 'Monte Carlo simulation failed' });
     }
 });
 
@@ -64,10 +64,10 @@ router.post('/hmm-regime', async (req, res) => {
             return res.status(400).json({ error: 'Need at least 30 price observations' });
         }
         const result = await runHMMRegime(request);
-        res.json(result.data);
+        return res.json(result.data);
     } catch (error: any) {
         logger.error({ err: error }, 'HMM regime detection failed');
-        res.status(500).json({ error: error.message || 'HMM regime detection failed' });
+        return res.status(500).json({ error: error.message || 'HMM regime detection failed' });
     }
 });
 
@@ -80,10 +80,10 @@ router.post('/walk-forward', async (req, res) => {
             return res.status(400).json({ error: 'Provide returns array' });
         }
         const result = await runWalkForward(request);
-        res.json(result.data);
+        return res.json(result.data);
     } catch (error: any) {
         logger.error({ err: error }, 'Walk-forward analysis failed');
-        res.status(500).json({ error: error.message || 'Walk-forward analysis failed' });
+        return res.status(500).json({ error: error.message || 'Walk-forward analysis failed' });
     }
 });
 
@@ -96,10 +96,10 @@ router.post('/var-cvar', async (req, res) => {
             return res.status(400).json({ error: 'Need at least 10 return observations' });
         }
         const result = await runVaRCVaR(request);
-        res.json(result.data);
+        return res.json(result.data);
     } catch (error: any) {
         logger.error({ err: error }, 'VaR/CVaR failed');
-        res.status(500).json({ error: error.message || 'VaR/CVaR computation failed' });
+        return res.status(500).json({ error: error.message || 'VaR/CVaR computation failed' });
     }
 });
 
@@ -112,10 +112,10 @@ router.post('/cointegration', async (req, res) => {
             return res.status(400).json({ error: 'Provide pricesA and pricesB arrays' });
         }
         const result = await runCointegration(request);
-        res.json(result.data);
+        return res.json(result.data);
     } catch (error: any) {
         logger.error({ err: error }, 'Cointegration test failed');
-        res.status(500).json({ error: error.message || 'Cointegration test failed' });
+        return res.status(500).json({ error: error.message || 'Cointegration test failed' });
     }
 });
 
@@ -128,10 +128,10 @@ router.post('/param-sweep', async (req, res) => {
             return res.status(400).json({ error: 'Provide paramValues array' });
         }
         const result = await runParamSweep(request);
-        res.json(result.data);
+        return res.json(result.data);
     } catch (error: any) {
         logger.error({ err: error }, 'Parameter sweep failed');
-        res.status(500).json({ error: error.message || 'Parameter sweep failed' });
+        return res.status(500).json({ error: error.message || 'Parameter sweep failed' });
     }
 });
 
