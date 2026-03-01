@@ -3,6 +3,7 @@
  * Always visible (no auto-hide). Highlights the active route.
  */
 
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard,
@@ -19,6 +20,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useAuthStore } from '@/stores/authStore';
+import { ProfileModal } from '@/features/strategy-flow/components/modals/ProfileModal';
 
 interface NavItemDef {
     icon: React.ReactNode;
@@ -38,8 +40,8 @@ export const AppNavBar = () => {
     const navigate = useNavigate();
     const { pathname } = useLocation();
     const { user } = useAuthStore();
+    const [showProfile, setShowProfile] = useState(false);
 
-    // Don't show on login page
     if (pathname === '/login') return null;
 
     const isActive = (path: string) => {
@@ -49,7 +51,7 @@ export const AppNavBar = () => {
 
     return (
         <TooltipProvider delayDuration={200}>
-            <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-[#252526]/95 backdrop-blur-md border border-white/10 rounded-xl px-3 py-2 shadow-2xl shadow-black/40">
+            <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-1 bg-[#252526]/95 backdrop-blur-md border border-white/10 rounded-xl px-3 py-2 shadow-2xl shadow-black/40">
                 {NAV_ITEMS.map((item) => {
                     const active = isActive(item.path);
                     return (
@@ -73,22 +75,23 @@ export const AppNavBar = () => {
                     );
                 })}
 
-                {/* User avatar / quick profile indicator */}
                 <div className="h-5 w-px bg-white/10 mx-1" />
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <button
-                            onClick={() => navigate('/settings')}
+                            onClick={() => setShowProfile(true)}
                             className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/20 text-primary text-xs font-bold transition-all hover:bg-primary/30"
                         >
                             {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || <User className="w-4 h-4" />}
                         </button>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="text-xs">
-                        {user?.email || 'Profile & Settings'}
+                        {user?.name || user?.email || 'Profile'}
                     </TooltipContent>
                 </Tooltip>
             </nav>
+
+            <ProfileModal open={showProfile} onOpenChange={setShowProfile} />
         </TooltipProvider>
     );
 };

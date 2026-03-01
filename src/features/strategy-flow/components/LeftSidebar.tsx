@@ -11,7 +11,6 @@ import {
   Shield,
   Info,
   Settings,
-  User,
   History,
   HelpCircle,
   Search,
@@ -42,7 +41,7 @@ import {
   LLM_NODES,
 } from '../catalog/nodeCatalog';
 import { NodeCatalogItem } from '../types';
-import { SettingsModal, ProfileModal, JournalModal, HelpModal } from './modals';
+import { SettingsModal, JournalModal, HelpModal } from './modals';
 import * as Icons from 'lucide-react';
 
 // =============================================================================
@@ -332,7 +331,6 @@ export const LeftSidebar = memo(() => {
   const [activeCategory, setActiveCategory] = useState<string>('recent');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
 
@@ -458,19 +456,6 @@ export const LeftSidebar = memo(() => {
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
-                  onClick={() => setShowProfile(true)}
-                  className="flex items-center justify-center w-9 h-9 rounded-md text-muted-foreground/60 hover:bg-white/5 hover:text-foreground transition-all"
-                >
-                  <User className="w-4 h-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="font-medium bg-popover text-popover-foreground text-xs">
-                Profile
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
                   onClick={() => setShowHistory(true)}
                   className="flex items-center justify-center w-9 h-9 rounded-md text-muted-foreground/60 hover:bg-white/5 hover:text-foreground transition-all"
                 >
@@ -550,7 +535,6 @@ export const LeftSidebar = memo(() => {
 
       {/* Modals */}
       <SettingsModal open={showSettings} onOpenChange={setShowSettings} />
-      <ProfileModal open={showProfile} onOpenChange={setShowProfile} />
       <JournalModal open={showHistory} onOpenChange={setShowHistory} />
       <HelpModal open={showHelp} onOpenChange={setShowHelp} />
     </div>
