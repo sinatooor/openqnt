@@ -53,35 +53,9 @@ export const useUserProfile = () => {
     const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
     const [isLoading, setIsLoading] = useState(true);
     
-    const { user: authUser, isAuthenticated, logout: authLogout } = useAuthStore();
+    const { user: authUser, isAuthenticated, logout: authLogout, login: authLogin } = useAuthStore();
 
-    // Sync auth user with local user
-    useEffect(() => {
-        if (authUser && isAuthenticated) {
-            const userProfile: UserProfile = {
-                id: authUser.id,
-                name: authUser.name || authUser.email,
-                email: authUser.email,
-                createdAt: new Date().toISOString(),
-            };
-            setUser(userProfile);
-            fetchStrategies();
-        } else {
-            setUser(null);
-            setSavedStrategies([]);
-        }
-        setIsLoading(false);
-    }, [authUser, isAuthenticated]);
-
-    // Load settings from localStorage
-    useEffect(() => {
-        const storedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-        if (storedSettings) {
-            setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(storedSettings) });
-        }
-    }, []);
-
-    const fetchStrategies = async () => {
+    const fetchStrategies = useCallback(async () => {
         if (!isAuthenticated) return;
         
         try {
@@ -101,13 +75,39 @@ export const useUserProfile = () => {
         } catch (e) {
             console.error("Failed to fetch strategies", e);
         }
-    };
+    }, [isAuthenticated]);
 
-    // Login - use auth store
-    const login = useCallback(async (email: string, password: string) => {
-        // Login is handled by authStore
-        throw new Error("Use authStore.login() instead");
+    // Sync auth user with local user
+    useEffect(() => {
+        if (authUser && isAuthenticated) {
+            const userProfile: UserProfile = {
+                id: authUser.id,
+                name: authUser.name || authUser.email,
+                email: authUser.email,
+                createdAt: new Date().toISOString(),
+            };
+            setUser(userProfile);
+            fetchStrategies();
+        } else {
+            setUser(null);
+            setSavedStrategies([]);
+        }
+        setIsLoading(false);
+    }, [authUser, isAuthenticated, fetchStrategies]);
+
+    // Load settings from localStorage
+    useEffect(() => {
+        const storedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+        if (storedSettings) {
+            setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(storedSettings) });
+        }
     }, []);
+
+    // Login - delegate to auth store and refresh strategies
+    const login = useCallback(async (email: string, password: string) => {
+        await authLogin(email, password);
+        await fetchStrategies();
+    }, [authLogin, fetchStrategies]);
 
     // Logout - use auth store
     const logout = useCallback(() => {
@@ -141,7 +141,7 @@ export const useUserProfile = () => {
             console.error("Failed to save strategy", e);
             throw e;
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, fetchStrategies]);
 
     // Delete a strategy
     const deleteStrategy = useCallback(async (id: string) => {
@@ -153,7 +153,7 @@ export const useUserProfile = () => {
         } catch (e) {
             console.error("Failed to delete", e);
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, fetchStrategies]);
 
     // Update settings
     const updateSettings = useCallback((updates: Partial<UserSettings>) => {
