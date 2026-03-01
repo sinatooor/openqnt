@@ -5,6 +5,7 @@
  */
 
 import { logger } from '../utils/logger.js';
+import type { Bar } from '../engine/interpreter.js';
 import { AlpacaClient } from '../brokers/alpaca.js';
 import { PaperClient } from '../brokers/paper.js';
 import { IGClient } from '../brokers/ig.js';
@@ -72,6 +73,9 @@ export interface BrokerClient {
     getPositions(): Promise<BrokerPosition[]>;
     closePosition(symbol: string): Promise<BrokerOrderResult>;
     closeAllPositions(): Promise<BrokerOrderResult[]>;
+
+    // Market Data
+    getBars(symbol: string, timeframe: string, limit: number): Promise<Bar[]>;
 }
 
 // ─── Broker Registry ─────────────────────────────────────────
