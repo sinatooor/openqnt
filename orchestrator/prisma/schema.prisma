@@ -93,12 +93,13 @@ model User {
   createdAt        DateTime         @default(now()) @map("created_at")
   updatedAt        DateTime         @updatedAt @map("updated_at")
 
-  strategies    Strategy[]
-  credentials   Credential[]
-  portfolios    Portfolio[]
-  agentConfig   AgentConfig?
-  notifications Notification[]
-  executionRuns ExecutionRun[]
+  strategies      Strategy[]
+  credentials     Credential[]
+  portfolios      Portfolio[]
+  agentConfig     AgentConfig?
+  notifications   Notification[]
+  executionRuns   ExecutionRun[]
+  researchResults ResearchResult[]
 
   @@map("users")
 }
@@ -331,8 +332,39 @@ model BacktestResult {
   durationMs  Int?     @map("duration_ms")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  strategy Strategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  strategy        Strategy         @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  researchResults ResearchResult[]
 
   @@index([strategyId])
   @@map("backtest_results")
+}
+
+// ─── Research Results ────────────────────────────────────────
+
+enum ResearchType {
+  monte_carlo
+  hmm_regime
+  walk_forward
+  var_cvar
+  cointegration
+  param_sweep
+  mcpt
+}
+
+model ResearchResult {
+  id              String       @id @default(uuid())
+  userId          String       @map("user_id")
+  backtestId      String?      @map("backtest_id")
+  researchType    ResearchType @map("research_type")
+  parameters      Json?        // input parameters
+  results         Json?        // full result JSON
+  durationMs      Int?         @map("duration_ms")
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  backtestResult BacktestResult? @relation(fields: [backtestId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([researchType])
+  @@map("research_results")
 }

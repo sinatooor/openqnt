@@ -142,8 +142,151 @@ export interface MCPTResponse {
 export async function runMCPT(
     request: MCPTRequest
 ): Promise<ComputeResponse<MCPTResponse>> {
-    // Note: This endpoint is on the Python backend, outside of the /compute prefix 
-    // because it was already defined that way in the original mcpt router.
     return computeRequest<MCPTResponse>('/api/mcpt/run', request);
+}
+
+// ─── Monte Carlo Simulation ─────────────────────────────────
+
+export interface MonteCarloRequest {
+    trades?: { pnl: number }[];
+    returns?: number[];
+    numSimulations?: number;
+    initialCapital?: number;
+}
+
+export interface MonteCarloResponse {
+    success: boolean;
+    numSimulations: number;
+    percentiles: { p5: number; p25: number; p50: number; p75: number; p95: number };
+    mean: number;
+    std: number;
+    equityPaths: number[][];
+    distribution: { counts: number[]; edges: number[] };
+}
+
+export async function runMonteCarlo(
+    request: MonteCarloRequest
+): Promise<ComputeResponse<MonteCarloResponse>> {
+    return computeRequest<MonteCarloResponse>('/compute/monte-carlo', request);
+}
+
+// ─── HMM Regime Detection ───────────────────────────────────
+
+export interface HMMRegimeRequest {
+    prices: number[];
+    numStates?: number;
+    lookback?: number;
+}
+
+export interface HMMRegimeResponse {
+    success: boolean;
+    states: number[];
+    stateLabels: Record<string, string>;
+    transitionMatrix: number[][];
+    means: number[];
+    variances: number[][];
+    currentRegime: string;
+}
+
+export async function runHMMRegime(
+    request: HMMRegimeRequest
+): Promise<ComputeResponse<HMMRegimeResponse>> {
+    return computeRequest<HMMRegimeResponse>('/compute/hmm-regime', request);
+}
+
+// ─── Walk-Forward Analysis ──────────────────────────────────
+
+export interface WalkForwardRequest {
+    returns: number[];
+    trainWindow?: number;
+    testWindow?: number;
+}
+
+export interface WalkForwardResponse {
+    success: boolean;
+    numWindows: number;
+    windows: { startIdx: number; trainSharpe: number; testSharpe: number; trainReturn: number; testReturn: number }[];
+    overallOOSSharpe: number;
+    avgISSharpe: number;
+    efficiency: number;
+}
+
+export async function runWalkForward(
+    request: WalkForwardRequest
+): Promise<ComputeResponse<WalkForwardResponse>> {
+    return computeRequest<WalkForwardResponse>('/compute/walk-forward', request);
+}
+
+// ─── VaR / CVaR ─────────────────────────────────────────────
+
+export interface VaRCVaRRequest {
+    returns: number[];
+    confidence?: number;
+    portfolioValue?: number;
+}
+
+export interface VaRCVaRResponse {
+    success: boolean;
+    var: number;
+    cvar: number;
+    varDollar: number;
+    cvarDollar: number;
+    meanReturn: number;
+    stdReturn: number;
+}
+
+export async function runVaRCVaR(
+    request: VaRCVaRRequest
+): Promise<ComputeResponse<VaRCVaRResponse>> {
+    return computeRequest<VaRCVaRResponse>('/compute/var-cvar', request);
+}
+
+// ─── Cointegration Test ─────────────────────────────────────
+
+export interface CointegrationRequest {
+    pricesA: number[];
+    pricesB: number[];
+    symbolA?: string;
+    symbolB?: string;
+}
+
+export interface CointegrationResponse {
+    success: boolean;
+    cointegrated: boolean;
+    pValue: number;
+    tStatistic: number;
+    hedgeRatio: number;
+    spreadMean: number;
+    spreadStd: number;
+    currentSpread: number;
+    zScore: number;
+}
+
+export async function runCointegration(
+    request: CointegrationRequest
+): Promise<ComputeResponse<CointegrationResponse>> {
+    return computeRequest<CointegrationResponse>('/compute/cointegration', request);
+}
+
+// ─── Parameter Sweep ────────────────────────────────────────
+
+export interface ParamSweepRequest {
+    paramName: string;
+    paramValues: number[];
+    returns?: Record<string, number[]>;
+    backtestResults?: Record<string, { sharpe: number; totalReturn: number; maxDrawdown: number }>;
+}
+
+export interface ParamSweepResponse {
+    success: boolean;
+    paramName: string;
+    results: { paramValue: number; sharpe: number; totalReturn: number; maxDrawdown: number }[];
+    bestParam: { paramValue: number; sharpe: number } | null;
+}
+
+export async function runParamSweep(
+    request: ParamSweepRequest
+): Promise<ComputeResponse<ParamSweepResponse>> {
+    return computeRequest<ParamSweepResponse>('/compute/param-sweep', request);
 }
 
