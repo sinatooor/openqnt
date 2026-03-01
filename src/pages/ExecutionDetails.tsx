@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/table";
 import { ConfigProvider, theme as antTheme } from 'antd';
 import { motion } from 'framer-motion';
+import { PAGE_CONTENT_CLASS } from '@/components/PageHeader';
 
 const ExecutionDetails = () => {
   const { id } = useParams();
@@ -99,37 +100,28 @@ const ExecutionDetails = () => {
         },
       }}
     >
-      <div className="min-h-screen bg-background text-foreground flex flex-col">
-        {/* Top Bar matching Dashboard */}
-        <header className="sticky top-0 z-30 flex items-center justify-between px-6 py-3 bg-[#252526]/90 backdrop-blur-sm border-b border-white/10">
-          <div className="flex items-center gap-4">
+      <div className="min-h-screen bg-background text-foreground flex flex-col pt-14">
+        <main className={`flex-1 p-6 ${PAGE_CONTENT_CLASS} space-y-6`}>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-2">
               <Activity className="w-5 h-5 text-primary" />
-              <h1 className="text-white font-medium text-sm tracking-tight">
-                Execution Details
-              </h1>
+              <h1 className="text-white font-medium text-sm tracking-tight">Execution Details</h1>
+              <div className="h-4 w-px bg-white/10" />
+              <span className="text-white/40 text-xs flex items-center gap-2">
+                Run #{executionId}
+                {isLive && (
+                  <Badge variant="default" className="bg-green-600/20 text-green-400 border border-green-500/30 animate-pulse text-[10px] px-2 py-0">
+                    <Radio className="w-3 h-3 mr-1" />
+                    LIVE
+                  </Badge>
+                )}
+              </span>
             </div>
-            <div className="h-4 w-px bg-white/10" />
-            <span className="text-white/40 text-xs flex items-center gap-2">
-              Run #{executionId}
-              {isLive && (
-                <Badge variant="default" className="bg-green-600/20 text-green-400 border border-green-500/30 animate-pulse text-[10px] px-2 py-0">
-                  <Radio className="w-3 h-3 mr-1" />
-                  LIVE
-                </Badge>
-              )}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => navigate("/executions")} className="text-muted-foreground hover:text-foreground">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>
           </div>
-        </header>
-
-        <main className="flex-1 p-6 max-w-6xl w-full mx-auto space-y-6">
 
           {loadingExecution ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">

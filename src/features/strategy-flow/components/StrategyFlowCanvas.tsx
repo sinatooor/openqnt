@@ -437,7 +437,7 @@ const StrategyFlowCanvasInner = () => {
   return (
     <div
       ref={reactFlowWrapper}
-      className="w-full h-full bg-background"
+      className="w-full h-full bg-background pt-14"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
@@ -499,8 +499,8 @@ const StrategyFlowCanvasInner = () => {
 
         {/* ========== FLOATING TOOLBAR ========== */}
 
-        {/* Top Center: Floating Toolbar */}
-        <Panel position="top-center" className="!m-0 !mt-4">
+        {/* Bottom Center: Floating Toolbar (moved from top to avoid overlap with app header) */}
+        <Panel position="bottom-center" className="!m-0 !mb-4">
           <FloatingToolbar
             onOpenTemplates={() => setShowTemplates(true)}
             onOpenBacktest={() => setShowBacktest(true)}
@@ -519,8 +519,8 @@ const StrategyFlowCanvasInner = () => {
           />
         </Panel>
 
-        {/* Top Right: Status indicators */}
-        <Panel position="top-right" className="!m-4">
+        {/* Top Right: Status indicators (below app header) */}
+        <Panel position="top-right" className="!mt-2 !mr-4 !mb-0">
           <div className="flex items-center gap-3 px-3 py-2 bg-card/80 backdrop-blur-sm border border-border/30 rounded-lg">
             <SaveStatusIndicator lastSavedAt={lastSavedAt} isModified={isModified} />
             <div className="w-px h-4 bg-border/50" />

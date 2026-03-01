@@ -58,6 +58,7 @@ import {
   Clock,
   ExternalLink,
 } from 'lucide-react';
+import { PAGE_CONTENT_CLASS } from '@/components/PageHeader';
 
 const Dashboard = () => {
   const { user, isAuthenticated } = useAuthStore();
@@ -142,48 +143,7 @@ const Dashboard = () => {
       }}
     >
       <TooltipProvider delayDuration={200}>
-        <div className="min-h-screen bg-background pb-20">
-          {/* ─── Top Bar (matching strategy builder TopToolbar) ─── */}
-          <header className="sticky top-0 z-30 flex items-center justify-between px-6 py-3 bg-[#252526]/90 backdrop-blur-sm border-b border-white/10">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <DashboardOutlined className="text-primary text-lg" />
-                <h1 className="text-white font-medium text-sm tracking-tight">
-                  Dashboard
-                </h1>
-              </div>
-              <div className="h-4 w-px bg-white/10" />
-              <span className="text-white/40 text-xs">
-                Welcome back, {user?.name ?? 'Trader'}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => loadDashboard(true)}
-                    className="p-1.5 rounded hover:bg-white/10 transition-colors text-white/60 hover:text-white"
-                  >
-                    <RefreshIcon
-                      sx={{ fontSize: 18 }}
-                      className={refreshing ? 'animate-spin' : ''}
-                    />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>Refresh data</TooltipContent>
-              </Tooltip>
-
-              <button
-                onClick={() => api.emergencyKill()}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors"
-              >
-                <AlertTriangle className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Emergency Kill</span>
-              </button>
-            </div>
-          </header>
-
+        <div className="min-h-screen bg-background pt-14">
           {/* ─── Refresh indicator ─── */}
           <AnimatePresence>
             {refreshing && (
@@ -206,7 +166,38 @@ const Dashboard = () => {
           </AnimatePresence>
 
           {/* ─── Main Content ─── */}
-          <div className="p-6 max-w-[1600px] mx-auto space-y-6">
+          <div className={`p-6 ${PAGE_CONTENT_CLASS} space-y-6`}>
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <DashboardOutlined className="text-primary text-lg" />
+                <h1 className="text-white font-medium text-sm tracking-tight">Dashboard</h1>
+                <div className="h-4 w-px bg-white/10" />
+                <span className="text-white/40 text-xs">Welcome back, {user?.name ?? 'Trader'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => loadDashboard(true)}
+                      className="p-1.5 rounded hover:bg-white/10 transition-colors text-white/60 hover:text-white"
+                    >
+                      <RefreshIcon
+                        sx={{ fontSize: 18 }}
+                        className={refreshing ? 'animate-spin' : ''}
+                      />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Refresh data</TooltipContent>
+                </Tooltip>
+                <button
+                  onClick={() => api.emergencyKill()}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Emergency Kill</span>
+                </button>
+              </div>
+            </div>
             {/* ─── Stats Row ─── */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}

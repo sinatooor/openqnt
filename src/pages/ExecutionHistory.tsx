@@ -16,6 +16,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { PAGE_CONTENT_CLASS } from '@/components/PageHeader';
 import { ConfigProvider, theme as antTheme, Empty, Tag } from 'antd';
 import CircularProgress from '@mui/material/CircularProgress';
 import Chip from '@mui/material/Chip';
@@ -46,24 +47,16 @@ const ExecutionHistory = () => {
                 },
             }}
         >
-            <div className="min-h-screen bg-background text-foreground flex flex-col pb-20">
-                {/* Top Bar matching Dashboard */}
-                <header className="sticky top-0 z-30 flex items-center justify-between px-6 py-3 bg-[#252526]/90 backdrop-blur-sm border-b border-white/10">
-                    <div className="flex items-center gap-4">
+            <div className="min-h-screen bg-background text-foreground flex flex-col pt-14">
+                <main className={`flex-1 p-6 ${PAGE_CONTENT_CLASS} space-y-6`}>
+                    <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-2">
                             <Activity className="w-5 h-5 text-primary" />
-                            <h1 className="text-white font-medium text-sm tracking-tight">
-                                Execution History
-                            </h1>
+                            <h1 className="text-white font-medium text-sm tracking-tight">Execution History</h1>
+                            <div className="h-4 w-px bg-white/10" />
+                            <span className="text-white/40 text-xs">{pagination.total} total runs</span>
                         </div>
-                        <div className="h-4 w-px bg-white/10" />
-                        <span className="text-white/40 text-xs">
-                            {pagination.total} total runs
-                        </span>
                     </div>
-                </header>
-
-                <main className="flex-1 p-6 max-w-[1200px] w-full mx-auto space-y-6">
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
