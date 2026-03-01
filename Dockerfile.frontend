@@ -1,16 +1,16 @@
 # =============================================================================
 # Fyer Trading Platform - Frontend Dockerfile
-# React + Vite development and production build
+# React + Vite development and production build (Bun runtime)
 # =============================================================================
 
 # Stage 1: Development
-FROM node:20-alpine AS development
+FROM oven/bun:1-alpine AS development
 
 WORKDIR /app
 
 # Install dependencies
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package.json bun.lockb ./
+RUN bun install --frozen-lockfile
 
 # Copy source files
 COPY . .
@@ -19,24 +19,24 @@ COPY . .
 EXPOSE 5173
 
 # Start development server
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+CMD ["bun", "run", "dev", "--", "--host", "0.0.0.0"]
 
 # =============================================================================
 # Stage 2: Build for production
 # =============================================================================
-FROM node:20-alpine AS builder
+FROM oven/bun:1-alpine AS builder
 
 WORKDIR /app
 
 # Install dependencies
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package.json bun.lockb ./
+RUN bun install --frozen-lockfile
 
 # Copy source files
 COPY . .
 
 # Build production assets
-RUN npm run build
+RUN bun run build
 
 # =============================================================================
 # Stage 3: Production - Serve with nginx

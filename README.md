@@ -4,7 +4,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Frontend](https://img.shields.io/badge/frontend-React%20%7C%20ReactFlow%20%7C%20TypeScript-61DAFB)
-![Orchestrator](https://img.shields.io/badge/orchestrator-Node.js%20%7C%20BullMQ-339933)
+![Orchestrator](https://img.shields.io/badge/orchestrator-Bun%20%7C%20BullMQ-f472b6)
 ![Compute](https://img.shields.io/badge/compute-Python%20%7C%20FastAPI-3776AB)
 ![AI](https://img.shields.io/badge/AI-Google%20ADK%20%7C%20Gemini-4285F4)
 
@@ -161,7 +161,7 @@ flowchart LR
 | **UI Components** | Shadcn UI + Tailwind CSS | Design system |
 | **Canvas** | ReactFlow (`@xyflow/react`) | Node-and-edge graph editor |
 | **State** | Zustand | Client state management |
-| **Orchestrator** | Node.js + Express/Fastify | API server, workflow orchestration |
+| **Orchestrator** | Bun + Express | API server, workflow orchestration |
 | **Job Queue** | BullMQ + Redis | Heartbeat scheduling, async jobs |
 | **Compute Service** | Python + FastAPI | Backtesting, indicators, AI agents |
 | **Backtesting** | backtrader, backtesting.py, NautilusTrader | Strategy backtesting engines |
@@ -178,7 +178,7 @@ flowchart LR
 
 ### Prerequisites
 
-- Node.js v18+
+- [Bun](https://bun.sh/) v1.0+
 - Python 3.10+
 - Redis
 - Git
@@ -193,9 +193,9 @@ cd project-prometheus
 ### 2. Frontend Setup
 
 ```bash
-npm install
-npm run dev
-# Access at http://localhost:8080
+bun install
+bun run dev
+# Access at http://localhost:5173
 ```
 
 ### 3. Python Compute Service
@@ -217,20 +217,20 @@ cp .env.example .env
 cd backend && conda activate fyer && uvicorn main:app --reload --port 8000
 
 # Terminal 2 — React Frontend
-npm run dev
+bun run dev
 
-# Terminal 3 — ADK Web UI (optional, agent debugging)
-adk web --port 8085
+# Terminal 3 — Node.js Orchestrator
+cd orchestrator && bun run dev
 
-# Terminal 4 — Redis (required for BullMQ when orchestrator is set up)
+# Terminal 4 — Redis (required for BullMQ)
 redis-server
 ```
 
 | Service | URL | Description |
 |---------|-----|-------------|
-| Frontend | http://localhost:8080 | React UI |
+| Frontend | http://localhost:5173 | React UI |
+| Orchestrator | http://localhost:3000 | Bun API server |
 | Python API | http://localhost:8000/docs | FastAPI Swagger (compute) |
-| ADK Web UI | http://localhost:8085 | Google ADK Agent Testing |
 
 ### 5. Docker (Full Stack)
 
