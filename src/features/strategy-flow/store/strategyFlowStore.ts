@@ -70,6 +70,7 @@ const VALID_CONNECTIONS: Record<string, string[]> = {
   llm: ['condition', 'action', 'variable', 'math', 'integration'],
   trigger: ['condition', 'action', 'control', 'integration', 'variable', 'llm'],
   integration: ['condition', 'action', 'control', 'integration', 'variable', 'llm'],
+  pineScript: ['pineScript'],
 };
 
 /**
@@ -118,7 +119,7 @@ export const isValidConnection = (
   if (sourceTypeData === 'any' || targetTypeData === 'any') return true;
   if (sourceTypeData === targetTypeData) return true;
   if ((sourceTypeData === 'signal' && targetTypeData === 'boolean') ||
-      (sourceTypeData === 'boolean' && targetTypeData === 'signal')) {
+    (sourceTypeData === 'boolean' && targetTypeData === 'signal')) {
     return true;
   }
   return false;
@@ -315,6 +316,9 @@ interface StrategyFlowState {
 
   // Context Menu
   contextMenu: { x: number; y: number; nodeId: string } | null;
+
+  // Pine Script Mode
+  pineScriptMode: boolean;
 }
 
 // =============================================================================
@@ -385,6 +389,9 @@ interface StrategyFlowActions {
 
   // Search
   setSearchQuery: (query: string) => void;
+
+  // Pine Script Mode
+  togglePineScriptMode: () => void;
 }
 
 // =============================================================================
@@ -415,6 +422,7 @@ const initialState: StrategyFlowState = {
   historyIndex: -1,
   searchQuery: '',
   contextMenu: null,
+  pineScriptMode: false,
 };
 
 // =============================================================================
@@ -596,11 +604,11 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
         }
 
         get().saveToHistory();
-        
+
         // Auto-populate handles if not provided
         let finalSourceHandle = connection.sourceHandle ?? undefined;
         let finalTargetHandle = connection.targetHandle ?? undefined;
-        
+
         // Auto-fill sourceHandle if missing
         if (!finalSourceHandle && sourceNode) {
           const sourceSubType = getNodeSubType(sourceNode);
@@ -614,7 +622,7 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
             finalSourceHandle = defaultHandle?.id || sourceOutputs[0].id;
           }
         }
-        
+
         // Auto-fill targetHandle if missing
         if (!finalTargetHandle && targetNode) {
           const targetSubType = getNodeSubType(targetNode);
@@ -637,7 +645,7 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
             }
           }
         }
-        
+
         const newEdge: StrategyFlowEdge = {
           id: `edge-${generateId()}`,
           source: connection.source,
@@ -810,7 +818,7 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
           const nodes: StrategyFlowNode[] = data.nodes || [];
           // Repair edges to ensure all sourceHandle/targetHandle are populated
           const repairedEdges = repairEdges(nodes, data.edges || []);
-          
+
           get().saveToHistory();
           set({
             nodes,
@@ -819,7 +827,7 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
             strategyDescription: data.description || '',
             isModified: true,
           });
-          
+
           console.log(`Imported strategy with ${nodes.length} nodes and ${repairedEdges.length} edges (repaired)`);
         } catch (error) {
           console.error('Failed to import strategy:', error);
@@ -904,6 +912,38 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
       hideContextMenu: () => {
         set({ contextMenu: null });
       },
+
+      // =========================================================================
+      // PINE SCRIPT MODE
+      // =========================================================================
+
+      togglePineScriptMode: () => {
+        const current = get().pineScriptMode;
+        // Clear canvas when switching modes to avoid mixing node types
+        if (!current) {
+          // Switching TO Pine Script mode
+          get().saveToHistory();
+          set({
+            pineScriptMode: true,
+            nodes: [],
+            edges: [],
+            selectedNodeId: null,
+            rightPanelOpen: false,
+            isModified: true,
+          });
+        } else {
+          // Switching back to normal mode
+          get().saveToHistory();
+          set({
+            pineScriptMode: false,
+            nodes: [],
+            edges: [],
+            selectedNodeId: null,
+            rightPanelOpen: false,
+            isModified: true,
+          });
+        }
+      },
     }),
     {
       name: 'strategy-flow-storage',
@@ -916,6 +956,7 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
         strategyDescription: state.strategyDescription,
         leftSidebarWidth: state.leftSidebarWidth,
         rightPanelWidth: state.rightPanelWidth,
+        pineScriptMode: state.pineScriptMode,
       }),
     }
   )

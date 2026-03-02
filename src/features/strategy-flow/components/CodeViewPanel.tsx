@@ -1,5 +1,5 @@
 /**
- * CodeViewPanel - Panel to display generated code (Python, MQL5, Nautilus, JSON)
+ * CodeViewPanel - Panel to display generated code (Python, MQL5, Nautilus, JSON, Pine Script)
  * Equivalent to Blockly's CodeViewPanel
  */
 
@@ -20,6 +20,7 @@ import {
   FileCode,
   FileJson,
   AlertCircle,
+  LineChart,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStrategyFlowStore } from '../store/strategyFlowStore';
@@ -28,6 +29,7 @@ import {
   generateMQL5Code,
   generateNautilusCode,
   generateJSON,
+  generatePineScriptCode,
 } from '../generators';
 
 interface CodeViewPanelProps {
@@ -35,31 +37,48 @@ interface CodeViewPanelProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type CodeLanguage = 'python' | 'mql5' | 'nautilus' | 'json';
+type CodeLanguage = 'python' | 'mql5' | 'nautilus' | 'json' | 'pinescript';
 
 export const CodeViewPanel = memo(({ open, onOpenChange }: CodeViewPanelProps) => {
-  const [activeTab, setActiveTab] = useState<CodeLanguage>('python');
   const [copied, setCopied] = useState(false);
   const [showLineNumbers, setShowLineNumbers] = useState(true);
-  
-  const { nodes, edges, strategyName, strategyDescription } = useStrategyFlowStore();
+
+  const { nodes, edges, strategyName, strategyDescription, pineScriptMode } = useStrategyFlowStore();
+  const [activeTab, setActiveTab] = useState<CodeLanguage>(pineScriptMode ? 'pinescript' : 'python');
 
   // Generate code for each language
   const generatedCode = useMemo(() => {
     const options = { leverage: 1 };
-    
+
+    // In Pine Script mode, only generate Pine Script
+    if (pineScriptMode) {
+      const pineResult = generatePineScriptCode(nodes, edges, strategyName, strategyDescription);
+      return {
+        pinescript: {
+          code: pineResult.code,
+          errors: pineResult.errors,
+          warnings: pineResult.warnings,
+        },
+        python: { code: '', errors: [], warnings: [] },
+        mql5: { code: '', errors: [], warnings: [] },
+        nautilus: { code: '', errors: [], warnings: [] },
+        json: { code: '', errors: [], warnings: [] },
+      };
+    }
+
     return {
       python: generatePythonCode(nodes, edges, options),
       mql5: generateMQL5Code(nodes, edges, options),
       nautilus: generateNautilusCode(nodes, edges, options),
-      json: { 
+      json: {
         code: generateJSON(nodes, edges, { name: strategyName, description: strategyDescription }),
         language: 'json' as const,
         errors: [],
         warnings: [],
       },
+      pinescript: { code: '', errors: [], warnings: [] },
     };
-  }, [nodes, edges, strategyName, strategyDescription]);
+  }, [nodes, edges, strategyName, strategyDescription, pineScriptMode]);
 
   const currentCode = generatedCode[activeTab];
   const hasErrors = currentCode.errors.length > 0;
@@ -82,8 +101,9 @@ export const CodeViewPanel = memo(({ open, onOpenChange }: CodeViewPanelProps) =
       mql5: 'mq5',
       nautilus: 'py',
       json: 'json',
+      pinescript: 'pine',
     };
-    
+
     const blob = new Blob([currentCode.code], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -134,9 +154,9 @@ export const CodeViewPanel = memo(({ open, onOpenChange }: CodeViewPanelProps) =
           <div className="flex items-center gap-1">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
+                <Button
+                  variant="ghost"
+                  size="icon"
                   className="h-8 w-8 text-white/70 hover:text-white"
                   onClick={() => setShowLineNumbers(!showLineNumbers)}
                 >
@@ -147,9 +167,9 @@ export const CodeViewPanel = memo(({ open, onOpenChange }: CodeViewPanelProps) =
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
+                <Button
+                  variant="ghost"
+                  size="icon"
                   className="h-8 w-8 text-white/70 hover:text-white"
                   onClick={handleCopy}
                 >
@@ -160,9 +180,9 @@ export const CodeViewPanel = memo(({ open, onOpenChange }: CodeViewPanelProps) =
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
+                <Button
+                  variant="ghost"
+                  size="icon"
                   className="h-8 w-8 text-white/70 hover:text-white"
                   onClick={handleDownload}
                 >
@@ -171,9 +191,9 @@ export const CodeViewPanel = memo(({ open, onOpenChange }: CodeViewPanelProps) =
               </TooltipTrigger>
               <TooltipContent>Download file</TooltipContent>
             </Tooltip>
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="h-8 w-8 text-white/70 hover:text-white hover:bg-red-500/20"
               onClick={() => onOpenChange(false)}
             >
@@ -185,22 +205,31 @@ export const CodeViewPanel = memo(({ open, onOpenChange }: CodeViewPanelProps) =
         {/* Language Tabs */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as CodeLanguage)}>
           <TabsList className="w-full bg-[#2a2a2a] border-white/10">
-            <TabsTrigger value="python" className="flex-1 data-[state=active]:bg-white/10">
-              <FileCode className="w-3.5 h-3.5 mr-1.5" />
-              Python
-            </TabsTrigger>
-            <TabsTrigger value="mql5" className="flex-1 data-[state=active]:bg-white/10">
-              <FileCode className="w-3.5 h-3.5 mr-1.5" />
-              MQL5
-            </TabsTrigger>
-            <TabsTrigger value="nautilus" className="flex-1 data-[state=active]:bg-white/10">
-              <FileCode className="w-3.5 h-3.5 mr-1.5" />
-              Nautilus
-            </TabsTrigger>
-            <TabsTrigger value="json" className="flex-1 data-[state=active]:bg-white/10">
-              <FileJson className="w-3.5 h-3.5 mr-1.5" />
-              JSON
-            </TabsTrigger>
+            {pineScriptMode ? (
+              <TabsTrigger value="pinescript" className="flex-1 data-[state=active]:bg-[#2962FF]/30 data-[state=active]:text-[#2962FF]">
+                <LineChart className="w-3.5 h-3.5 mr-1.5" />
+                Pine Script
+              </TabsTrigger>
+            ) : (
+              <>
+                <TabsTrigger value="python" className="flex-1 data-[state=active]:bg-white/10">
+                  <FileCode className="w-3.5 h-3.5 mr-1.5" />
+                  Python
+                </TabsTrigger>
+                <TabsTrigger value="mql5" className="flex-1 data-[state=active]:bg-white/10">
+                  <FileCode className="w-3.5 h-3.5 mr-1.5" />
+                  MQL5
+                </TabsTrigger>
+                <TabsTrigger value="nautilus" className="flex-1 data-[state=active]:bg-white/10">
+                  <FileCode className="w-3.5 h-3.5 mr-1.5" />
+                  Nautilus
+                </TabsTrigger>
+                <TabsTrigger value="json" className="flex-1 data-[state=active]:bg-white/10">
+                  <FileJson className="w-3.5 h-3.5 mr-1.5" />
+                  JSON
+                </TabsTrigger>
+              </>
+            )}
           </TabsList>
         </Tabs>
 
