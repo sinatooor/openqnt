@@ -20,7 +20,8 @@ export type NodeCategory =
   | 'tradeInfo'
   | 'llm'
   | 'triggers'
-  | 'integrations';
+  | 'integrations'
+  | 'pineScript';
 
 // =============================================================================
 // INDICATOR NODE TYPES
@@ -402,6 +403,60 @@ export interface TradeInfoNodeData extends BaseNodeData {
   tradeId?: string;
 }
 
+// =============================================================================
+// PINE SCRIPT NODE TYPES
+// =============================================================================
+
+export type PineScriptNodeSubType =
+  // Script Setup
+  | 'pine_strategy' | 'pine_indicator' | 'pine_version'
+  // Inputs
+  | 'pine_input_int' | 'pine_input_float' | 'pine_input_bool' | 'pine_input_string'
+  | 'pine_input_source' | 'pine_input_timeframe'
+  // Data
+  | 'pine_close' | 'pine_open' | 'pine_high' | 'pine_low' | 'pine_volume'
+  | 'pine_time' | 'pine_bar_index'
+  // Indicators
+  | 'pine_ta_sma' | 'pine_ta_ema' | 'pine_ta_rsi' | 'pine_ta_macd'
+  | 'pine_ta_bb' | 'pine_ta_atr' | 'pine_ta_crossover' | 'pine_ta_crossunder'
+  | 'pine_ta_stoch' | 'pine_ta_vwap'
+  // Conditions
+  | 'pine_compare' | 'pine_and' | 'pine_or' | 'pine_not' | 'pine_ternary'
+  // Strategy
+  | 'pine_strategy_entry' | 'pine_strategy_close' | 'pine_strategy_exit' | 'pine_strategy_order'
+  // Plotting
+  | 'pine_plot' | 'pine_plotshape' | 'pine_plotchar' | 'pine_hline'
+  | 'pine_bgcolor' | 'pine_barcolor' | 'pine_fill'
+  // Alerts
+  | 'pine_alertcondition' | 'pine_alert';
+
+export interface PineScriptNodeData extends BaseNodeData {
+  pineType: PineScriptNodeSubType;
+  // Strategy/Indicator setup
+  scriptTitle?: string;
+  overlay?: boolean;
+  // Input params
+  inputName?: string;
+  inputDefault?: string | number | boolean;
+  inputMinVal?: number;
+  inputMaxVal?: number;
+  // Indicator params
+  period?: number;
+  source?: string;
+  // Comparison
+  operator?: ComparisonOperator;
+  // Strategy entry/exit
+  entryId?: string;
+  direction?: 'long' | 'short';
+  qty?: number;
+  // Plotting
+  plotColor?: string;
+  plotTitle?: string;
+  plotLineWidth?: number;
+  // Alert
+  alertMessage?: string;
+}
+
 // Union type for all node data
 export type StrategyNodeData =
   | IndicatorNodeData
@@ -415,7 +470,8 @@ export type StrategyNodeData =
   | TradeInfoNodeData
   | LLMNodeData
   | TriggerNodeData
-  | IntegrationNodeData;
+  | IntegrationNodeData
+  | PineScriptNodeData;
 
 // =============================================================================
 // STRATEGY FLOW NODE TYPES
@@ -434,6 +490,7 @@ export type StrategyFlowNodeType =
   | 'llm'
   | 'trigger'
   | 'integration'
+  | 'pineScript'
   | 'comment';
 
 // ReactFlow Node with our data

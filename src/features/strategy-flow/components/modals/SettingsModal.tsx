@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Palette, Grid3X3, Keyboard, Save, Eye, EyeOff, Brain, CheckCircle2 } from 'lucide-react';
+import { Settings, Palette, Grid3X3, Keyboard, Save, Eye, EyeOff, Brain, CheckCircle2, LineChart } from 'lucide-react';
 import { useStrategyFlowStore } from '../../store/strategyFlowStore';
 import { toast } from 'sonner';
 import { LLM_MODELS, LLMModelProvider } from '../../types';
@@ -51,13 +51,13 @@ export const getLLMApiKey = (provider: LLMModelProvider): string => {
 };
 
 export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) => {
-  const { showGrid, toggleGrid } = useStrategyFlowStore();
-  
+  const { showGrid, toggleGrid, pineScriptMode, togglePineScriptMode } = useStrategyFlowStore();
+
   // LLM API Keys visibility states
   const [showOpenAIKey, setShowOpenAIKey] = useState(false);
   const [showAnthropicKey, setShowAnthropicKey] = useState(false);
   const [showGoogleKey, setShowGoogleKey] = useState(false);
-  
+
   // LLM API Keys
   const [llmApiKeys, setLlmApiKeys] = useState<LLMApiKeys>(loadLLMApiKeys());
 
@@ -84,7 +84,7 @@ export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) =
   const updateSetting = (key: string, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
-  
+
   const updateLLMApiKey = (provider: LLMModelProvider, value: string) => {
     setLlmApiKeys(prev => ({ ...prev, [provider]: value }));
   };
@@ -97,7 +97,7 @@ export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) =
     toast.success('Settings saved');
     onOpenChange(false);
   };
-  
+
   // Get which providers have keys configured
   const configuredProviders = Object.entries(llmApiKeys)
     .filter(([_, key]) => key.length > 0)
@@ -118,6 +118,30 @@ export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) =
         <p className="text-sm text-muted-foreground mb-4">
           Customize your strategy builder experience.
         </p>
+
+        {/* TradingView Script Mode Toggle */}
+        <div className={`flex items-center justify-between p-3 rounded-lg border transition-all ${pineScriptMode
+            ? 'bg-[#2962FF]/10 border-[#2962FF]/40'
+            : 'bg-secondary/50 border-border/50'
+          }`}>
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${pineScriptMode ? 'bg-[#2962FF]/20' : 'bg-secondary'}`}>
+              <LineChart className={`w-5 h-5 ${pineScriptMode ? 'text-[#2962FF]' : 'text-muted-foreground'}`} />
+            </div>
+            <div>
+              <Label className="text-foreground font-medium">TradingView Script Mode</Label>
+              <p className="text-xs text-muted-foreground">
+                {pineScriptMode
+                  ? 'Pine Script nodes active — build TradingView scripts visually'
+                  : 'Switch to Pine Script nodes for TradingView code generation'}
+              </p>
+            </div>
+          </div>
+          <Switch
+            checked={pineScriptMode}
+            onCheckedChange={togglePineScriptMode}
+          />
+        </div>
 
         <Tabs defaultValue="canvas" className="">
           <TabsList className="bg-secondary border-border w-full grid grid-cols-4">
@@ -397,8 +421,8 @@ export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) =
                   {LLM_MODELS.map((model) => {
                     const hasKey = llmApiKeys[model.provider].length > 0;
                     return (
-                      <div 
-                        key={model.id} 
+                      <div
+                        key={model.id}
                         className={`flex items-center justify-between px-2 py-1 rounded ${hasKey ? 'bg-green-500/10' : 'bg-white/5'}`}
                       >
                         <span className={hasKey ? 'text-foreground' : 'text-muted-foreground'}>{model.label}</span>

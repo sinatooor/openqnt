@@ -22,3 +22,9 @@ export {
 export {
   generatePythonCode as generateEnhancedPythonCode,
 } from './enhancedPythonGenerator';
+
+// Pine Script generator for TradingView
+export {
+  generatePineScriptCode,
+  type PineScriptGeneratorOutput,
+} from './pineScriptGenerator';

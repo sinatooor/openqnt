@@ -39,6 +39,7 @@ import {
   RISK_NODES,
   TRADE_INFO_NODES,
   LLM_NODES,
+  PINE_SCRIPT_NODES,
 } from '../catalog/nodeCatalog';
 import { NodeCatalogItem } from '../types';
 import { SettingsModal, JournalModal, HelpModal } from './modals';
@@ -175,6 +176,49 @@ const TOOL_CATEGORIES: SidebarCategory[] = [
   },
 ];
 
+// Pine Script Categories
+const PINE_CATEGORIES: SidebarCategory[] = (() => {
+  const bySubcategory = new Map<string, NodeCatalogItem[]>();
+  PINE_SCRIPT_NODES.forEach(n => {
+    const sub = n.subcategory || 'Other';
+    if (!bySubcategory.has(sub)) bySubcategory.set(sub, []);
+    bySubcategory.get(sub)!.push(n);
+  });
+
+  const iconMap: Record<string, LucideIcon> = {
+    'Script Setup': Icons.FileCode2 as LucideIcon,
+    'Inputs': Icons.SlidersHorizontal as LucideIcon,
+    'Data': Icons.Database as LucideIcon,
+    'Indicators': Icons.Activity as LucideIcon,
+    'Conditions': Icons.GitBranch as LucideIcon,
+    'Strategy': Icons.Target as LucideIcon,
+    'Plotting': Icons.LineChart as LucideIcon,
+    'Alerts': Icons.Bell as LucideIcon,
+  };
+
+  const colorMap: Record<string, string> = {
+    'Script Setup': '#2962FF',
+    'Inputs': '#00BCD4',
+    'Data': '#4CAF50',
+    'Indicators': '#7C4DFF',
+    'Conditions': '#FF9800',
+    'Strategy': '#4CAF50',
+    'Plotting': '#E91E63',
+    'Alerts': '#FF5722',
+  };
+
+  const order = ['Script Setup', 'Inputs', 'Data', 'Indicators', 'Conditions', 'Strategy', 'Plotting', 'Alerts'];
+
+  return order.filter(sub => bySubcategory.has(sub)).map(sub => ({
+    id: `pine-${sub.toLowerCase().replace(/\s+/g, '-')}`,
+    label: sub,
+    icon: iconMap[sub] || Icons.Box as LucideIcon,
+    color: colorMap[sub] || '#64748b',
+    nodes: bySubcategory.get(sub)!,
+    description: `Pine Script ${sub.toLowerCase()} blocks`,
+  }));
+})();
+
 // =============================================================================
 // SUB-COMPONENTS - Optimized with memoization
 // =============================================================================
@@ -205,9 +249,9 @@ const DraggableItem = memo(({ item, onDragStart, onNodeClick }: {
   const Icon = useMemo(() => getNodeIcon(item.icon), [item.icon]);
 
   // Memoize icon style
-  const iconStyle = useMemo(() => ({ 
-    backgroundColor: `${item.color}15`, 
-    color: item.color 
+  const iconStyle = useMemo(() => ({
+    backgroundColor: `${item.color}15`,
+    color: item.color
   }), [item.color]);
 
   const hasIO = (item.inputs?.length ?? 0) > 0 || (item.outputs?.length ?? 0) > 0;
@@ -327,7 +371,7 @@ CategorySection.displayName = 'CategorySection';
 // =============================================================================
 
 export const LeftSidebar = memo(() => {
-  const { addNode, setSearchQuery, searchQuery, leftSidebarWidth, setLeftSidebarOpen } = useStrategyFlowStore();
+  const { addNode, setSearchQuery, searchQuery, leftSidebarWidth, setLeftSidebarOpen, pineScriptMode } = useStrategyFlowStore();
   const [activeCategory, setActiveCategory] = useState<string>('recent');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -337,17 +381,20 @@ export const LeftSidebar = memo(() => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
+  // Select categories based on mode
+  const currentCategories = pineScriptMode ? PINE_CATEGORIES : TOOL_CATEGORIES;
+
   // Filter categories based on search query
   const filteredCategories = searchQuery.trim()
-    ? TOOL_CATEGORIES.map(cat => ({
-        ...cat,
-        nodes: cat.nodes.filter(node =>
-          node.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          node.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          node.type.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      })).filter(cat => cat.nodes.length > 0)
-    : TOOL_CATEGORIES;
+    ? currentCategories.map(cat => ({
+      ...cat,
+      nodes: cat.nodes.filter(node =>
+        node.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        node.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        node.type.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    })).filter(cat => cat.nodes.length > 0)
+    : currentCategories;
 
   // Scroll Spy Logic
   const handleScroll = () => {
@@ -411,7 +458,7 @@ export const LeftSidebar = memo(() => {
         {/* Tool Categories */}
         <div className="flex flex-col items-center gap-1.5 p-1.5 overflow-y-auto no-scrollbar pt-3">
           <TooltipProvider delayDuration={0}>
-            {TOOL_CATEGORIES.map((cat) => (
+            {currentCategories.map((cat) => (
               <Tooltip key={cat.id}>
                 <TooltipTrigger asChild>
                   <button
@@ -502,6 +549,14 @@ export const LeftSidebar = memo(() => {
             />
           </div>
         </div>
+
+        {/* Pine Script Mode Indicator */}
+        {pineScriptMode && (
+          <div className="px-3 py-1.5 flex items-center gap-2 border-b border-[#2962FF]/20 bg-[#2962FF]/5">
+            <Icons.LineChart className="w-3 h-3 text-[#2962FF]" />
+            <span className="text-[10px] font-medium text-[#2962FF]">Pine Script Mode</span>
+          </div>
+        )}
 
         {/* Scrollable Categories */}
         <TooltipProvider delayDuration={1000}>
