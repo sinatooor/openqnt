@@ -21,7 +21,8 @@ export const getNodeSubType = (node: StrategyFlowNode): string | undefined => {
     data?.tradeInfoType as string ||
     data?.llmType as string ||
     data?.triggerType as string ||
-    data?.integrationType as string
+    data?.integrationType as string ||
+    data?.pineType as string
   );
 };
 
@@ -565,6 +566,154 @@ export const getHandleConfigs = (nodeType: string, subType?: string): HandleConf
                 { id: 'data', type: 'target', position: 'left', label: 'Data', dataType: 'any' },
                 { id: 'output', type: 'source', position: 'right', label: 'Data', dataType: 'any' },
                 { id: 'signal', type: 'source', position: 'right', label: 'Done', dataType: 'signal' },
+            ];
+
+        // =====================================================================
+        // PINE SCRIPT NODES
+        // =====================================================================
+        case 'pineScript':
+            // Script Setup — declaration nodes, output-only
+            if (subType === 'pine_strategy' || subType === 'pine_indicator' || subType === 'pine_version') {
+                return [
+                    { id: 'output', type: 'source', position: 'right', label: 'Script', dataType: 'any' },
+                ];
+            }
+            // Input nodes — output-only (user-configurable params)
+            if (subType?.startsWith('pine_input_')) {
+                return [
+                    { id: 'output', type: 'source', position: 'right', label: 'Value', dataType: subType === 'pine_input_bool' ? 'boolean' : 'number' },
+                ];
+            }
+            // Data series — output-only (close, open, high, low, volume, etc.)
+            if (['pine_close', 'pine_open', 'pine_high', 'pine_low', 'pine_volume',
+                 'pine_time', 'pine_bar_index'].includes(subType || '')) {
+                return [
+                    { id: 'output', type: 'source', position: 'right', label: 'Value', dataType: 'number' },
+                ];
+            }
+            // MACD — 1 input, 3 outputs
+            if (subType === 'pine_ta_macd') {
+                return [
+                    { id: 'input', type: 'target', position: 'left', label: 'Source', dataType: 'number' },
+                    { id: 'macd', type: 'source', position: 'right', label: 'MACD', dataType: 'number' },
+                    { id: 'signal', type: 'source', position: 'right', label: 'Signal', dataType: 'number' },
+                    { id: 'histogram', type: 'source', position: 'right', label: 'Histogram', dataType: 'number' },
+                ];
+            }
+            // Bollinger Bands — 2 inputs, 3 outputs
+            if (subType === 'pine_ta_bb') {
+                return [
+                    { id: 'input-a', type: 'target', position: 'left', label: 'Source', dataType: 'number' },
+                    { id: 'input-b', type: 'target', position: 'left', label: 'Length', dataType: 'number' },
+                    { id: 'basis', type: 'source', position: 'right', label: 'Basis', dataType: 'number' },
+                    { id: 'upper', type: 'source', position: 'right', label: 'Upper', dataType: 'number' },
+                    { id: 'lower', type: 'source', position: 'right', label: 'Lower', dataType: 'number' },
+                ];
+            }
+            // Indicators with Series+Number inputs, Series output (SMA, EMA, RSI, Stoch)
+            if (['pine_ta_sma', 'pine_ta_ema', 'pine_ta_rsi', 'pine_ta_stoch'].includes(subType || '')) {
+                return [
+                    { id: 'input-a', type: 'target', position: 'left', label: 'Source', dataType: 'number' },
+                    { id: 'input-b', type: 'target', position: 'left', label: 'Length', dataType: 'number' },
+                    { id: 'output', type: 'source', position: 'right', label: 'Value', dataType: 'number' },
+                ];
+            }
+            // ATR — Number input, Series output
+            if (subType === 'pine_ta_atr') {
+                return [
+                    { id: 'input', type: 'target', position: 'left', label: 'Length', dataType: 'number' },
+                    { id: 'output', type: 'source', position: 'right', label: 'Value', dataType: 'number' },
+                ];
+            }
+            // VWAP — optional Series input, Series output
+            if (subType === 'pine_ta_vwap') {
+                return [
+                    { id: 'input', type: 'target', position: 'left', label: 'Source', dataType: 'number' },
+                    { id: 'output', type: 'source', position: 'right', label: 'Value', dataType: 'number' },
+                ];
+            }
+            // Crossover / Crossunder — 2 Series inputs, Boolean output
+            if (subType === 'pine_ta_crossover' || subType === 'pine_ta_crossunder') {
+                return [
+                    { id: 'input-a', type: 'target', position: 'left', label: 'A', dataType: 'number' },
+                    { id: 'input-b', type: 'target', position: 'left', label: 'B', dataType: 'number' },
+                    { id: 'output', type: 'source', position: 'right', label: 'Signal', dataType: 'boolean' },
+                ];
+            }
+            // Compare — 2 inputs, Boolean output
+            if (subType === 'pine_compare') {
+                return [
+                    { id: 'input-a', type: 'target', position: 'left', label: 'A', dataType: 'number' },
+                    { id: 'input-b', type: 'target', position: 'left', label: 'B', dataType: 'number' },
+                    { id: 'output', type: 'source', position: 'right', label: 'Result', dataType: 'boolean' },
+                ];
+            }
+            // AND / OR — 2 Boolean inputs, Boolean output
+            if (subType === 'pine_and' || subType === 'pine_or') {
+                return [
+                    { id: 'input-a', type: 'target', position: 'left', label: 'A', dataType: 'boolean' },
+                    { id: 'input-b', type: 'target', position: 'left', label: 'B', dataType: 'boolean' },
+                    { id: 'output', type: 'source', position: 'right', label: 'Result', dataType: 'boolean' },
+                ];
+            }
+            // NOT — 1 Boolean input, Boolean output
+            if (subType === 'pine_not') {
+                return [
+                    { id: 'input', type: 'target', position: 'left', label: 'Input', dataType: 'boolean' },
+                    { id: 'output', type: 'source', position: 'right', label: 'Result', dataType: 'boolean' },
+                ];
+            }
+            // Ternary — 3 inputs, 1 output
+            if (subType === 'pine_ternary') {
+                return [
+                    { id: 'input-a', type: 'target', position: 'left', label: 'Cond', dataType: 'boolean' },
+                    { id: 'input-b', type: 'target', position: 'left', label: 'Then', dataType: 'any' },
+                    { id: 'input-c', type: 'target', position: 'left', label: 'Else', dataType: 'any' },
+                    { id: 'output', type: 'source', position: 'right', label: 'Result', dataType: 'any' },
+                ];
+            }
+            // Strategy actions — Boolean input + optional Signal output
+            if (['pine_strategy_entry', 'pine_strategy_close', 'pine_strategy_exit', 'pine_strategy_order'].includes(subType || '')) {
+                return [
+                    { id: 'input', type: 'target', position: 'left', label: 'Condition', dataType: 'boolean' },
+                    { id: 'output', type: 'source', position: 'right', label: 'Signal', dataType: 'signal' },
+                ];
+            }
+            // Plot — Series input, no output
+            if (subType === 'pine_plot') {
+                return [
+                    { id: 'input', type: 'target', position: 'left', label: 'Series', dataType: 'number' },
+                ];
+            }
+            // Plotshape, bgcolor, barcolor — Boolean input, no output
+            if (['pine_plotshape', 'pine_bgcolor', 'pine_barcolor', 'pine_plotchar'].includes(subType || '')) {
+                return [
+                    { id: 'input', type: 'target', position: 'left', label: 'Condition', dataType: 'boolean' },
+                ];
+            }
+            // Hline — Number input, no output
+            if (subType === 'pine_hline') {
+                return [
+                    { id: 'input', type: 'target', position: 'left', label: 'Level', dataType: 'number' },
+                ];
+            }
+            // Fill — 2 inputs (plot references), no output
+            if (subType === 'pine_fill') {
+                return [
+                    { id: 'input-a', type: 'target', position: 'left', label: 'Plot 1', dataType: 'any' },
+                    { id: 'input-b', type: 'target', position: 'left', label: 'Plot 2', dataType: 'any' },
+                ];
+            }
+            // Alert nodes — Boolean input, no output
+            if (subType === 'pine_alertcondition' || subType === 'pine_alert') {
+                return [
+                    { id: 'input', type: 'target', position: 'left', label: 'Condition', dataType: 'boolean' },
+                ];
+            }
+            // Fallback for unknown Pine Script subtypes: single input + single output
+            return [
+                { id: 'input', type: 'target', position: 'left', label: 'Input', dataType: 'any' },
+                { id: 'output', type: 'source', position: 'right', label: 'Output', dataType: 'any' },
             ];
 
         default:
