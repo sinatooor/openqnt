@@ -211,7 +211,8 @@ class FlowInterpreter:
                     outputs[node_id] = {"output": float(data.get("value", 0))}
                 elif math_type == "advancedMath":
                     source = inputs.get("input", [])
-                    val = self._resolve_value(outputs, source[0]) if source else 0.0
+                    edge_val = self._resolve_value(outputs, source[0]) if source else None
+                    val = edge_val if edge_val is not None else data.get("input", 0.0)
                     func = data.get("mathFunction", "sqrt")
                     val = float(val or 0.0)
                     if func == "abs":
@@ -236,10 +237,10 @@ class FlowInterpreter:
                         result = float(np.sqrt(max(val, 0.0)))
                     outputs[node_id] = {"output": result}
                 else:
-                    a = self._resolve_value(outputs, inputs.get("input-a", [])[0]) if inputs.get("input-a") else 0.0
-                    b = self._resolve_value(outputs, inputs.get("input-b", [])[0]) if inputs.get("input-b") else 0.0
-                    a = float(a or 0.0)
-                    b = float(b or 0.0)
+                    edge_a = self._resolve_value(outputs, inputs.get("input-a", [])[0]) if inputs.get("input-a") else None
+                    edge_b = self._resolve_value(outputs, inputs.get("input-b", [])[0]) if inputs.get("input-b") else None
+                    a = float(edge_a if edge_a is not None else data.get("inputA", 0.0))
+                    b = float(edge_b if edge_b is not None else data.get("inputB", 0.0))
                     if math_type == "add":
                         result = a + b
                     elif math_type == "subtract":
@@ -260,7 +261,8 @@ class FlowInterpreter:
                     outputs[node_id] = {"output": ctx.variables.get(var_name)}
                 else:
                     source = inputs.get("input", [])
-                    value = self._resolve_value(outputs, source[0]) if source else data.get("value")
+                    edge_val = self._resolve_value(outputs, source[0]) if source else None
+                    value = edge_val if edge_val is not None else data.get("value", 0.0)
                     if var_name:
                         if var_type == "changeVariable":
                             ctx.variables[var_name] = (ctx.variables.get(var_name, 0) or 0) + float(value or 0.0)
@@ -289,7 +291,9 @@ class FlowInterpreter:
             if ntype == "portfolio":
                 action = data.get("portfolioAction")
                 symbol = data.get("symbol", "").upper()
-                threshold = float(data.get("threshold", 30))
+                
+                edge_threshold = self._resolve_value(outputs, inputs.get("threshold", [])[0]) if inputs.get("threshold") else None
+                threshold = float(edge_threshold if edge_threshold is not None else data.get("threshold", 30))
                 value = 0.0
 
                 if action == "totalValue":
@@ -319,8 +323,11 @@ class FlowInterpreter:
                     # Simple mock score based on count of distinct symbols
                     value = min(100, len(ctx.portfolio.positions) * 10)
                 elif action == "rebalanceSignal":
-                    drift = float(data.get("driftThreshold", 5))
-                    target = float(data.get("targetPct", 10))
+                    edge_drift = self._resolve_value(outputs, inputs.get("driftThreshold", [])[0]) if inputs.get("driftThreshold") else None
+                    drift = float(edge_drift if edge_drift is not None else data.get("driftThreshold", 5))
+                    
+                    edge_target = self._resolve_value(outputs, inputs.get("targetPct", [])[0]) if inputs.get("targetPct") else None
+                    target = float(edge_target if edge_target is not None else data.get("targetPct", 10))
                     if symbol in ctx.portfolio.positions:
                         pos = ctx.portfolio.positions[symbol]
                         price = ctx.bar.close if ctx.bar.symbol == symbol else pos.entry_price
@@ -346,11 +353,26 @@ class FlowInterpreter:
                     right = float(self._resolve_value(outputs, inputs.get("input-b", [])[0]) or 0.0)
                     result = left > right if condition_type == "crossover" else left < right
                 elif condition_type == "range":
-                    value = float(self._resolve_value(outputs, inputs.get("input-a", [])[0]) or 0.0)
-                    result = data.get("minValue", 0) <= value <= data.get("maxValue", 0)
+                    edge_val = self._resolve_value(outputs, inputs.get("input-a", [])[0]) if inputs.get("input-a") else None
+                    value = float(edge_val if edge_val is not None else 0.0)
+                    
+                    edge_min = self._resolve_value(outputs, inputs.get("minValue", [])[0]) if inputs.get("minValue") else None
+                    min_val = float(edge_min if edge_min is not None else data.get("minValue", 0))
+                    
+                    edge_max = self._resolve_value(outputs, inputs.get("maxValue", [])[0]) if inputs.get("maxValue") else None
+                    max_val = float(edge_max if edge_max is not None else data.get("maxValue", 0))
+                    
+                    result = min_val <= value <= max_val
                 else:
-                    left = float(self._resolve_value(outputs, inputs.get("input-a", [])[0]) or 0.0)
-                    right = float(self._resolve_value(outputs, inputs.get("input-b", [])[0]) or data.get("value", 0))
+                    edge_a = self._resolve_value(outputs, inputs.get("input-a", [])[0]) if inputs.get("input-a") else None
+                    left = float(edge_a if edge_a is not None else data.get("inputA", 0.0))
+                    
+                    edge_b = self._resolve_value(outputs, inputs.get("input-b", [])[0]) if inputs.get("input-b") else None
+                    if edge_b is None and condition_type == "threshold":
+                        edge_b = self._resolve_value(outputs, inputs.get("value", [])[0]) if inputs.get("value") else None
+                        
+                    default_b = data.get("value", 0.0) if condition_type == "threshold" else data.get("inputB", 0.0)
+                    right = float(edge_b if edge_b is not None else default_b)
                     op = data.get("operator", ">")
                     result = _compare(left, right, op)
                 outputs[node_id] = {"output": result}
@@ -400,7 +422,7 @@ class FlowInterpreter:
                     size_input = None
                     if inputs.get("size"):
                         size_input = self._resolve_value(outputs, inputs.get("size", [])[0])
-                    size = float(size_input or data.get("size") or 0.0)
+                    size = float(size_input if size_input is not None else data.get("size", 0.0))
                     if size == 0.0:
                         pct = ctx.risk_config.get("positionPercent")
                         if pct and ctx.portfolio.equity:
@@ -410,16 +432,31 @@ class FlowInterpreter:
                     order_type = data.get("orderType", "market")
                     direction = data.get("direction", "long")
                     side = "BUY" if direction == "long" else "SELL"
-                    price = data.get("limitPrice") if order_type in {"limit", "stop"} else None
+                    
+                    limit_price = None
+                    if order_type in {"limit", "stop"}:
+                        edge_limit = self._resolve_value(outputs, inputs.get("limitPrice", [])[0]) if inputs.get("limitPrice") else None
+                        limit_price = float(edge_limit if edge_limit is not None else data.get("limitPrice", 0.0))
+                        
+                    edge_stop = self._resolve_value(outputs, inputs.get("stopPrice", [])[0]) if inputs.get("stopPrice") else None
+                    stop_price = float(edge_stop if edge_stop is not None else data.get("stopPrice", 0.0))
+                    if stop_price == 0.0:
+                        stop_price = None
+                        
+                    edge_tp = self._resolve_value(outputs, inputs.get("takeProfitPrice", [])[0]) if inputs.get("takeProfitPrice") else None
+                    take_profit_price = float(edge_tp if edge_tp is not None else data.get("takeProfitPrice", 0.0))
+                    if take_profit_price == 0.0:
+                        take_profit_price = None
+
                     intents.append(
                         OrderIntent(
                             symbol=data.get("symbol", self.settings.get("symbol", "UNKNOWN")),
                             side=side,
                             order_type=order_type,
                             size=size,
-                            price=price,
-                            stop_loss=data.get("stopPrice"),
-                            take_profit=data.get("takeProfitPrice"),
+                            price=limit_price,
+                            stop_loss=stop_price,
+                            take_profit=take_profit_price,
                             tag=node_id,
                         )
                     )
