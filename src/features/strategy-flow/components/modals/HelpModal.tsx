@@ -10,7 +10,10 @@ import {
   Zap,
   Code,
   Github,
-  FileText
+  FileText,
+  FlaskConical,
+  BarChart3,
+  Beaker,
 } from 'lucide-react';
 import { WindowModal } from './WindowModal';
 import { Button } from '@/components/ui/button';
@@ -59,6 +62,20 @@ const RESOURCES = [
   { icon: Github, label: 'GitHub', href: '#', description: 'Source code and contributions' },
   { icon: MessageCircle, label: 'Community', href: '#', description: 'Join our Discord community' },
   { icon: FileText, label: 'API Reference', href: '#', description: 'Technical documentation' },
+];
+
+const QUANT_STRATEGIES_HELP = [
+  { name: 'MACD Oscillator', desc: 'Momentum crossover between fast/slow moving averages.', params: 'shortWindow, longWindow, signalWindow' },
+  { name: 'Pair Trading', desc: 'Statistical arbitrage between two cointegrated assets.', params: 'tickerB, lookback, entryZ, exitZ' },
+  { name: 'Heikin-Ashi', desc: 'Japanese candlestick variant filtering noise for trends.', params: 'None' },
+  { name: 'Bollinger Bands', desc: 'Mean-reversion using upper/lower band signals.', params: 'period, stdDev' },
+  { name: 'RSI Pattern', desc: 'Overbought/oversold signals from Relative Strength Index.', params: 'period, overbought, oversold' },
+  { name: 'Parabolic SAR', desc: 'Stop-and-reverse trend following indicator.', params: 'af, maxAf' },
+  { name: 'Awesome Oscillator', desc: 'Upgraded MACD using midpoint price for momentum.', params: 'shortPeriod, longPeriod' },
+  { name: 'Dual Thrust', desc: 'Opening range breakout with dynamic thresholds.', params: 'lookback, k1, k2' },
+  { name: 'Shooting Star', desc: 'Bearish candlestick reversal pattern recognition.', params: 'bodyRatio, shadowRatio' },
+  { name: 'Options Straddle', desc: 'Long straddle payoff simulation for volatility plays.', params: 'strikePrice, callPremium, putPremium' },
+  { name: 'VIX Calculator', desc: 'Realized volatility index from historical prices.', params: 'windowDays' },
 ];
 
 export const HelpModal = memo(({ open, onOpenChange }: HelpModalProps) => {
@@ -149,6 +166,62 @@ export const HelpModal = memo(({ open, onOpenChange }: HelpModalProps) => {
                   <ExternalLink className="w-3 h-3 text-muted-foreground/50 ml-auto shrink-0" />
                 </Button>
               ))}
+            </div>
+          </section>
+
+          {/* Quant Tools Guide */}
+          <section>
+            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+              <FlaskConical className="w-4 h-4 text-purple-500" />
+              Quant Tools Guide
+            </h3>
+
+            <div className="space-y-4">
+              {/* QuantStats */}
+              <div className="p-3 rounded-lg bg-secondary/50 border border-border/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <BarChart3 className="w-4 h-4 text-teal-400" />
+                  <h4 className="text-sm font-medium">QuantStats — Portfolio Analytics</h4>
+                </div>
+                <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                  <li>Open <strong>Research & Quant Tools</strong> from the strategy builder toolbar (flask icon).</li>
+                  <li>Click the <strong>QuantStats</strong> tab (first tab).</li>
+                  <li>Enter a <strong>ticker</strong> (e.g. AAPL), optional <strong>benchmark</strong> (default SPY), and date range.</li>
+                  <li>Click <strong>Analyze</strong> — the system fetches returns and computes 20+ metrics including Sharpe, Sortino, CAGR, max drawdown, win rate, VaR, Kelly criterion, and more.</li>
+                  <li>Scroll down to see <strong>charts</strong>: performance snapshot, drawdown, monthly heatmap, return distribution, rolling Sharpe/volatility/beta.</li>
+                </ol>
+                <p className="text-[10px] text-muted-foreground/70 mt-2">Powered by <span className="text-teal-400">ranaroussi/quantstats</span></p>
+              </div>
+
+              {/* Quant Strategies */}
+              <div className="p-3 rounded-lg bg-secondary/50 border border-border/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <Beaker className="w-4 h-4 text-orange-400" />
+                  <h4 className="text-sm font-medium">Quant Strategies — Backtest Library</h4>
+                </div>
+                <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside mb-3">
+                  <li>Switch to the <strong>Strategies</strong> tab.</li>
+                  <li>Pick a <strong>strategy</strong> from the dropdown — parameters update automatically with sensible defaults.</li>
+                  <li>Enter a <strong>ticker</strong> and date range, adjust parameters if needed.</li>
+                  <li>Click <strong>Run Backtest</strong> — the backend downloads data, computes signals, runs a vectorized backtest, and returns metrics + an equity curve chart.</li>
+                </ol>
+
+                <div className="rounded-lg border border-border/50 overflow-hidden">
+                  <table className="w-full text-[10px]">
+                    <thead><tr className="bg-secondary/80 text-muted-foreground"><th className="text-left px-2 py-1">Strategy</th><th className="text-left px-2 py-1">Description</th><th className="text-left px-2 py-1">Parameters</th></tr></thead>
+                    <tbody>
+                      {QUANT_STRATEGIES_HELP.map((s, i) => (
+                        <tr key={i} className="even:bg-secondary/30 border-t border-border/30">
+                          <td className="px-2 py-1 font-medium text-foreground whitespace-nowrap">{s.name}</td>
+                          <td className="px-2 py-1 text-muted-foreground">{s.desc}</td>
+                          <td className="px-2 py-1 font-mono text-muted-foreground/80">{s.params}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-[10px] text-muted-foreground/70 mt-2">Powered by <span className="text-orange-400">je-suis-tm/quant-trading</span></p>
+              </div>
             </div>
           </section>
 
