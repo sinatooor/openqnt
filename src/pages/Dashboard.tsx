@@ -8,6 +8,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { api } from '../services/api';
+import { useAppModeStore, type AppMode } from '../stores/appModeStore';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // shadcn
@@ -63,6 +64,7 @@ import { PAGE_CONTENT_CLASS } from '@/components/PageHeader';
 const Dashboard = () => {
   const { user, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
+  const { mode, setMode } = useAppModeStore();
   const [stats, setStats] = useState<any>(null);
   const [strategies, setStrategies] = useState<any[]>([]);
   const [recentRuns, setRecentRuns] = useState<any[]>([]);
@@ -175,6 +177,30 @@ const Dashboard = () => {
                 <span className="text-white/40 text-xs">Welcome back, {user?.name ?? 'Trader'}</span>
               </div>
               <div className="flex items-center gap-2">
+                {/* ─── Demo / Real Mode Toggle ─── */}
+                <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-lg px-1 py-0.5">
+                  <button
+                    onClick={() => setMode('demo')}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                      mode === 'demo'
+                        ? 'bg-amber-500/20 text-amber-400 shadow-sm border border-amber-500/30'
+                        : 'text-white/40 hover:text-white/60'
+                    }`}
+                  >
+                    Demo
+                  </button>
+                  <button
+                    onClick={() => setMode('real')}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                      mode === 'real'
+                        ? 'bg-green-500/20 text-green-400 shadow-sm border border-green-500/30'
+                        : 'text-white/40 hover:text-white/60'
+                    }`}
+                  >
+                    Real
+                  </button>
+                </div>
+                <div className="h-5 w-px bg-white/10" />
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button

@@ -12,6 +12,7 @@ import ExecutionHistory from "./pages/ExecutionHistory";
 import Credentials from "./pages/Credentials";
 import AgentConfig from "./pages/AgentConfig";
 import Settings from "./pages/Settings";
+import Portfolio from "./pages/Portfolio";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AppNavBar } from "./components/AppNavBar";
@@ -34,6 +35,7 @@ const ProtectedRoutes = () => {
         <Route path="/credentials" element={<ProtectedRoute><Credentials /></ProtectedRoute>} />
         <Route path="/agent" element={<ProtectedRoute><AgentConfig /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/portfolio" element={<ProtectedRoute><Portfolio /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>

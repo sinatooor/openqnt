@@ -15,6 +15,7 @@ export { LLM_NODES } from './nodes/llmNodes';
 export { TRIGGER_NODES } from './nodes/triggerNodes';
 export { INTEGRATION_NODES } from './nodes/integrationNodes';
 export { PINE_SCRIPT_NODES } from './nodes/pineScriptNodes';
+export { PORTFOLIO_NODES } from './nodes/portfolioNodes';
 
 import { INDICATOR_NODES } from './nodes/indicatorNodes';
 import { CONDITION_NODES } from './nodes/conditionNodes';
@@ -29,9 +30,10 @@ import { LLM_NODES } from './nodes/llmNodes';
 import { TRIGGER_NODES } from './nodes/triggerNodes';
 import { INTEGRATION_NODES } from './nodes/integrationNodes';
 import { PINE_SCRIPT_NODES } from './nodes/pineScriptNodes';
+import { PORTFOLIO_NODES } from './nodes/portfolioNodes';
 import { NodeCatalogItem } from '../types';
 
-// Complete catalog of all nodes (13 categories)
+// Complete catalog of all nodes (14 categories)
 export const NODE_CATALOG: NodeCatalogItem[] = [
   ...TRIGGER_NODES,
   ...INTEGRATION_NODES,
@@ -46,6 +48,7 @@ export const NODE_CATALOG: NodeCatalogItem[] = [
   ...TRADE_INFO_NODES,
   ...LLM_NODES,
   ...PINE_SCRIPT_NODES,
+  ...PORTFOLIO_NODES,
 ];
 
 // Helper to get nodes by category
