@@ -3,7 +3,7 @@
  * Inspired by award-winning trading platforms
  */
 
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import * as Toolbar from '@radix-ui/react-toolbar';
 import {
   Play,
@@ -21,6 +21,7 @@ import {
   Search,
   Activity,
   FlaskConical,
+  Trash2,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -28,6 +29,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useStrategyFlowStore } from '../store/strategyFlowStore';
 
 interface FloatingToolbarProps {
@@ -63,7 +74,8 @@ export const FloatingToolbar = memo(({
   showCode,
   showAI,
 }: FloatingToolbarProps) => {
-  const { strategyName, isRunning, exportStrategy, importStrategy } = useStrategyFlowStore();
+  const { strategyName, isRunning, exportStrategy, importStrategy, clearCanvas, nodes } = useStrategyFlowStore();
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const handleExport = () => {
     const json = exportStrategy();
@@ -307,7 +319,44 @@ export const FloatingToolbar = memo(({
           </TooltipTrigger>
           <TooltipContent side="bottom" className="text-xs">Export</TooltipContent>
         </Tooltip>
+
+        <Toolbar.Separator className="w-px h-5 bg-border/50 mx-1" />
+
+        {/* Clear All */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Toolbar.Button
+              onClick={() => setShowClearConfirm(true)}
+              disabled={nodes.length === 0}
+              className="p-2.5 rounded-lg text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 hover:scale-105 disabled:opacity-30 disabled:pointer-events-none"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Toolbar.Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="text-xs">Clear All</TooltipContent>
+        </Tooltip>
       </Toolbar.Root>
+
+      {/* Clear All Confirmation Dialog */}
+      <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear entire canvas?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove all {nodes.length} nodes and their connections from the canvas. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => clearCanvas()}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Clear All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </TooltipProvider>
   );
 });
