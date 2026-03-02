@@ -234,6 +234,28 @@ class ApiClient {
         return this.put<any>(`/api/portfolio/${id}/sync`);
     }
 
+    async createPortfolioHolding(data: { symbol: string; name: string; assetType: string; quantity: number; avgCost: number; currency: string }) {
+        return this.post<any>('/api/portfolio/holdings', data);
+    }
+
+    async deletePortfolioHolding(id: string) {
+        return this.delete<any>(`/api/portfolio/holdings/${id}`);
+    }
+
+    async getPortfolioPrices(symbols: string[]) {
+        return this.post<any>('/api/portfolio/prices', { symbols });
+    }
+
+    async getPortfolioHistory(params?: { days?: number }) {
+        const query = new URLSearchParams();
+        if (params?.days) query.set('days', String(params.days));
+        return this.get<any>(`/api/portfolio/history?${query}`);
+    }
+
+    async getPortfolioAnalytics() {
+        return this.get<any>('/api/portfolio/analytics');
+    }
+
     // Credentials
     async listCredentials() {
         return this.get<any>('/api/credentials');

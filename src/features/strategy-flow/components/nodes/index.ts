@@ -16,6 +16,7 @@ export { LLMNode } from './LLMNode';
 export { TriggerNode } from './TriggerNode';
 export { IntegrationNode } from './IntegrationNode';
 export { PineScriptNode } from './PineScriptNode';
+export { PortfolioNode } from './PortfolioNode';
 
 import { IndicatorNode } from './IndicatorNode';
 import { ConditionNode } from './ConditionNode';
@@ -30,6 +31,7 @@ import { LLMNode } from './LLMNode';
 import { TriggerNode } from './TriggerNode';
 import { IntegrationNode } from './IntegrationNode';
 import { PineScriptNode } from './PineScriptNode';
+import { PortfolioNode } from './PortfolioNode';
 
 // Node type registry for ReactFlow
 export const nodeTypes = {
@@ -46,4 +48,5 @@ export const nodeTypes = {
   trigger: TriggerNode,
   integration: IntegrationNode,
   pineScript: PineScriptNode,
+  portfolio: PortfolioNode,
 };

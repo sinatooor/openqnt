@@ -16,6 +16,7 @@ import {
   Search,
   GripHorizontal,
   Sparkles,
+  Briefcase,
   LucideIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -40,6 +41,7 @@ import {
   TRADE_INFO_NODES,
   LLM_NODES,
   PINE_SCRIPT_NODES,
+  PORTFOLIO_NODES,
 } from '../catalog/nodeCatalog';
 import { NodeCatalogItem } from '../types';
 import { SettingsModal, JournalModal, HelpModal } from './modals';
@@ -173,6 +175,14 @@ const TOOL_CATEGORIES: SidebarCategory[] = [
     color: '#a855f7',
     nodes: LLM_NODES,
     description: 'AI-powered analysis & signals'
+  },
+  {
+    id: 'portfolio',
+    label: 'Portfolio',
+    icon: Briefcase,
+    color: '#06b6d4',
+    nodes: PORTFOLIO_NODES,
+    description: 'Portfolio data & management'
   },
 ];
 

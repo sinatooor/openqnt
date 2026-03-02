@@ -21,7 +21,8 @@ export type NodeCategory =
   | 'llm'
   | 'triggers'
   | 'integrations'
-  | 'pineScript';
+  | 'pineScript'
+  | 'portfolio';
 
 // =============================================================================
 // INDICATOR NODE TYPES
@@ -491,6 +492,7 @@ export type StrategyFlowNodeType =
   | 'trigger'
   | 'integration'
   | 'pineScript'
+  | 'portfolio'
   | 'comment';
 
 // ReactFlow Node with our data

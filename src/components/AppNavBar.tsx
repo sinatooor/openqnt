@@ -11,6 +11,7 @@ import {
     KeyRound,
     Settings,
     User,
+    Briefcase,
 } from 'lucide-react';
 import {
     Tooltip,
@@ -19,6 +20,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useAuthStore } from '@/stores/authStore';
+import { useAppModeStore } from '@/stores/appModeStore';
 import { ProfileModal } from '@/features/strategy-flow/components/modals/ProfileModal';
 
 export const APP_HEADER_HEIGHT = 56;
@@ -32,6 +34,7 @@ interface NavItemDef {
 const NAV_ITEMS: NavItemDef[] = [
     { icon: <LayoutDashboard className="w-4 h-4" />, label: 'Dashboard', path: '/dashboard' },
     { icon: <Code2 className="w-4 h-4" />, label: 'Builder', path: '/' },
+    { icon: <Briefcase className="w-4 h-4" />, label: 'Portfolio', path: '/portfolio' },
     { icon: <LineChart className="w-4 h-4" />, label: 'Executions', path: '/executions' },
     { icon: <KeyRound className="w-4 h-4" />, label: 'Credentials', path: '/credentials' },
     { icon: <Settings className="w-4 h-4" />, label: 'Settings', path: '/settings' },
@@ -41,6 +44,7 @@ export const AppNavBar = () => {
     const navigate = useNavigate();
     const { pathname } = useLocation();
     const { user } = useAuthStore();
+    const { mode } = useAppModeStore();
     const [showProfile, setShowProfile] = useState(false);
 
     if (pathname === '/login') return null;
@@ -76,6 +80,21 @@ export const AppNavBar = () => {
                     );
                 })}
 
+                <div className="h-5 w-px bg-white/10 mx-1" />
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider cursor-default ${
+                            mode === 'demo'
+                                ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20'
+                                : 'bg-green-500/15 text-green-400 border border-green-500/20'
+                        }`}>
+                            {mode}
+                        </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">
+                        {mode === 'demo' ? 'Paper trading mode' : 'Live trading mode'} — switch in Dashboard
+                    </TooltipContent>
+                </Tooltip>
                 <div className="h-5 w-px bg-white/10 mx-1" />
                 <Tooltip>
                     <TooltipTrigger asChild>
