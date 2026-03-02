@@ -95,7 +95,7 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
   const [copied, setCopied] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const { nodes, edges, setNodes, setEdges, strategyName, strategyDescription } =
+  const { nodes, edges, setNodes, setEdges, strategyName, strategyDescription, rightPanelWidth } =
     useStrategyFlowStore();
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
@@ -377,40 +377,44 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
   if (!open) return null;
 
   return (
-    <div className="fixed right-0 top-0 bottom-0 w-[480px] bg-[#1a1a2e]/95 backdrop-blur-xl border-l border-white/10 flex flex-col z-50 shadow-2xl">
+    <div 
+      className="fixed right-0 top-0 bottom-0 glass border-l border-border/50 flex flex-col z-50 shadow-trading-lg animate-in slide-in-from-right duration-300"
+      style={{ width: rightPanelWidth }}
+    >
       {/* Header */}
-      <div className="px-4 py-3 border-b border-white/10">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-pink-500" />
-            <h2 className="font-semibold text-white text-sm">AI Strategy Builder</h2>
-          </div>
-          <div className="flex items-center gap-1">
-            {messages.length > 0 && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-white/50 hover:text-white hover:bg-white/10"
-                    onClick={clearMessages}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Clear chat</TooltipContent>
-              </Tooltip>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-white/50 hover:text-white hover:bg-red-500/20"
-              onClick={() => onOpenChange(false)}
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
+      <div className="h-12 px-4 flex items-center justify-between border-b border-border/50 bg-card/50">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-pink-500" />
+          <span className="text-sm font-medium truncate">AI Strategy Builder</span>
         </div>
+        <div className="flex items-center gap-1">
+          {messages.length > 0 && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={clearMessages}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Clear chat</TooltipContent>
+            </Tooltip>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => onOpenChange(false)}
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="px-3 py-2 border-b border-border/50">
 
         {/* Mode Tabs */}
         <div className="flex gap-1 mb-2">
@@ -418,113 +422,113 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
             onClick={() => setPanelMode('generate')}
             variant={panelMode === 'generate' ? 'default' : 'secondary'}
             size="sm"
-            className={`flex-1 h-8 text-xs font-medium ${
+            className={`flex-1 h-7 text-xs font-medium ${
               panelMode === 'generate'
                 ? 'bg-pink-500 hover:bg-pink-600 text-white'
-                : 'bg-white/5 hover:bg-white/10 text-white/70'
+                : 'bg-muted/50 hover:bg-muted text-muted-foreground'
             }`}
           >
-            <Blocks className="w-3.5 h-3.5 mr-1.5" />
+            <Blocks className="w-3 h-3 mr-1" />
             Generate
           </Button>
           <Button
             onClick={() => setPanelMode('code')}
             variant={panelMode === 'code' ? 'default' : 'secondary'}
             size="sm"
-            className={`flex-1 h-8 text-xs font-medium ${
+            className={`flex-1 h-7 text-xs font-medium ${
               panelMode === 'code'
                 ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
-                : 'bg-white/5 hover:bg-white/10 text-white/70'
+                : 'bg-muted/50 hover:bg-muted text-muted-foreground'
             }`}
           >
-            <Terminal className="w-3.5 h-3.5 mr-1.5" />
+            <Terminal className="w-3 h-3 mr-1" />
             Code
           </Button>
           <Button
             onClick={() => setPanelMode('chat')}
             variant={panelMode === 'chat' ? 'default' : 'secondary'}
             size="sm"
-            className={`flex-1 h-8 text-xs font-medium ${
+            className={`flex-1 h-7 text-xs font-medium ${
               panelMode === 'chat'
                 ? 'bg-blue-500 hover:bg-blue-600 text-white'
-                : 'bg-white/5 hover:bg-white/10 text-white/70'
+                : 'bg-muted/50 hover:bg-muted text-muted-foreground'
             }`}
           >
-            <MessageSquare className="w-3.5 h-3.5 mr-1.5" />
+            <MessageSquare className="w-3 h-3 mr-1" />
             Chat
           </Button>
         </div>
 
         {/* Sub-options per mode */}
         {panelMode === 'generate' && (
-          <div className="flex gap-1 px-1">
+          <div className="flex gap-1">
             <button
               onClick={() => setGenMode('fast')}
-              className={`flex-1 text-[11px] py-1.5 rounded transition-colors ${
+              className={`flex-1 text-[10px] py-1 rounded transition-colors ${
                 genMode === 'fast'
                   ? 'bg-pink-500/20 text-pink-400 font-medium'
-                  : 'text-white/50 hover:text-white hover:bg-white/5'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
               }`}
             >
               Fast
             </button>
             <button
               onClick={() => setGenMode('slow')}
-              className={`flex-1 text-[11px] py-1.5 rounded transition-colors ${
+              className={`flex-1 text-[10px] py-1 rounded transition-colors ${
                 genMode === 'slow'
                   ? 'bg-pink-500/20 text-pink-400 font-medium'
-                  : 'text-white/50 hover:text-white hover:bg-white/5'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
               }`}
             >
               Precise
             </button>
             <button
               onClick={() => setGenMode('tool-calling')}
-              className={`flex-1 text-[11px] py-1.5 rounded transition-colors flex items-center justify-center gap-1 ${
+              className={`flex-1 text-[10px] py-1 rounded transition-colors flex items-center justify-center gap-0.5 ${
                 genMode === 'tool-calling'
                   ? 'bg-purple-500/20 text-purple-400 font-medium'
-                  : 'text-white/50 hover:text-white hover:bg-white/5'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
               }`}
             >
-              <Wrench className="w-3 h-3" />
+              <Wrench className="w-2.5 h-2.5" />
               Tools
             </button>
           </div>
         )}
 
         {panelMode === 'code' && (
-          <div className="flex gap-1 px-1">
+          <div className="flex gap-1">
             <button
               onClick={() => setCodeLanguage('pinescript')}
-              className={`flex-1 text-[11px] py-1.5 rounded transition-colors flex items-center justify-center gap-1 ${
+              className={`flex-1 text-[10px] py-1 rounded transition-colors flex items-center justify-center gap-0.5 ${
                 codeLanguage === 'pinescript'
                   ? 'bg-[#2962FF]/20 text-[#2962FF] font-medium'
-                  : 'text-white/50 hover:text-white hover:bg-white/5'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
               }`}
             >
-              <LineChart className="w-3 h-3" />
+              <LineChart className="w-2.5 h-2.5" />
               Pine Script
             </button>
             <button
               onClick={() => setCodeLanguage('python')}
-              className={`flex-1 text-[11px] py-1.5 rounded transition-colors flex items-center justify-center gap-1 ${
+              className={`flex-1 text-[10px] py-1 rounded transition-colors flex items-center justify-center gap-0.5 ${
                 codeLanguage === 'python'
                   ? 'bg-yellow-500/20 text-yellow-400 font-medium'
-                  : 'text-white/50 hover:text-white hover:bg-white/5'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
               }`}
             >
-              <FileCode className="w-3 h-3" />
+              <FileCode className="w-2.5 h-2.5" />
               Python
             </button>
             <button
               onClick={() => setCodeLanguage('mql5')}
-              className={`flex-1 text-[11px] py-1.5 rounded transition-colors flex items-center justify-center gap-1 ${
+              className={`flex-1 text-[10px] py-1 rounded transition-colors flex items-center justify-center gap-0.5 ${
                 codeLanguage === 'mql5'
                   ? 'bg-cyan-500/20 text-cyan-400 font-medium'
-                  : 'text-white/50 hover:text-white hover:bg-white/5'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
               }`}
             >
-              <FileCode className="w-3 h-3" />
+              <FileCode className="w-2.5 h-2.5" />
               MQL5
             </button>
           </div>
@@ -533,9 +537,9 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
 
       {/* Code Preview (when in code mode with existing nodes) */}
       {panelMode === 'code' && currentCode && currentCode.code && (
-        <div className="border-b border-white/10">
-          <div className="px-4 py-2 flex items-center justify-between bg-white/5">
-            <span className="text-[11px] text-white/60 font-medium">
+        <div className="border-b border-border/50">
+          <div className="px-4 py-2 flex items-center justify-between bg-card/50">
+            <span className="text-[11px] text-muted-foreground font-medium">
               Generated from {nodes.length} nodes
             </span>
             <div className="flex items-center gap-1">
@@ -544,7 +548,7 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 text-white/50 hover:text-white"
+                    className="h-6 w-6"
                     onClick={() => handleCopyCode(currentCode.code, 'preview')}
                   >
                     {copied === 'preview' ? (
@@ -561,7 +565,7 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 text-white/50 hover:text-white"
+                    className="h-6 w-6"
                     onClick={() => handleDownloadCode(currentCode.code, codeLanguage)}
                   >
                     <Download className="w-3 h-3" />
@@ -572,7 +576,7 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
             </div>
           </div>
           {(currentCode.errors.length > 0 || currentCode.warnings.length > 0) && (
-            <div className="px-4 py-1.5 bg-red-500/5">
+            <div className="px-4 py-1.5 bg-destructive/5">
               {currentCode.errors.map((err, i) => (
                 <div key={`e-${i}`} className="text-red-400 text-[10px]">
                   ⚠ {err}
@@ -586,7 +590,7 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
             </div>
           )}
           <ScrollArea className="max-h-[200px]">
-            <pre className="px-4 py-2 text-[11px] font-mono leading-5 text-white/70 overflow-x-auto">
+            <pre className="px-4 py-2 text-[11px] font-mono leading-5 text-foreground/70 overflow-x-auto">
               <code>{currentCode.code}</code>
             </pre>
           </ScrollArea>
@@ -594,11 +598,11 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
       )}
 
       {/* Messages Area */}
-      <ScrollArea className="flex-1 px-4 py-3">
+      <ScrollArea className="flex-1 px-3 py-3">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center py-12">
+          <div className="flex flex-col items-center justify-center h-full text-center py-10">
             <div
-              className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${
+              className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 ${
                 panelMode === 'generate'
                   ? 'bg-pink-500/10'
                   : panelMode === 'code'
@@ -607,33 +611,33 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
               }`}
             >
               {panelMode === 'generate' ? (
-                <Sparkles className="w-6 h-6 text-pink-500/70" />
+                <Sparkles className="w-5 h-5 text-pink-500/70" />
               ) : panelMode === 'code' ? (
-                <Terminal className="w-6 h-6 text-emerald-500/70" />
+                <Terminal className="w-5 h-5 text-emerald-500/70" />
               ) : (
-                <MessageSquare className="w-6 h-6 text-blue-500/70" />
+                <MessageSquare className="w-5 h-5 text-blue-500/70" />
               )}
             </div>
-            <p className="text-sm text-white/70 mb-1 font-medium">
+            <p className="text-xs text-foreground/70 mb-1 font-medium">
               {panelMode === 'generate'
                 ? 'Describe your trading strategy'
                 : panelMode === 'code'
                   ? `Generate ${codeLanguage === 'pinescript' ? 'Pine Script' : codeLanguage} code`
                   : 'Ask about trading strategies'}
             </p>
-            <p className="text-xs text-white/40 mb-4">
+            <p className="text-[10px] text-muted-foreground mb-3">
               {panelMode === 'generate'
                 ? 'AI will create flow nodes for your strategy'
                 : panelMode === 'code'
                   ? 'AI will generate executable trading code'
                   : 'AI can answer questions about your strategy'}
             </p>
-            <div className="space-y-2 w-full max-w-[300px]">
+            <div className="space-y-1.5 w-full">
               {EXAMPLE_PROMPTS[panelMode].slice(0, 3).map((prompt, i) => (
                 <button
                   key={i}
                   onClick={() => setInput(prompt.replace(/"/g, ''))}
-                  className="w-full text-left px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-white/50 hover:text-white/70 transition-colors"
+                  className="w-full text-left px-3 py-1.5 rounded-md bg-muted/50 hover:bg-muted text-[10px] text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {prompt}
                 </button>
@@ -645,48 +649,48 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
             {messages.map((msg, idx) => (
               <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div
-                  className={`max-w-[85%] rounded-xl p-3 ${
+                  className={`max-w-[90%] rounded-lg p-2.5 ${
                     msg.role === 'user'
-                      ? 'bg-pink-500/15 text-white border border-pink-500/20'
+                      ? 'bg-pink-500/15 text-foreground border border-pink-500/20'
                       : msg.error
-                        ? 'bg-red-500/10 border border-red-500/20 text-white'
-                        : 'bg-white/5 text-white border border-white/5'
+                        ? 'bg-destructive/10 border border-destructive/20 text-foreground'
+                        : 'bg-muted/50 text-foreground border border-border/30'
                   }`}
                 >
                   {msg.role === 'assistant' ? (
-                    <div className="text-[13px] prose prose-sm prose-invert max-w-none">
+                    <div className="text-xs prose prose-sm prose-invert max-w-none">
                       <ReactMarkdown
                         components={{
                           p: ({ children }) => (
-                            <p className="mb-2 last:mb-0 text-[13px] leading-relaxed">{children}</p>
+                            <p className="mb-1.5 last:mb-0 text-xs leading-relaxed">{children}</p>
                           ),
                           ul: ({ children }) => (
-                            <ul className="list-disc ml-4 mb-2 text-[13px]">{children}</ul>
+                            <ul className="list-disc ml-3 mb-1.5 text-xs">{children}</ul>
                           ),
                           ol: ({ children }) => (
-                            <ol className="list-decimal ml-4 mb-2 text-[13px]">{children}</ol>
+                            <ol className="list-decimal ml-3 mb-1.5 text-xs">{children}</ol>
                           ),
-                          li: ({ children }) => <li className="mb-1 text-[13px]">{children}</li>,
+                          li: ({ children }) => <li className="mb-0.5 text-xs">{children}</li>,
                           strong: ({ children }) => (
-                            <strong className="font-semibold text-white">{children}</strong>
+                            <strong className="font-semibold text-foreground">{children}</strong>
                           ),
                           em: ({ children }) => (
-                            <em className="italic text-white/60">{children}</em>
+                            <em className="italic text-muted-foreground">{children}</em>
                           ),
                           code: ({ className, children }) => {
                             const isBlock = className?.includes('language-');
                             if (isBlock) {
                               return (
                                 <div className="relative group my-2">
-                                  <pre className="bg-black/40 rounded-lg p-3 overflow-x-auto border border-white/10">
-                                    <code className="text-[11px] font-mono leading-5 text-emerald-300">
+                                  <pre className="bg-black/30 rounded-md p-2.5 overflow-x-auto border border-border/50">
+                                    <code className="text-[10px] font-mono leading-5 text-emerald-300">
                                       {children}
                                     </code>
                                   </pre>
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-white/50 hover:text-white bg-white/10"
+                                    className="absolute top-1.5 right-1.5 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity bg-muted/80"
                                     onClick={() => handleCopyCode(String(children), `msg-${idx}`)}
                                   >
                                     {copied === `msg-${idx}` ? (
@@ -699,7 +703,7 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
                               );
                             }
                             return (
-                              <code className="bg-white/10 px-1.5 py-0.5 rounded text-[11px] text-pink-300">
+                              <code className="bg-muted px-1 py-0.5 rounded text-[10px] text-pink-300">
                                 {children}
                               </code>
                             );
@@ -712,9 +716,9 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
 
                       {/* Code block with actions */}
                       {msg.codeBlock && (
-                        <div className="mt-3 rounded-lg border border-white/10 overflow-hidden">
-                          <div className="flex items-center justify-between px-3 py-1.5 bg-white/5 border-b border-white/10">
-                            <span className="text-[10px] text-white/50 font-medium uppercase tracking-wider">
+                        <div className="mt-2 rounded-md border border-border/50 overflow-hidden">
+                          <div className="flex items-center justify-between px-2.5 py-1 bg-card/50 border-b border-border/50">
+                            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
                               {msg.codeBlock.language === 'pinescript'
                                 ? 'Pine Script'
                                 : msg.codeBlock.language}
@@ -723,7 +727,7 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-5 w-5 text-white/50 hover:text-white"
+                                className="h-5 w-5"
                                 onClick={() =>
                                   handleCopyCode(msg.codeBlock!.code, `block-${idx}`)
                                 }
@@ -737,7 +741,7 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-5 w-5 text-white/50 hover:text-white"
+                                className="h-5 w-5"
                                 onClick={() =>
                                   handleDownloadCode(
                                     msg.codeBlock!.code,
@@ -749,8 +753,8 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
                               </Button>
                             </div>
                           </div>
-                          <ScrollArea className="max-h-[300px]">
-                            <pre className="p-3 text-[11px] font-mono leading-5 text-emerald-300 overflow-x-auto">
+                          <ScrollArea className="max-h-[250px]">
+                            <pre className="p-2.5 text-[10px] font-mono leading-5 text-emerald-300 overflow-x-auto">
                               <code>{msg.codeBlock.code}</code>
                             </pre>
                           </ScrollArea>
@@ -759,20 +763,20 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
 
                       {/* Add to Canvas buttons */}
                       {msg.nodes && msg.nodes.length > 0 && (
-                        <div className="mt-3 pt-3 border-t border-white/10 space-y-2">
+                        <div className="mt-2 pt-2 border-t border-border/50 space-y-1.5">
                           <Button
                             size="sm"
                             onClick={() => addNodesToCanvas(msg.nodes!, msg.edges || [], false)}
-                            className="w-full h-8 text-xs bg-green-600 hover:bg-green-700 font-medium"
+                            className="w-full h-7 text-xs bg-green-600 hover:bg-green-700 font-medium"
                           >
-                            <Blocks className="w-3.5 h-3.5 mr-1.5" />
-                            Add {msg.nodes.length} Nodes to Canvas
+                            <Blocks className="w-3 h-3 mr-1" />
+                            Add {msg.nodes.length} Nodes
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => addNodesToCanvas(msg.nodes!, msg.edges || [], true)}
-                            className="w-full h-8 text-xs border-white/20 text-white/60 hover:text-white hover:bg-white/10"
+                            className="w-full h-7 text-xs border-border/50 text-muted-foreground hover:text-foreground"
                           >
                             Replace Canvas
                           </Button>
@@ -780,7 +784,7 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
                       )}
                     </div>
                   ) : (
-                    <p className="text-[13px] whitespace-pre-wrap">{msg.content}</p>
+                    <p className="text-xs whitespace-pre-wrap">{msg.content}</p>
                   )}
                 </div>
               </div>
@@ -789,15 +793,15 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
             {/* Loading State */}
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-white/5 rounded-xl p-3 max-w-[85%] border border-white/5">
+                <div className="bg-muted/50 rounded-lg p-2.5 max-w-[90%] border border-border/30">
                   {generationProgress ? (
-                    <div className="space-y-2.5">
+                    <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin text-pink-500" />
-                        <span className="text-xs text-white/70">{generationProgress.message}...</span>
+                        <Loader2 className="w-3 h-3 animate-spin text-pink-500" />
+                        <span className="text-xs text-muted-foreground">{generationProgress.message}...</span>
                       </div>
 
-                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-1 bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full bg-gradient-to-r from-pink-500 to-purple-500 transition-all duration-500 rounded-full"
                           style={{
@@ -806,7 +810,7 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
                         />
                       </div>
 
-                      <div className="flex items-center justify-between text-[11px] text-white/50">
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                         <span>
                           Step {generationProgress.step} of {generationProgress.totalSteps}
                         </span>
@@ -817,8 +821,8 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin text-pink-500" />
-                      <span className="text-xs text-white/70">
+                      <Loader2 className="w-3 h-3 animate-spin text-pink-500" />
+                      <span className="text-xs text-muted-foreground">
                         {panelMode === 'generate'
                           ? 'Generating nodes...'
                           : panelMode === 'code'
@@ -837,19 +841,19 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
       </ScrollArea>
 
       {/* Input Area */}
-      <div className="p-4 border-t border-white/10 bg-black/20">
+      <div className="px-3 py-2.5 border-t border-border/50">
         {/* Workspace context indicator */}
         {nodes.length > 0 && (
-          <div className="flex items-center gap-2 px-3 py-1.5 mb-3 bg-white/5 rounded-lg text-[11px] text-white/50">
-            <Eye className="w-3 h-3" />
+          <div className="flex items-center gap-1.5 px-2 py-1 mb-2 bg-muted/50 rounded text-[10px] text-muted-foreground">
+            <Eye className="w-2.5 h-2.5" />
             <span>
               AI can see your workspace ({nodes.length} nodes
-              {panelMode === 'code' ? ` · generating ${codeLanguage}` : ''})
+              {panelMode === 'code' ? ` · ${codeLanguage}` : ''})
             </span>
           </div>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex gap-1.5">
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -858,17 +862,17 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
               panelMode === 'generate'
                 ? 'Describe your strategy...'
                 : panelMode === 'code'
-                  ? `Describe ${codeLanguage === 'pinescript' ? 'Pine Script' : codeLanguage} code to generate...`
+                  ? `Describe ${codeLanguage === 'pinescript' ? 'Pine Script' : codeLanguage} code...`
                   : 'Ask a question...'
             }
             disabled={isLoading}
-            className="flex-1 h-10 text-sm bg-white/5 border-white/10 placeholder:text-white/30 text-white focus:border-pink-500/50 focus:ring-pink-500/20"
+            className="flex-1 h-8 text-xs bg-muted/50 border-border/50 placeholder:text-muted-foreground/50 focus:border-primary/50 transition-colors"
           />
           <Button
             onClick={handleSend}
             disabled={isLoading || !input.trim()}
             size="icon"
-            className={`h-10 w-10 ${
+            className={`h-8 w-8 ${
               panelMode === 'generate'
                 ? 'bg-pink-500 hover:bg-pink-600'
                 : panelMode === 'code'
@@ -876,7 +880,7 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
                   : 'bg-blue-500 hover:bg-blue-600'
             } disabled:opacity-40`}
           >
-            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
           </Button>
         </div>
       </div>
