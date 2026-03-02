@@ -281,7 +281,8 @@ const StrategyFlowCanvasInner = () => {
   // Panel visibility states
   const [showCodePanel, setShowCodePanel] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(1);
+  const [zoomLevel, setZoomLevel] = useState(() => useStrategyFlowStore.getState().viewport.zoom);
+  const hasRestoredViewport = useRef(false);
 
   // Modal states
   const [showBacktest, setShowBacktest] = useState(false);
@@ -319,6 +320,18 @@ const StrategyFlowCanvasInner = () => {
     setViewport(vp);
     setZoomLevel(vp.zoom);
   }, [setViewport]);
+
+  // Only fitView on first mount when there's no meaningful saved viewport
+  useEffect(() => {
+    if (hasRestoredViewport.current) return;
+    hasRestoredViewport.current = true;
+    const savedViewport = useStrategyFlowStore.getState().viewport;
+    // If the viewport is at default (0,0, zoom 1) and there are nodes, do a fitView
+    // Otherwise the persisted viewport (defaultViewport prop) is used
+    if (savedViewport.x === 0 && savedViewport.y === 0 && savedViewport.zoom === 1 && nodes.length > 0) {
+      fitView({ padding: 0.2, duration: 0 });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Get selected node object
   const selectedNode = useMemo(() => {
@@ -431,9 +444,6 @@ const StrategyFlowCanvasInner = () => {
     return isValidConnection(sourceNode, targetNode);
   }, [nodes]);
 
-  // Memoize fitView options
-  const fitViewOptions = useMemo(() => ({ padding: 0.2 }), []);
-
   return (
     <div
       ref={reactFlowWrapper}
@@ -462,8 +472,6 @@ const StrategyFlowCanvasInner = () => {
         nodesDraggable={!isLocked}
         nodesConnectable={!isLocked}
         elementsSelectable={!isLocked}
-        fitView
-        fitViewOptions={fitViewOptions}
         minZoom={0.1}
         maxZoom={4}
         snapToGrid={false}
