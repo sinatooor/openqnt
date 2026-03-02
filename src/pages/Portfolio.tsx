@@ -85,6 +85,7 @@ import { PAGE_CONTENT_CLASS } from '@/components/PageHeader';
 // Stores
 import { usePortfolioStore, type AssetType, type HoldingInputMode, type PortfolioHolding, ASSET_COLORS, CHART_COLORS } from '@/stores/portfolioStore';
 import { useAppModeStore } from '@/stores/appModeStore';
+import { api } from '@/services/api';
 
 // ─── Asset Type Icons ───────────────────────────────────────
 
@@ -191,6 +192,7 @@ const Portfolio = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const [loadingPrices, setLoadingPrices] = useState(false);
 
   // Use demo data when in demo mode and portfolio is empty
   const isDemo = mode === 'demo';
@@ -274,16 +276,33 @@ const Portfolio = () => {
 
   const demoHistory = useMemo(() => generateDemoHistory(), []);
 
-  const handleRefreshPrices = useCallback(() => {
-    // In a real app, this would call the API to refresh prices
-    // For now, simulate random price updates
-    displayHoldings.forEach((h) => {
-      const changePercent = (Math.random() - 0.45) * 0.04;
-      const newPrice = (h.currentPrice || h.avgCost) * (1 + changePercent);
-      store.updatePrice(h.symbol, newPrice, h.currentPrice);
-    });
-    store.takeSnapshot();
-  }, [displayHoldings, store]);
+  const handleRefreshPrices = useCallback(async () => {
+    if (isDemo && !hasHoldings) {
+      // Simulate random price updates for purely demo data
+      displayHoldings.forEach((h) => {
+        const changePercent = (Math.random() - 0.45) * 0.04;
+        const newPrice = (h.currentPrice || h.avgCost) * (1 + changePercent);
+        store.updatePrice(h.symbol, newPrice, h.currentPrice);
+      });
+      store.takeSnapshot();
+      return;
+    }
+
+    if (displayHoldings.length === 0) return;
+
+    setLoadingPrices(true);
+    try {
+      const symbols = displayHoldings.map(h => h.symbol);
+      const response = await api.getPortfolioPrices(symbols);
+      // Response might return {"AAPL": {"price": 180.5, "previousClose": 178.2}} directly or wrapped
+      store.updatePrices(response.prices || response);
+      store.takeSnapshot();
+    } catch (error) {
+      console.error('Failed to fetch portfolio prices:', error);
+    } finally {
+      setLoadingPrices(false);
+    }
+  }, [displayHoldings, store, isDemo, hasHoldings]);
 
   return (
     <ConfigProvider
@@ -322,9 +341,10 @@ const Portfolio = () => {
                   <TooltipTrigger asChild>
                     <button
                       onClick={handleRefreshPrices}
-                      className="p-1.5 rounded hover:bg-white/10 transition-colors text-white/60 hover:text-white"
+                      disabled={loadingPrices}
+                      className={`p-1.5 rounded hover:bg-white/10 transition-colors text-white/60 hover:text-white ${loadingPrices ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                      <RefreshCw className="w-4 h-4" />
+                      <RefreshCw className={`w-4 h-4 ${loadingPrices ? 'animate-spin' : ''}`} />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>Refresh prices</TooltipContent>
@@ -957,11 +977,11 @@ const Portfolio = () => {
                           label="Diversification"
                           value={
                             assetTypeBreakdown.length >= 4 ? 'Well Diversified' :
-                            assetTypeBreakdown.length >= 2 ? 'Moderate' : 'Concentrated'
+                              assetTypeBreakdown.length >= 2 ? 'Moderate' : 'Concentrated'
                           }
                           valueColor={
                             assetTypeBreakdown.length >= 4 ? 'text-green-400' :
-                            assetTypeBreakdown.length >= 2 ? 'text-amber-400' : 'text-red-400'
+                              assetTypeBreakdown.length >= 2 ? 'text-amber-400' : 'text-red-400'
                           }
                         />
                       </div>
@@ -1032,11 +1052,10 @@ const AddHoldingDialog = ({ onAdd, onClose }: AddHoldingDialogProps) => {
               <button
                 key={type}
                 onClick={() => setAssetType(type)}
-                className={`flex flex-col items-center gap-1 p-2 rounded-lg text-[10px] transition-all ${
-                  assetType === type
+                className={`flex flex-col items-center gap-1 p-2 rounded-lg text-[10px] transition-all ${assetType === type
                     ? 'bg-primary/20 text-primary border border-primary/30'
                     : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'
-                }`}
+                  }`}
               >
                 <span style={{ color: assetType === type ? undefined : ASSET_COLORS[type] }}>
                   {ASSET_TYPE_ICONS[type]}
@@ -1075,21 +1094,19 @@ const AddHoldingDialog = ({ onAdd, onClose }: AddHoldingDialogProps) => {
           <div className="flex gap-2">
             <button
               onClick={() => setInputMode('quantity')}
-              className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                inputMode === 'quantity'
+              className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${inputMode === 'quantity'
                   ? 'bg-primary/20 text-primary border border-primary/30'
                   : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'
-              }`}
+                }`}
             >
               By Quantity
             </button>
             <button
               onClick={() => setInputMode('percentage')}
-              className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                inputMode === 'percentage'
+              className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${inputMode === 'percentage'
                   ? 'bg-primary/20 text-primary border border-primary/30'
                   : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'
-              }`}
+                }`}
             >
               By Percentage
             </button>

@@ -28,9 +28,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useStrategyFlowStore, selectSelectedNode } from '../store/strategyFlowStore';
-import { 
-  IndicatorNodeData, 
-  ActionNodeData, 
+import {
+  IndicatorNodeData,
+  ActionNodeData,
   ConditionNodeData,
   ControlNodeData,
   VariableNodeData,
@@ -42,6 +42,7 @@ import {
   LLMNodeType,
   LLMModel,
   TIMEFRAME_OPTIONS,
+  PortfolioNodeData,
 } from '../types';
 
 // =============================================================================
@@ -65,15 +66,15 @@ interface DetachableInputProps {
   canDetach?: boolean;
 }
 
-const DetachableInput = memo(({ 
-  label, 
-  value, 
-  onChange, 
+const DetachableInput = memo(({
+  label,
+  value,
+  onChange,
   onDetachedChange,
   isDetached,
-  min, 
-  max, 
-  step = 1, 
+  min,
+  max,
+  step = 1,
   description,
   canDetach = true
 }: DetachableInputProps) => (
@@ -86,8 +87,8 @@ const DetachableInput = memo(({
             onClick={() => onDetachedChange(!isDetached)}
             className={cn(
               "px-1.5 py-0.5 text-[9px] rounded transition-colors",
-              isDetached 
-                ? "bg-purple-500/20 text-purple-400 border border-purple-500/30" 
+              isDetached
+                ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
                 : "bg-white/5 text-muted-foreground hover:bg-white/10"
             )}
             title={isDetached ? "Click to use fixed value" : "Click to use node input"}
@@ -237,7 +238,7 @@ const IndicatorProperties = memo(({ nodeId, data }: IndicatorPropertiesProps) =>
   // Common parameters based on indicator type
   const renderParams = () => {
     const params = data.params || {};
-    
+
     switch (data.indicatorType) {
       case 'sma':
       case 'ema':
@@ -705,19 +706,19 @@ const VariableProperties = memo(({ nodeId, data }: VariablePropertiesProps) => {
 
   return (
     <div className="space-y-4">
-      {(data.variableType === 'setVariable' || 
-        data.variableType === 'getVariable' || 
+      {(data.variableType === 'setVariable' ||
+        data.variableType === 'getVariable' ||
         data.variableType === 'changeVariable') && (
-        <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Variable Name</Label>
-          <Input
-            value={data.variableName || ''}
-            onChange={(e) => updateNodeData(nodeId, { variableName: e.target.value })}
-            placeholder="myVariable"
-            className="text-sm font-mono"
-          />
-        </div>
-      )}
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Variable Name</Label>
+            <Input
+              value={data.variableName || ''}
+              onChange={(e) => updateNodeData(nodeId, { variableName: e.target.value })}
+              placeholder="myVariable"
+              className="text-sm font-mono"
+            />
+          </div>
+        )}
 
       {(data.variableType === 'setVariable' || data.variableType === 'changeVariable') && (
         <NumberInput
@@ -1007,8 +1008,8 @@ const LLMProperties = memo(({ nodeId, data }: LLMPropertiesProps) => {
       {/* Model Selection */}
       <div className="space-y-2">
         <Label className="text-xs text-muted-foreground">Model</Label>
-        <Select 
-          value={data.model || 'gpt-4o-mini'} 
+        <Select
+          value={data.model || 'gpt-4o-mini'}
           onValueChange={(v) => updateNodeData(nodeId, { model: v as LLMModel })}
         >
           <SelectTrigger className="h-8 text-sm">
@@ -1018,8 +1019,8 @@ const LLMProperties = memo(({ nodeId, data }: LLMPropertiesProps) => {
             {LLM_MODELS.map((model) => {
               const isAvailable = configuredProviders.has(model.provider);
               return (
-                <SelectItem 
-                  key={model.id} 
+                <SelectItem
+                  key={model.id}
                   value={model.id}
                   disabled={!isAvailable}
                   className={!isAvailable ? 'opacity-50' : ''}
@@ -1159,12 +1160,93 @@ const LLMProperties = memo(({ nodeId, data }: LLMPropertiesProps) => {
 LLMProperties.displayName = 'LLMProperties';
 
 // =============================================================================
+// PORTFOLIO PROPERTIES
+// =============================================================================
+
+interface PortfolioPropertiesProps {
+  nodeId: string;
+  data: PortfolioNodeData;
+}
+
+const PortfolioProperties = memo(({ nodeId, data }: PortfolioPropertiesProps) => {
+  const { updateNodeData } = useStrategyFlowStore();
+  const action = data.portfolioAction;
+
+  return (
+    <div className="space-y-4">
+      <div className="text-sm text-muted-foreground mb-4">
+        {action === 'readHoldings' && <p>Outputs your current portfolio holdings.</p>}
+        {action === 'totalValue' && <p>Outputs the total value of your portfolio.</p>}
+        {action === 'dayChange' && <p>Outputs today's portfolio change.</p>}
+      </div>
+
+      {['assetWeight', 'assetPnl', 'setTargetWeight'].includes(action) && (
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">Symbol</Label>
+          <Input
+            value={data.symbol || ''}
+            onChange={(e) => updateNodeData(nodeId, { symbol: e.target.value.toUpperCase() })}
+            placeholder="e.g. AAPL or BTC"
+            className="text-sm"
+          />
+        </div>
+      )}
+
+      {['concentrationCheck', 'correlationCheck'].includes(action) && (
+        <SliderInput
+          label="Threshold (%)"
+          value={data.threshold ?? 30}
+          onChange={(v) => updateNodeData(nodeId, { threshold: v })}
+          min={1}
+          max={100}
+        />
+      )}
+
+      {action === 'rebalanceSignal' && (
+        <SliderInput
+          label="Drift Threshold (%)"
+          value={data.driftThreshold ?? 5}
+          onChange={(v) => updateNodeData(nodeId, { driftThreshold: v })}
+          min={1}
+          max={20}
+        />
+      )}
+
+      {action === 'setTargetWeight' && (
+        <SliderInput
+          label="Target Allocation (%)"
+          value={data.targetPct ?? 10}
+          onChange={(v) => updateNodeData(nodeId, { targetPct: v })}
+          min={0}
+          max={100}
+        />
+      )}
+
+      {action === 'optimizePortfolio' && (
+        <SelectInput
+          label="Optimization Goal"
+          value={data.optimizationGoal || 'sharpe'}
+          onChange={(v) => updateNodeData(nodeId, { optimizationGoal: v as any })}
+          options={[
+            { value: 'sharpe', label: 'Max Sharpe Ratio' },
+            { value: 'risk', label: 'Min Risk (Variance)' },
+            { value: 'return', label: 'Max Return' },
+          ]}
+        />
+      )}
+    </div>
+  );
+});
+
+PortfolioProperties.displayName = 'PortfolioProperties';
+
+// =============================================================================
 // MAIN COMPONENT
 // =============================================================================
 
 export const RightPropertyPanel = memo(() => {
-  const { 
-    rightPanelOpen, 
+  const {
+    rightPanelOpen,
     rightPanelWidth,
     selectedNodeId,
     setRightPanelOpen,
@@ -1203,6 +1285,8 @@ export const RightPropertyPanel = memo(() => {
         return <TradeInfoProperties nodeId={selectedNode.id} data={data as TradeInfoNodeData} />;
       case 'llm':
         return <LLMProperties nodeId={selectedNode.id} data={data as LLMNodeData} />;
+      case 'portfolio':
+        return <PortfolioProperties nodeId={selectedNode.id} data={data as PortfolioNodeData} />;
       case 'environment':
         return (
           <div className="text-sm text-muted-foreground">
@@ -1215,7 +1299,7 @@ export const RightPropertyPanel = memo(() => {
   };
 
   return (
-    <div 
+    <div
       className="h-full border-l border-border/50 glass flex flex-col shadow-trading-lg animate-in slide-in-from-right duration-300"
       style={{ width: rightPanelWidth }}
     >
@@ -1251,7 +1335,7 @@ export const RightPropertyPanel = memo(() => {
                 )}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => deleteNode(selectedNode.id)}
                 className="text-destructive focus:text-destructive"
               >
@@ -1261,9 +1345,9 @@ export const RightPropertyPanel = memo(() => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             className="h-7 w-7"
             onClick={() => setRightPanelOpen(false)}
           >
