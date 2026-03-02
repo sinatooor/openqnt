@@ -214,7 +214,7 @@ cp .env.example .env
 
 ```bash
 # Terminal 1 — Python Compute Service
-cd backend && conda activate fyer && uvicorn main:app --reload --port 8000
+cd backend && conda activate openqwnt && uvicorn main:app --reload --port 8000
 
 # Terminal 2 — React Frontend
 bun run dev
@@ -269,7 +269,7 @@ docker-compose up --build
 ## 📁 Project Structure
 
 ```
-fyer/
+openqwnt/
 ├── src/                          # React Frontend
 │   └── features/strategy-flow/  # ReactFlow strategy builder
 │       ├── catalog/              # Node definitions by category

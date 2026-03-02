@@ -31,7 +31,7 @@ export const useAppModeStore = create<AppModeState>()(
       isReal: () => get().mode === 'real',
     }),
     {
-      name: 'fyer-app-mode',
+      name: 'openqwnt-app-mode',
       storage: createJSONStorage(() => localStorage),
     }
   )

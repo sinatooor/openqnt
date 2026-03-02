@@ -1,5 +1,5 @@
 # =============================================================================
-# Fyer Trading Platform - Backend Dependencies
+# OpenQwnt Trading Platform - Backend Dependencies
 # =============================================================================
 
 # Core Framework

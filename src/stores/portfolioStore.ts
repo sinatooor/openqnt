@@ -264,7 +264,7 @@ export const usePortfolioStore = create<PortfolioState>()(
       importHoldings: (holdings) => set({ holdings }),
     }),
     {
-      name: 'fyer-portfolio',
+      name: 'openqwnt-portfolio',
       storage: createJSONStorage(() => localStorage),
     }
   )
