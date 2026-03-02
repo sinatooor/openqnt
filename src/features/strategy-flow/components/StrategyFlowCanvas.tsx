@@ -560,11 +560,9 @@ const StrategyFlowCanvasInner = () => {
         </div>
       )}
 
-      {/* AI Chat Panel (floating right side) */}
+      {/* AI Chat Panel (full-height slider panel) */}
       {showAIPanel && (
-        <div className="fixed top-20 right-4 z-50 animate-in slide-in-from-right-2 duration-200">
-          <AIChatPanel open={showAIPanel} onOpenChange={setShowAIPanel} />
-        </div>
+        <AIChatPanel open={showAIPanel} onOpenChange={setShowAIPanel} />
       )}
 
       {/* Modals */}
