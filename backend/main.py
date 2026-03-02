@@ -237,6 +237,9 @@ app.include_router(strategy_flow_v2_router)
 from routers.compute import router as compute_router
 app.include_router(compute_router)
 
+from routers.portfolio import router as portfolio_router
+app.include_router(portfolio_router)
+
 
 # ============================================================
 # Root-level health and custom-blocks endpoints

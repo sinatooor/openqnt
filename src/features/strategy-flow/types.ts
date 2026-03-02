@@ -79,6 +79,8 @@ export type ActionType =
   | 'takeProfit'     // Set take profit
   | 'trailingStop'   // Trailing stop
   | 'notification'   // Send alert
+  | 'options_order'  // Options trading order
+  | 'portfolio_rebalance' // Rebalance portfolio
   | 'log';           // Log to console
 
 export type OrderDirection = 'long' | 'short';
@@ -179,6 +181,11 @@ export interface ActionNodeData extends BaseNodeData {
   stopPrice?: number;
   takeProfitPrice?: number;
   trailingDistance?: number;
+  // Options specific
+  optionType?: 'call' | 'put';
+  strike?: string;
+  // Portfolio rebalance specific
+  rebalanceThresholdPercent?: number;
   // Notification specific
   message?: string;
   channel?: 'email' | 'sms' | 'telegram' | 'discord';
@@ -458,6 +465,34 @@ export interface PineScriptNodeData extends BaseNodeData {
   alertMessage?: string;
 }
 
+// =============================================================================
+// PORTFOLIO NODE TYPES
+// =============================================================================
+
+export type PortfolioAction =
+  | 'readHoldings'
+  | 'totalValue'
+  | 'assetWeight'
+  | 'assetPnl'
+  | 'dayChange'
+  | 'concentrationCheck'
+  | 'diversificationScore'
+  | 'correlationCheck'
+  | 'drawdownCheck'
+  | 'rebalanceSignal'
+  | 'setTargetWeight'
+  | 'optimizePortfolio'
+  | 'sectorExposure';
+
+export interface PortfolioNodeData extends BaseNodeData {
+  portfolioAction: PortfolioAction;
+  symbol?: string;
+  threshold?: number;
+  driftThreshold?: number;
+  targetPct?: number;
+  optimizationGoal?: 'sharpe' | 'risk' | 'return';
+}
+
 // Union type for all node data
 export type StrategyNodeData =
   | IndicatorNodeData
@@ -472,7 +507,8 @@ export type StrategyNodeData =
   | LLMNodeData
   | TriggerNodeData
   | IntegrationNodeData
-  | PineScriptNodeData;
+  | PineScriptNodeData
+  | PortfolioNodeData;
 
 // =============================================================================
 // STRATEGY FLOW NODE TYPES

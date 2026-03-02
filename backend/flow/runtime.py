@@ -31,6 +31,7 @@ class OrderIntent:
     stop_loss: Optional[float] = None
     take_profit: Optional[float] = None
     tag: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -285,6 +286,52 @@ class FlowInterpreter:
                 outputs[node_id] = {"output": value}
                 continue
 
+            if ntype == "portfolio":
+                action = data.get("portfolioAction")
+                symbol = data.get("symbol", "").upper()
+                threshold = float(data.get("threshold", 30))
+                value = 0.0
+
+                if action == "totalValue":
+                    value = ctx.portfolio.equity
+                elif action == "assetWeight" and symbol in ctx.portfolio.positions:
+                    pos = ctx.portfolio.positions[symbol]
+                    # basic approximation using current bar close if it matches symbol, else entry
+                    price = ctx.bar.close if ctx.bar.symbol == symbol else pos.entry_price
+                    pos_value = pos.size * price
+                    value = (pos_value / max(ctx.portfolio.equity, 1e-9)) * 100
+                elif action == "assetPnl" and symbol in ctx.portfolio.positions:
+                    pos = ctx.portfolio.positions[symbol]
+                    price = ctx.bar.close if ctx.bar.symbol == symbol else pos.entry_price
+                    multiplier = 1 if pos.side == "LONG" else -1
+                    value = (price - pos.entry_price) * pos.size * multiplier
+                elif action == "concentrationCheck":
+                    # Check if any position > threshold %
+                    is_concentrated = False
+                    for p_sym, pos in ctx.portfolio.positions.items():
+                        price = ctx.bar.close if ctx.bar.symbol == p_sym else pos.entry_price
+                        weight = ((pos.size * price) / max(ctx.portfolio.equity, 1e-9)) * 100
+                        if weight > threshold:
+                            is_concentrated = True
+                            break
+                    value = is_concentrated
+                elif action == "diversificationScore":
+                    # Simple mock score based on count of distinct symbols
+                    value = min(100, len(ctx.portfolio.positions) * 10)
+                elif action == "rebalanceSignal":
+                    drift = float(data.get("driftThreshold", 5))
+                    target = float(data.get("targetPct", 10))
+                    if symbol in ctx.portfolio.positions:
+                        pos = ctx.portfolio.positions[symbol]
+                        price = ctx.bar.close if ctx.bar.symbol == symbol else pos.entry_price
+                        weight = ((pos.size * price) / max(ctx.portfolio.equity, 1e-9)) * 100
+                        value = abs(weight - target) > drift
+                    else:
+                        value = False
+
+                outputs[node_id] = {"output": value}
+                continue
+
             if ntype == "condition":
                 condition_type = data.get("conditionType")
                 if condition_type in {"and", "or"}:
@@ -374,6 +421,39 @@ class FlowInterpreter:
                             stop_loss=data.get("stopPrice"),
                             take_profit=data.get("takeProfitPrice"),
                             tag=node_id,
+                        )
+                    )
+                    outputs[node_id] = {"output": True}
+                elif action_type == "options_order":
+                    direction = data.get("direction", "buy")
+                    side = "BUY" if direction == "buy" else "SELL"
+                    size = float(data.get("size") or 1.0)
+                    intents.append(
+                        OrderIntent(
+                            symbol=data.get("symbol", self.settings.get("symbol", "UNKNOWN")),
+                            side=side,
+                            order_type="options",
+                            size=size,
+                            tag=node_id,
+                            metadata={
+                                "option_type": data.get("optionType", "call"),
+                                "strike": data.get("strike", "ATM")
+                            }
+                        )
+                    )
+                    outputs[node_id] = {"output": True}
+                elif action_type == "portfolio_rebalance":
+                    threshold = float(data.get("rebalanceThresholdPercent") or 5.0)
+                    intents.append(
+                        OrderIntent(
+                            symbol="PORTFOLIO",
+                            side="REBALANCE",
+                            order_type="rebalance",
+                            size=0,
+                            tag=node_id,
+                            metadata={
+                                "rebalance_threshold": threshold
+                            }
                         )
                     )
                     outputs[node_id] = {"output": True}
