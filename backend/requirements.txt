@@ -33,6 +33,7 @@ yfinance
 
 # Quantitative Analytics
 quantstats
+statsmodels
 
 # RAG & Vector DB
 chromadb
