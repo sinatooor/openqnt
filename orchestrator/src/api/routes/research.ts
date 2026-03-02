@@ -7,6 +7,9 @@ import {
     runVaRCVaR, VaRCVaRRequest,
     runCointegration, CointegrationRequest,
     runParamSweep, ParamSweepRequest,
+    runQuantStats, QuantStatsRequest,
+    runQuantStrategy, QuantStrategyRequest,
+    listQuantStrategies,
 } from '../../services/computeClient.js';
 import { logger } from '../../utils/logger.js';
 import { authMiddleware } from '../middleware/auth.js';
@@ -132,6 +135,50 @@ router.post('/param-sweep', async (req, res) => {
     } catch (error: any) {
         logger.error({ err: error }, 'Parameter sweep failed');
         return res.status(500).json({ error: error.message || 'Parameter sweep failed' });
+    }
+});
+
+// ─── QuantStats Portfolio Analytics ─────────────────────────
+
+router.post('/quantstats', async (req, res) => {
+    try {
+        const request: QuantStatsRequest = req.body;
+        if (!request.ticker) {
+            return res.status(400).json({ error: 'Missing required field: ticker' });
+        }
+        const result = await runQuantStats(request);
+        return res.json(result.data);
+    } catch (error: any) {
+        logger.error({ err: error }, 'QuantStats report failed');
+        return res.status(500).json({ error: error.message || 'QuantStats report failed' });
+    }
+});
+
+// ─── Quant-Trading Strategy Backtest ────────────────────────
+
+router.post('/quant-strategy', async (req, res) => {
+    try {
+        const request: QuantStrategyRequest = req.body;
+        if (!request.strategy || !request.ticker) {
+            return res.status(400).json({ error: 'Missing required fields: strategy, ticker' });
+        }
+        const result = await runQuantStrategy(request);
+        return res.json(result.data);
+    } catch (error: any) {
+        logger.error({ err: error }, 'Quant strategy failed');
+        return res.status(500).json({ error: error.message || 'Quant strategy backtest failed' });
+    }
+});
+
+// ─── List Available Quant Strategies ────────────────────────
+
+router.get('/quant-strategies-list', async (_req, res) => {
+    try {
+        const result = await listQuantStrategies();
+        return res.json(result.data);
+    } catch (error: any) {
+        logger.error({ err: error }, 'Failed to list quant strategies');
+        return res.status(500).json({ error: error.message || 'Failed to list strategies' });
     }
 });
 

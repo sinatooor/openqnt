@@ -290,3 +290,73 @@ export async function runParamSweep(
     return computeRequest<ParamSweepResponse>('/compute/param-sweep', request);
 }
 
+// ─── QuantStats Report ──────────────────────────────────────
+
+export interface QuantStatsRequest {
+    ticker: string;
+    benchmark?: string;
+    startDate?: string;
+    endDate?: string;
+}
+
+export interface QuantStatsResponse {
+    success: boolean;
+    ticker: string;
+    benchmark: string;
+    startDate: string;
+    endDate: string;
+    metrics: Record<string, number | null>;
+    plots: Record<string, string>;
+}
+
+export async function runQuantStats(
+    request: QuantStatsRequest
+): Promise<ComputeResponse<QuantStatsResponse>> {
+    return computeRequest<QuantStatsResponse>('/compute/quantstats-report', request);
+}
+
+// ─── Quant-Trading Strategy ─────────────────────────────────
+
+export interface QuantStrategyRequest {
+    strategy: string;
+    ticker: string;
+    startDate?: string;
+    endDate?: string;
+    params?: Record<string, any>;
+}
+
+export interface QuantStrategyResponse {
+    success: boolean;
+    strategy: string;
+    strategyName: string;
+    ticker: string;
+    startDate: string;
+    endDate: string;
+    metrics: Record<string, number | string>;
+    plotImage: string;
+}
+
+export async function runQuantStrategy(
+    request: QuantStrategyRequest
+): Promise<ComputeResponse<QuantStrategyResponse>> {
+    return computeRequest<QuantStrategyResponse>('/compute/quant-strategy', request);
+}
+
+export interface StrategyListItem {
+    id: string;
+    name: string;
+    description: string;
+    defaultParams: Record<string, any>;
+}
+
+export async function listQuantStrategies(): Promise<ComputeResponse<{ success: boolean; strategies: StrategyListItem[] }>> {
+    const url = `${BASE_URL}/compute/quant-strategies-list`;
+    const start = Date.now();
+    const response = await fetch(url, { method: 'GET', signal: AbortSignal.timeout(TIMEOUT) });
+    if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Compute service error (${response.status}): ${error}`);
+    }
+    const data = await response.json();
+    return { data, durationMs: Date.now() - start };
+}

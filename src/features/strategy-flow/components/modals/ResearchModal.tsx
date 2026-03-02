@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Layers, FlaskConical, Play, BarChart2, Loader2, AlertCircle,
     RefreshCw, TrendingDown, GitCompare, SlidersHorizontal, Activity,
+    BarChart3, Beaker, ChevronDown,
 } from 'lucide-react';
 import { WindowModal } from './WindowModal';
 import { api } from '@/services/api';
@@ -12,9 +13,11 @@ export interface ResearchModalProps {
     onOpenChange: (open: boolean) => void;
 }
 
-type Tab = 'mcpt' | 'montecarlo' | 'hmm' | 'wfo' | 'var' | 'coint' | 'sweep';
+type Tab = 'mcpt' | 'montecarlo' | 'hmm' | 'wfo' | 'var' | 'coint' | 'sweep' | 'quantstats' | 'strategies';
 
 const TABS: { id: Tab; label: string; icon: React.ElementType; color: string }[] = [
+    { id: 'quantstats', label: 'QuantStats', icon: BarChart3, color: 'teal' },
+    { id: 'strategies', label: 'Strategies', icon: Beaker, color: 'orange' },
     { id: 'mcpt', label: 'MCPT', icon: BarChart2, color: 'purple' },
     { id: 'montecarlo', label: 'Monte Carlo', icon: Activity, color: 'cyan' },
     { id: 'hmm', label: 'HMM Regime', icon: Layers, color: 'emerald' },
@@ -39,9 +42,24 @@ async function researchPost(endpoint: string, body: Record<string, any>) {
     return resp.json();
 }
 
+// ── Strategy definitions (client-side fallback) ──
+const STRATEGY_OPTIONS = [
+    { id: 'macd', name: 'MACD Oscillator', params: { shortWindow: 12, longWindow: 26, signalWindow: 9 } },
+    { id: 'pair_trading', name: 'Pair Trading', params: { tickerB: 'MSFT', lookback: 60, entryZ: 2.0, exitZ: 0.5 } },
+    { id: 'heikin_ashi', name: 'Heikin-Ashi', params: {} },
+    { id: 'bollinger_bands', name: 'Bollinger Bands', params: { period: 20, stdDev: 2.0 } },
+    { id: 'rsi', name: 'RSI Pattern', params: { period: 14, overbought: 70, oversold: 30 } },
+    { id: 'parabolic_sar', name: 'Parabolic SAR', params: { af: 0.02, maxAf: 0.2 } },
+    { id: 'awesome_oscillator', name: 'Awesome Oscillator', params: { shortPeriod: 5, longPeriod: 34 } },
+    { id: 'dual_thrust', name: 'Dual Thrust', params: { lookback: 4, k1: 0.5, k2: 0.5 } },
+    { id: 'shooting_star', name: 'Shooting Star', params: { bodyRatio: 0.3, shadowRatio: 2.0 } },
+    { id: 'options_straddle', name: 'Options Straddle', params: { strikePrice: 100, callPremium: 5.0, putPremium: 4.5, days: 30 } },
+    { id: 'vix_calc', name: 'VIX Calculator', params: { windowDays: 30 } },
+];
+
 export const ResearchModal = ({ open, onOpenChange }: ResearchModalProps) => {
     const { strategyName } = useStrategyFlowStore();
-    const [activeTab, setActiveTab] = useState<Tab>('mcpt');
+    const [activeTab, setActiveTab] = useState<Tab>('quantstats');
     const [isRunning, setIsRunning] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -78,6 +96,31 @@ export const ResearchModal = ({ open, onOpenChange }: ResearchModalProps) => {
     const [cointA, setCointA] = useState('');
     const [cointB, setCointB] = useState('');
     const [cointResult, setCointResult] = useState<any>(null);
+
+    // ── QuantStats ──
+    const [qsTicker, setQsTicker] = useState('AAPL');
+    const [qsBenchmark, setQsBenchmark] = useState('SPY');
+    const [qsStart, setQsStart] = useState(() => {
+        const d = new Date(); d.setFullYear(d.getFullYear() - 1); return d.toISOString().split('T')[0];
+    });
+    const [qsEnd, setQsEnd] = useState(() => new Date().toISOString().split('T')[0]);
+    const [qsResult, setQsResult] = useState<any>(null);
+
+    // ── Strategies ──
+    const [selStrategy, setSelStrategy] = useState(STRATEGY_OPTIONS[0].id);
+    const [stratTicker, setStratTicker] = useState('AAPL');
+    const [stratStart, setStratStart] = useState(() => {
+        const d = new Date(); d.setFullYear(d.getFullYear() - 2); return d.toISOString().split('T')[0];
+    });
+    const [stratEnd, setStratEnd] = useState(() => new Date().toISOString().split('T')[0]);
+    const [stratParams, setStratParams] = useState<Record<string, any>>({ ...STRATEGY_OPTIONS[0].params });
+    const [stratResult, setStratResult] = useState<any>(null);
+
+    // When selected strategy changes, reset params
+    useEffect(() => {
+        const s = STRATEGY_OPTIONS.find(o => o.id === selStrategy);
+        if (s) setStratParams({ ...s.params });
+    }, [selStrategy]);
 
     const parseList = (s: string): number[] => s.split(/[,\n\s]+/).map(Number).filter(n => !isNaN(n));
 
@@ -132,6 +175,27 @@ export const ResearchModal = ({ open, onOpenChange }: ResearchModalProps) => {
         setCointResult(res);
     });
 
+    const runQuantStats = () => run(async () => {
+        if (!qsTicker.trim()) throw new Error('Enter a ticker symbol');
+        const res = await researchPost('quantstats', {
+            ticker: qsTicker.trim().toUpperCase(),
+            benchmark: qsBenchmark.trim().toUpperCase(),
+            startDate: qsStart, endDate: qsEnd,
+        });
+        setQsResult(res);
+    });
+
+    const runStrategy = () => run(async () => {
+        if (!stratTicker.trim()) throw new Error('Enter a ticker symbol');
+        const res = await researchPost('quant-strategy', {
+            strategy: selStrategy,
+            ticker: stratTicker.trim().toUpperCase(),
+            startDate: stratStart, endDate: stratEnd,
+            params: stratParams,
+        });
+        setStratResult(res);
+    });
+
     const inputCls = "w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 outline-none transition-all";
     const textareaCls = `${inputCls} font-mono text-xs min-h-[80px]`;
 
@@ -149,13 +213,20 @@ export const ResearchModal = ({ open, onOpenChange }: ResearchModalProps) => {
         </div>
     );
 
+    const SmallStat = ({ label, value, color }: { label: string; value: string | number | null | undefined; color?: string }) => (
+        <div className="bg-card border border-border/50 rounded-lg p-3 shadow-sm">
+            <div className="text-[10px] font-medium text-muted-foreground mb-0.5">{label}</div>
+            <div className={`text-base font-bold ${color ? `text-${color}` : 'text-foreground'}`}>{value ?? 'N/A'}</div>
+        </div>
+    );
+
     return (
         <WindowModal open={open} onOpenChange={onOpenChange}
             title={<div className="flex items-center gap-2"><FlaskConical className="w-5 h-5 text-purple-400" /><span>Research & Quant Tools</span><span className="text-muted-foreground font-normal ml-2">— {strategyName}</span></div>}
-            defaultWidth={1000} defaultHeight={700} minWidth={700} minHeight={450}>
+            defaultWidth={1060} defaultHeight={740} minWidth={700} minHeight={450}>
             <div className="flex h-full flex-col">
                 {/* Tabs */}
-                <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/50 bg-muted/20 overflow-x-auto">
+                <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-border/50 bg-muted/20 overflow-x-auto">
                     {TABS.map(t => {
                         const Icon = t.icon;
                         return (
@@ -176,6 +247,119 @@ export const ResearchModal = ({ open, onOpenChange }: ResearchModalProps) => {
 
                 {/* Content */}
                 <div className="flex-1 overflow-auto p-6 space-y-6">
+
+                    {/* ── QuantStats ── */}
+                    {activeTab === 'quantstats' && (<div className="space-y-5">
+                        <div><h3 className="text-lg font-semibold">QuantStats — Portfolio Analytics</h3><p className="text-sm text-muted-foreground mt-1">Comprehensive portfolio performance analysis powered by <span className="text-teal-400 font-medium">QuantStats</span>. Enter a ticker and benchmark to view Sharpe, drawdowns, rolling stats, and more.</p></div>
+                        <div className="flex gap-4 items-end bg-card border border-border/50 rounded-xl p-4">
+                            <div className="space-y-1.5 flex-1"><label className="text-xs font-medium text-muted-foreground">Ticker</label><input value={qsTicker} onChange={e => setQsTicker(e.target.value.toUpperCase())} className={inputCls} placeholder="AAPL" /></div>
+                            <div className="space-y-1.5 flex-1"><label className="text-xs font-medium text-muted-foreground">Benchmark</label><input value={qsBenchmark} onChange={e => setQsBenchmark(e.target.value.toUpperCase())} className={inputCls} placeholder="SPY" /></div>
+                            <div className="space-y-1.5 flex-1"><label className="text-xs font-medium text-muted-foreground">Start Date</label><input type="date" value={qsStart} onChange={e => setQsStart(e.target.value)} className={inputCls} /></div>
+                            <div className="space-y-1.5 flex-1"><label className="text-xs font-medium text-muted-foreground">End Date</label><input type="date" value={qsEnd} onChange={e => setQsEnd(e.target.value)} className={inputCls} /></div>
+                            <RunBtn onClick={runQuantStats} label="Analyze" />
+                        </div>
+
+                        {qsResult?.metrics && (<div className="space-y-4">
+                            <h4 className="text-sm font-semibold text-foreground flex items-center gap-2"><BarChart3 className="w-4 h-4 text-teal-400" />Key Metrics</h4>
+                            <div className="grid grid-cols-5 gap-3">
+                                <SmallStat label="Sharpe Ratio" value={qsResult.metrics.sharpe?.toFixed(3)} color={qsResult.metrics.sharpe > 1 ? 'green-400' : qsResult.metrics.sharpe > 0 ? 'amber-400' : 'red-400'} />
+                                <SmallStat label="Sortino Ratio" value={qsResult.metrics.sortino?.toFixed(3)} />
+                                <SmallStat label="CAGR" value={qsResult.metrics.cagr != null ? `${(qsResult.metrics.cagr * 100).toFixed(2)}%` : 'N/A'} color={qsResult.metrics.cagr > 0 ? 'green-400' : 'red-400'} />
+                                <SmallStat label="Max Drawdown" value={qsResult.metrics.maxDrawdown != null ? `${(qsResult.metrics.maxDrawdown * 100).toFixed(2)}%` : 'N/A'} color="red-400" />
+                                <SmallStat label="Volatility (ann.)" value={qsResult.metrics.volatility != null ? `${(qsResult.metrics.volatility * 100).toFixed(2)}%` : 'N/A'} />
+                                <SmallStat label="Calmar Ratio" value={qsResult.metrics.calmar?.toFixed(3)} />
+                                <SmallStat label="Win Rate" value={qsResult.metrics.winRate != null ? `${(qsResult.metrics.winRate * 100).toFixed(1)}%` : 'N/A'} />
+                                <SmallStat label="Profit Factor" value={qsResult.metrics.profitFactor?.toFixed(3)} />
+                                <SmallStat label="Value at Risk" value={qsResult.metrics.valueAtRisk != null ? `${(qsResult.metrics.valueAtRisk * 100).toFixed(2)}%` : 'N/A'} color="red-400" />
+                                <SmallStat label="Kelly Criterion" value={qsResult.metrics.kellyC?.toFixed(3)} />
+                            </div>
+                            <div className="grid grid-cols-5 gap-3">
+                                <SmallStat label="Best Day" value={qsResult.metrics.bestDay != null ? `${(qsResult.metrics.bestDay * 100).toFixed(2)}%` : 'N/A'} color="green-400" />
+                                <SmallStat label="Worst Day" value={qsResult.metrics.worstDay != null ? `${(qsResult.metrics.worstDay * 100).toFixed(2)}%` : 'N/A'} color="red-400" />
+                                <SmallStat label="Avg Return" value={qsResult.metrics.avgReturn != null ? `${(qsResult.metrics.avgReturn * 100).toFixed(3)}%` : 'N/A'} />
+                                <SmallStat label="Skewness" value={qsResult.metrics.skew?.toFixed(3)} />
+                                <SmallStat label="Kurtosis" value={qsResult.metrics.kurtosis?.toFixed(3)} />
+                            </div>
+                        </div>)}
+
+                        {qsResult?.plots && Object.keys(qsResult.plots).length > 0 && (
+                            <div className="space-y-4">
+                                <h4 className="text-sm font-semibold text-foreground flex items-center gap-2"><BarChart3 className="w-4 h-4 text-teal-400" />Charts</h4>
+                                {Object.entries(qsResult.plots).map(([key, imgSrc]) => (
+                                    <div key={key} className="rounded-xl overflow-hidden border border-border/30 bg-black">
+                                        <div className="text-xs text-muted-foreground px-3 py-1.5 bg-card/50 border-b border-border/30 capitalize">
+                                            {key.replace(/([A-Z])/g, ' $1').trim()}
+                                        </div>
+                                        <img src={imgSrc as string} alt={key} className="w-full max-h-[400px] object-contain" />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>)}
+
+                    {/* ── Quant Strategies ── */}
+                    {activeTab === 'strategies' && (<div className="space-y-5">
+                        <div><h3 className="text-lg font-semibold">Quant Trading Strategies</h3><p className="text-sm text-muted-foreground mt-1">Run backtests on classic quant strategies from the <span className="text-orange-400 font-medium">quant-trading</span> library. Select a strategy, configure parameters, and view the results.</p></div>
+
+                        <div className="bg-card border border-border/50 rounded-xl p-4 space-y-4">
+                            <div className="flex gap-4 items-end">
+                                <div className="space-y-1.5 flex-[2]">
+                                    <label className="text-xs font-medium text-muted-foreground">Strategy</label>
+                                    <div className="relative">
+                                        <select value={selStrategy} onChange={e => { setSelStrategy(e.target.value); setStratResult(null); }}
+                                            className={`${inputCls} appearance-none pr-8`}>
+                                            {STRATEGY_OPTIONS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                        </select>
+                                        <ChevronDown className="w-4 h-4 text-muted-foreground absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                    </div>
+                                </div>
+                                <div className="space-y-1.5 flex-1"><label className="text-xs font-medium text-muted-foreground">Ticker</label><input value={stratTicker} onChange={e => setStratTicker(e.target.value.toUpperCase())} className={inputCls} placeholder="AAPL" /></div>
+                                <div className="space-y-1.5 flex-1"><label className="text-xs font-medium text-muted-foreground">Start</label><input type="date" value={stratStart} onChange={e => setStratStart(e.target.value)} className={inputCls} /></div>
+                                <div className="space-y-1.5 flex-1"><label className="text-xs font-medium text-muted-foreground">End</label><input type="date" value={stratEnd} onChange={e => setStratEnd(e.target.value)} className={inputCls} /></div>
+                            </div>
+
+                            {/* Dynamic parameters */}
+                            {Object.keys(stratParams).length > 0 && (
+                                <div>
+                                    <label className="text-xs font-medium text-muted-foreground mb-2 block">Parameters</label>
+                                    <div className="grid grid-cols-4 gap-3">
+                                        {Object.entries(stratParams).map(([key, val]) => (
+                                            <div key={key} className="space-y-1">
+                                                <label className="text-[10px] text-muted-foreground capitalize">{key.replace(/([A-Z])/g, ' $1')}</label>
+                                                <input
+                                                    value={val as string}
+                                                    onChange={e => {
+                                                        const v = e.target.value;
+                                                        setStratParams(prev => ({ ...prev, [key]: isNaN(Number(v)) ? v : Number(v) }));
+                                                    }}
+                                                    className={inputCls}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex justify-end"><RunBtn onClick={runStrategy} label="Run Backtest" /></div>
+                        </div>
+
+                        {stratResult && (<div className="space-y-4">
+                            <h4 className="text-sm font-semibold text-foreground flex items-center gap-2"><Beaker className="w-4 h-4 text-orange-400" />{stratResult.strategyName} — Results</h4>
+                            <div className="grid grid-cols-4 gap-3">
+                                {stratResult.metrics && Object.entries(stratResult.metrics).map(([k, v]) => (
+                                    <SmallStat key={k} label={k.replace(/([A-Z])/g, ' $1').replace(/^./, (s: string) => s.toUpperCase())}
+                                        value={typeof v === 'number' ? (Math.abs(v as number) < 10 ? (v as number).toFixed(3) : (v as number).toLocaleString()) : String(v)}
+                                        color={k === 'totalReturn' ? ((v as number) > 0 ? 'green-400' : 'red-400') : k === 'maxDrawdown' ? 'red-400' : undefined}
+                                    />
+                                ))}
+                            </div>
+                            {stratResult.plotImage && (
+                                <div className="rounded-xl overflow-hidden border border-border/30 bg-black">
+                                    <img src={stratResult.plotImage} alt={stratResult.strategyName} className="w-full max-h-[450px] object-contain" />
+                                </div>
+                            )}
+                        </div>)}
+                    </div>)}
 
                     {/* ── MCPT ── */}
                     {activeTab === 'mcpt' && (<div className="space-y-5">

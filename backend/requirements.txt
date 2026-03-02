@@ -31,6 +31,9 @@ aiohttp
 # Market Data
 yfinance
 
+# Quantitative Analytics
+quantstats
+
 # RAG & Vector DB
 chromadb
 sentence-transformers

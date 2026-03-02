@@ -895,3 +895,90 @@ async def compute_param_sweep(request: Dict[str, Any]):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Parameter sweep failed: {str(e)}")
+
+
+# =====================================================================
+# QuantStats & Quant-Trading Strategy Endpoints
+# =====================================================================
+
+@router.post("/quantstats-report")
+async def compute_quantstats_report(request: Dict[str, Any]):
+    """
+    Run QuantStats portfolio analytics on a ticker.
+
+    Input:
+      - ticker: str (e.g. "AAPL")
+      - benchmark: str (default "SPY")
+      - startDate: str (YYYY-MM-DD)
+      - endDate: str (YYYY-MM-DD)
+
+    Output:
+      - metrics: dict of key performance metrics
+      - plots: dict of { plotName: base64_png }
+    """
+    try:
+        from quant_tools import run_quantstats_report
+
+        ticker = request.get("ticker", "")
+        if not ticker:
+            raise HTTPException(status_code=400, detail="Missing required field: ticker")
+
+        result = run_quantstats_report(
+            ticker=ticker,
+            benchmark=request.get("benchmark", "SPY"),
+            start_date=request.get("startDate", ""),
+            end_date=request.get("endDate", ""),
+        )
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"QuantStats report failed: {str(e)}")
+
+
+@router.post("/quant-strategy")
+async def compute_quant_strategy(request: Dict[str, Any]):
+    """
+    Run a quant-trading strategy backtest.
+
+    Input:
+      - strategy: str (e.g. "macd", "bollinger_bands", "rsi")
+      - ticker: str (e.g. "AAPL")
+      - startDate: str
+      - endDate: str
+      - params: dict of strategy-specific parameters
+
+    Output:
+      - metrics: { totalReturn, sharpe, maxDrawdown, winRate, ... }
+      - plotImage: base64 PNG
+    """
+    try:
+        from quant_tools import run_quant_strategy
+
+        strategy = request.get("strategy", "")
+        ticker = request.get("ticker", "")
+        if not strategy or not ticker:
+            raise HTTPException(status_code=400, detail="Missing required fields: strategy, ticker")
+
+        result = run_quant_strategy(
+            strategy=strategy,
+            ticker=ticker,
+            start_date=request.get("startDate", ""),
+            end_date=request.get("endDate", ""),
+            params=request.get("params", {}),
+        )
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Quant strategy failed: {str(e)}")
+
+
+@router.get("/quant-strategies-list")
+async def list_quant_strategies():
+    """Return the catalogue of available quant-trading strategies with default params."""
+    try:
+        from quant_tools import list_strategies
+        return {"success": True, "strategies": list_strategies()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to list strategies: {str(e)}")
