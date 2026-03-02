@@ -1,29 +1,29 @@
 #!/bin/bash
-# Setup script to create fyer conda environment
+# Setup script to create openqwnt conda environment
 
 set -e
 
-echo "🔧 Creating fyer conda environment..."
+echo "🔧 Creating openqwnt conda environment..."
 
 # Initialize conda
 eval "$(/opt/miniconda3/bin/conda shell.bash hook)"
 
-# Check if fyer environment already exists
-if conda env list | grep -q "^fyer "; then
-    echo "⚠️  fyer environment already exists. Removing it first..."
-    conda env remove -n fyer -y
+# Check if openqwnt environment already exists
+if conda env list | grep -q "^openqwnt "; then
+    echo "⚠️  openqwnt environment already exists. Removing it first..."
+    conda env remove -n openqwnt -y
 fi
 
-# Create new fyer environment
-echo "📦 Creating fyer environment with Python 3.12..."
-conda create -n fyer python=3.12 -c conda-forge -y
+# Create new openqwnt environment
+echo "📦 Creating openqwnt environment with Python 3.12..."
+conda create -n openqwnt python=3.12 -c conda-forge -y
 
 # Activate and install dependencies
 echo "📥 Installing dependencies..."
-conda activate fyer
+conda activate openqwnt
 pip install -r backend/requirements.txt
 
-echo "✅ fyer conda environment created successfully!"
+echo "✅ openqwnt conda environment created successfully!"
 echo ""
 echo "To activate it, run:"
-echo "  conda activate fyer"
+echo "  conda activate openqwnt"

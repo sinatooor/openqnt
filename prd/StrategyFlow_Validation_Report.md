@@ -137,14 +137,14 @@ FastAPI, 50+ indicators (TA-Lib/pandas/numpy), 3 backtest engines, ADK AI agents
 
 ```bash
 # 1. Run orchestrator tests
-conda activate fyer
-cd /Users/sina/project-fire/fyer/orchestrator && npm test
+conda activate openqwnt
+cd /Users/sina/project-fire/openqwnt/orchestrator && npm test
 
 # 2. Frontend build check
-cd /Users/sina/project-fire/fyer && npm run build
+cd /Users/sina/project-fire/openqwnt && npm run build
 
 # 3. Docker stack
-cd /Users/sina/project-fire/fyer
+cd /Users/sina/project-fire/openqwnt
 docker-compose up -d postgres redis orchestrator backend
 sleep 30
 curl -s http://localhost:3000/health   # Orchestrator

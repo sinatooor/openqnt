@@ -1,4 +1,4 @@
-# Fyer Conda Environment Setup
+# OpenQwnt Conda Environment Setup
 
 ## Quick Setup
 
@@ -6,7 +6,7 @@ Run these commands in your terminal:
 
 ```bash
 # Navigate to project
-cd /Users/sina/project-fire/fyer
+cd /Users/sina/project-fire/openqwnt
 
 # Initialize conda (if not already done)
 eval "$(/opt/miniconda3/bin/conda shell.zsh hook)"
@@ -14,11 +14,11 @@ eval "$(/opt/miniconda3/bin/conda shell.zsh hook)"
 # Remove old ppm environment if it exists
 conda env remove -n ppm -y 2>/dev/null || true
 
-# Create new fyer environment
-conda create -n fyer python=3.12 -c conda-forge -y
+# Create new openqwnt environment
+conda create -n openqwnt python=3.12 -c conda-forge -y
 
 # Activate the environment
-conda activate fyer
+conda activate openqwnt
 
 # Install all dependencies
 pip install -r backend/requirements.txt
@@ -31,7 +31,7 @@ pip list | grep fastapi
 ## Verify It Works
 
 ```bash
-conda activate fyer
+conda activate openqwnt
 cd backend
 python -c "import fastapi; print('✅ FastAPI installed')"
 python -c "import nautilus_trader; print('✅ NautilusTrader installed')"
@@ -39,7 +39,7 @@ python -c "import nautilus_trader; print('✅ NautilusTrader installed')"
 
 ## Troubleshooting
 
-If `conda activate fyer` doesn't work:
+If `conda activate openqwnt` doesn't work:
 
 1. **Make sure conda is initialized:**
    ```bash
@@ -53,12 +53,12 @@ If `conda activate fyer` doesn't work:
 
 3. **If it doesn't exist, create it manually:**
    ```bash
-   /opt/miniconda3/bin/conda create -n fyer python=3.12 -c conda-forge -y
+   /opt/miniconda3/bin/conda create -n openqwnt python=3.12 -c conda-forge -y
    ```
 
 4. **Then activate and install:**
    ```bash
-   conda activate fyer
+   conda activate openqwnt
    pip install -r backend/requirements.txt
    ```
 
@@ -67,8 +67,8 @@ If `conda activate fyer` doesn't work:
 Add this to your `~/.zshrc` for easy access:
 
 ```bash
-# Fyer project shortcut
-alias fyer="cd /Users/sina/project-fire/fyer && eval \"\$(/opt/miniconda3/bin/conda shell.zsh hook)\" && conda activate fyer"
+# OpenQwnt project shortcut
+alias openqwnt="cd /Users/sina/project-fire/openqwnt && eval \"\$(/opt/miniconda3/bin/conda shell.zsh hook)\" && conda activate openqwnt"
 ```
 
-Then just type `fyer` to jump into the project!
+Then just type `openqwnt` to jump into the project!

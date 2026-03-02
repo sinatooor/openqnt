@@ -229,8 +229,8 @@ export const HelpModal = memo(({ open, onOpenChange }: HelpModalProps) => {
           <section className="pt-2 border-t border-border/50">
             <p className="text-xs text-muted-foreground text-center">
               Need more help? Contact us at{' '}
-              <a href="mailto:support@fyer.io" className="text-primary hover:underline">
-                support@fyer.io
+              <a href="mailto:support@openqwnt.io" className="text-primary hover:underline">
+                support@openqwnt.io
               </a>
             </p>
           </section>

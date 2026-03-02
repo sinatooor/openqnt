@@ -32,7 +32,7 @@ with patch.dict(os.environ, {
     "GEMINI_API_KEY": "mock-key",
     "USE_DEEPSEEK_ONLY": "false",
     "USE_RAG_FOR_BLOCKS": "false",
-    "LOVABLE_API_KEY": "mock-key"
+    "AI_GATEWAY_API_KEY": "mock-key"
 }):
     # Mock modules that might have side effects or external dependencies
     with patch("adk_agents.trading_agent.trading_agent", MagicMock()):

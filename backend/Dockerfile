@@ -1,5 +1,5 @@
 # =============================================================================
-# Fyer Trading Platform - Backend Dockerfile
+# OpenQwnt Trading Platform - Backend Dockerfile
 # Multi-stage build with conda for complex dependencies (NautilusTrader)
 # =============================================================================
 
@@ -21,10 +21,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Create conda environment with Python 3.12
-RUN conda create -n fyer python=3.12 -y -c conda-forge
+RUN conda create -n openqwnt python=3.12 -y -c conda-forge
 
 # Make RUN commands use the new environment
-SHELL ["conda", "run", "-n", "fyer", "/bin/bash", "-c"]
+SHELL ["conda", "run", "-n", "openqwnt", "/bin/bash", "-c"]
 
 # Copy requirements first for better caching
 COPY requirements.txt .
@@ -76,10 +76,10 @@ FROM continuumio/miniconda3:latest AS production
 WORKDIR /app
 
 # Copy conda environment from builder
-COPY --from=base /opt/conda/envs/fyer /opt/conda/envs/fyer
+COPY --from=base /opt/conda/envs/openqwnt /opt/conda/envs/openqwnt
 
 # Set environment variables
-ENV PATH=/opt/conda/envs/fyer/bin:$PATH
+ENV PATH=/opt/conda/envs/openqwnt/bin:$PATH
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 

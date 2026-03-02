@@ -1,4 +1,4 @@
-# Fyer Trading Platform - Docker Setup Guide
+# OpenQwnt Trading Platform - Docker Setup Guide
 
 ## Quick Start
 
@@ -78,10 +78,10 @@ docker-compose exec backend pytest
 ## Volumes
 
 Data is persisted in Docker volumes:
-- `fyer-chroma-data` - Vector database
-- `fyer-db-data` - SQLite database
-- `fyer-redis-data` - Redis cache
-- `fyer-logs` - Application logs
+- `openqwnt-chroma-data` - Vector database
+- `openqwnt-db-data` - SQLite database
+- `openqwnt-redis-data` - Redis cache
+- `openqwnt-logs` - Application logs
 
 ## Development Workflow
 
@@ -92,7 +92,7 @@ Data is persisted in Docker volumes:
 
 ```bash
 # Activate conda environment
-conda activate fyer
+conda activate openqwnt
 
 # Start backend
 cd backend

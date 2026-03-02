@@ -1,5 +1,5 @@
 # =============================================================================
-# Fyer Trading Platform - Docker Compose
+# OpenQwnt Trading Platform - Docker Compose
 # Complete development and production environment
 # =============================================================================
 # Usage:
@@ -17,7 +17,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       target: development # Change to 'production' for prod builds
-    container_name: fyer-backend
+    container_name: openqwnt-backend
     ports:
       - "8000:8000"
     environment:
@@ -32,7 +32,7 @@ services:
       - IG_PASSWORD=${IG_PASSWORD:-}
       - IG_ACCOUNT_TYPE=${IG_ACCOUNT_TYPE:-DEMO}
       # Database
-      - DATABASE_URL=sqlite:///./fyer.db
+      - DATABASE_URL=sqlite:///./openqwnt.db
       - CHROMA_PERSIST_DIRECTORY=/app/chroma_db_v2
       # Environment
       - ENVIRONMENT=development
@@ -41,13 +41,13 @@ services:
       # Mount source code for hot reloading in development
       - ./backend:/app
       # Persist ChromaDB data
-      - fyer-chroma-data:/app/chroma_db_v2
+      - openqwnt-chroma-data:/app/chroma_db_v2
       # Persist SQLite database
-      - fyer-db-data:/app/data
+      - openqwnt-db-data:/app/data
       # Persist logs
-      - fyer-logs:/app/logs
+      - openqwnt-logs:/app/logs
     networks:
-      - fyer-network
+      - openqwnt-network
     depends_on:
       - redis
     restart: unless-stopped
@@ -65,7 +65,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
-    container_name: fyer-frontend
+    container_name: openqwnt-frontend
     ports:
       - "5173:5173"
     environment:
@@ -77,7 +77,7 @@ services:
       # Exclude node_modules
       - /app/node_modules
     networks:
-      - fyer-network
+      - openqwnt-network
     depends_on:
       - backend
     profiles:
@@ -91,7 +91,7 @@ services:
       context: ./orchestrator
       dockerfile: Dockerfile
       target: development
-    container_name: fyer-orchestrator
+    container_name: openqwnt-orchestrator
     ports:
       - "3000:3000"
     environment:
@@ -111,7 +111,7 @@ services:
       - ./orchestrator/prisma:/app/prisma
       - /app/node_modules
     networks:
-      - fyer-network
+      - openqwnt-network
     depends_on:
       postgres:
         condition: service_healthy
@@ -130,7 +130,7 @@ services:
   # ===========================================================================
   postgres:
     image: postgres:16-alpine
-    container_name: fyer-postgres
+    container_name: openqwnt-postgres
     ports:
       - "5432:5432"
     environment:
@@ -138,9 +138,9 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=strategyflow
     volumes:
-      - fyer-postgres-data:/var/lib/postgresql/data
+      - openqwnt-postgres-data:/var/lib/postgresql/data
     networks:
-      - fyer-network
+      - openqwnt-network
     restart: unless-stopped
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
@@ -153,13 +153,13 @@ services:
   # ===========================================================================
   redis:
     image: redis:7-alpine
-    container_name: fyer-redis
+    container_name: openqwnt-redis
     ports:
       - "6379:6379"
     volumes:
-      - fyer-redis-data:/data
+      - openqwnt-redis-data:/data
     networks:
-      - fyer-network
+      - openqwnt-network
     restart: unless-stopped
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
@@ -172,13 +172,13 @@ services:
   # ===========================================================================
   # chromadb:
   #   image: chromadb/chroma:latest
-  #   container_name: fyer-chromadb
+  #   container_name: openqwnt-chromadb
   #   ports:
   #     - "8001:8000"
   #   volumes:
-  #     - fyer-chroma-data:/chroma/chroma
+  #     - openqwnt-chroma-data:/chroma/chroma
   #   networks:
-  #     - fyer-network
+  #     - openqwnt-network
   #   environment:
   #     - ANONYMIZED_TELEMETRY=False
   #   profiles:
@@ -189,7 +189,7 @@ services:
   # ===========================================================================
   nginx:
     image: nginx:alpine
-    container_name: fyer-nginx
+    container_name: openqwnt-nginx
     ports:
       - "80:80"
       - "443:443"
@@ -197,7 +197,7 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
     networks:
-      - fyer-network
+      - openqwnt-network
     depends_on:
       - backend
       - orchestrator
@@ -208,20 +208,20 @@ services:
 # Networks
 # =============================================================================
 networks:
-  fyer-network:
+  openqwnt-network:
     driver: bridge
 
 # =============================================================================
 # Volumes - Persistent data storage
 # =============================================================================
 volumes:
-  fyer-chroma-data:
+  openqwnt-chroma-data:
     driver: local
-  fyer-db-data:
+  openqwnt-db-data:
     driver: local
-  fyer-postgres-data:
+  openqwnt-postgres-data:
     driver: local
-  fyer-redis-data:
+  openqwnt-redis-data:
     driver: local
-  fyer-logs:
+  openqwnt-logs:
     driver: local
