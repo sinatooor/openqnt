@@ -93,7 +93,7 @@ export function generatePythonCode(
   const conditions: string[] = [];
   const actions: string[] = [];
   const variables: Set<string> = new Set();
-  
+
   const leverage = options.leverage || 1;
   const sortedNodes = topologicalSort(nodes, edges);
 
@@ -239,7 +239,7 @@ if __name__ == "__main__":
 function generatePythonIndicator(data: IndicatorNodeData, nodeId: string): string {
   const params = data.params || {};
   const period = params.period || 14;
-  
+
   switch (data.indicatorType) {
     case 'sma':
       return `self.${nodeId} = self.I(SMA, self.data.Close, ${period})`;
@@ -337,7 +337,7 @@ export function generateMQL5Code(
   const indicators: string[] = [];
   const conditions: string[] = [];
   const actions: string[] = [];
-  
+
   const leverage = options.leverage || 1;
   const sortedNodes = topologicalSort(nodes, edges);
 
@@ -426,7 +426,7 @@ ${actions.map(a => '      ' + a).join('\n')}
 function generateMQLIndicator(data: IndicatorNodeData, nodeId: string): string {
   const params = data.params || {};
   const period = params.period || 14;
-  
+
   switch (data.indicatorType) {
     case 'sma':
       return `handle_${nodeId} = iMA(Symbol(), PERIOD_CURRENT, ${period}, 0, MODE_SMA, PRICE_CLOSE)`;
@@ -509,7 +509,7 @@ export function generateNautilusCode(
   const indicators: string[] = [];
   const conditions: string[] = [];
   const actions: string[] = [];
-  
+
   const sortedNodes = topologicalSort(nodes, edges);
 
   // Process nodes
@@ -598,7 +598,7 @@ ${actions.map(a => '            ' + a).join('\n')}
 function generateNautilusIndicator(data: IndicatorNodeData, nodeId: string): string {
   const params = data.params || {};
   const period = params.period || 14;
-  
+
   switch (data.indicatorType) {
     case 'sma':
       return `self.${nodeId} = SimpleMovingAverage(${period})`;

@@ -431,7 +431,7 @@ export type PineScriptNodeSubType =
   | 'pine_alertcondition' | 'pine_alert';
 
 export interface PineScriptNodeData extends BaseNodeData {
-  pineType: PineScriptNodeSubType;
+  pineType?: PineScriptNodeSubType;
   // Strategy/Indicator setup
   scriptTitle?: string;
   overlay?: boolean;
