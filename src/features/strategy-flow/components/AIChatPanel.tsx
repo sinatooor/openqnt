@@ -68,7 +68,7 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { nodes, edges, addNode, clearCanvas, setNodes, setEdges } = useStrategyFlowStore();
-  
+
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
   // Auto-scroll to bottom
@@ -79,12 +79,12 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
   // Simulate generation progress
   const simulateProgress = useCallback(() => {
     const steps = genMode === 'slow' ? 5 : genMode === 'tool-calling' ? 6 : 4;
-    const phases = genMode === 'slow' 
+    const phases = genMode === 'slow'
       ? ['Analyzing', 'Building nodes', 'Connecting edges', 'Validating', 'Optimizing']
       : genMode === 'tool-calling'
-      ? ['Planning', 'Adding indicators', 'Adding conditions', 'Adding actions', 'Connecting nodes', 'Finishing']
-      : ['Analyzing', 'Building nodes', 'Connecting edges', 'Finalizing'];
-    
+        ? ['Planning', 'Adding indicators', 'Adding conditions', 'Adding actions', 'Connecting nodes', 'Finishing']
+        : ['Analyzing', 'Building nodes', 'Connecting edges', 'Finalizing'];
+
     let step = 1;
     const interval = setInterval(() => {
       if (step <= steps) {
@@ -114,11 +114,11 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
       // Add to existing canvas with offset
       const existingNodes = useStrategyFlowStore.getState().nodes;
       const existingEdges = useStrategyFlowStore.getState().edges;
-      
+
       // Calculate offset to avoid overlap
       const maxX = existingNodes.reduce((max, n) => Math.max(max, n.position.x), 0);
       const offsetX = maxX > 0 ? maxX + 300 : 0;
-      
+
       // Offset new nodes
       const offsetNodes = newNodes.map(node => ({
         ...node,
@@ -128,7 +128,7 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
           y: node.position.y,
         },
       }));
-      
+
       // Update edge references
       const idMap = new Map(newNodes.map((n, i) => [n.id, offsetNodes[i].id]));
       const offsetEdges = newEdges.map(edge => ({
@@ -137,7 +137,7 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
         source: idMap.get(edge.source) || edge.source,
         target: idMap.get(edge.target) || edge.target,
       }));
-      
+
       setNodes([...existingNodes, ...offsetNodes]);
       setEdges([...existingEdges, ...offsetEdges]);
       toast.success(`Added ${newNodes.length} nodes to canvas`);
@@ -220,7 +220,7 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
         }
 
         const data = await response.json();
-        
+
         setMessages(prev => [...prev, {
           role: 'assistant',
           content: data.response || 'I couldn\'t process that question.',
@@ -294,31 +294,28 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
           <div className="flex gap-1 px-1">
             <button
               onClick={() => setGenMode('fast')}
-              className={`flex-1 text-[10px] py-1 rounded transition-colors ${
-                genMode === 'fast'
+              className={`flex-1 text-[10px] py-1 rounded transition-colors ${genMode === 'fast'
                   ? 'bg-pink-500/20 text-pink-400 font-medium'
                   : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
-              }`}
+                }`}
             >
               Fast
             </button>
             <button
               onClick={() => setGenMode('slow')}
-              className={`flex-1 text-[10px] py-1 rounded transition-colors ${
-                genMode === 'slow'
+              className={`flex-1 text-[10px] py-1 rounded transition-colors ${genMode === 'slow'
                   ? 'bg-pink-500/20 text-pink-400 font-medium'
                   : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
-              }`}
+                }`}
             >
               Precise
             </button>
             <button
               onClick={() => setGenMode('tool-calling')}
-              className={`flex-1 text-[10px] py-1 rounded transition-colors flex items-center justify-center gap-0.5 ${
-                genMode === 'tool-calling'
+              className={`flex-1 text-[10px] py-1 rounded transition-colors flex items-center justify-center gap-0.5 ${genMode === 'tool-calling'
                   ? 'bg-purple-500/20 text-purple-400 font-medium'
                   : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
-              }`}
+                }`}
             >
               <Wrench className="w-2.5 h-2.5" />
               Tools
@@ -351,13 +348,12 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[90%] rounded-lg p-2 ${
-                    msg.role === 'user'
+                  className={`max-w-[90%] rounded-lg p-2 ${msg.role === 'user'
                       ? 'bg-pink-500/20 text-foreground'
                       : msg.error
-                      ? 'bg-red-500/10 border border-red-500/20 text-foreground'
-                      : 'bg-muted text-foreground'
-                  }`}
+                        ? 'bg-red-500/10 border border-red-500/20 text-foreground'
+                        : 'bg-muted text-foreground'
+                    }`}
                 >
                   {msg.role === 'assistant' ? (
                     <div className="text-xs prose prose-sm prose-invert max-w-none">
@@ -418,7 +414,7 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
                           {generationProgress.message}...
                         </span>
                       </div>
-                      
+
                       {/* Progress bar */}
                       <div className="h-1 bg-white/10 rounded-full overflow-hidden">
                         <div
@@ -426,7 +422,7 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
                           style={{ width: `${(generationProgress.step / generationProgress.totalSteps) * 100}%` }}
                         />
                       </div>
-                      
+
                       {/* Step indicator */}
                       <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                         <span>Step {generationProgress.step} of {generationProgress.totalSteps}</span>
