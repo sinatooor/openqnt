@@ -435,15 +435,32 @@ Edges connect nodes:
   "source": "sma-fast",
   "target": "crossover-1",
   "sourceHandle": "value",
-  "targetHandle": "inputA"
+  "targetHandle": "input-a"
 }}
 ```
 
 - `id`: Unique edge identifier
 - `source`: ID of the source node
 - `target`: ID of the target node
-- `sourceHandle`: Output handle name (optional)
-- `targetHandle`: Input handle name (optional)
+- `sourceHandle`: Output handle name — MUST match the node's actual output handle ID:
+  - Indicators (default: sma, ema, rsi, atr, etc.): `"value"`
+  - Indicators (macd): `"line"`, `"signal"`, `"histogram"`
+  - Indicators (bb/keltner/donchian): `"upper"`, `"middle"`, `"lower"`
+  - Indicators (stochastic): `"main"`, `"signal"`
+  - Indicators (ichimoku): `"tenkan"`, `"kijun"`, `"senkou_a"`, `"senkou_b"`, `"chikou"`
+  - Conditions (all): `"output"`
+  - Math nodes: `"output"`
+  - Environment nodes: `"value"`
+  - Action nodes: `"next"`
+  - Trigger nodes: `"output"`
+  - Control (if/ifElse): `"then"`, `"else"`
+  - Risk nodes: `"size"` or `"output"`
+- `targetHandle`: Input handle name — MUST match the node's actual input handle ID:
+  - Conditions (compare/crossover/and/or): `"input-a"`, `"input-b"`
+  - Conditions (not): `"input"`
+  - Actions: `"trigger"`
+  - Control (if/ifElse): `"condition"`
+  - Math (binary ops): `"input-a"`, `"input-b"`
 
 ---
 

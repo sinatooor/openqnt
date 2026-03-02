@@ -29,7 +29,7 @@ import {
   ACTION_NODES,
 } from '../../catalog/nodeCatalog';
 import { StrategyFlowNode, StrategyFlowEdge } from '../../types';
-import { getHandleConfigs } from '../../utils/handleUtils';
+import { getHandleConfigs, repairEdges } from '../../utils/handleUtils';
 
 interface TemplatesDialogProps {
   open: boolean;
@@ -95,8 +95,8 @@ const STRATEGY_TEMPLATES: StrategyTemplate[] = [
       },
     ],
     edges: [
-      { id: 'e1', source: 'sma-fast', sourceHandle: 'output', target: 'crossover', targetHandle: 'input-a' },
-      { id: 'e2', source: 'sma-slow', sourceHandle: 'output', target: 'crossover', targetHandle: 'input-b' },
+      { id: 'e1', source: 'sma-fast', sourceHandle: 'value', target: 'crossover', targetHandle: 'input-a' },
+      { id: 'e2', source: 'sma-slow', sourceHandle: 'value', target: 'crossover', targetHandle: 'input-b' },
       { id: 'e3', source: 'crossover', sourceHandle: 'output', target: 'buy', targetHandle: 'trigger' },
     ],
   },
@@ -134,7 +134,7 @@ const STRATEGY_TEMPLATES: StrategyTemplate[] = [
       },
     ],
     edges: [
-      { id: 'e1', source: 'rsi', sourceHandle: 'output', target: 'threshold', targetHandle: 'input-a' },
+      { id: 'e1', source: 'rsi', sourceHandle: 'value', target: 'threshold', targetHandle: 'input-a' },
       { id: 'e2', source: 'constant-30', sourceHandle: 'output', target: 'threshold', targetHandle: 'input-b' },
       { id: 'e3', source: 'threshold', sourceHandle: 'output', target: 'buy', targetHandle: 'trigger' },
     ],
@@ -207,7 +207,7 @@ const STRATEGY_TEMPLATES: StrategyTemplate[] = [
       },
     ],
     edges: [
-      { id: 'e1', source: 'price', sourceHandle: 'output', target: 'compare', targetHandle: 'input-a' },
+      { id: 'e1', source: 'price', sourceHandle: 'value', target: 'compare', targetHandle: 'input-a' },
       { id: 'e2', source: 'bb', sourceHandle: 'upper', target: 'compare', targetHandle: 'input-b' },
       { id: 'e3', source: 'compare', sourceHandle: 'output', target: 'buy', targetHandle: 'trigger' },
     ],
@@ -264,10 +264,10 @@ const STRATEGY_TEMPLATES: StrategyTemplate[] = [
       },
     ],
     edges: [
-      { id: 'e1', source: 'ema-fast', sourceHandle: 'output', target: 'cross1', targetHandle: 'input-a' },
-      { id: 'e2', source: 'ema-medium', sourceHandle: 'output', target: 'cross1', targetHandle: 'input-b' },
-      { id: 'e3', source: 'ema-medium', sourceHandle: 'output', target: 'cross2', targetHandle: 'input-a' },
-      { id: 'e4', source: 'ema-slow', sourceHandle: 'output', target: 'cross2', targetHandle: 'input-b' },
+      { id: 'e1', source: 'ema-fast', sourceHandle: 'value', target: 'cross1', targetHandle: 'input-a' },
+      { id: 'e2', source: 'ema-medium', sourceHandle: 'value', target: 'cross1', targetHandle: 'input-b' },
+      { id: 'e3', source: 'ema-medium', sourceHandle: 'value', target: 'cross2', targetHandle: 'input-a' },
+      { id: 'e4', source: 'ema-slow', sourceHandle: 'value', target: 'cross2', targetHandle: 'input-b' },
       { id: 'e5', source: 'cross1', sourceHandle: 'output', target: 'and', targetHandle: 'input-a' },
       { id: 'e6', source: 'cross2', sourceHandle: 'output', target: 'and', targetHandle: 'input-b' },
       { id: 'e7', source: 'and', sourceHandle: 'output', target: 'buy', targetHandle: 'trigger' },
@@ -325,9 +325,9 @@ const STRATEGY_TEMPLATES: StrategyTemplate[] = [
       },
     ],
     edges: [
-      { id: 'e1', source: 'spread-ind', sourceHandle: 'output', target: 'compare-high', targetHandle: 'input-a' },
+      { id: 'e1', source: 'spread-ind', sourceHandle: 'value', target: 'compare-high', targetHandle: 'input-a' },
       { id: 'e2', source: 'constant-1_05', sourceHandle: 'output', target: 'compare-high', targetHandle: 'input-b' },
-      { id: 'e3', source: 'spread-ind', sourceHandle: 'output', target: 'compare-low', targetHandle: 'input-a' },
+      { id: 'e3', source: 'spread-ind', sourceHandle: 'value', target: 'compare-low', targetHandle: 'input-a' },
       { id: 'e4', source: 'constant-0_95', sourceHandle: 'output', target: 'compare-low', targetHandle: 'input-b' },
       { id: 'e5', source: 'compare-high', sourceHandle: 'output', target: 'short-pair', targetHandle: 'trigger' },
       { id: 'e6', source: 'compare-low', sourceHandle: 'output', target: 'long-pair', targetHandle: 'trigger' },
@@ -385,9 +385,9 @@ const STRATEGY_TEMPLATES: StrategyTemplate[] = [
       },
     ],
     edges: [
-      { id: 'e1', source: 'hmm', sourceHandle: 'output', target: 'is-bull', targetHandle: 'input-a' },
+      { id: 'e1', source: 'hmm', sourceHandle: 'value', target: 'is-bull', targetHandle: 'input-a' },
       { id: 'e2', source: 'constant-0', sourceHandle: 'output', target: 'is-bull', targetHandle: 'input-b' },
-      { id: 'e3', source: 'hmm', sourceHandle: 'output', target: 'is-bear', targetHandle: 'input-a' },
+      { id: 'e3', source: 'hmm', sourceHandle: 'value', target: 'is-bear', targetHandle: 'input-a' },
       { id: 'e4', source: 'constant-1', sourceHandle: 'output', target: 'is-bear', targetHandle: 'input-b' },
       { id: 'e5', source: 'is-bull', sourceHandle: 'output', target: 'buy', targetHandle: 'trigger' },
       { id: 'e6', source: 'is-bear', sourceHandle: 'output', target: 'sell', targetHandle: 'trigger' },
@@ -495,7 +495,7 @@ const STRATEGY_TEMPLATES: StrategyTemplate[] = [
       },
     ],
     edges: [
-      { id: 'e1', source: 'atr', sourceHandle: 'output', target: 'compare', targetHandle: 'input-a' },
+      { id: 'e1', source: 'atr', sourceHandle: 'value', target: 'compare', targetHandle: 'input-a' },
       { id: 'e2', source: 'constant', sourceHandle: 'output', target: 'compare', targetHandle: 'input-b' },
       { id: 'e3', source: 'compare', sourceHandle: 'output', target: 'buy-put', targetHandle: 'trigger' },
     ],
@@ -572,10 +572,10 @@ const STRATEGY_TEMPLATES: StrategyTemplate[] = [
       }
     ],
     edges: [
-      { id: 'e1', source: 'sma-fast', sourceHandle: 'output', target: 'crossover', targetHandle: 'input-a' },
-      { id: 'e2', source: 'sma-slow', sourceHandle: 'output', target: 'crossover', targetHandle: 'input-b' },
+      { id: 'e1', source: 'sma-fast', sourceHandle: 'value', target: 'crossover', targetHandle: 'input-a' },
+      { id: 'e2', source: 'sma-slow', sourceHandle: 'value', target: 'crossover', targetHandle: 'input-b' },
       { id: 'e3', source: 'crossover', sourceHandle: 'output', target: 'buy', targetHandle: 'trigger' },
-      { id: 'e4', source: 'buy', sourceHandle: 'output', target: 'trailing-stop', targetHandle: 'trigger' },
+      { id: 'e4', source: 'buy', sourceHandle: 'next', target: 'trailing-stop', targetHandle: 'trigger' },
     ],
   },
   {
@@ -612,8 +612,8 @@ const STRATEGY_TEMPLATES: StrategyTemplate[] = [
       },
     ],
     edges: [
-      { id: 'e1', source: 'price', sourceHandle: 'output', target: 'compare', targetHandle: 'input-a' },
-      { id: 'e2', source: 'sma', sourceHandle: 'output', target: 'compare', targetHandle: 'input-b' },
+      { id: 'e1', source: 'price', sourceHandle: 'value', target: 'compare', targetHandle: 'input-a' },
+      { id: 'e2', source: 'sma', sourceHandle: 'value', target: 'compare', targetHandle: 'input-b' },
       { id: 'e3', source: 'compare', sourceHandle: 'output', target: 'buy-inverse', targetHandle: 'trigger' },
     ],
   }
@@ -821,10 +821,10 @@ const ADDITIONAL_STRATEGY_TEMPLATES: StrategyTemplate[] = [
       { id: 'sell', type: 'action', position: { x: 600, y: 280 }, data: { label: 'Sell', actionType: 'order', direction: 'short', size: 10, sizeType: 'percent' } },
     ],
     edges: [
-      { id: 'e1', source: 'price', sourceHandle: 'output', target: 'cross-above', targetHandle: 'input-a' },
-      { id: 'e2', source: 'vwap', sourceHandle: 'output', target: 'cross-above', targetHandle: 'input-b' },
-      { id: 'e3', source: 'price', sourceHandle: 'output', target: 'cross-below', targetHandle: 'input-a' },
-      { id: 'e4', source: 'vwap', sourceHandle: 'output', target: 'cross-below', targetHandle: 'input-b' },
+      { id: 'e1', source: 'price', sourceHandle: 'value', target: 'cross-above', targetHandle: 'input-a' },
+      { id: 'e2', source: 'vwap', sourceHandle: 'value', target: 'cross-above', targetHandle: 'input-b' },
+      { id: 'e3', source: 'price', sourceHandle: 'value', target: 'cross-below', targetHandle: 'input-a' },
+      { id: 'e4', source: 'vwap', sourceHandle: 'value', target: 'cross-below', targetHandle: 'input-b' },
       { id: 'e5', source: 'cross-above', sourceHandle: 'output', target: 'buy', targetHandle: 'trigger' },
       { id: 'e6', source: 'cross-below', sourceHandle: 'output', target: 'sell', targetHandle: 'trigger' },
     ],
@@ -847,9 +847,9 @@ const ADDITIONAL_STRATEGY_TEMPLATES: StrategyTemplate[] = [
       { id: 'buy', type: 'action', position: { x: 760, y: 250 }, data: { label: 'Buy', actionType: 'order', direction: 'long', size: 5, sizeType: 'percent' } },
     ],
     edges: [
-      { id: 'e1', source: 'ema-5', sourceHandle: 'output', target: 'crossover', targetHandle: 'input-a' },
-      { id: 'e2', source: 'ema-13', sourceHandle: 'output', target: 'crossover', targetHandle: 'input-b' },
-      { id: 'e3', source: 'rsi', sourceHandle: 'output', target: 'rsi-filter', targetHandle: 'input-a' },
+      { id: 'e1', source: 'ema-5', sourceHandle: 'value', target: 'crossover', targetHandle: 'input-a' },
+      { id: 'e2', source: 'ema-13', sourceHandle: 'value', target: 'crossover', targetHandle: 'input-b' },
+      { id: 'e3', source: 'rsi', sourceHandle: 'value', target: 'rsi-filter', targetHandle: 'input-a' },
       { id: 'e4', source: 'const-50', sourceHandle: 'output', target: 'rsi-filter', targetHandle: 'input-b' },
       { id: 'e5', source: 'crossover', sourceHandle: 'output', target: 'and', targetHandle: 'input-a' },
       { id: 'e6', source: 'rsi-filter', sourceHandle: 'output', target: 'and', targetHandle: 'input-b' },
@@ -872,9 +872,10 @@ const ADDITIONAL_STRATEGY_TEMPLATES: StrategyTemplate[] = [
       { id: 'buy', type: 'action', position: { x: 800, y: 250 }, data: { label: 'Buy', actionType: 'order', direction: 'long', size: 10, sizeType: 'percent' } },
     ],
     edges: [
-      { id: 'e1', source: 'price', sourceHandle: 'output', target: 'above-cloud', targetHandle: 'input-a' },
-      { id: 'e2', source: 'ichi', sourceHandle: 'output', target: 'above-cloud', targetHandle: 'input-b' },
-      { id: 'e3', source: 'ichi', sourceHandle: 'output', target: 'tenkan-cross', targetHandle: 'input-a' },
+      { id: 'e1', source: 'price', sourceHandle: 'value', target: 'above-cloud', targetHandle: 'input-a' },
+      { id: 'e2', source: 'ichi', sourceHandle: 'senkou_a', target: 'above-cloud', targetHandle: 'input-b' },
+      { id: 'e3', source: 'ichi', sourceHandle: 'tenkan', target: 'tenkan-cross', targetHandle: 'input-a' },
+      { id: 'e3b', source: 'ichi', sourceHandle: 'kijun', target: 'tenkan-cross', targetHandle: 'input-b' },
       { id: 'e4', source: 'above-cloud', sourceHandle: 'output', target: 'and', targetHandle: 'input-a' },
       { id: 'e5', source: 'tenkan-cross', sourceHandle: 'output', target: 'and', targetHandle: 'input-b' },
       { id: 'e6', source: 'and', sourceHandle: 'output', target: 'buy', targetHandle: 'trigger' },
@@ -914,13 +915,13 @@ const ADDITIONAL_STRATEGY_TEMPLATES: StrategyTemplate[] = [
       { id: 'sell', type: 'action', position: { x: 780, y: 250 }, data: { label: 'Grid Sell', actionType: 'order', direction: 'short', size: 5, sizeType: 'percent' } },
     ],
     edges: [
-      { id: 'e1', source: 'price', sourceHandle: 'output', target: 'grid-low', targetHandle: 'input-a' },
-      { id: 'e2', source: 'atr', sourceHandle: 'output', target: 'grid-low', targetHandle: 'input-b' },
-      { id: 'e3', source: 'price', sourceHandle: 'output', target: 'grid-high', targetHandle: 'input-a' },
-      { id: 'e4', source: 'atr', sourceHandle: 'output', target: 'grid-high', targetHandle: 'input-b' },
-      { id: 'e5', source: 'price', sourceHandle: 'output', target: 'hit-low', targetHandle: 'input-a' },
+      { id: 'e1', source: 'price', sourceHandle: 'value', target: 'grid-low', targetHandle: 'input-a' },
+      { id: 'e2', source: 'atr', sourceHandle: 'value', target: 'grid-low', targetHandle: 'input-b' },
+      { id: 'e3', source: 'price', sourceHandle: 'value', target: 'grid-high', targetHandle: 'input-a' },
+      { id: 'e4', source: 'atr', sourceHandle: 'value', target: 'grid-high', targetHandle: 'input-b' },
+      { id: 'e5', source: 'price', sourceHandle: 'value', target: 'hit-low', targetHandle: 'input-a' },
       { id: 'e6', source: 'grid-low', sourceHandle: 'output', target: 'hit-low', targetHandle: 'input-b' },
-      { id: 'e7', source: 'price', sourceHandle: 'output', target: 'hit-high', targetHandle: 'input-a' },
+      { id: 'e7', source: 'price', sourceHandle: 'value', target: 'hit-high', targetHandle: 'input-a' },
       { id: 'e8', source: 'grid-high', sourceHandle: 'output', target: 'hit-high', targetHandle: 'input-b' },
       { id: 'e9', source: 'hit-low', sourceHandle: 'output', target: 'buy', targetHandle: 'trigger' },
       { id: 'e10', source: 'hit-high', sourceHandle: 'output', target: 'sell', targetHandle: 'trigger' },
@@ -944,9 +945,9 @@ const ADDITIONAL_STRATEGY_TEMPLATES: StrategyTemplate[] = [
       { id: 'buy', type: 'action', position: { x: 800, y: 180 }, data: { label: 'Buy', actionType: 'order', direction: 'long', size: 10, sizeType: 'percent' } },
     ],
     edges: [
-      { id: 'e1', source: 'rsi', sourceHandle: 'output', target: 'rsi-low', targetHandle: 'input-a' },
+      { id: 'e1', source: 'rsi', sourceHandle: 'value', target: 'rsi-low', targetHandle: 'input-a' },
       { id: 'e2', source: 'const-30', sourceHandle: 'output', target: 'rsi-low', targetHandle: 'input-b' },
-      { id: 'e3', source: 'price', sourceHandle: 'output', target: 'bb-touch', targetHandle: 'input-a' },
+      { id: 'e3', source: 'price', sourceHandle: 'value', target: 'bb-touch', targetHandle: 'input-a' },
       { id: 'e4', source: 'bb', sourceHandle: 'lower', target: 'bb-touch', targetHandle: 'input-b' },
       { id: 'e5', source: 'rsi-low', sourceHandle: 'output', target: 'and', targetHandle: 'input-a' },
       { id: 'e6', source: 'bb-touch', sourceHandle: 'output', target: 'and', targetHandle: 'input-b' },
@@ -969,9 +970,10 @@ const ADDITIONAL_STRATEGY_TEMPLATES: StrategyTemplate[] = [
       { id: 'buy', type: 'action', position: { x: 780, y: 240 }, data: { label: 'Buy', actionType: 'order', direction: 'long', size: 10, sizeType: 'percent' } },
     ],
     edges: [
-      { id: 'e1', source: 'stoch', sourceHandle: 'output', target: 'oversold', targetHandle: 'input-a' },
+      { id: 'e1', source: 'stoch', sourceHandle: 'main', target: 'oversold', targetHandle: 'input-a' },
       { id: 'e2', source: 'const-20', sourceHandle: 'output', target: 'oversold', targetHandle: 'input-b' },
-      { id: 'e3', source: 'stoch', sourceHandle: 'output', target: 'crossover', targetHandle: 'input-a' },
+      { id: 'e3', source: 'stoch', sourceHandle: 'main', target: 'crossover', targetHandle: 'input-a' },
+      { id: 'e3b', source: 'stoch', sourceHandle: 'signal', target: 'crossover', targetHandle: 'input-b' },
       { id: 'e4', source: 'oversold', sourceHandle: 'output', target: 'and', targetHandle: 'input-a' },
       { id: 'e5', source: 'crossover', sourceHandle: 'output', target: 'and', targetHandle: 'input-b' },
       { id: 'e6', source: 'and', sourceHandle: 'output', target: 'buy', targetHandle: 'trigger' },
@@ -993,9 +995,9 @@ const ADDITIONAL_STRATEGY_TEMPLATES: StrategyTemplate[] = [
       { id: 'buy', type: 'action', position: { x: 790, y: 260 }, data: { label: 'Buy Breakout', actionType: 'order', direction: 'long', size: 8, sizeType: 'percent' } },
     ],
     edges: [
-      { id: 'e1', source: 'atr', sourceHandle: 'output', target: 'range', targetHandle: 'input-a' },
+      { id: 'e1', source: 'atr', sourceHandle: 'value', target: 'range', targetHandle: 'input-a' },
       { id: 'e2', source: 'mult', sourceHandle: 'output', target: 'range', targetHandle: 'input-b' },
-      { id: 'e3', source: 'price', sourceHandle: 'output', target: 'compare', targetHandle: 'input-a' },
+      { id: 'e3', source: 'price', sourceHandle: 'value', target: 'compare', targetHandle: 'input-a' },
       { id: 'e4', source: 'range', sourceHandle: 'output', target: 'compare', targetHandle: 'input-b' },
       { id: 'e5', source: 'compare', sourceHandle: 'output', target: 'buy', targetHandle: 'trigger' },
     ],
@@ -1066,26 +1068,33 @@ export const TemplatesDialog = memo(({ open, onOpenChange }: TemplatesDialogProp
       });
     });
 
-    // Create edges with proper colors and remapped IDs
-    const newEdges: StrategyFlowEdge[] = template.edges.map(edge => {
-      const newSourceId = nodeIdMap[edge.source];
-      const newTargetId = nodeIdMap[edge.target];
+    // Remap edge source/target to new node IDs
+    const remappedEdges: StrategyFlowEdge[] = template.edges.map(edge => ({
+      ...edge,
+      id: `edge-${Math.random().toString(36).substring(2, 8)}`,
+      source: nodeIdMap[edge.source],
+      target: nodeIdMap[edge.target],
+    }));
 
-      // Find source node to determine edge color
-      const sourceTemplateNode = template.nodes.find(n => n.id === edge.source);
+    // Repair edges: auto-fill/fix sourceHandle and targetHandle to match actual node handles
+    const repairedEdges = repairEdges(newNodes, remappedEdges);
+
+    // Apply edge colors and styling based on source handle data type
+    const styledEdges: StrategyFlowEdge[] = repairedEdges.map(edge => {
+      const sourceNode = newNodes.find(n => n.id === edge.source);
       let edgeColor = EDGE_DATA_TYPE_COLORS.default;
 
-      if (sourceTemplateNode) {
-        const nodeType = sourceTemplateNode.type || '';
-        const subType = (sourceTemplateNode.data as any)?.indicatorType ||
-          (sourceTemplateNode.data as any)?.conditionType ||
-          (sourceTemplateNode.data as any)?.actionType ||
-          (sourceTemplateNode.data as any)?.environmentType ||
-          (sourceTemplateNode.data as any)?.mathType;
+      if (sourceNode) {
+        const nodeType = sourceNode.type || '';
+        const subType = (sourceNode.data as any)?.indicatorType ||
+          (sourceNode.data as any)?.conditionType ||
+          (sourceNode.data as any)?.actionType ||
+          (sourceNode.data as any)?.environmentType ||
+          (sourceNode.data as any)?.mathType;
 
         const handleConfigs = getHandleConfigs(nodeType, subType);
 
-        // Find the specific source handle if specified, otherwise use first source handle
+        // Find the specific source handle (now guaranteed correct after repair)
         const sourceHandleConfig = edge.sourceHandle
           ? handleConfigs.find(h => h.id === edge.sourceHandle && h.type === 'source')
           : handleConfigs.find(h => h.type === 'source');
@@ -1097,9 +1106,6 @@ export const TemplatesDialog = memo(({ open, onOpenChange }: TemplatesDialogProp
 
       return {
         ...edge,
-        id: `edge-${Math.random().toString(36).substring(2, 8)}`,
-        source: newSourceId,
-        target: newTargetId,
         type: 'bezier',
         animated: false,
         style: {
@@ -1111,7 +1117,7 @@ export const TemplatesDialog = memo(({ open, onOpenChange }: TemplatesDialogProp
 
     // Set nodes and edges directly via onNodesChange and onEdgesChange
     store.onNodesChange(newNodes.map(n => ({ type: 'add' as const, item: n })));
-    store.onEdgesChange(newEdges.map(e => ({ type: 'add' as const, item: e })));
+    store.onEdgesChange(styledEdges.map(e => ({ type: 'add' as const, item: e })));
 
     store.setStrategyName(template.name);
     onOpenChange(false);

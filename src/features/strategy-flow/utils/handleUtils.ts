@@ -72,6 +72,56 @@ export const repairEdges = (
     let repairedSourceHandle = normalizeHandleId(edge.sourceHandle);
     let repairedTargetHandle = normalizeHandleId(edge.targetHandle);
 
+    // Validate sourceHandle: if it doesn't match any actual source handle on the node, fix it
+    if (repairedSourceHandle && sourceOutputs.length > 0) {
+      const matchesActualHandle = sourceOutputs.some(h => h.id === repairedSourceHandle);
+      if (!matchesActualHandle) {
+        // Handle doesn't exist on this node — auto-fill with the correct one
+        if (sourceOutputs.length === 1) {
+          repairedSourceHandle = sourceOutputs[0].id;
+        } else {
+          // Try common aliases: 'output' <-> 'value', 'next' <-> 'output'
+          const aliasMap: Record<string, string[]> = {
+            'output': ['value', 'next'],
+            'value': ['output'],
+            'next': ['output'],
+          };
+          const aliases = aliasMap[repairedSourceHandle] || [];
+          const aliasMatch = sourceOutputs.find(h => aliases.includes(h.id));
+          repairedSourceHandle = aliasMatch?.id || sourceOutputs[0].id;
+        }
+      }
+    }
+
+    // Validate targetHandle: if it doesn't match any actual target handle on the node, fix it
+    if (repairedTargetHandle && targetInputs.length > 0) {
+      const matchesActualHandle = targetInputs.some(h => h.id === repairedTargetHandle);
+      if (!matchesActualHandle) {
+        // Handle doesn't exist on this node — auto-fill with the correct one
+        if (targetInputs.length === 1) {
+          repairedTargetHandle = targetInputs[0].id;
+        } else {
+          // Try common aliases
+          const aliasMap: Record<string, string[]> = {
+            'input': ['input-a', 'trigger', 'condition'],
+            'input-a': ['trigger'],
+            'trigger': ['input-a', 'condition'],
+          };
+          const aliases = aliasMap[repairedTargetHandle] || [];
+          const aliasMatch = targetInputs.find(h => aliases.includes(h.id));
+          if (aliasMatch) {
+            repairedTargetHandle = aliasMatch.id;
+          } else {
+            // Check which handles are already used
+            const existingEdgesToTarget = edges.filter(e => e.target === edge.target && e.id !== edge.id);
+            const usedHandles = existingEdgesToTarget.map(e => normalizeHandleId(e.targetHandle)).filter(Boolean);
+            const availableHandle = targetInputs.find(h => !usedHandles.includes(h.id));
+            repairedTargetHandle = availableHandle?.id || targetInputs[0].id;
+          }
+        }
+      }
+    }
+
     // Auto-fill sourceHandle if missing and node has outputs
     if (!repairedSourceHandle && sourceOutputs.length > 0) {
       // If single output, use it directly

@@ -503,11 +503,11 @@ async def get_flow_templates():
                 {"id": "action_sell", "type": "action", "position": {"x": 700, "y": 150}, "data": {"label": "Sell", "actionType": "sell", "size": 0.1}}
             ],
             "edges": [
-                {"id": "e1", "source": "trigger_1", "target": "ind_rsi"},
-                {"id": "e2", "source": "ind_rsi", "target": "cond_buy"},
-                {"id": "e3", "source": "ind_rsi", "target": "cond_sell"},
-                {"id": "e4", "source": "cond_buy", "target": "action_buy"},
-                {"id": "e5", "source": "cond_sell", "target": "action_sell"}
+                {"id": "e1", "source": "trigger_1", "sourceHandle": "output", "target": "ind_rsi", "targetHandle": "trigger"},
+                {"id": "e2", "source": "ind_rsi", "sourceHandle": "value", "target": "cond_buy", "targetHandle": "input-a"},
+                {"id": "e3", "source": "ind_rsi", "sourceHandle": "value", "target": "cond_sell", "targetHandle": "input-a"},
+                {"id": "e4", "source": "cond_buy", "sourceHandle": "output", "target": "action_buy", "targetHandle": "trigger"},
+                {"id": "e5", "source": "cond_sell", "sourceHandle": "output", "target": "action_sell", "targetHandle": "trigger"}
             ]
         },
         {
@@ -525,14 +525,14 @@ async def get_flow_templates():
                 {"id": "action_sell", "type": "action", "position": {"x": 700, "y": 150}, "data": {"label": "Sell", "actionType": "sell", "size": 0.1}}
             ],
             "edges": [
-                {"id": "e1", "source": "trigger_1", "target": "ind_ema_fast"},
-                {"id": "e2", "source": "trigger_1", "target": "ind_ema_slow"},
-                {"id": "e3", "source": "ind_ema_fast", "target": "cond_cross_up"},
-                {"id": "e4", "source": "ind_ema_slow", "target": "cond_cross_up"},
-                {"id": "e5", "source": "ind_ema_fast", "target": "cond_cross_down"},
-                {"id": "e6", "source": "ind_ema_slow", "target": "cond_cross_down"},
-                {"id": "e7", "source": "cond_cross_up", "target": "action_buy"},
-                {"id": "e8", "source": "cond_cross_down", "target": "action_sell"}
+                {"id": "e1", "source": "trigger_1", "sourceHandle": "output", "target": "ind_ema_fast", "targetHandle": "trigger"},
+                {"id": "e2", "source": "trigger_1", "sourceHandle": "output", "target": "ind_ema_slow", "targetHandle": "trigger"},
+                {"id": "e3", "source": "ind_ema_fast", "sourceHandle": "value", "target": "cond_cross_up", "targetHandle": "input-a"},
+                {"id": "e4", "source": "ind_ema_slow", "sourceHandle": "value", "target": "cond_cross_up", "targetHandle": "input-b"},
+                {"id": "e5", "source": "ind_ema_fast", "sourceHandle": "value", "target": "cond_cross_down", "targetHandle": "input-a"},
+                {"id": "e6", "source": "ind_ema_slow", "sourceHandle": "value", "target": "cond_cross_down", "targetHandle": "input-b"},
+                {"id": "e7", "source": "cond_cross_up", "sourceHandle": "output", "target": "action_buy", "targetHandle": "trigger"},
+                {"id": "e8", "source": "cond_cross_down", "sourceHandle": "output", "target": "action_sell", "targetHandle": "trigger"}
             ]
         },
         {
@@ -549,11 +549,11 @@ async def get_flow_templates():
                 {"id": "action_sell", "type": "action", "position": {"x": 700, "y": 150}, "data": {"label": "Sell", "actionType": "sell", "size": 0.1}}
             ],
             "edges": [
-                {"id": "e1", "source": "trigger_1", "target": "ind_bb"},
-                {"id": "e2", "source": "ind_bb", "target": "cond_lower"},
-                {"id": "e3", "source": "ind_bb", "target": "cond_upper"},
-                {"id": "e4", "source": "cond_lower", "target": "action_buy"},
-                {"id": "e5", "source": "cond_upper", "target": "action_sell"}
+                {"id": "e1", "source": "trigger_1", "sourceHandle": "output", "target": "ind_bb", "targetHandle": "trigger"},
+                {"id": "e2", "source": "ind_bb", "sourceHandle": "lower", "target": "cond_lower", "targetHandle": "input-b"},
+                {"id": "e3", "source": "ind_bb", "sourceHandle": "upper", "target": "cond_upper", "targetHandle": "input-b"},
+                {"id": "e4", "source": "cond_lower", "sourceHandle": "output", "target": "action_buy", "targetHandle": "trigger"},
+                {"id": "e5", "source": "cond_upper", "sourceHandle": "output", "target": "action_sell", "targetHandle": "trigger"}
             ]
         }
     ]

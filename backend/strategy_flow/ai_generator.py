@@ -407,7 +407,30 @@ def auto_fix_flow(
     
     # Ensure all edges reference valid nodes
     node_ids = {node["id"] for node in nodes}
+    node_map = {node["id"]: node for node in nodes}
     valid_edges = []
+    
+    # Legacy handle ID mapping
+    legacy_handle_map = {
+        "inputA": "input-a",
+        "inputB": "input-b",
+        "input_a": "input-a",
+        "input_b": "input-b",
+    }
+    
+    # Source handle lookup: maps node type + subtype to valid source handles
+    # Default single-output indicators use 'value', not 'output'
+    multi_output_indicators = {
+        "macd": ["line", "signal", "histogram"],
+        "bb": ["upper", "middle", "lower"],
+        "keltner": ["upper", "middle", "lower"],
+        "donchian": ["upper", "middle", "lower"],
+        "stochastic": ["main", "signal"],
+        "ichimoku": ["tenkan", "kijun", "senkou_a", "senkou_b", "chikou"],
+        "alligator": ["jaw", "teeth", "lips"],
+        "dmi": ["plus_di", "minus_di", "adx"],
+        "aroon": ["aroonup", "aroondown"],
+    }
     
     for edge in edges:
         source = edge.get("source")
@@ -416,6 +439,50 @@ def auto_fix_flow(
         if source in node_ids and target in node_ids:
             if "id" not in edge:
                 edge["id"] = f"e-{source}-{target}"
+            
+            # Fix legacy handle IDs
+            if edge.get("sourceHandle") in legacy_handle_map:
+                old_handle = edge["sourceHandle"]
+                edge["sourceHandle"] = legacy_handle_map[old_handle]
+                fixes.append(f"Fixed legacy sourceHandle '{old_handle}' -> '{edge['sourceHandle']}' on edge {edge['id']}")
+            if edge.get("targetHandle") in legacy_handle_map:
+                old_handle = edge["targetHandle"]
+                edge["targetHandle"] = legacy_handle_map[old_handle]
+                fixes.append(f"Fixed legacy targetHandle '{old_handle}' -> '{edge['targetHandle']}' on edge {edge['id']}")
+            
+            # Fix sourceHandle for nodes where 'output' should be 'value'
+            source_node = node_map.get(source, {})
+            source_type = source_node.get("type", "")
+            source_data = source_node.get("data", {})
+            source_subtype = (
+                source_data.get("indicatorType") or 
+                source_data.get("environmentType") or
+                source_data.get("conditionType") or
+                source_data.get("actionType") or
+                source_data.get("mathType") or
+                source_data.get("triggerType") or ""
+            )
+            
+            if source_type == "indicator":
+                if source_subtype in multi_output_indicators:
+                    valid_handles = multi_output_indicators[source_subtype]
+                    if edge.get("sourceHandle") and edge["sourceHandle"] not in valid_handles:
+                        edge["sourceHandle"] = valid_handles[0]
+                        fixes.append(f"Fixed indicator sourceHandle to '{valid_handles[0]}' for {edge['id']}")
+                else:
+                    # Default indicator: should use 'value'
+                    if edge.get("sourceHandle") == "output":
+                        edge["sourceHandle"] = "value"
+                        fixes.append(f"Fixed indicator sourceHandle 'output' -> 'value' for {edge['id']}")
+            elif source_type == "environment":
+                if edge.get("sourceHandle") == "output":
+                    edge["sourceHandle"] = "value"
+                    fixes.append(f"Fixed environment sourceHandle 'output' -> 'value' for {edge['id']}")
+            elif source_type == "action":
+                if edge.get("sourceHandle") == "output":
+                    edge["sourceHandle"] = "next"
+                    fixes.append(f"Fixed action sourceHandle 'output' -> 'next' for {edge['id']}")
+            
             valid_edges.append(edge)
         else:
             fixes.append(f"Removed invalid edge: {source} -> {target}")
@@ -549,10 +616,10 @@ def get_strategy_template(template_id: str) -> Dict[str, Any]:
                 }
             ],
             "edges": [
-                {"id": "e1", "source": "rsi-1", "target": "oversold"},
-                {"id": "e2", "source": "rsi-1", "target": "overbought"},
-                {"id": "e3", "source": "oversold", "target": "buy"},
-                {"id": "e4", "source": "overbought", "target": "close"}
+                {"id": "e1", "source": "rsi-1", "sourceHandle": "value", "target": "oversold", "targetHandle": "input-a"},
+                {"id": "e2", "source": "rsi-1", "sourceHandle": "value", "target": "overbought", "targetHandle": "input-a"},
+                {"id": "e3", "source": "oversold", "sourceHandle": "output", "target": "buy", "targetHandle": "trigger"},
+                {"id": "e4", "source": "overbought", "sourceHandle": "output", "target": "close", "targetHandle": "trigger"}
             ]
         },
         "ma_crossover": {
@@ -619,12 +686,12 @@ def get_strategy_template(template_id: str) -> Dict[str, Any]:
                 }
             ],
             "edges": [
-                {"id": "e1", "source": "ema-fast", "target": "crossover", "targetHandle": "inputA"},
-                {"id": "e2", "source": "ema-slow", "target": "crossover", "targetHandle": "inputB"},
-                {"id": "e3", "source": "ema-fast", "target": "crossunder", "targetHandle": "inputA"},
-                {"id": "e4", "source": "ema-slow", "target": "crossunder", "targetHandle": "inputB"},
-                {"id": "e5", "source": "crossover", "target": "buy"},
-                {"id": "e6", "source": "crossunder", "target": "close"}
+                {"id": "e1", "source": "ema-fast", "sourceHandle": "value", "target": "crossover", "targetHandle": "input-a"},
+                {"id": "e2", "source": "ema-slow", "sourceHandle": "value", "target": "crossover", "targetHandle": "input-b"},
+                {"id": "e3", "source": "ema-fast", "sourceHandle": "value", "target": "crossunder", "targetHandle": "input-a"},
+                {"id": "e4", "source": "ema-slow", "sourceHandle": "value", "target": "crossunder", "targetHandle": "input-b"},
+                {"id": "e5", "source": "crossover", "sourceHandle": "output", "target": "buy", "targetHandle": "trigger"},
+                {"id": "e6", "source": "crossunder", "sourceHandle": "output", "target": "close", "targetHandle": "trigger"}
             ]
         }
     }
