@@ -181,19 +181,31 @@ Example:
 
 === EDGE FORMAT ===
 
-Edges connect nodes. The 'sourceHandle' and 'targetHandle' often depend on the node type.
-- Math/Operators: inputs 'input-a', 'input-b', output 'output'.
-- Control (If): input 'condition', outputs 'then', 'else'.
-- Control (Flow): input 'trigger', output 'output'.
-- Indicators: inputs 'source' (optional), output 'output' (or 'upper', 'lower', 'line', 'signal' etc for specific indicators).
-- Actions: input 'trigger'.
+Edges connect nodes. The 'sourceHandle' and 'targetHandle' MUST match the node's actual handle IDs.
+
+Handle IDs by node type:
+- Indicators (default: sma, ema, rsi, atr, etc.): output 'value'
+- Indicators (macd): outputs 'line', 'signal', 'histogram'
+- Indicators (bb/keltner/donchian): outputs 'upper', 'middle', 'lower'
+- Indicators (stochastic): outputs 'main', 'signal'
+- Indicators (ichimoku): outputs 'tenkan', 'kijun', 'senkou_a', 'senkou_b', 'chikou'
+- Conditions (compare/crossover/and/or): inputs 'input-a', 'input-b', output 'output'
+- Conditions (not): input 'input', output 'output'
+- Math/Operators: inputs 'input-a', 'input-b', output 'output'
+- Math (number): output 'output'
+- Environment: output 'value'
+- Control (If/IfElse): input 'condition', outputs 'then', 'else'
+- Control (Flow): input 'trigger', output 'output'
+- Actions: input 'trigger', output 'next'
+- Triggers: output 'output'
+- Risk: output 'size' or 'output'
 
 {
   "id": "edge_1",
   "source": "node_1",
   "target": "node_2",
-  "sourceHandle": "output",
-  "targetHandle": "input"
+  "sourceHandle": "value",
+  "targetHandle": "input-a"
 }
 
 === OUTPUT FORMAT ===
