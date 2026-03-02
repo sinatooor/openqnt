@@ -251,4 +251,36 @@ export const INDICATOR_NODES: NodeCatalogItem[] = [
         color: '#3b82f6',
         defaultData: { indicatorType: 'vwap', timeframe: '60', params: {} },
     },
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // ADVANCED / STATISTICAL
+    // ═══════════════════════════════════════════════════════════════════════════
+    {
+        type: 'hmm_regime',
+        nodeType: 'indicator',
+        label: 'HMM Regime',
+        description: 'Hidden Markov Model Regime',
+        tooltip: 'Detects market regimes (e.g., bull/bear/sideways) using Hidden Markov Models.',
+        inputs: ['Price Data'],
+        outputs: ['RegimeID'],
+        category: 'indicators',
+        subcategory: 'Statistical',
+        icon: 'Activity',
+        color: '#8b5cf6',
+        defaultData: { indicatorType: 'hmm_regime', timeframe: '1D', params: { n_states: 2, feature: 'returns' } },
+    },
+    {
+        type: 'spread',
+        nodeType: 'indicator',
+        label: 'Asset Spread',
+        description: 'Price ratio or spread between two assets',
+        tooltip: 'Calculates the spread (A - B) or ratio (A / B) for statistical arbitrage and pairs trading.',
+        inputs: ['Price Data A', 'Price Data B'],
+        outputs: ['Number'],
+        category: 'indicators',
+        subcategory: 'Statistical',
+        icon: 'TrendingUp',
+        color: '#06b6d4',
+        defaultData: { indicatorType: 'spread', timeframe: '60', params: { calculationType: 'ratio' } },
+    },
 ];

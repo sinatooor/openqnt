@@ -631,6 +631,67 @@ class GeneratedStrategy(Strategy):
 '''
 
 
+STATISTICAL_ARBITRAGE_CODE = '''
+from backtesting import Strategy
+class StatisticalArbitrage(Strategy): pass
+'''
+HMM_REGIME_SWITCHING_CODE = '''
+from backtesting import Strategy
+class HMMRegimeSwitching(Strategy): pass
+'''
+DIVERSIFICATION_ALLOCATION_CODE = '''
+from backtesting import Strategy
+class DiversificationAllocation(Strategy): pass
+'''
+PORTFOLIO_REBALANCING_CODE = '''
+from backtesting import Strategy
+class PortfolioRebalancing(Strategy): pass
+'''
+PROTECTIVE_PUT_CODE = '''
+from backtesting import Strategy
+class ProtectivePut(Strategy): pass
+'''
+OPTIONS_COLLAR_CODE = '''
+from backtesting import Strategy
+class OptionsCollar(Strategy): pass
+'''
+TRAILING_STOP_LOSS_CODE = '''
+from backtesting import Strategy
+from backtesting.test import SMA
+from backtesting.lib import crossover
+
+class TrailingStopLoss(Strategy):
+    fast_period = 10
+    slow_period = 20
+    trailing_sl_pct = 0.05
+    
+    def init(self):
+        close = self.data.Close
+        self.sma_fast = self.I(SMA, close, self.fast_period)
+        self.sma_slow = self.I(SMA, close, self.slow_period)
+        
+    def next(self):
+        if crossover(self.sma_fast, self.sma_slow):
+            self.buy(sl=self.data.Close[-1] * (1 - self.trailing_sl_pct))
+'''
+INVERSE_ETF_HEDGING_CODE = '''
+from backtesting import Strategy
+from backtesting.test import SMA
+
+class InverseETFHedging(Strategy):
+    period = 200
+    
+    def init(self):
+        self.sma = self.I(SMA, self.data.Close, self.period)
+        
+    def next(self):
+        if len(self.data) < self.period: return
+        if self.data.Close[-1] < self.sma[-1] and not self.position:
+            self.sell()
+        elif self.data.Close[-1] > self.sma[-1] and self.position.is_short:
+            self.position.close()
+'''
+
 # =============================================================================
 # TEMPLATE REGISTRY
 # =============================================================================
@@ -707,6 +768,54 @@ TEMPLATE_STRATEGIES = {
             "atr_sl_mult": 2.0,
             "atr_tp_mult": 6.0
         }
+    },
+    "statistical-arbitrage": {
+        "code": STATISTICAL_ARBITRAGE_CODE,
+        "nautilus_code": None,
+        "name": "Statistical Arbitrage",
+        "params": {}
+    },
+    "hmm-regime-switching": {
+        "code": HMM_REGIME_SWITCHING_CODE,
+        "nautilus_code": None,
+        "name": "HMM Regime-Switching",
+        "params": {}
+    },
+    "diversification-allocation": {
+        "code": DIVERSIFICATION_ALLOCATION_CODE,
+        "nautilus_code": None,
+        "name": "Diversification & Allocation",
+        "params": {}
+    },
+    "portfolio-rebalancing": {
+        "code": PORTFOLIO_REBALANCING_CODE,
+        "nautilus_code": None,
+        "name": "Portfolio Rebalancing",
+        "params": {}
+    },
+    "protective-put": {
+        "code": PROTECTIVE_PUT_CODE,
+        "nautilus_code": None,
+        "name": "Protective Put",
+        "params": {}
+    },
+    "options-collar": {
+        "code": OPTIONS_COLLAR_CODE,
+        "nautilus_code": None,
+        "name": "Options Collar",
+        "params": {}
+    },
+    "trailing-stop-loss": {
+        "code": TRAILING_STOP_LOSS_CODE,
+        "nautilus_code": None,
+        "name": "Trailing Stop Loss",
+        "params": {}
+    },
+    "inverse-etf-hedging": {
+        "code": INVERSE_ETF_HEDGING_CODE,
+        "nautilus_code": None,
+        "name": "Inverse ETF Hedging",
+        "params": {}
     }
 }
 

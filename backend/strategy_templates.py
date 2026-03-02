@@ -166,6 +166,115 @@ class EMACrossover(Strategy):
         elif crossover(self.ema_slow, self.ema_fast):
             self.position.close()
 ''',
+
+    "statistical_arbitrage": '''
+from backtesting import Strategy
+import numpy as np
+
+class StatisticalArbitrage(Strategy):
+    """Pairs trading strategy placeholder."""
+    def init(self):
+        pass
+    def next(self):
+        pass
+''',
+
+    "hmm_regime_switching": '''
+from backtesting import Strategy
+
+class HMMRegimeSwitching(Strategy):
+    """HMM Regime Switching Strategy placeholder."""
+    def init(self):
+        pass
+    def next(self):
+        pass
+''',
+
+    "diversification_allocation": '''
+from backtesting import Strategy
+
+class DiversificationAllocation(Strategy):
+    """Diversification and Allocation Strategy placeholder."""
+    def init(self):
+        pass
+    def next(self):
+        pass
+''',
+
+    "portfolio_rebalancing": '''
+from backtesting import Strategy
+
+class PortfolioRebalancing(Strategy):
+    """Portfolio Rebalancing Strategy placeholder."""
+    def init(self):
+        pass
+    def next(self):
+        pass
+''',
+
+    "protective_put": '''
+from backtesting import Strategy
+
+class ProtectivePut(Strategy):
+    """Protective Put Strategy placeholder."""
+    def init(self):
+        pass
+    def next(self):
+        pass
+''',
+
+    "options_collar": '''
+from backtesting import Strategy
+
+class OptionsCollar(Strategy):
+    """Options Collar Strategy placeholder."""
+    def init(self):
+        pass
+    def next(self):
+        pass
+''',
+
+    "trailing_stop_loss": '''
+from backtesting import Strategy
+from backtesting.test import SMA
+from backtesting.lib import crossover
+
+class TrailingStopLoss(Strategy):
+    """Strategy using a trailing stop loss."""
+    fast_period = 10
+    slow_period = 20
+    trailing_sl_pct = 0.05
+    
+    def init(self):
+        close = self.data.Close
+        self.sma_fast = self.I(SMA, close, self.fast_period)
+        self.sma_slow = self.I(SMA, close, self.slow_period)
+        
+    def next(self):
+        if crossover(self.sma_fast, self.sma_slow):
+            # Enter with a trailing stop loss
+            self.buy(sl=self.data.Close[-1] * (1 - self.trailing_sl_pct))
+''',
+
+    "inverse_etf_hedging": '''
+from backtesting import Strategy
+from backtesting.test import SMA
+
+class InverseETFHedging(Strategy):
+    """Inverse ETF Hedging Strategy."""
+    period = 200
+    
+    def init(self):
+        self.sma = self.I(SMA, self.data.Close, self.period)
+        
+    def next(self):
+        if len(self.data) < self.period: return
+        if self.data.Close[-1] < self.sma[-1] and not self.position:
+            # Simulate buying inverse ETF by going short
+            self.sell()
+        elif self.data.Close[-1] > self.sma[-1] and self.position.is_short:
+            self.position.close()
+''',
 }
 
 # Aliases for template names (maps frontend templateId to code key)
@@ -180,6 +289,14 @@ TEMPLATE_ALIASES = {
     "Mean Reversion": "mean_reversion",
     "ema-crossover": "ema_crossover",
     "EMA Crossover": "ema_crossover",
+    "statistical-arbitrage": "statistical_arbitrage",
+    "hmm-regime-switching": "hmm_regime_switching",
+    "diversification-allocation": "diversification_allocation",
+    "portfolio-rebalancing": "portfolio_rebalancing",
+    "protective-put": "protective_put",
+    "options-collar": "options_collar",
+    "trailing-stop-loss": "trailing_stop_loss",
+    "inverse-etf-hedging": "inverse_etf_hedging",
 }
 
 

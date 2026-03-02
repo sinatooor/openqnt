@@ -74,4 +74,18 @@ export const RISK_NODES: NodeCatalogItem[] = [
         color: '#f97316',
         defaultData: { riskType: 'trailingStop', value: 20 },
     },
+    {
+        type: 'portfolio_allocation',
+        nodeType: 'risk',
+        label: 'Target Allocation',
+        description: 'Asset target weights',
+        tooltip: 'Define target percentage allocation for an asset in the portfolio. Used by rebalancing actions.',
+        inputs: [],
+        outputs: ['Target Weight'],
+        category: 'risk',
+        subcategory: 'Portfolio',
+        icon: 'PieChart',
+        color: '#f97316',
+        defaultData: { riskType: 'portfolioAllocation', targetPercentage: 20 },
+    },
 ];
