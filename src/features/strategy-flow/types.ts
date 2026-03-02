@@ -149,6 +149,7 @@ export interface BaseNodeData {
   label: string;
   description?: string;
   locked?: boolean;
+  detachedInputs?: string[]; // Tracks which inputs are using edge connections instead of manual values
   [key: string]: unknown; // Index signature for ReactFlow compatibility
 }
 
@@ -166,6 +167,8 @@ export interface ConditionNodeData extends BaseNodeData {
   value?: number;
   minValue?: number;
   maxValue?: number;
+  inputA?: number | string;
+  inputB?: number | string;
 }
 
 // Action Node Data
@@ -218,6 +221,9 @@ export interface MathNodeData extends BaseNodeData {
   mathType: MathType;
   value?: number;                    // For 'number' type
   mathFunction?: AdvancedMathFunction; // For 'advancedMath' type
+  inputA?: number; // Manual fallback for math operations
+  inputB?: number; // Manual fallback for math operations
+  input?: number;  // Manual fallback for advancedMath
 }
 
 // =============================================================================

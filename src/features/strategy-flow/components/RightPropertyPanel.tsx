@@ -93,7 +93,7 @@ const DetachableInput = memo(({
             )}
             title={isDetached ? "Click to use fixed value" : "Click to use node input"}
           >
-            {isDetached ? "⚡ Edge" : "📌 Fixed"}
+            {isDetached ? "Edge" : "Fixed"}
           </button>
         )}
       </div>
@@ -449,6 +449,18 @@ const ActionProperties = memo(({ nodeId, data }: ActionPropertiesProps) => {
     updateNodeData(nodeId, { [field]: value });
   }, [nodeId, updateNodeData]);
 
+  const toggleDetached = useCallback((field: string) => {
+    const current = new Set(data.detachedInputs || []);
+    if (current.has(field)) {
+      current.delete(field);
+    } else {
+      current.add(field);
+    }
+    updateNodeData(nodeId, { detachedInputs: Array.from(current) });
+  }, [nodeId, data.detachedInputs, updateNodeData]);
+
+  const isDetached = (field: string) => (data.detachedInputs || []).includes(field);
+
   switch (data.actionType) {
     case 'order':
       return (
@@ -472,10 +484,12 @@ const ActionProperties = memo(({ nodeId, data }: ActionPropertiesProps) => {
               { value: 'stop', label: 'Stop' },
             ]}
           />
-          <NumberInput
+          <DetachableInput
             label="Size"
             value={data.size || 0.1}
             onChange={(v) => updateField('size', v)}
+            isDetached={isDetached('size')}
+            onDetachedChange={() => toggleDetached('size')}
             min={0.01}
             step={0.01}
           />
@@ -490,10 +504,12 @@ const ActionProperties = memo(({ nodeId, data }: ActionPropertiesProps) => {
             ]}
           />
           {data.orderType === 'limit' && (
-            <NumberInput
+            <DetachableInput
               label="Limit Price"
               value={data.limitPrice || 0}
               onChange={(v) => updateField('limitPrice', v)}
+              isDetached={isDetached('limitPrice')}
+              onDetachedChange={() => toggleDetached('limitPrice')}
               step={0.00001}
             />
           )}
@@ -503,10 +519,12 @@ const ActionProperties = memo(({ nodeId, data }: ActionPropertiesProps) => {
     case 'stopLoss':
       return (
         <div className="space-y-4">
-          <NumberInput
+          <DetachableInput
             label="Stop Price"
             value={data.stopPrice || 0}
             onChange={(v) => updateField('stopPrice', v)}
+            isDetached={isDetached('stopPrice')}
+            onDetachedChange={() => toggleDetached('stopPrice')}
             step={0.00001}
             description="Price level to close the position"
           />
@@ -516,10 +534,12 @@ const ActionProperties = memo(({ nodeId, data }: ActionPropertiesProps) => {
     case 'takeProfit':
       return (
         <div className="space-y-4">
-          <NumberInput
+          <DetachableInput
             label="Take Profit Price"
             value={data.takeProfitPrice || 0}
             onChange={(v) => updateField('takeProfitPrice', v)}
+            isDetached={isDetached('takeProfitPrice')}
+            onDetachedChange={() => toggleDetached('takeProfitPrice')}
             step={0.00001}
             description="Price level to take profit"
           />
@@ -529,10 +549,12 @@ const ActionProperties = memo(({ nodeId, data }: ActionPropertiesProps) => {
     case 'trailingStop':
       return (
         <div className="space-y-4">
-          <NumberInput
+          <DetachableInput
             label="Trailing Distance"
             value={data.trailingDistance || 10}
             onChange={(v) => updateField('trailingDistance', v)}
+            isDetached={isDetached('trailingDistance')}
+            onDetachedChange={() => toggleDetached('trailingDistance')}
             min={1}
             description="Distance in pips"
           />
@@ -588,11 +610,31 @@ const ConditionProperties = memo(({ nodeId, data }: ConditionPropertiesProps) =>
     updateNodeData(nodeId, { [field]: value });
   }, [nodeId, updateNodeData]);
 
+  const toggleDetached = useCallback((field: string) => {
+    const current = new Set(data.detachedInputs || []);
+    if (current.has(field)) {
+      current.delete(field);
+    } else {
+      current.add(field);
+    }
+    updateNodeData(nodeId, { detachedInputs: Array.from(current) });
+  }, [nodeId, data.detachedInputs, updateNodeData]);
+
+  const isDetached = (field: string) => (data.detachedInputs || []).includes(field);
+
   switch (data.conditionType) {
     case 'compare':
     case 'threshold':
       return (
         <div className="space-y-4">
+          <DetachableInput
+            label="Input A"
+            value={Number(data.inputA) || 0}
+            onChange={(v) => updateField('inputA', v)}
+            isDetached={isDetached('inputA')}
+            onDetachedChange={() => toggleDetached('inputA')}
+            step={0.0001}
+          />
           <SelectInput
             label="Operator"
             value={data.operator || '>'}
@@ -607,11 +649,23 @@ const ConditionProperties = memo(({ nodeId, data }: ConditionPropertiesProps) =>
             ]}
           />
           {data.conditionType === 'threshold' && (
-            <NumberInput
+            <DetachableInput
               label="Threshold Value"
               value={data.value || 0}
               onChange={(v) => updateField('value', v)}
+              isDetached={isDetached('value')}
+              onDetachedChange={() => toggleDetached('value')}
               step={0.01}
+            />
+          )}
+          {data.conditionType === 'compare' && (
+            <DetachableInput
+              label="Input B"
+              value={Number(data.inputB) || 0}
+              onChange={(v) => updateField('inputB', v)}
+              isDetached={isDetached('inputB')}
+              onDetachedChange={() => toggleDetached('inputB')}
+              step={0.0001}
             />
           )}
         </div>
@@ -620,16 +674,20 @@ const ConditionProperties = memo(({ nodeId, data }: ConditionPropertiesProps) =>
     case 'range':
       return (
         <div className="space-y-4">
-          <NumberInput
+          <DetachableInput
             label="Minimum"
             value={data.minValue || 0}
             onChange={(v) => updateField('minValue', v)}
+            isDetached={isDetached('minValue')}
+            onDetachedChange={() => toggleDetached('minValue')}
             step={0.01}
           />
-          <NumberInput
+          <DetachableInput
             label="Maximum"
             value={data.maxValue || 100}
             onChange={(v) => updateField('maxValue', v)}
+            isDetached={isDetached('maxValue')}
+            onDetachedChange={() => toggleDetached('maxValue')}
             step={0.01}
           />
         </div>
@@ -704,6 +762,18 @@ interface VariablePropertiesProps {
 const VariableProperties = memo(({ nodeId, data }: VariablePropertiesProps) => {
   const { updateNodeData } = useStrategyFlowStore();
 
+  const toggleDetached = useCallback((field: string) => {
+    const current = new Set(data.detachedInputs || []);
+    if (current.has(field)) {
+      current.delete(field);
+    } else {
+      current.add(field);
+    }
+    updateNodeData(nodeId, { detachedInputs: Array.from(current) });
+  }, [nodeId, data.detachedInputs, updateNodeData]);
+
+  const isDetached = (field: string) => (data.detachedInputs || []).includes(field);
+
   return (
     <div className="space-y-4">
       {(data.variableType === 'setVariable' ||
@@ -721,10 +791,12 @@ const VariableProperties = memo(({ nodeId, data }: VariablePropertiesProps) => {
         )}
 
       {(data.variableType === 'setVariable' || data.variableType === 'changeVariable') && (
-        <NumberInput
+        <DetachableInput
           label="Value"
           value={data.value as number || 0}
           onChange={(v) => updateNodeData(nodeId, { value: v })}
+          isDetached={isDetached('value')}
+          onDetachedChange={() => toggleDetached('value')}
           step={0.01}
         />
       )}
@@ -758,6 +830,18 @@ interface MathPropertiesProps {
 const MathProperties = memo(({ nodeId, data }: MathPropertiesProps) => {
   const { updateNodeData } = useStrategyFlowStore();
 
+  const toggleDetached = useCallback((field: string) => {
+    const current = new Set(data.detachedInputs || []);
+    if (current.has(field)) {
+      current.delete(field);
+    } else {
+      current.add(field);
+    }
+    updateNodeData(nodeId, { detachedInputs: Array.from(current) });
+  }, [nodeId, data.detachedInputs, updateNodeData]);
+
+  const isDetached = (field: string) => (data.detachedInputs || []).includes(field);
+
   switch (data.mathType) {
     case 'number':
       return (
@@ -772,29 +856,54 @@ const MathProperties = memo(({ nodeId, data }: MathPropertiesProps) => {
 
     case 'advancedMath':
       return (
-        <SelectInput
-          label="Function"
-          value={data.mathFunction || 'sqrt'}
-          onChange={(v) => updateNodeData(nodeId, { mathFunction: v })}
-          options={[
-            { value: 'sqrt', label: 'Square Root (√)' },
-            { value: 'abs', label: 'Absolute Value' },
-            { value: 'sin', label: 'Sine' },
-            { value: 'cos', label: 'Cosine' },
-            { value: 'tan', label: 'Tangent' },
-            { value: 'log', label: 'Logarithm' },
-            { value: 'exp', label: 'Exponential' },
-            { value: 'floor', label: 'Floor' },
-            { value: 'ceil', label: 'Ceiling' },
-            { value: 'round', label: 'Round' },
-          ]}
-        />
+        <div className="space-y-4">
+          <SelectInput
+            label="Function"
+            value={data.mathFunction || 'sqrt'}
+            onChange={(v) => updateNodeData(nodeId, { mathFunction: v })}
+            options={[
+              { value: 'sqrt', label: 'Square Root (√)' },
+              { value: 'abs', label: 'Absolute Value' },
+              { value: 'sin', label: 'Sine' },
+              { value: 'cos', label: 'Cosine' },
+              { value: 'tan', label: 'Tangent' },
+              { value: 'log', label: 'Logarithm' },
+              { value: 'exp', label: 'Exponential' },
+              { value: 'floor', label: 'Floor' },
+              { value: 'ceil', label: 'Ceiling' },
+              { value: 'round', label: 'Round' },
+            ]}
+          />
+          <DetachableInput
+            label="Input"
+            value={data.input || 0}
+            onChange={(v) => updateNodeData(nodeId, { input: v })}
+            isDetached={isDetached('input')}
+            onDetachedChange={() => toggleDetached('input')}
+            step={0.0001}
+          />
+        </div>
       );
 
     default:
       return (
-        <div className="text-sm text-muted-foreground">
-          <p>Connect two numeric inputs to perform {data.mathType} operation.</p>
+        <div className="space-y-4">
+          <DetachableInput
+            label="Input A"
+            value={data.inputA || 0}
+            onChange={(v) => updateNodeData(nodeId, { inputA: v })}
+            isDetached={isDetached('inputA')}
+            onDetachedChange={() => toggleDetached('inputA')}
+            step={0.0001}
+          />
+          <DetachableInput
+            label="Input B"
+            value={data.inputB || 0}
+            onChange={(v) => updateNodeData(nodeId, { inputB: v })}
+            isDetached={isDetached('inputB')}
+            onDetachedChange={() => toggleDetached('inputB')}
+            step={0.0001}
+          />
         </div>
       );
   }
@@ -1193,30 +1302,36 @@ const PortfolioProperties = memo(({ nodeId, data }: PortfolioPropertiesProps) =>
       )}
 
       {['concentrationCheck', 'correlationCheck'].includes(action) && (
-        <SliderInput
+        <DetachableInput
           label="Threshold (%)"
           value={data.threshold ?? 30}
           onChange={(v) => updateNodeData(nodeId, { threshold: v })}
+          isDetached={isDetached('threshold')}
+          onDetachedChange={() => toggleDetached('threshold')}
           min={1}
           max={100}
         />
       )}
 
       {action === 'rebalanceSignal' && (
-        <SliderInput
+        <DetachableInput
           label="Drift Threshold (%)"
           value={data.driftThreshold ?? 5}
           onChange={(v) => updateNodeData(nodeId, { driftThreshold: v })}
+          isDetached={isDetached('driftThreshold')}
+          onDetachedChange={() => toggleDetached('driftThreshold')}
           min={1}
           max={20}
         />
       )}
 
       {action === 'setTargetWeight' && (
-        <SliderInput
+        <DetachableInput
           label="Target Allocation (%)"
           value={data.targetPct ?? 10}
           onChange={(v) => updateNodeData(nodeId, { targetPct: v })}
+          isDetached={isDetached('targetPct')}
+          onDetachedChange={() => toggleDetached('targetPct')}
           min={0}
           max={100}
         />
