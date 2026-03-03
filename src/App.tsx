@@ -14,31 +14,58 @@ import AgentConfig from "./pages/AgentConfig";
 import Settings from "./pages/Settings";
 import Portfolio from "./pages/Portfolio";
 import NotFound from "./pages/NotFound";
+import Onboarding from "./pages/Onboarding";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AppNavBar } from "./components/AppNavBar";
 import { useAuthStore } from "./stores/authStore";
+import { useOnboardingStore } from "./stores/onboardingStore";
 
 const queryClient = new QueryClient();
 
 const ProtectedRoutes = () => {
   const { isAuthenticated } = useAuthStore();
+  const { hasCompletedOnboarding } = useOnboardingStore();
 
   return (
-    <>
-      <AppNavBar />
-      <Routes>
-        <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />} />
-        <Route path="/" element={<ProtectedRoute><StrategyFlow /></ProtectedRoute>} />
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/executions" element={<ProtectedRoute><ExecutionHistory /></ProtectedRoute>} />
-        <Route path="/execution/:id" element={<ProtectedRoute><ExecutionDetails /></ProtectedRoute>} />
-        <Route path="/credentials" element={<ProtectedRoute><Credentials /></ProtectedRoute>} />
-        <Route path="/agent" element={<ProtectedRoute><AgentConfig /></ProtectedRoute>} />
-        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-        <Route path="/portfolio" element={<ProtectedRoute><Portfolio /></ProtectedRoute>} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </>
+    <Routes>
+      {/* Onboarding — shown after auth but before the main app */}
+      <Route
+        path="/onboarding"
+        element={
+          isAuthenticated && hasCompletedOnboarding
+            ? <Navigate to="/dashboard" replace />
+            : isAuthenticated
+              ? <Onboarding />
+              : <Navigate to="/login" replace />
+        }
+      />
+
+      {/* Login */}
+      <Route
+        path="/login"
+        element={
+          isAuthenticated
+            ? hasCompletedOnboarding
+              ? <Navigate to="/dashboard" replace />
+              : <Navigate to="/onboarding" replace />
+            : <Login />
+        }
+      />
+
+      {/* All protected routes — redirect to onboarding if not completed */}
+      <Route element={<><AppNavBar /><ProtectedRoute /></>}>
+        <Route path="/" element={<StrategyFlow />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/executions" element={<ExecutionHistory />} />
+        <Route path="/execution/:id" element={<ExecutionDetails />} />
+        <Route path="/credentials" element={<Credentials />} />
+        <Route path="/agent" element={<AgentConfig />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/portfolio" element={<Portfolio />} />
+      </Route>
+
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 };
 

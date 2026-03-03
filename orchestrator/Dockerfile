@@ -1,7 +1,7 @@
 # Build stage
 FROM oven/bun:1-alpine AS builder
 WORKDIR /app
-COPY package.json bun.lockb ./
+COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 COPY tsconfig.json ./
 COPY src/ ./src/
@@ -12,7 +12,7 @@ RUN bun run build
 # Production stage
 FROM oven/bun:1-alpine AS production
 WORKDIR /app
-COPY package.json bun.lockb ./
+COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --production
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
@@ -25,7 +25,7 @@ CMD ["bun", "dist/index.js"]
 # Development stage
 FROM oven/bun:1-alpine AS development
 WORKDIR /app
-COPY package.json bun.lockb ./
+COPY package.json bun.lock ./
 RUN bun install
 COPY . .
 RUN bunx prisma generate
