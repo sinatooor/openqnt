@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,9 +23,55 @@ import { useOnboardingStore } from "./stores/onboardingStore";
 
 const queryClient = new QueryClient();
 
-const ProtectedRoutes = () => {
+/* -------------------------------------------------------------------------- */
+/*  Boot splash — shown while Zustand hydrates persisted state from storage   */
+/* -------------------------------------------------------------------------- */
+const BootSplash = () => (
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '100vh',
+      background: '#0a0a0f',
+    }}
+  >
+    <div style={{ textAlign: 'center' }}>
+      <div
+        style={{
+          width: 48,
+          height: 48,
+          margin: '0 auto 20px',
+          border: '3px solid rgba(139,92,246,0.15)',
+          borderTopColor: '#7c3aed',
+          borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite',
+        }}
+      />
+      <p style={{ color: '#64748b', fontSize: 13, margin: 0 }}>Loading…</p>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  </div>
+);
+
+/* -------------------------------------------------------------------------- */
+/*  Routes                                                                     */
+/* -------------------------------------------------------------------------- */
+const AppRoutes = () => {
   const { isAuthenticated } = useAuthStore();
   const { hasCompletedOnboarding } = useOnboardingStore();
+
+  /* Wait one tick so Zustand can hydrate from localStorage */
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    // Both stores use zustand/persist — they hydrate synchronously on import,
+    // but React may not have the values on the very first render.
+    // A micro-task delay is enough to let the persisted state settle.
+    const id = requestAnimationFrame(() => setHydrated(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  if (!hydrated) return <BootSplash />;
 
   return (
     <Routes>
@@ -52,7 +99,7 @@ const ProtectedRoutes = () => {
         }
       />
 
-      {/* All protected routes — redirect to onboarding if not completed */}
+      {/* All protected routes — AppNavBar only renders after onboarding */}
       <Route element={<><AppNavBar /><ProtectedRoute /></>}>
         <Route path="/" element={<StrategyFlow />} />
         <Route path="/dashboard" element={<Dashboard />} />
@@ -76,7 +123,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <ProtectedRoutes />
+          <AppRoutes />
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

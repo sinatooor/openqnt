@@ -24,7 +24,8 @@ const Login = () => {
             } else {
                 await register(email, password, name);
             }
-            navigate('/dashboard');
+            // Route guard will redirect to /onboarding or /dashboard appropriately
+            navigate('/');
         } catch {
             // Error is set in store
         }
