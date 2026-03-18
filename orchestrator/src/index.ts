@@ -5,6 +5,7 @@ import { setupWebSocket } from './api/websocket.js';
 import { startHeartbeatWorker, type HeartbeatJobData } from './workers/heartbeat.js';
 import './workers/notificationWorker.js';
 import './workers/dataIngestionWorker.js';
+import './workers/agentRunWorker.js';
 import { executeStrategy } from './services/executionService.js';
 import type { Bar } from './engine/interpreter.js';
 
