@@ -1,0 +1,270 @@
+/**
+ * Agent Alert Service — Bridges agent outputs to the notification system.
+ *
+ * After each agent run completes, this service:
+ * 1. Evaluates the agent output against user-defined AlertRules
+ * 2. Checks impact thresholds and cooldown periods
+ * 3. Auto-generates notifications for high-impact findings
+ * 4. Dispatches via the existing NotificationService (telegram, email, etc.)
+ *
+ * This is the key bridge that makes "inform the user when..." work.
+ */
+
+import { prisma } from '../config/database.js';
+import { logger } from '../utils/logger.js';
+import { NotificationService } from './notificationService.js';
+import type { AgentOutputData, AgentFinding } from './agentService.js';
+import type { NotificationChannel } from '@prisma/client';
+
+// ─── Types ────────────────────────────────────────────────────
+
+interface AlertConditions {
+    minImpact?: string;        // "medium", "high", "critical"
+    minConfidence?: number;    // 0-1
+    signals?: string[];        // ["bearish", "risk"]
+    actions?: string[];        // ["sell", "hedge"]
+    keywords?: string[];       // Free-text keywords to match
+}
+
+const IMPACT_ORDER: Record<string, number> = {
+    none: 0, low: 1, medium: 2, high: 3, critical: 4,
+};
+
+// ─── Agent Alert Service ──────────────────────────────────────
+
+export class AgentAlertService {
+    /**
+     * Evaluate an agent run output against all matching alert rules
+     * and dispatch notifications as needed.
+     */
+    static async evaluateAndNotify(
+        userId: string,
+        agentType: string,
+        output: AgentOutputData,
+        agentRunId?: string
+    ): Promise<number> {
+        // Fetch active alert rules for this user and agent type
+        const rules = await prisma.alertRule.findMany({
+            where: {
+                userId,
+                agentType,
+                enabled: true,
+            },
+        });
+
+        if (rules.length === 0) {
+            // Even without rules, generate auto-alerts for critical findings
+            return this.autoAlertCritical(userId, output, agentRunId);
+        }
+
+        let notificationCount = 0;
+
+        for (const rule of rules) {
+            // Check cooldown
+            if (rule.lastTriggeredAt) {
+                const cooldownMs = (rule.cooldownMinutes ?? 60) * 60_000;
+                const elapsed = Date.now() - rule.lastTriggeredAt.getTime();
+                if (elapsed < cooldownMs) continue;
+            }
+
+            const conditions = rule.conditions as unknown as AlertConditions;
+            const matchedFindings = this.matchFindings(output, conditions, rule.symbols);
+
+            if (matchedFindings.length === 0) continue;
+
+            // Generate notification
+            const { title, body } = this.formatNotification(agentType, matchedFindings, output.summary);
+
+            try {
+                await NotificationService.dispatch({
+                    userId,
+                    channel: rule.channel as NotificationChannel,
+                    type: 'alert',
+                    title,
+                    body,
+                    metadata: {
+                        agentType,
+                        agentRunId,
+                        alertRuleId: rule.id,
+                        findingsCount: matchedFindings.length,
+                        overallSignal: output.overall_signal,
+                    },
+                });
+
+                // Update rule trigger tracking
+                await prisma.alertRule.update({
+                    where: { id: rule.id },
+                    data: {
+                        lastTriggeredAt: new Date(),
+                        triggerCount: { increment: 1 },
+                    },
+                });
+
+                notificationCount++;
+            } catch (error) {
+                logger.error({ error, ruleId: rule.id }, 'Failed to dispatch alert notification');
+            }
+        }
+
+        return notificationCount;
+    }
+
+    /**
+     * Auto-alert for critical/high-impact findings even without explicit rules.
+     */
+    private static async autoAlertCritical(
+        userId: string,
+        output: AgentOutputData,
+        agentRunId?: string
+    ): Promise<number> {
+        const criticalFindings = (output.findings ?? []).filter(
+            f => f.impact === 'critical' || f.impact === 'high'
+        );
+
+        if (criticalFindings.length === 0) return 0;
+
+        const { title, body } = this.formatNotification(
+            output.agent_type,
+            criticalFindings,
+            output.summary
+        );
+
+        try {
+            await NotificationService.dispatch({
+                userId,
+                channel: 'in_app',
+                type: 'alert',
+                title: `⚠️ ${title}`,
+                body,
+                metadata: {
+                    agentType: output.agent_type,
+                    agentRunId,
+                    autoGenerated: true,
+                    findingsCount: criticalFindings.length,
+                },
+            });
+            return 1;
+        } catch (error) {
+            logger.error({ error }, 'Failed to dispatch auto-alert');
+            return 0;
+        }
+    }
+
+    /**
+     * Match findings against alert conditions.
+     */
+    private static matchFindings(
+        output: AgentOutputData,
+        conditions: AlertConditions,
+        ruleSymbols: string[]
+    ): AgentFinding[] {
+        const findings = output.findings ?? [];
+
+        return findings.filter(f => {
+            // Symbol filter
+            if (ruleSymbols.length > 0) {
+                const hasMatch = f.symbols.some(s => ruleSymbols.includes(s));
+                if (!hasMatch) return false;
+            }
+
+            // Impact threshold
+            if (conditions.minImpact) {
+                const minLevel = IMPACT_ORDER[conditions.minImpact] ?? 0;
+                const findingLevel = IMPACT_ORDER[f.impact] ?? 0;
+                if (findingLevel < minLevel) return false;
+            }
+
+            // Confidence threshold
+            if (conditions.minConfidence !== undefined) {
+                if (f.confidence < conditions.minConfidence) return false;
+            }
+
+            // Signal filter
+            if (conditions.signals?.length) {
+                if (!conditions.signals.includes(f.signal)) return false;
+            }
+
+            // Keyword filter
+            if (conditions.keywords?.length) {
+                const text = `${f.title} ${f.description}`.toLowerCase();
+                const hasKeyword = conditions.keywords.some(kw => text.includes(kw.toLowerCase()));
+                if (!hasKeyword) return false;
+            }
+
+            return true;
+        });
+    }
+
+    /**
+     * Format agent findings into a human-readable notification.
+     */
+    private static formatNotification(
+        agentType: string,
+        findings: AgentFinding[],
+        summary: string
+    ): { title: string; body: string } {
+        const agentName = agentType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        const topFinding = findings[0];
+
+        const title = findings.length === 1
+            ? `${agentName}: ${topFinding.title}`
+            : `${agentName}: ${findings.length} alerts`;
+
+        const bodyParts = [summary || ''];
+
+        for (const f of findings.slice(0, 5)) {
+            const symbols = f.symbols.length > 0 ? ` [${f.symbols.join(', ')}]` : '';
+            bodyParts.push(`• ${f.signal.toUpperCase()}${symbols}: ${f.title}`);
+            if (f.description) bodyParts.push(`  ${f.description.slice(0, 200)}`);
+        }
+
+        if (findings.length > 5) {
+            bodyParts.push(`\n...and ${findings.length - 5} more findings`);
+        }
+
+        return { title, body: bodyParts.join('\n') };
+    }
+
+    // ─── Alert Rule CRUD ────────────────────────────────────────
+
+    static async createRule(userId: string, data: {
+        name: string;
+        agentType: string;
+        symbols?: string[];
+        conditions: AlertConditions;
+        channel?: NotificationChannel;
+        cooldownMinutes?: number;
+    }) {
+        return prisma.alertRule.create({
+            data: {
+                userId,
+                name: data.name,
+                agentType: data.agentType,
+                symbols: data.symbols ?? [],
+                conditions: data.conditions as any,
+                channel: data.channel ?? 'in_app',
+                cooldownMinutes: data.cooldownMinutes ?? 60,
+            },
+        });
+    }
+
+    static async listRules(userId: string) {
+        return prisma.alertRule.findMany({
+            where: { userId },
+            orderBy: { createdAt: 'desc' },
+        });
+    }
+
+    static async toggleRule(ruleId: string, userId: string) {
+        const rule = await prisma.alertRule.findFirst({ where: { id: ruleId, userId } });
+        if (!rule) return null;
+        return prisma.alertRule.update({
+            where: { id: ruleId },
+            data: { enabled: !rule.enabled },
+        });
+    }
+
+    static async deleteRule(ruleId: string, userId: string) {
+        return prisma.alertRule.deleteMany({ where: { id: ruleId, userId } });
+    }
+}

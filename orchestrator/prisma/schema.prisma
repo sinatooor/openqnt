@@ -125,6 +125,7 @@ model User {
   researchResults ResearchResult[]
   dataSources     DataSource[]
   agentRuns       AgentRun[]
+  alertRules      AlertRule[]
 
   @@map("users")
 }
@@ -495,4 +496,28 @@ model AgentRun {
   @@index([status])
   @@index([createdAt])
   @@map("agent_runs")
+}
+
+// ─── Alert Rules ─────────────────────────────────────────────
+
+model AlertRule {
+  id             String              @id @default(uuid())
+  userId         String              @map("user_id")
+  name           String                                   // "RSI Alert for AAPL"
+  agentType      String              @map("agent_type")   // which agent triggers this
+  enabled        Boolean             @default(true)
+  symbols        String[]            @default([])         // target symbols (empty = all)
+  conditions     Json                                     // threshold conditions
+  channel        NotificationChannel @default(in_app)     // preferred notification channel
+  cooldownMinutes Int                @default(60) @map("cooldown_minutes")
+  lastTriggeredAt DateTime?          @map("last_triggered_at")
+  triggerCount    Int                 @default(0) @map("trigger_count")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([agentType])
+  @@map("alert_rules")
 }
