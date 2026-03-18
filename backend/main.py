@@ -237,6 +237,10 @@ app.include_router(strategy_flow_v2_router)
 from routers.compute import router as compute_router
 app.include_router(compute_router)
 
+# Agent runner endpoints for orchestrator
+from routers.agent_runner import router as agent_runner_router
+app.include_router(agent_runner_router)
+
 from routers.portfolio import router as portfolio_router
 app.include_router(portfolio_router)
 

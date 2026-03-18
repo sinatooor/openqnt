@@ -81,6 +81,29 @@ enum DeliveryStatus {
   failed
 }
 
+enum DataSourceType {
+  news
+  earnings
+  filing
+  macro
+  insider
+  congress
+  whale_13f
+  social
+  analyst
+  options
+  crypto_whale
+  custom
+}
+
+enum DataEventImpact {
+  none
+  low
+  medium
+  high
+  critical
+}
+
 // ─── Users ───────────────────────────────────────────────────
 
 model User {
@@ -100,6 +123,8 @@ model User {
   notifications   Notification[]
   executionRuns   ExecutionRun[]
   researchResults ResearchResult[]
+  dataSources     DataSource[]
+  agentRuns       AgentRun[]
 
   @@map("users")
 }
@@ -367,4 +392,107 @@ model ResearchResult {
   @@index([userId])
   @@index([researchType])
   @@map("research_results")
+}
+
+// ─── Data Sources ────────────────────────────────────────────
+
+model DataSource {
+  id              String         @id @default(uuid())
+  userId          String         @map("user_id")
+  type            DataSourceType
+  name            String
+  config          Json
+  scheduleSeconds Int            @default(3600) @map("schedule_seconds")
+  enabled         Boolean        @default(true)
+  lastFetchedAt   DateTime?      @map("last_fetched_at")
+  lastError       String?        @map("last_error")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dataEvents DataEvent[]
+
+  @@index([userId])
+  @@index([type])
+  @@map("data_sources")
+}
+
+// ─── Data Events ─────────────────────────────────────────────
+
+model DataEvent {
+  id            String          @id @default(uuid())
+  dataSourceId  String?         @map("data_source_id")
+  type          DataSourceType
+  symbol        String?
+  headline      String
+  body          String?
+  url           String?
+  sentiment     Float?
+  impact        DataEventImpact @default(none)
+  metadata      Json?
+  contentHash   String?         @map("content_hash")
+  publishedAt   DateTime?       @map("published_at")
+  ingestedAt    DateTime        @default(now()) @map("ingested_at")
+
+  dataSource    DataSource?     @relation(fields: [dataSourceId], references: [id], onDelete: SetNull)
+  evidenceLinks EvidenceLink[]
+
+  @@unique([type, contentHash])
+  @@index([type])
+  @@index([symbol])
+  @@index([publishedAt])
+  @@index([type, symbol])
+  @@map("data_events")
+}
+
+// ─── Evidence Links ──────────────────────────────────────────
+
+model EvidenceLink {
+  id          String   @id @default(uuid())
+  dataEventId String   @map("data_event_id")
+  entityType  String
+  entityId    String   @map("entity_id")
+  confidence  Float?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  dataEvent DataEvent @relation(fields: [dataEventId], references: [id], onDelete: Cascade)
+
+  @@index([dataEventId])
+  @@index([entityType, entityId])
+  @@map("evidence_links")
+}
+
+// ─── Agent Runs ──────────────────────────────────────────────
+
+enum AgentRunStatus {
+  pending
+  running
+  completed
+  failed
+  cancelled
+}
+
+model AgentRun {
+  id            String         @id @default(uuid())
+  userId        String         @map("user_id")
+  agentType     String         @map("agent_type")    // e.g. "news_analyst", "macro_analyst", "social_monitor"
+  triggerType   String         @map("trigger_type")   // "scheduled" | "manual" | "event_driven"
+  status        AgentRunStatus @default(pending)
+  input         Json?                                 // Input parameters
+  output        Json?                                 // Structured output (findings, recommendations)
+  confidence    Float?                                // 0-1 overall confidence score
+  tokensUsed    Int?           @map("tokens_used")
+  durationMs    Int?           @map("duration_ms")
+  error         String?
+  startedAt     DateTime?      @map("started_at")
+  completedAt   DateTime?      @map("completed_at")
+  createdAt     DateTime       @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([agentType])
+  @@index([status])
+  @@index([createdAt])
+  @@map("agent_runs")
 }
