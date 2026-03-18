@@ -21,6 +21,7 @@ import webhooksRouter from './api/routes/webhooks.js';
 import researchRouter from './api/routes/research.js';
 import dataSourcesRouter from './api/routes/dataSources.js';
 import dataEventsRouter from './api/routes/dataEvents.js';
+import agentRunsRouter from './api/routes/agentRuns.js';
 import { getHeartbeatQueue } from './workers/heartbeat.js';
 
 export function createApp() {
@@ -80,6 +81,7 @@ export function createApp() {
     app.use('/api/research', researchRouter);
     app.use('/api/data-sources', dataSourcesRouter);
     app.use('/api/data-events', dataEventsRouter);
+    app.use('/api/agent-runs', agentRunsRouter);
 
     // ── Error Handler ─────────────────────────────────────────
     app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {

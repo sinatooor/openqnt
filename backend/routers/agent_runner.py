@@ -13,6 +13,8 @@ from typing import Any, Optional
 from adk_agents.news_analyst import news_analyst
 from adk_agents.macro_analyst import macro_analyst
 from adk_agents.social_monitor import social_monitor
+from adk_agents.synthesis_agent import synthesis_agent
+from adk_agents.technical_analyst import technical_analyst
 
 router = APIRouter(prefix="/compute/agents", tags=["agents"])
 
@@ -22,6 +24,8 @@ AGENT_REGISTRY = {
     "news_analyst": news_analyst,
     "macro_analyst": macro_analyst,
     "social_monitor": social_monitor,
+    "synthesis": synthesis_agent,
+    "technical_analyst": technical_analyst,
 }
 
 # ── Request/Response Models ───────────────────────────────────
@@ -95,3 +99,118 @@ async def list_agent_types():
             for agent_type, agent in AGENT_REGISTRY.items()
         ]
     }
+
+
+# ── Full Pipeline (runs all agents → synthesis) ──────────────
+
+class PipelineRequest(BaseModel):
+    symbols: list[str] = []
+    news_events: list[dict[str, Any]] = []
+    macro_events: list[dict[str, Any]] = []
+    social_events: list[dict[str, Any]] = []
+    technical_data: dict[str, Any] = {}
+    thresholds: dict[str, Any] = {}
+    model: Optional[str] = "gemini-2.0-flash"
+
+
+class PipelineResponse(BaseModel):
+    success: bool
+    synthesis: dict[str, Any] | None = None
+    agent_outputs: dict[str, dict[str, Any]] = {}
+    error: str | None = None
+
+
+@router.post("/pipeline", response_model=PipelineResponse)
+async def run_full_pipeline(req: PipelineRequest):
+    """
+    Run the full agent pipeline:
+    1. Runs all specialist agents in parallel (news, macro, social, technical)
+    2. Feeds all outputs into the synthesis agent
+    3. Returns the unified action plan
+
+    This implements the user's requirement: "a final agent that gets all the
+    information, technical, RSI and SMA, news, social media post, and decides
+    what to buy, sell or do"
+    """
+    import asyncio
+
+    agent_outputs: dict[str, dict] = {}
+    model = req.model or "gemini-2.0-flash"
+
+    # Run specialist agents in parallel
+    tasks = {}
+
+    if req.news_events:
+        tasks["news_analyst"] = news_analyst.run({
+            "symbols": req.symbols,
+            "news_events": req.news_events,
+            "model": model,
+        })
+
+    if req.macro_events:
+        tasks["macro_analyst"] = macro_analyst.run({
+            "symbols": req.symbols,
+            "macro_events": req.macro_events,
+            "model": model,
+        })
+
+    if req.social_events:
+        tasks["social_monitor"] = social_monitor.run({
+            "symbols": req.symbols,
+            "social_events": req.social_events,
+            "model": model,
+        })
+
+    if req.technical_data:
+        tasks["technical_analyst"] = technical_analyst.run({
+            "symbols": req.symbols,
+            "technical_data": req.technical_data,
+            "thresholds": req.thresholds,
+            "model": model,
+        })
+
+    if not tasks:
+        return PipelineResponse(
+            success=False,
+            error="No data provided to analyze. Provide at least one of: news_events, macro_events, social_events, technical_data"
+        )
+
+    # Execute all agents concurrently
+    results = await asyncio.gather(
+        *[task for task in tasks.values()],
+        return_exceptions=True,
+    )
+
+    for agent_name, result in zip(tasks.keys(), results):
+        if isinstance(result, Exception):
+            agent_outputs[agent_name] = {
+                "agent_type": agent_name,
+                "error": str(result),
+                "findings": [],
+                "recommendations": [],
+                "summary": f"Agent failed: {result}",
+                "overall_confidence": 0.0,
+                "overall_signal": "neutral",
+            }
+        else:
+            agent_outputs[agent_name] = result.to_dict()
+
+    # Run synthesis agent with all outputs
+    try:
+        synthesis_output = await synthesis_agent.run({
+            "symbols": req.symbols,
+            "agent_outputs": list(agent_outputs.values()),
+            "model": model,
+        })
+
+        return PipelineResponse(
+            success=True,
+            synthesis=synthesis_output.to_dict(),
+            agent_outputs=agent_outputs,
+        )
+    except Exception as e:
+        return PipelineResponse(
+            success=False,
+            agent_outputs=agent_outputs,
+            error=f"Synthesis failed: {e}",
+        )
