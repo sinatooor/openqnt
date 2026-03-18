@@ -3,6 +3,7 @@ import { getRedis } from '../config/redis.js';
 import { logger } from '../utils/logger.js';
 import { prisma } from '../config/database.js';
 import { AgentService, type AgentRunJobData } from '../services/agentService.js';
+import { AgentAlertService } from '../services/agentAlertService.js';
 
 // ─── Agent Run Worker ─────────────────────────────────────────
 // Processes agent run jobs dispatched by the AgentService.
@@ -55,6 +56,21 @@ export const agentRunWorker = new Worker<AgentRunJobData>(
                 },
                 'Agent run completed'
             );
+
+            // Evaluate alert rules and dispatch notifications
+            try {
+                const alertCount = await AgentAlertService.evaluateAndNotify(
+                    userId,
+                    agentType,
+                    output,
+                    actualRunId
+                );
+                if (alertCount > 0) {
+                    logger.info({ ...logCtx, alertCount }, 'Agent alerts dispatched');
+                }
+            } catch (alertError) {
+                logger.error({ ...logCtx, error: alertError }, 'Alert evaluation failed (non-fatal)');
+            }
         } else {
             logger.warn({ ...logCtx, runId: actualRunId }, 'Agent run completed with no output');
         }
