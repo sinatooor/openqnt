@@ -476,6 +476,7 @@ const StrategyFlowCanvasInner = () => {
         maxZoom={4}
         snapToGrid={false}
         proOptions={{ hideAttribution: true }}
+        className="pipeline-canvas"
       >
         {/* Grid Background */}
         {showGrid && (

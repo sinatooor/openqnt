@@ -179,7 +179,7 @@ export const StrategyBaseNode = memo(({
       leftHandles: configs.filter(h => h.position === 'left'),
       rightHandles: configs.filter(h => h.position === 'right'),
     };
-  }, [nodeType, subType]);
+  }, [nodeType, subType, data]);
 
   const handleClick = useCallback(() => {
     selectNode(id);
