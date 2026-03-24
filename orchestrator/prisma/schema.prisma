@@ -41,6 +41,14 @@ enum ExecutionStatus {
   error
   skipped
   cancelled
+  pending_approval
+}
+
+enum ApprovalStatus {
+  pending
+  approved
+  rejected
+  expired
 }
 
 enum NodeLogStatus {
@@ -211,6 +219,7 @@ model ExecutionRun {
   user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   nodeLogs      ExecutionNodeLog[]
   notifications Notification[]
+  approvalRequests ApprovalRequest[]
 
   @@index([strategyId])
   @@index([userId])
@@ -520,4 +529,27 @@ model AlertRule {
   @@index([userId])
   @@index([agentType])
   @@map("alert_rules")
+}
+
+// ─── Approval Requests (HITL) ────────────────────────────────
+
+model ApprovalRequest {
+  id             String         @id @default(uuid())
+  executionRunId String         @map("execution_run_id")
+  nodeId         String         @map("node_id")        // ReactFlow hitlNode ID
+  userId         String         @map("user_id")
+  status         ApprovalStatus @default(pending)
+  context        Json?                                  // upstream data snapshot
+  message        String?                                // approval prompt shown to user
+  timeoutMinutes Int            @default(30) @map("timeout_minutes")
+  requestedAt    DateTime       @default(now()) @map("requested_at")
+  resolvedAt     DateTime?      @map("resolved_at")
+  resolvedBy     String?        @map("resolved_by")     // userId who approved/rejected
+  notes          String?                                // reviewer notes
+
+  executionRun ExecutionRun @relation(fields: [executionRunId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([executionRunId])
+  @@map("approval_requests")
 }

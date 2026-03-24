@@ -79,6 +79,11 @@ export interface EvaluationResult {
     nodesSkipped: number;
     nodesErrored: number;
     pythonDelegations: number;
+    /** Set when a HITL node pauses execution */
+    pendingApproval?: {
+        nodeId: string;
+        approvalContext: Record<string, any>;
+    };
 }
 
 // ─── Compare Helper ──────────────────────────────────────────
@@ -464,6 +469,80 @@ export class FlowInterpreter {
                         break;
                     }
 
+                    // ── Agent ──
+                    case 'agent': {
+                        let trigger = true;
+                        const trigInput = this.resolveInput(outputs, nodeId, 'trigger');
+                        if (trigInput !== null) trigger = Boolean(trigInput);
+
+                        if (!trigger) {
+                            nodeOutput = { output: null, signal: null, confidence: 0 };
+                            status = 'skipped';
+                            nodesSkipped++;
+                            break;
+                        }
+
+                        const agentType = data.agentType ?? 'news_analyst';
+                        const model = data.model ?? 'gemini-2.0-flash';
+                        const symbols = data.symbols ?? [this.settings.symbol].filter(Boolean);
+                        const confidenceThreshold = data.confidenceThreshold ?? 0.5;
+
+                        // Resolve upstream symbols input if connected
+                        const symbolsInput = this.resolveInput(outputs, nodeId, 'symbols');
+                        const resolvedSymbols = symbolsInput
+                            ? (Array.isArray(symbolsInput) ? symbolsInput : [String(symbolsInput)])
+                            : symbols;
+
+                        const computeUrl = env.COMPUTE_SERVICE_URL;
+                        if (computeUrl) {
+                            try {
+                                const response = await fetch(`${computeUrl}/api/agent/run`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        agent_type: agentType,
+                                        context: {
+                                            symbols: resolvedSymbols,
+                                            bar: ctx.bar,
+                                            model,
+                                        },
+                                    }),
+                                });
+
+                                if (!response.ok) {
+                                    throw new Error(`Agent API returned ${response.status}`);
+                                }
+
+                                const agentResult = await response.json() as any;
+                                const confidence = agentResult.overall_confidence ?? 0;
+                                const signal = agentResult.overall_signal ?? 'neutral';
+
+                                // Only emit signal if confidence meets threshold
+                                const meetsThreshold = confidence >= confidenceThreshold;
+                                nodeOutput = {
+                                    output: meetsThreshold ? signal : null,
+                                    signal,
+                                    confidence,
+                                    findings: agentResult.findings ?? [],
+                                    recommendations: agentResult.recommendations ?? [],
+                                    summary: agentResult.summary ?? '',
+                                    meetsThreshold,
+                                };
+                            } catch (err) {
+                                logger.error({ nodeId, agentType, error: err }, 'Failed to run agent node');
+                                nodeOutput = { output: null, signal: null, confidence: 0, error: String(err) };
+                            }
+
+                            status = 'delegated';
+                            pythonDelegations++;
+                        } else {
+                            nodeOutput = { output: null, signal: null, confidence: 0 };
+                            status = 'skipped';
+                            nodesSkipped++;
+                        }
+                        break;
+                    }
+
                     default:
                         // ── Trigger & Integration nodes ──
                         // Triggers are entry points — they don't compute during bar evaluation.
@@ -471,11 +550,61 @@ export class FlowInterpreter {
                         if (ntype === 'trigger') {
                             nodeOutput = { output: true };
                         } else if (ntype === 'integration') {
-                            // Integration nodes need the notification/HTTP dispatch service.
-                            // For now, log and pass through. Full dispatch handled by the orchestrator.
                             let trigger = true;
                             const trigInput = this.resolveInput(outputs, nodeId, 'trigger');
                             if (trigInput !== null) trigger = Boolean(trigInput);
+
+                            // ── HITL Approval Node ──
+                            if (data.integrationType === 'hitl' && trigger) {
+                                // Gather upstream context for the approval request
+                                const upstreamData: Record<string, any> = {};
+                                const inputSources = this.inputs[nodeId] ?? {};
+                                for (const [handle, _] of Object.entries(inputSources)) {
+                                    const val = this.resolveInput(outputs, nodeId, handle);
+                                    if (val !== null) upstreamData[handle] = val;
+                                }
+
+                                nodeOutput = {
+                                    output: 'pending_approval',
+                                    dispatched: false,
+                                    approvalRequired: true,
+                                    upstreamData,
+                                    message: data.message ?? 'Human approval required to proceed',
+                                };
+
+                                // Store pending approval info on the result
+                                outputs[nodeId] = nodeOutput;
+                                nodeLogs.push({
+                                    nodeId,
+                                    nodeType: ntype,
+                                    status: 'success',
+                                    inputData: this.inputs[nodeId] ?? {},
+                                    outputData: nodeOutput,
+                                    durationMs: Date.now() - startTime,
+                                    executionOrder: i,
+                                });
+                                nodesExecuted++;
+
+                                // Return early — execution is PAUSED at this node
+                                return {
+                                    orderIntents,
+                                    outputs,
+                                    nodeLogs,
+                                    nodesExecuted,
+                                    nodesSkipped,
+                                    nodesErrored,
+                                    pythonDelegations,
+                                    pendingApproval: {
+                                        nodeId,
+                                        approvalContext: {
+                                            ...upstreamData,
+                                            message: data.message ?? 'Human approval required',
+                                            timeoutMinutes: data.timeoutMinutes ?? 30,
+                                        },
+                                    },
+                                };
+                            }
+
                             if (trigger) {
                                 nodeOutput = { output: true, dispatched: true };
                                 logger.info({ nodeId, integrationType: data.integrationType }, 'Integration node dispatched');
