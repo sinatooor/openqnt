@@ -401,6 +401,89 @@ const IndicatorProperties = memo(({ nodeId, data }: IndicatorPropertiesProps) =>
             />
           </>
         );
+      case 'ichimoku':
+        return (
+          <>
+            <NumberInput
+              label="Conversion (Tenkan)"
+              value={params.conversionPeriod as number || 9}
+              onChange={(v) => updateParam('conversionPeriod', v)}
+              min={1}
+            />
+            <NumberInput
+              label="Base (Kijun)"
+              value={params.basePeriod as number || 26}
+              onChange={(v) => updateParam('basePeriod', v)}
+              min={1}
+            />
+            <NumberInput
+              label="Senkou B Period"
+              value={params.laggingSpan2Period as number || 52}
+              onChange={(v) => updateParam('laggingSpan2Period', v)}
+              min={1}
+            />
+            <NumberInput
+              label="Displacement"
+              value={params.displacement as number || 26}
+              onChange={(v) => updateParam('displacement', v)}
+              min={1}
+            />
+          </>
+        );
+
+      case 'dmi':
+        return (
+          <SliderInput
+            label="Period"
+            value={params.period as number || 14}
+            onChange={(v) => updateParam('period', v)}
+            min={1}
+            max={100}
+          />
+        );
+
+      case 'donchian':
+        return (
+          <SliderInput
+            label="Period"
+            value={params.period as number || 20}
+            onChange={(v) => updateParam('period', v)}
+            min={1}
+            max={100}
+          />
+        );
+
+      case 'alligator':
+        return (
+          <>
+            <NumberInput
+              label="Jaw Period"
+              value={params.jawPeriod as number || 13}
+              onChange={(v) => updateParam('jawPeriod', v)}
+            />
+            <NumberInput
+              label="Teeth Period"
+              value={params.teethPeriod as number || 8}
+              onChange={(v) => updateParam('teethPeriod', v)}
+            />
+            <NumberInput
+              label="Lips Period"
+              value={params.lipsPeriod as number || 5}
+              onChange={(v) => updateParam('lipsPeriod', v)}
+            />
+          </>
+        );
+
+      case 'aroon':
+        return (
+          <SliderInput
+            label="Period"
+            value={params.period as number || 14}
+            onChange={(v) => updateParam('period', v)}
+            min={1}
+            max={100}
+          />
+        );
 
       default:
         // Generic period parameter

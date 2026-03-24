@@ -222,124 +222,82 @@ export const validateEdgeHandles = (
 
 export const getHandleConfigs = (nodeType: string, subType?: string, data?: StrategyNodeData): HandleConfig[] => {
     switch (nodeType) {
-        case 'indicator':
-            // Multi-output indicators based on BLOCK_CATALOG.xml
-            // Bands & Channels with upper/middle/lower
+        case 'indicator': {
+            const handles: HandleConfig[] = [];
+            
+            // Standard target handles for indicators
+            if (subType === 'spread') {
+                handles.push({ id: 'data-a', type: 'target', position: 'left', label: 'Data A', dataType: 'any' });
+                handles.push({ id: 'data-b', type: 'target', position: 'left', label: 'Data B', dataType: 'any' });
+            } else if (['vwap', 'obv', 'mfi', 'adx', 'chaikin'].includes(subType || '')) {
+                handles.push({ id: 'data', type: 'target', position: 'left', label: 'Price Data', dataType: 'any' });
+                handles.push({ id: 'volume', type: 'target', position: 'left', label: 'Volume', dataType: 'any' });
+            } else {
+                handles.push({ id: 'data', type: 'target', position: 'left', label: 'Price Data', dataType: 'any' });
+            }
+
+            // Multi-output indicators
             if (subType === 'bb' || subType === 'keltner' || subType === 'donchian') {
-                return [
+                handles.push(
                     { id: 'upper', type: 'source', position: 'right', label: 'Upper', dataType: 'number' },
                     { id: 'middle', type: 'source', position: 'right', label: 'Middle', dataType: 'number' },
-                    { id: 'lower', type: 'source', position: 'right', label: 'Lower', dataType: 'number' },
-                ];
+                    { id: 'lower', type: 'source', position: 'right', label: 'Lower', dataType: 'number' }
+                );
+                return handles;
             }
-            // Envelopes with upper/lower only
-            if (subType === 'envelopes') {
-                return [
-                    { id: 'upper', type: 'source', position: 'right', label: 'Upper', dataType: 'number' },
-                    { id: 'lower', type: 'source', position: 'right', label: 'Lower', dataType: 'number' },
-                ];
+            if (subType === 'envelopes' || subType === 'stochastic' || subType === 'stochrsi') {
+                handles.push(
+                    { id: 'upper', type: 'source', position: 'right', label: (subType === 'stochastic' || subType === 'stochrsi') ? '%K' : 'Upper', dataType: 'number' },
+                    { id: 'lower', type: 'source', position: 'right', label: (subType === 'stochastic' || subType === 'stochrsi') ? '%D' : 'Lower', dataType: 'number' }
+                );
+                return handles;
             }
-            // MACD with line/signal/histogram
             if (subType === 'macd') {
-                return [
+                handles.push(
                     { id: 'line', type: 'source', position: 'right', label: 'MACD', dataType: 'number' },
                     { id: 'signal', type: 'source', position: 'right', label: 'Signal', dataType: 'number' },
-                    { id: 'histogram', type: 'source', position: 'right', label: 'Histogram', dataType: 'number' },
-                ];
+                    { id: 'histogram', type: 'source', position: 'right', label: 'Histogram', dataType: 'number' }
+                );
+                return handles;
             }
-            // Stochastic with main/signal
-            if (subType === 'stochastic') {
-                return [
-                    { id: 'main', type: 'source', position: 'right', label: '%K', dataType: 'number' },
-                    { id: 'signal', type: 'source', position: 'right', label: '%D', dataType: 'number' },
-                ];
-            }
-            // Ichimoku with 5 lines
-            if (subType === 'ichimoku') {
-                return [
-                    { id: 'tenkan', type: 'source', position: 'right', label: 'Tenkan', dataType: 'number' },
-                    { id: 'kijun', type: 'source', position: 'right', label: 'Kijun', dataType: 'number' },
-                    { id: 'senkou_a', type: 'source', position: 'right', label: 'Senkou A', dataType: 'number' },
-                    { id: 'senkou_b', type: 'source', position: 'right', label: 'Senkou B', dataType: 'number' },
-                    { id: 'chikou', type: 'source', position: 'right', label: 'Chikou', dataType: 'number' },
-                ];
-            }
-            // Alligator with jaw/teeth/lips
-            if (subType === 'alligator') {
-                return [
-                    { id: 'jaw', type: 'source', position: 'right', label: 'Jaw', dataType: 'number' },
-                    { id: 'teeth', type: 'source', position: 'right', label: 'Teeth', dataType: 'number' },
-                    { id: 'lips', type: 'source', position: 'right', label: 'Lips', dataType: 'number' },
-                ];
-            }
-            // Gator with upper/lower
-            if (subType === 'gator') {
-                return [
-                    { id: 'upper', type: 'source', position: 'right', label: 'Upper', dataType: 'number' },
-                    { id: 'lower', type: 'source', position: 'right', label: 'Lower', dataType: 'number' },
-                ];
-            }
-            // DMI with +DI/-DI/ADX
             if (subType === 'dmi') {
-                return [
+                handles.push(
                     { id: 'plus_di', type: 'source', position: 'right', label: '+DI', dataType: 'number' },
                     { id: 'minus_di', type: 'source', position: 'right', label: '-DI', dataType: 'number' },
-                    { id: 'adx', type: 'source', position: 'right', label: 'ADX', dataType: 'number' },
-                ];
+                    { id: 'adx', type: 'source', position: 'right', label: 'ADX', dataType: 'number' }
+                );
+                return handles;
             }
-            // RVI with main/signal
-            if (subType === 'rvi') {
-                return [
-                    { id: 'main', type: 'source', position: 'right', label: 'Main', dataType: 'number' },
-                    { id: 'signal', type: 'source', position: 'right', label: 'Signal', dataType: 'number' },
-                ];
+            if (subType === 'ichimoku') {
+                handles.push(
+                    { id: 'tenkan', type: 'source', position: 'right', label: 'Tenkan', dataType: 'number' },
+                    { id: 'kijun', type: 'source', position: 'right', label: 'Kijun', dataType: 'number' },
+                    { id: 'senkou_a', type: 'source', position: 'right', label: 'Span A', dataType: 'number' },
+                    { id: 'senkou_b', type: 'source', position: 'right', label: 'Span B', dataType: 'number' },
+                    { id: 'chikou', type: 'source', position: 'right', label: 'Chikou', dataType: 'number' }
+                );
+                return handles;
             }
-            // OsMA with main/signal
-            if (subType === 'osma') {
-                return [
-                    { id: 'main', type: 'source', position: 'right', label: 'Main', dataType: 'number' },
-                    { id: 'signal', type: 'source', position: 'right', label: 'Signal', dataType: 'number' },
-                ];
+            if (subType === 'alligator') {
+                handles.push(
+                    { id: 'jaw', type: 'source', position: 'right', label: 'Jaw', dataType: 'number' },
+                    { id: 'teeth', type: 'source', position: 'right', label: 'Teeth', dataType: 'number' },
+                    { id: 'lips', type: 'source', position: 'right', label: 'Lips', dataType: 'number' }
+                );
+                return handles;
             }
-            // Fractals with upper/lower
-            if (subType === 'fractals') {
-                return [
-                    { id: 'upper', type: 'source', position: 'right', label: 'Upper', dataType: 'number' },
-                    { id: 'lower', type: 'source', position: 'right', label: 'Lower', dataType: 'number' },
-                ];
-            }
-            // Aroon with Up/Down
             if (subType === 'aroon') {
-                return [
+                handles.push(
                     { id: 'aroonup', type: 'source', position: 'right', label: 'Up', dataType: 'number' },
-                    { id: 'aroondown', type: 'source', position: 'right', label: 'Down', dataType: 'number' },
-                ];
+                    { id: 'aroondown', type: 'source', position: 'right', label: 'Down', dataType: 'number' }
+                );
+                return handles;
             }
-            // Hilbert Transform Phasor
-            if (subType === 'ht_phasor') {
-                return [
-                    { id: 'inphase', type: 'source', position: 'right', label: 'InPhase', dataType: 'number' },
-                    { id: 'quadrature', type: 'source', position: 'right', label: 'Quad', dataType: 'number' },
-                ];
-            }
-            // Hilbert Transform Sine
-            if (subType === 'ht_sine') {
-                return [
-                    { id: 'sine', type: 'source', position: 'right', label: 'Sine', dataType: 'number' },
-                    { id: 'leadsine', type: 'source', position: 'right', label: 'Lead', dataType: 'number' },
-                ];
-            }
-            // Stochastic RSI
-            if (subType === 'stochrsi') {
-                return [
-                    { id: 'k', type: 'source', position: 'right', label: '%K', dataType: 'number' },
-                    { id: 'd', type: 'source', position: 'right', label: '%D', dataType: 'number' },
-                ];
-            }
-            // Default: single output for simple indicators
-            return [
-                { id: 'value', type: 'source', position: 'right', label: 'Value', dataType: 'number' },
-            ];
+
+            // Default output for single-value indicators
+            handles.push({ id: 'value', type: 'source', position: 'right', label: 'Value', dataType: 'number' });
+            return handles;
+        }
 
         case 'condition':
             if (subType === 'and' || subType === 'or') {
@@ -351,30 +309,33 @@ export const getHandleConfigs = (nodeType: string, subType?: string, data?: Stra
             }
             if (subType === 'not') {
                 return [
-                    { id: 'input', type: 'target', position: 'left', label: 'Input', dataType: 'boolean' },
+                    { id: 'input', type: 'target', position: 'left', label: 'In', dataType: 'boolean' },
+                    { id: 'output', type: 'source', position: 'right', label: 'Out', dataType: 'boolean' },
+                ];
+            }
+            if (subType === 'crossover' || subType === 'crossunder' || subType === 'compare') {
+                return [
+                    { id: 'input-a', type: 'target', position: 'left', label: 'A', dataType: 'number' },
+                    { id: 'input-b', type: 'target', position: 'left', label: 'B', dataType: 'number' },
                     { id: 'output', type: 'source', position: 'right', label: 'Result', dataType: 'boolean' },
                 ];
             }
-            if (subType === 'threshold' || subType === 'compare') {
+            if (subType === 'threshold') {
                 return [
-                    { id: 'input-a', type: 'target', position: 'left', label: 'A', dataType: 'number' },
-                    { id: 'input-b', type: 'target', position: 'left', label: 'B/Val', dataType: 'number' },
-                    { id: 'value', type: 'target', position: 'left', label: 'Val', dataType: 'number' },
-                    { id: 'output', type: 'source', position: 'right', label: 'Signal', dataType: 'boolean' },
+                    { id: 'input-a', type: 'target', position: 'left', label: 'Value', dataType: 'number' },
+                    { id: 'output', type: 'source', position: 'right', label: 'Result', dataType: 'boolean' },
                 ];
             }
             if (subType === 'range') {
                 return [
-                    { id: 'input-a', type: 'target', position: 'left', label: 'A', dataType: 'number' },
-                    { id: 'minValue', type: 'target', position: 'left', label: 'Min', dataType: 'number' },
-                    { id: 'maxValue', type: 'target', position: 'left', label: 'Max', dataType: 'number' },
-                    { id: 'output', type: 'source', position: 'right', label: 'Signal', dataType: 'boolean' },
+                    { id: 'input-a', type: 'target', position: 'left', label: 'Value', dataType: 'number' },
+                    { id: 'output', type: 'source', position: 'right', label: 'In Range', dataType: 'boolean' },
                 ];
             }
             return [
-                { id: 'input-a', type: 'target', position: 'left', label: 'A', dataType: 'number' },
-                { id: 'input-b', type: 'target', position: 'left', label: 'B', dataType: 'number' },
-                { id: 'output', type: 'source', position: 'right', label: 'Signal', dataType: 'boolean' },
+                { id: 'input-a', type: 'target', position: 'left', label: 'A', dataType: 'any' },
+                { id: 'input-b', type: 'target', position: 'left', label: 'B', dataType: 'any' },
+                { id: 'output', type: 'source', position: 'right', label: 'Result', dataType: 'boolean' },
             ];
 
         case 'action':
@@ -395,7 +356,6 @@ export const getHandleConfigs = (nodeType: string, subType?: string, data?: Stra
             if (subType === 'trailingStop') {
                 return [
                     { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
-                    { id: 'trailingDistance', type: 'target', position: 'left', label: 'Dist', dataType: 'number' },
                     { id: 'next', type: 'source', position: 'right', label: 'Next', dataType: 'signal' },
                 ];
             }

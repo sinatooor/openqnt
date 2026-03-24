@@ -40,7 +40,7 @@ export type IndicatorType =
   // Bands & Channels
   | 'bb' | 'envelopes' | 'donchian' | 'keltner'
   // Complex
-  | 'ichimoku' | 'alligator' | 'gator' | 'dmi' | 'adx' | 'adxWilder'
+  | 'ichimoku' | 'alligator' | 'gator' | 'dmi' | 'adx' | 'adxWilder' | 'aroon' | 'stochRSI'
   // Volatility
   | 'atr' | 'stddev'
   // Trend
