@@ -22,7 +22,8 @@ export type NodeCategory =
   | 'triggers'
   | 'integrations'
   | 'pineScript'
-  | 'portfolio';
+  | 'portfolio'
+  | 'agents';
 
 // =============================================================================
 // INDICATOR NODE TYPES
@@ -499,6 +500,27 @@ export interface PortfolioNodeData extends BaseNodeData {
   optimizationGoal?: 'sharpe' | 'risk' | 'return';
 }
 
+// =============================================================================
+// AGENT NODE TYPES
+// =============================================================================
+
+export type AgentNodeType =
+  | 'newsAgentNode'
+  | 'macroAgentNode'
+  | 'technicalAgentNode'
+  | 'sentimentAgentNode'
+  | 'socialAgentNode'
+  | 'fundamentalsAgentNode'
+  | 'synthesisAgentNode';
+
+export interface AgentNodeData extends BaseNodeData {
+  agentNodeType: AgentNodeType;
+  agentType: string;            // maps to backend agent_type (e.g. 'news_analyst')
+  model?: string;               // LLM model override (default: gemini-2.0-flash)
+  symbols?: string[];           // target symbols to analyze
+  confidenceThreshold?: number; // min confidence (0-1) to emit signal output (default: 0.5)
+}
+
 // Union type for all node data
 export type StrategyNodeData =
   | IndicatorNodeData
@@ -514,7 +536,8 @@ export type StrategyNodeData =
   | TriggerNodeData
   | IntegrationNodeData
   | PineScriptNodeData
-  | PortfolioNodeData;
+  | PortfolioNodeData
+  | AgentNodeData;
 
 // =============================================================================
 // STRATEGY FLOW NODE TYPES
@@ -535,6 +558,7 @@ export type StrategyFlowNodeType =
   | 'integration'
   | 'pineScript'
   | 'portfolio'
+  | 'agent'
   | 'comment';
 
 // ReactFlow Node with our data
