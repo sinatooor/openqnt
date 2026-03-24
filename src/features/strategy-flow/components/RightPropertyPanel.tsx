@@ -43,6 +43,7 @@ import {
   LLMModel,
   TIMEFRAME_OPTIONS,
   PortfolioNodeData,
+  AgentNodeData,
 } from '../types';
 
 // =============================================================================
@@ -1356,6 +1357,87 @@ const PortfolioProperties = memo(({ nodeId, data }: PortfolioPropertiesProps) =>
 PortfolioProperties.displayName = 'PortfolioProperties';
 
 // =============================================================================
+// AGENT PROPERTIES
+// =============================================================================
+
+interface AgentPropertiesProps {
+  nodeId: string;
+  data: AgentNodeData;
+}
+
+const AgentProperties = memo(({ nodeId, data }: AgentPropertiesProps) => {
+  const { updateNodeData } = useStrategyFlowStore();
+
+  return (
+    <div className="space-y-4">
+      {/* Agent Description */}
+      <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+        <p className="text-xs text-amber-200/80">
+          This node runs an AI agent that analyzes data and produces signals. 
+          Agents call LLMs and are not available during backtesting.
+        </p>
+      </div>
+
+      {/* Model Override */}
+      <SelectInput
+        label="LLM Model"
+        value={data.model || 'gemini-2.0-flash'}
+        onChange={(v) => updateNodeData(nodeId, { model: v })}
+        options={[
+          { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+          { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+          { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
+          { value: 'gpt-4o', label: 'GPT-4o' },
+          { value: 'claude-3-5-sonnet', label: 'Claude 3.5 Sonnet' },
+        ]}
+      />
+
+      {/* Symbols */}
+      <div className="space-y-2">
+        <Label className="text-xs text-muted-foreground">Target Symbols</Label>
+        <Input
+          value={(data.symbols || []).join(', ')}
+          onChange={(e) => {
+            const syms = e.target.value
+              .split(/[,\s]+/)
+              .map(s => s.trim().toUpperCase())
+              .filter(Boolean);
+            updateNodeData(nodeId, { symbols: syms });
+          }}
+          placeholder="e.g. AAPL, MSFT, NVDA"
+          className="text-sm"
+        />
+        <p className="text-[10px] text-muted-foreground">
+          Comma-separated symbols to analyze. Leave empty to use strategy symbol.
+        </p>
+      </div>
+
+      {/* Confidence Threshold */}
+      <SliderInput
+        label="Confidence Threshold"
+        value={data.confidenceThreshold ?? 0.5}
+        onChange={(v) => updateNodeData(nodeId, { confidenceThreshold: v })}
+        min={0}
+        max={1}
+        step={0.05}
+      />
+      <p className="text-[10px] text-muted-foreground -mt-2">
+        Minimum confidence (0-1) required to emit a signal to downstream nodes.
+      </p>
+
+      {/* Agent Type Info */}
+      <div className="pt-2 border-t border-white/5 space-y-1">
+        <p className="text-[10px] text-muted-foreground">
+          Agent Type: <span className="font-mono text-foreground/70">{data.agentType}</span>
+        </p>
+      </div>
+    </div>
+  );
+});
+
+AgentProperties.displayName = 'AgentProperties';
+
+// =============================================================================
 // MAIN COMPONENT
 // =============================================================================
 
@@ -1402,6 +1484,8 @@ export const RightPropertyPanel = memo(() => {
         return <LLMProperties nodeId={selectedNode.id} data={data as LLMNodeData} />;
       case 'portfolio':
         return <PortfolioProperties nodeId={selectedNode.id} data={data as PortfolioNodeData} />;
+      case 'agent':
+        return <AgentProperties nodeId={selectedNode.id} data={data as AgentNodeData} />;
       case 'environment':
         return (
           <div className="text-sm text-muted-foreground">

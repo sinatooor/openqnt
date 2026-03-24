@@ -17,6 +17,7 @@ import {
   GripHorizontal,
   Sparkles,
   Briefcase,
+  Bot,
   LucideIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -42,6 +43,7 @@ import {
   LLM_NODES,
   PINE_SCRIPT_NODES,
   PORTFOLIO_NODES,
+  AGENT_NODES,
 } from '../catalog/nodeCatalog';
 import { NodeCatalogItem } from '../types';
 import { SettingsModal, JournalModal, HelpModal } from './modals';
@@ -183,6 +185,14 @@ const TOOL_CATEGORIES: SidebarCategory[] = [
     color: '#06b6d4',
     nodes: PORTFOLIO_NODES,
     description: 'Portfolio data & management'
+  },
+  {
+    id: 'agents',
+    label: 'AI Agents',
+    icon: Bot,
+    color: '#f59e0b',
+    nodes: AGENT_NODES,
+    description: 'Autonomous AI analyst agents'
   },
 ];
 
