@@ -174,7 +174,7 @@ export const StrategyBaseNode = memo(({
 
   // Memoize handle configs to prevent recalculation
   const { leftHandles, rightHandles } = useMemo(() => {
-    const configs = getHandleConfigs(nodeType, subType);
+    const configs = getHandleConfigs(nodeType, subType, data);
     return {
       leftHandles: configs.filter(h => h.position === 'left'),
       rightHandles: configs.filter(h => h.position === 'right'),

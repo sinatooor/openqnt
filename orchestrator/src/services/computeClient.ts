@@ -108,6 +108,23 @@ export async function runAIAnalysis(
     return computeRequest<AIAnalysisResponse>('/compute/ai-analyze', request);
 }
 
+export interface AICodeGenerationRequest {
+    prompt: string;
+    language: string;
+    context?: Record<string, any>;
+}
+
+export interface AICodeGenerationResponse {
+    code: string;
+    explanation?: string;
+}
+
+export async function runAICodeGeneration(
+    request: AICodeGenerationRequest
+): Promise<ComputeResponse<AICodeGenerationResponse>> {
+    return computeRequest<AICodeGenerationResponse>('/compute/ai-generate-code', request);
+}
+
 export async function checkComputeHealth(): Promise<boolean> {
     try {
         const response = await fetch(`${BASE_URL}/compute/health`, {
@@ -357,6 +374,6 @@ export async function listQuantStrategies(): Promise<ComputeResponse<{ success: 
         const error = await response.text();
         throw new Error(`Compute service error (${response.status}): ${error}`);
     }
-    const data = await response.json();
+    const data = await response.json() as any;
     return { data, durationMs: Date.now() - start };
 }

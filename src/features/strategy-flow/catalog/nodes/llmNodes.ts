@@ -190,6 +190,8 @@ export const LLM_NODES: NodeCatalogItem[] = [
       llmType: 'customCode',
       prompt: '',
       language: 'python',
+      customInputs: [],
+      customOutputs: [],
       code: `# Custom trading logic
 # Available: data (OHLCV), indicators, context
 

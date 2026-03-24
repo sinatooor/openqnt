@@ -3,8 +3,8 @@
  * Based on the reference screenshots showing node properties on the right side
  */
 
-import { memo, useCallback } from 'react';
-import { X, Lock, Unlock, Copy, Trash2, MoreHorizontal, AlertTriangle, ExternalLink } from 'lucide-react';
+import { memo, useCallback, useState } from 'react';
+import { X, Lock, Unlock, Copy, Trash2, MoreHorizontal, AlertTriangle, ExternalLink, Sparkles, Plus, Trash } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -1030,6 +1030,9 @@ interface LLMPropertiesProps {
 
 const LLMProperties = memo(({ nodeId, data }: LLMPropertiesProps) => {
   const { updateNodeData } = useStrategyFlowStore();
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  
   const configuredProviders = getConfiguredProviders();
   const llmType = data.llmType || 'llmDecision';
 
@@ -1039,23 +1042,166 @@ const LLMProperties = memo(({ nodeId, data }: LLMPropertiesProps) => {
 
   // Render custom code editor
   if (llmType === 'customCode') {
+    const handleAddInput = () => {
+      const id = `input_${Date.now()}`;
+      const newInputs = [...(data.customInputs || []), { id, label: 'New Input', dataType: 'any' }];
+      updateNodeData(nodeId, { customInputs: newInputs });
+    };
+
+    const handleRemoveInput = (id: string) => {
+      const newInputs = (data.customInputs || []).filter(i => i.id !== id);
+      updateNodeData(nodeId, { customInputs: newInputs });
+    };
+
+    const handleAddOutput = () => {
+      const id = `output_${Date.now()}`;
+      const newOutputs = [...(data.customOutputs || []), { id, label: 'New Output', dataType: 'any' }];
+      updateNodeData(nodeId, { customOutputs: newOutputs });
+    };
+
+    const handleRemoveOutput = (id: string) => {
+      const newOutputs = (data.customOutputs || []).filter(o => o.id !== id);
+      updateNodeData(nodeId, { customOutputs: newOutputs });
+    };
+
+    const handleGenerateCode = async () => {
+      if (!aiPrompt) return;
+      setIsGenerating(true);
+      try {
+        // Construct system prompt with current handles
+        const inputs = (data.customInputs || []).map(i => i.id).join(', ');
+        const outputs = (data.customOutputs || []).map(o => o.id).join(', ');
+        
+        const systemPrompt = `You are an expert quantitative developer. Generate a ${data.language || 'python'} function for a custom trading node.
+Inputs available in 'context': ${inputs} (and default 'data', 'indicators')
+Expected output format: JSON with keys: ${outputs || 'signal, confidence'}
+User request: ${aiPrompt}`;
+
+        // Call AI service (mocking for now, or using a generic analyze call)
+        // In a real app, this would be a dedicated endpoint
+        const response = await fetch(`${import.meta.env.VITE_ORCHESTRATOR_URL || "http://localhost:3000"}/api/ai/generate-code`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: systemPrompt, language: data.language || 'python' })
+        });
+        
+        const result = await response.json();
+        if (result.code) {
+          updateNodeData(nodeId, { code: result.code });
+        }
+      } catch (error) {
+        console.error('Failed to generate code:', error);
+      } finally {
+        setIsGenerating(false);
+        setAiPrompt('');
+      }
+    };
+
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
+        {/* Custom Handles Management */}
+        <div className="space-y-4 p-3 bg-white/5 rounded-lg border border-white/10">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs font-semibold text-white/70 uppercase tracking-wider">Dynamic Handles</Label>
+          </div>
+          
+          <div className="space-y-3">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] text-muted-foreground uppercase">Inputs</span>
+                <Button variant="ghost" size="icon" className="h-5 w-5" onClick={handleAddInput}>
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {(data.customInputs || []).map(input => (
+                  <div key={input.id} className="flex gap-2">
+                    <Input 
+                      className="h-7 text-[10px]" 
+                      value={input.label} 
+                      onChange={(e) => {
+                        const newInputs = data.customInputs!.map(i => i.id === input.id ? { ...i, label: e.target.value } : i);
+                        updateNodeData(nodeId, { customInputs: newInputs });
+                      }}
+                    />
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-red-400 hover:text-red-300 hover:bg-red-400/10" onClick={() => handleRemoveInput(input.id)}>
+                      <Trash className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] text-muted-foreground uppercase">Outputs</span>
+                <Button variant="ghost" size="icon" className="h-5 w-5" onClick={handleAddOutput}>
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {(data.customOutputs || []).map(output => (
+                  <div key={output.id} className="flex gap-2">
+                    <Input 
+                      className="h-7 text-[10px]" 
+                      value={output.label} 
+                      onChange={(e) => {
+                        const newOutputs = data.customOutputs!.map(o => o.id === output.id ? { ...o, label: e.target.value } : o);
+                        updateNodeData(nodeId, { customOutputs: newOutputs });
+                      }}
+                    />
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-red-400 hover:text-red-300 hover:bg-red-400/10" onClick={() => handleRemoveOutput(output.id)}>
+                      <Trash className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* AI Assistant Section */}
+        <div className="space-y-3 p-3 bg-purple-500/10 rounded-lg border border-purple-500/20">
+          <div className="flex items-center gap-2 text-purple-400">
+            <Sparkles className="h-4 w-4" />
+            <span className="text-xs font-semibold uppercase">AI Code Assistant</span>
+          </div>
+          <Textarea 
+            placeholder="Describe what this node should do... (e.g., 'Buy if RSI < 30 and volume is increasing')"
+            value={aiPrompt}
+            onChange={(e) => setAiPrompt(e.target.value)}
+            className="text-xs min-h-[60px] bg-black/20 border-purple-500/20"
+          />
+          <Button 
+            className="w-full h-8 bg-purple-600 hover:bg-purple-500 text-white text-xs gap-2"
+            onClick={handleGenerateCode}
+            disabled={isGenerating || !aiPrompt}
+          >
+            {isGenerating ? 'Generating...' : 'Generate Code'}
+          </Button>
+        </div>
+
         {/* Language Selection */}
-        <SelectInput
-          label="Language"
-          value={data.language || 'python'}
-          onChange={(v) => updateNodeData(nodeId, { language: v as 'python' | 'javascript' })}
-          options={[
-            { value: 'python', label: 'Python' },
-            { value: 'javascript', label: 'JavaScript' },
-          ]}
-        />
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">Execution Language</Label>
+          <Select
+            value={data.language || 'python'}
+            onValueChange={(v) => updateNodeData(nodeId, { language: v as 'python' | 'javascript' })}
+          >
+            <SelectTrigger className="h-8 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="python">Python</SelectItem>
+              <SelectItem value="javascript">JavaScript</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* Monaco Editor */}
         <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Code</Label>
-          <div className="border border-border rounded-md overflow-hidden">
+          <Label className="text-xs text-muted-foreground">Code Editor</Label>
+          <div className="border border-border rounded-md overflow-hidden ring-1 ring-white/5">
             <Editor
               height="300px"
               language={data.language || 'python'}
@@ -1075,25 +1221,8 @@ const LLMProperties = memo(({ nodeId, data }: LLMPropertiesProps) => {
             />
           </div>
           <p className="text-[10px] text-muted-foreground">
-            Available: data (OHLCV), indicators, context. Return object with signal & confidence.
+            Default objects: <code>data</code>, <code>indicators</code>, <code>context</code>.
           </p>
-        </div>
-
-        {/* Output Schema */}
-        <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Output Schema (JSON)</Label>
-          <Input
-            value={JSON.stringify(data.schema || {})}
-            onChange={(e) => {
-              try {
-                updateNodeData(nodeId, { schema: JSON.parse(e.target.value) });
-              } catch {
-                // Ignore invalid JSON while typing
-              }
-            }}
-            placeholder='{"signal": "string", "confidence": "number"}'
-            className="text-sm font-mono"
-          />
         </div>
       </div>
     );
@@ -1281,6 +1410,15 @@ interface PortfolioPropertiesProps {
 const PortfolioProperties = memo(({ nodeId, data }: PortfolioPropertiesProps) => {
   const { updateNodeData } = useStrategyFlowStore();
   const action = data.portfolioAction;
+
+  const isDetached = (field: string) => (data.detachedInputs || []).includes(field);
+  const toggleDetached = (field: string) => {
+    const detached = data.detachedInputs || [];
+    const newDetached = detached.includes(field)
+      ? detached.filter(f => f !== field)
+      : [...detached, field];
+    updateNodeData(nodeId, { detachedInputs: newDetached });
+  };
 
   return (
     <div className="space-y-4">

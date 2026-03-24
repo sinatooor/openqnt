@@ -9,7 +9,7 @@ import { prisma } from '../../config/database.js';
 import { logger } from '../../utils/logger.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
-import { runAIAnalysis, checkComputeHealth } from '../../services/computeClient.js';
+import { runAIAnalysis, runAICodeGeneration, checkComputeHealth } from '../../services/computeClient.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -21,6 +21,12 @@ const analyzeSchema = z.object({
     agentType: z.enum(['trading', 'research', 'sentiment']),
     context: z.record(z.any()).optional(),
     prompt: z.string().max(5000).optional(),
+});
+
+const generateCodeSchema = z.object({
+    prompt: z.string().max(5000),
+    language: z.string().default('python'),
+    context: z.record(z.any()).optional(),
 });
 
 // ── Routes ──────────────────────────────────────────────────
@@ -96,6 +102,27 @@ router.post('/analyze', validate(analyzeSchema), async (req: Request, res: Respo
     } catch (error) {
         logger.error({ error }, 'AI analysis failed');
         res.status(500).json({ error: 'AI analysis failed' });
+    }
+});
+
+/** POST /api/ai/generate-code — generate custom node code */
+router.post('/generate-code', validate(generateCodeSchema), async (req: Request, res: Response) => {
+    try {
+        const { prompt, language, context } = req.body;
+
+        const result = await runAICodeGeneration({
+            prompt,
+            language,
+            context: {
+                ...context,
+                userId: req.user!.userId,
+            }
+        });
+
+        res.json(result.data);
+    } catch (error) {
+        logger.error({ error }, 'Code generation failed');
+        res.status(500).json({ error: 'Failed to generate code' });
     }
 });
 
