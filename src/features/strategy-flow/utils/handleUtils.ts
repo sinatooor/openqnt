@@ -22,7 +22,8 @@ export const getNodeSubType = (node: StrategyFlowNode): string | undefined => {
         data?.llmType as string ||
         data?.triggerType as string ||
         data?.integrationType as string ||
-        data?.pineType as string
+        data?.pineType as string ||
+        data?.agentType as string
     );
 };
 
@@ -771,6 +772,34 @@ export const getHandleConfigs = (nodeType: string, subType?: string): HandleConf
             }
             return [
                 { id: 'output', type: 'source', position: 'right', label: 'Value', dataType: 'number' },
+            ];
+
+        case 'agent':
+            if (subType === 'synthesis') {
+                return [
+                    { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
+                    { id: 'symbols', type: 'target', position: 'left', label: 'Symbols', dataType: 'any' },
+                    { id: 'agentData', type: 'target', position: 'left', label: 'Agent Data', dataType: 'any' },
+                    { id: 'signal', type: 'source', position: 'right', label: 'Signal', dataType: 'signal' },
+                    { id: 'confidence', type: 'source', position: 'right', label: 'Confidence', dataType: 'number' },
+                    { id: 'recommendation', type: 'source', position: 'right', label: 'Rec', dataType: 'any' },
+                ];
+            }
+            if (subType === 'sentiment_analyst') {
+                return [
+                    { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
+                    { id: 'symbols', type: 'target', position: 'left', label: 'Symbols', dataType: 'any' },
+                    { id: 'signal', type: 'source', position: 'right', label: 'Signal', dataType: 'signal' },
+                    { id: 'confidence', type: 'source', position: 'right', label: 'Confidence', dataType: 'number' },
+                    { id: 'score', type: 'source', position: 'right', label: 'Score', dataType: 'number' },
+                ];
+            }
+            return [
+                { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
+                { id: 'symbols', type: 'target', position: 'left', label: 'Symbols', dataType: 'any' },
+                { id: 'signal', type: 'source', position: 'right', label: 'Signal', dataType: 'signal' },
+                { id: 'confidence', type: 'source', position: 'right', label: 'Confidence', dataType: 'number' },
+                { id: 'findings', type: 'source', position: 'right', label: 'Findings', dataType: 'any' },
             ];
 
         default:
