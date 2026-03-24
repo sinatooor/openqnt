@@ -10,7 +10,6 @@ import ExecutionDetails from "./pages/ExecutionDetails";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ExecutionHistory from "./pages/ExecutionHistory";
-import Credentials from "./pages/Credentials";
 import AgentConfig from "./pages/AgentConfig";
 import Research from "./pages/Research";
 import Settings from "./pages/Settings";
@@ -106,7 +105,6 @@ const AppRoutes = () => {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/executions" element={<ExecutionHistory />} />
         <Route path="/execution/:id" element={<ExecutionDetails />} />
-        <Route path="/credentials" element={<Credentials />} />
         <Route path="/research" element={<Research />} />
         <Route path="/agent" element={<AgentConfig />} />
         <Route path="/settings" element={<Settings />} />
