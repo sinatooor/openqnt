@@ -285,6 +285,8 @@ export interface LLMNodeData extends BaseNodeData {
   // Custom Code specific
   code?: string;
   language?: 'python' | 'javascript';
+  customInputs?: { id: string; label: string; dataType: string }[];
+  customOutputs?: { id: string; label: string; dataType: string }[];
 }
 
 // =============================================================================

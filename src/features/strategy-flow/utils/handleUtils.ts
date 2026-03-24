@@ -2,7 +2,7 @@
  * Handle configuration utilities for strategy nodes
  */
 
-import { HandleConfig, StrategyFlowNode, StrategyFlowEdge, StrategyNodeData } from '../types';
+import { HandleConfig, StrategyFlowNode, StrategyFlowEdge, StrategyNodeData, LLMNodeData } from '../types';
 
 /**
  * Extract the subType from a node's data based on its type
@@ -220,7 +220,7 @@ export const validateEdgeHandles = (
     return warnings;
 };
 
-export const getHandleConfigs = (nodeType: string, subType?: string): HandleConfig[] => {
+export const getHandleConfigs = (nodeType: string, subType?: string, data?: StrategyNodeData): HandleConfig[] => {
     switch (nodeType) {
         case 'indicator':
             // Multi-output indicators based on BLOCK_CATALOG.xml
@@ -529,11 +529,39 @@ export const getHandleConfigs = (nodeType: string, subType?: string): HandleConf
                 ];
             }
             if (subType === 'customCode') {
-                return [
+                const llmData = data as LLMNodeData;
+                const baseHandles: HandleConfig[] = [
                     { id: 'data', type: 'target', position: 'left', label: 'Data', dataType: 'any' },
                     { id: 'context', type: 'target', position: 'left', label: 'Context', dataType: 'any' },
                     { id: 'result', type: 'source', position: 'right', label: 'Result', dataType: 'any' },
                 ];
+
+                // Merge with custom handles if they exist
+                if (llmData?.customInputs) {
+                    llmData.customInputs.forEach(input => {
+                        baseHandles.push({
+                            id: input.id,
+                            type: 'target',
+                            position: 'left',
+                            label: input.label,
+                            dataType: (input.dataType as any) || 'any'
+                        });
+                    });
+                }
+
+                if (llmData?.customOutputs) {
+                    llmData.customOutputs.forEach(output => {
+                        baseHandles.push({
+                            id: output.id,
+                            type: 'source',
+                            position: 'right',
+                            label: output.label,
+                            dataType: (output.dataType as any) || 'any'
+                        });
+                    });
+                }
+
+                return baseHandles;
             }
             // Default LLM decision node
             return [
