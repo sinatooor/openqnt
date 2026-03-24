@@ -45,7 +45,7 @@ interface FloatingToolbarProps {
   onOpenTemplates: () => void;
   onOpenBacktest: () => void;
   onOpenChart: () => void;
-  onOpenResearch: () => void;
+
   onOpenCode: () => void;
   onOpenAI: () => void;
   onOpenJournal: () => void;
@@ -62,7 +62,7 @@ export const FloatingToolbar = memo(({
   onOpenTemplates,
   onOpenBacktest,
   onOpenChart,
-  onOpenResearch,
+
   onOpenCode,
   onOpenAI,
   onOpenJournal,
@@ -198,19 +198,7 @@ export const FloatingToolbar = memo(({
           <TooltipContent side="bottom" className="text-xs">Run Backtest</TooltipContent>
         </Tooltip>
 
-        {/* Research & Quant Tools */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Toolbar.Button
-              onClick={onOpenResearch}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-sm bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-all duration-200 hover:scale-105"
-            >
-              <FlaskConical className="w-3.5 h-3.5" />
-              Research
-            </Toolbar.Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs">Research & Quant Tools</TooltipContent>
-        </Tooltip>
+
 
         {/* Live Trading */}
         <Tooltip>

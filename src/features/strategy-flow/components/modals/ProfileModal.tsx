@@ -29,7 +29,9 @@ import {
   TrendingUp,
   Settings,
   ExternalLink,
+  Key
 } from 'lucide-react';
+import { CredentialsTab } from './CredentialsTab';
 
 interface ProfileModalProps {
   open: boolean;
@@ -127,6 +129,10 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
             <TabsTrigger value="strategies" className="flex items-center gap-1.5 data-[state=active]:bg-purple-600">
               <FolderOpen className="w-3.5 h-3.5" />
               Strategies
+            </TabsTrigger>
+            <TabsTrigger value="credentials" className="flex items-center gap-1.5 data-[state=active]:bg-purple-600">
+              <Key className="w-3.5 h-3.5" />
+              Credentials
             </TabsTrigger>
           </TabsList>
 
@@ -280,6 +286,11 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
                   </div>
                 )}
               </div>
+            </TabsContent>
+
+            {/* Credentials Tab */}
+            <TabsContent value="credentials" className="m-0 space-y-4">
+              <CredentialsTab />
             </TabsContent>
           </ScrollArea>
         </Tabs>

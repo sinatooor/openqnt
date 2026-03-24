@@ -13,4 +13,4 @@ export { JournalModal } from './JournalModal';
 export { ScreenerModal } from './ScreenerModal';
 export { LiveTradingPanel } from './LiveTradingPanel';
 export { HelpModal } from './HelpModal';
-export { ResearchModal } from './ResearchModal';
+
