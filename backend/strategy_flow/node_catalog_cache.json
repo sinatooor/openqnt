@@ -172,6 +172,253 @@
         "actionType": "log",
         "message": "Log message"
       }
+    },
+    {
+      "type": "options_order",
+      "nodeType": "action",
+      "label": "Options Order",
+      "description": "Buy/Sell Calls and Puts",
+      "tooltip": "Place an order for options contracts. Used for hedging (protective puts, collars) or speculation.",
+      "inputs": [
+        "Trigger",
+        "Size"
+      ],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "actions",
+      "subcategory": "Orders",
+      "icon": "ShoppingCart",
+      "color": "#10b981",
+      "defaultData": {
+        "actionType": "options_order",
+        "optionType": "put",
+        "direction": "buy",
+        "strike": "ATM",
+        "expiration": "next_month",
+        "size": 1,
+        "sizeType": "contracts"
+      }
+    },
+    {
+      "type": "portfolio_rebalance",
+      "nodeType": "action",
+      "label": "Portfolio Rebalance",
+      "description": "Rebalance to target weights",
+      "tooltip": "Automatically buys and sells assets to restore the portfolio to its target allocation weights.",
+      "inputs": [
+        "Trigger"
+      ],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "actions",
+      "subcategory": "Portfolio",
+      "icon": "PieChart",
+      "color": "#8b5cf6",
+      "defaultData": {
+        "actionType": "portfolio_rebalance",
+        "rebalanceThresholdPercent": 5
+      }
+    }
+  ],
+  "agent": [
+    {
+      "type": "newsAgentNode",
+      "nodeType": "agent",
+      "label": "News Analyst",
+      "description": "AI news impact analysis",
+      "tooltip": "Analyzes recent news headlines against your portfolio holdings. Uses LLM to assess sentiment, relevance, and impact. Outputs actionable signals (bullish/bearish) with confidence scores.",
+      "inputs": [
+        "Trigger",
+        "Symbols"
+      ],
+      "outputs": [
+        "Signal",
+        "Confidence",
+        "Findings"
+      ],
+      "category": "agents",
+      "subcategory": "Analysis",
+      "icon": "Newspaper",
+      "color": "#3b82f6",
+      "backtestEligible": false,
+      "defaultData": {
+        "agentNodeType": "newsAgentNode",
+        "agentType": "news_analyst",
+        "model": "gemini-2.0-flash",
+        "symbols": [],
+        "confidenceThreshold": 0.5
+      }
+    },
+    {
+      "type": "macroAgentNode",
+      "nodeType": "agent",
+      "label": "Macro Analyst",
+      "description": "Macroeconomic analysis",
+      "tooltip": "Analyzes macroeconomic indicators (CPI, GDP, rates, employment) and their impact on your portfolio. Classifies the current macro regime and identifies risk/opportunity flags.",
+      "inputs": [
+        "Trigger",
+        "Symbols"
+      ],
+      "outputs": [
+        "Signal",
+        "Confidence",
+        "Findings"
+      ],
+      "category": "agents",
+      "subcategory": "Analysis",
+      "icon": "Globe",
+      "color": "#8b5cf6",
+      "backtestEligible": false,
+      "defaultData": {
+        "agentNodeType": "macroAgentNode",
+        "agentType": "macro_analyst",
+        "model": "gemini-2.0-flash",
+        "symbols": [],
+        "confidenceThreshold": 0.5
+      }
+    },
+    {
+      "type": "technicalAgentNode",
+      "nodeType": "agent",
+      "label": "Technical Analyst",
+      "description": "AI technical analysis",
+      "tooltip": "Runs comprehensive technical analysis using indicators, candlestick patterns, support/resistance levels, and market regime classification. Provides directional signals with confidence.",
+      "inputs": [
+        "Trigger",
+        "Symbols"
+      ],
+      "outputs": [
+        "Signal",
+        "Confidence",
+        "Findings"
+      ],
+      "category": "agents",
+      "subcategory": "Analysis",
+      "icon": "LineChart",
+      "color": "#06b6d4",
+      "backtestEligible": false,
+      "defaultData": {
+        "agentNodeType": "technicalAgentNode",
+        "agentType": "technical_analyst",
+        "model": "gemini-2.0-flash",
+        "symbols": [],
+        "confidenceThreshold": 0.5
+      }
+    },
+    {
+      "type": "socialAgentNode",
+      "nodeType": "agent",
+      "label": "Social Monitor",
+      "description": "Social media sentiment",
+      "tooltip": "Monitors social media feeds (Twitter/X, Reddit) for sentiment shifts and trending discussions about your portfolio holdings. Detects viral posts and sentiment extremes.",
+      "inputs": [
+        "Trigger",
+        "Symbols"
+      ],
+      "outputs": [
+        "Signal",
+        "Confidence",
+        "Findings"
+      ],
+      "category": "agents",
+      "subcategory": "Analysis",
+      "icon": "MessageCircle",
+      "color": "#ec4899",
+      "backtestEligible": false,
+      "defaultData": {
+        "agentNodeType": "socialAgentNode",
+        "agentType": "social_monitor",
+        "model": "gemini-2.0-flash",
+        "symbols": [],
+        "confidenceThreshold": 0.5
+      }
+    },
+    {
+      "type": "synthesisAgentNode",
+      "nodeType": "agent",
+      "label": "Synthesis Agent",
+      "description": "Multi-source synthesis",
+      "tooltip": "Combines outputs from multiple analyst agents into a unified recommendation. Weighs conflicting signals, identifies consensus, and produces a final actionable view with confidence scoring.",
+      "inputs": [
+        "Trigger",
+        "Symbols",
+        "Agent Data"
+      ],
+      "outputs": [
+        "Signal",
+        "Confidence",
+        "Recommendation"
+      ],
+      "category": "agents",
+      "subcategory": "Synthesis",
+      "icon": "Sparkles",
+      "color": "#f59e0b",
+      "backtestEligible": false,
+      "defaultData": {
+        "agentNodeType": "synthesisAgentNode",
+        "agentType": "synthesis",
+        "model": "gemini-2.0-flash",
+        "symbols": [],
+        "confidenceThreshold": 0.6
+      }
+    },
+    {
+      "type": "fundamentalsAgentNode",
+      "nodeType": "agent",
+      "label": "Fundamentals Agent",
+      "description": "Financial health analysis",
+      "tooltip": "Analyzes company fundamentals: financial ratios, growth metrics, profitability, and balance sheet health. Compares against peers and provides a financial health score.",
+      "inputs": [
+        "Trigger",
+        "Symbols"
+      ],
+      "outputs": [
+        "Signal",
+        "Confidence",
+        "Findings"
+      ],
+      "category": "agents",
+      "subcategory": "Analysis",
+      "icon": "Building2",
+      "color": "#10b981",
+      "backtestEligible": false,
+      "defaultData": {
+        "agentNodeType": "fundamentalsAgentNode",
+        "agentType": "fundamentals_analyst",
+        "model": "gemini-2.0-flash",
+        "symbols": [],
+        "confidenceThreshold": 0.5
+      }
+    },
+    {
+      "type": "sentimentAgentNode",
+      "nodeType": "agent",
+      "label": "Sentiment Agent",
+      "description": "Multi-source sentiment fusion",
+      "tooltip": "Fuses sentiment from news, social media, and options flow into a composite sentiment score. Detects sentiment divergences and extreme readings that may signal turning points.",
+      "inputs": [
+        "Trigger",
+        "Symbols"
+      ],
+      "outputs": [
+        "Signal",
+        "Confidence",
+        "Score"
+      ],
+      "category": "agents",
+      "subcategory": "Analysis",
+      "icon": "Heart",
+      "color": "#ef4444",
+      "backtestEligible": false,
+      "defaultData": {
+        "agentNodeType": "sentimentAgentNode",
+        "agentType": "sentiment_analyst",
+        "model": "gemini-2.0-flash",
+        "symbols": [],
+        "confidenceThreshold": 0.5
+      }
     }
   ],
   "condition": [
@@ -619,7 +866,7 @@
         "Price Data"
       ],
       "outputs": [
-        "Number"
+        "Value"
       ],
       "category": "indicators",
       "subcategory": "Moving Averages",
@@ -770,7 +1017,7 @@
         "Price Data"
       ],
       "outputs": [
-        "Number"
+        "Value"
       ],
       "category": "indicators",
       "subcategory": "Oscillators",
@@ -781,6 +1028,34 @@
         "timeframe": "60",
         "params": {
           "period": 20
+        }
+      }
+    },
+    {
+      "type": "stochRSI",
+      "nodeType": "indicator",
+      "label": "StochRSI",
+      "description": "Stochastic Relative Strength Index",
+      "tooltip": "Applies Stochastic formula to RSI values. Extremely sensitive oscillator for overbought/oversold.",
+      "inputs": [
+        "Price Data"
+      ],
+      "outputs": [
+        "%K",
+        "%D"
+      ],
+      "category": "indicators",
+      "subcategory": "Oscillators",
+      "icon": "Activity",
+      "color": "#06b6d4",
+      "defaultData": {
+        "indicatorType": "stochRSI",
+        "timeframe": "60",
+        "params": {
+          "rsiPeriod": 14,
+          "stochPeriod": 14,
+          "k": 3,
+          "d": 3
         }
       }
     },
@@ -871,7 +1146,7 @@
         "Price Data"
       ],
       "outputs": [
-        "Number"
+        "Value"
       ],
       "category": "indicators",
       "subcategory": "Trend",
@@ -883,6 +1158,119 @@
         "params": {
           "step": 0.02,
           "max": 0.2
+        }
+      }
+    },
+    {
+      "type": "ichimoku",
+      "nodeType": "indicator",
+      "label": "Ichimoku Cloud",
+      "description": "Comprehensive trend and momentum indicator",
+      "tooltip": "Displays 5 lines (Tenkan, Kijun, Span A/B, Chikou) to identify support/resistance and trend status.",
+      "inputs": [
+        "Price Data"
+      ],
+      "outputs": [
+        "Tenkan",
+        "Kijun",
+        "Span A",
+        "Span B",
+        "Chikou"
+      ],
+      "category": "indicators",
+      "subcategory": "Trend",
+      "icon": "Cloud",
+      "color": "#a855f7",
+      "defaultData": {
+        "indicatorType": "ichimoku",
+        "timeframe": "60",
+        "params": {
+          "conversionPeriod": 9,
+          "basePeriod": 26,
+          "laggingSpan2Period": 52,
+          "displacement": 26
+        }
+      }
+    },
+    {
+      "type": "alligator",
+      "nodeType": "indicator",
+      "label": "Williams Alligator",
+      "description": "Trend monitoring indicator",
+      "tooltip": "Uses 3 smoothed moving averages (Jaw, Teeth, Lips) to identify the absence of a trend or a trend in development.",
+      "inputs": [
+        "Price Data"
+      ],
+      "outputs": [
+        "Jaw",
+        "Teeth",
+        "Lips"
+      ],
+      "category": "indicators",
+      "subcategory": "Trend",
+      "icon": "TrendingUp",
+      "color": "#a855f7",
+      "defaultData": {
+        "indicatorType": "alligator",
+        "timeframe": "60",
+        "params": {
+          "jawPeriod": 13,
+          "jawShift": 8,
+          "teethPeriod": 8,
+          "teethShift": 5,
+          "lipsPeriod": 5,
+          "lipsShift": 3
+        }
+      }
+    },
+    {
+      "type": "aroon",
+      "nodeType": "indicator",
+      "label": "Aroon",
+      "description": "Trend strength and direction",
+      "tooltip": "Consists of two lines (Up and Down) to identify trend changes and strength.",
+      "inputs": [
+        "Price Data"
+      ],
+      "outputs": [
+        "Up",
+        "Down"
+      ],
+      "category": "indicators",
+      "subcategory": "Trend",
+      "icon": "TrendingUp",
+      "color": "#a855f7",
+      "defaultData": {
+        "indicatorType": "aroon",
+        "timeframe": "60",
+        "params": {
+          "period": 14
+        }
+      }
+    },
+    {
+      "type": "dmi",
+      "nodeType": "indicator",
+      "label": "DMI (+DI/-DI/ADX)",
+      "description": "Directional Movement Index",
+      "tooltip": "Includes +DI, -DI, and ADX to determine both trend direction and strength.",
+      "inputs": [
+        "Price Data"
+      ],
+      "outputs": [
+        "+DI",
+        "-DI",
+        "ADX"
+      ],
+      "category": "indicators",
+      "subcategory": "Trend",
+      "icon": "TrendingUp",
+      "color": "#a855f7",
+      "defaultData": {
+        "indicatorType": "dmi",
+        "timeframe": "60",
+        "params": {
+          "period": 14
         }
       }
     },
@@ -939,6 +1327,32 @@
           "period": 20,
           "multiplier": 2,
           "band": "middle"
+        }
+      }
+    },
+    {
+      "type": "donchian",
+      "nodeType": "indicator",
+      "label": "Donchian Channels",
+      "description": "Price range channel",
+      "tooltip": "Uses high/low of N periods to form upper/lower bands. Excellent for breakout strategies.",
+      "inputs": [
+        "Price Data"
+      ],
+      "outputs": [
+        "Upper",
+        "Middle",
+        "Lower"
+      ],
+      "category": "indicators",
+      "subcategory": "Bands",
+      "icon": "Maximize2",
+      "color": "#ec4899",
+      "defaultData": {
+        "indicatorType": "donchian",
+        "timeframe": "60",
+        "params": {
+          "period": 20
         }
       }
     },
@@ -1011,6 +1425,435 @@
         "timeframe": "60",
         "params": {}
       }
+    },
+    {
+      "type": "hmm_regime",
+      "nodeType": "indicator",
+      "label": "HMM Regime",
+      "description": "Hidden Markov Model Regime",
+      "tooltip": "Detects market regimes (e.g., bull/bear/sideways) using Hidden Markov Models.",
+      "inputs": [
+        "Price Data"
+      ],
+      "outputs": [
+        "RegimeID"
+      ],
+      "category": "indicators",
+      "subcategory": "Statistical",
+      "icon": "Activity",
+      "color": "#8b5cf6",
+      "defaultData": {
+        "indicatorType": "hmm_regime",
+        "timeframe": "1D",
+        "params": {
+          "n_states": 2,
+          "feature": "returns"
+        }
+      }
+    },
+    {
+      "type": "spread",
+      "nodeType": "indicator",
+      "label": "Asset Spread",
+      "description": "Price ratio or spread between two assets",
+      "tooltip": "Calculates the spread (A - B) or ratio (A / B) for statistical arbitrage and pairs trading.",
+      "inputs": [
+        "Price Data A",
+        "Price Data B"
+      ],
+      "outputs": [
+        "Number"
+      ],
+      "category": "indicators",
+      "subcategory": "Statistical",
+      "icon": "TrendingUp",
+      "color": "#06b6d4",
+      "defaultData": {
+        "indicatorType": "spread",
+        "timeframe": "60",
+        "params": {
+          "calculationType": "ratio"
+        }
+      }
+    }
+  ],
+  "integration": [
+    {
+      "type": "telegramNode",
+      "nodeType": "integration",
+      "label": "Telegram",
+      "description": "Send or receive Telegram messages",
+      "tooltip": "Send message or receive reply via Telegram bot. Use for alerts, HITL approvals, or collecting user input during workflow execution.",
+      "inputs": [
+        "Trigger",
+        "Data"
+      ],
+      "outputs": [
+        "Signal",
+        "Response"
+      ],
+      "category": "integrations",
+      "subcategory": "Communication",
+      "icon": "Send",
+      "color": "#0088cc",
+      "backtestEligible": false,
+      "defaultData": {
+        "integrationType": "telegramNode",
+        "action": "sendMessage",
+        "message": "",
+        "chatId": "",
+        "credentialAlias": "telegram"
+      }
+    },
+    {
+      "type": "slackNode",
+      "nodeType": "integration",
+      "label": "Slack",
+      "description": "Post to Slack channel",
+      "tooltip": "Post message to a Slack channel or DM. Supports rich formatting with blocks, buttons, and attachments.",
+      "inputs": [
+        "Trigger",
+        "Data"
+      ],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "integrations",
+      "subcategory": "Communication",
+      "icon": "Hash",
+      "color": "#4a154b",
+      "backtestEligible": false,
+      "defaultData": {
+        "integrationType": "slackNode",
+        "channel": "#trading-alerts",
+        "message": "",
+        "credentialAlias": "slack"
+      }
+    },
+    {
+      "type": "emailNode",
+      "nodeType": "integration",
+      "label": "Email",
+      "description": "Send email via SendGrid/SMTP",
+      "tooltip": "Send email notifications with HTML templates. Use for daily digests, weekly reports, or urgent alerts.",
+      "inputs": [
+        "Trigger",
+        "Data"
+      ],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "integrations",
+      "subcategory": "Communication",
+      "icon": "Mail",
+      "color": "#ea4335",
+      "backtestEligible": false,
+      "defaultData": {
+        "integrationType": "emailNode",
+        "to": "",
+        "subject": "Strategy Alert",
+        "body": "",
+        "credentialAlias": "sendgrid"
+      }
+    },
+    {
+      "type": "smsNode",
+      "nodeType": "integration",
+      "label": "SMS",
+      "description": "Send SMS via Twilio",
+      "tooltip": "Send SMS alerts to a phone number. Use for critical, time-sensitive alerts that require immediate attention.",
+      "inputs": [
+        "Trigger",
+        "Data"
+      ],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "integrations",
+      "subcategory": "Communication",
+      "icon": "Smartphone",
+      "color": "#f22f46",
+      "backtestEligible": false,
+      "defaultData": {
+        "integrationType": "smsNode",
+        "to": "",
+        "message": "",
+        "credentialAlias": "twilio"
+      }
+    },
+    {
+      "type": "httpRequestNode",
+      "nodeType": "integration",
+      "label": "HTTP Request",
+      "description": "Call any API",
+      "tooltip": "Make HTTP requests to any REST API — the most versatile node. Fetch data, send commands, or integrate with any service that has an API. Inspired by n8n\\'s HTTP Request node.",
+      "inputs": [
+        "Trigger",
+        "Data"
+      ],
+      "outputs": [
+        "Data",
+        "Signal"
+      ],
+      "category": "integrations",
+      "subcategory": "Data",
+      "icon": "Globe",
+      "color": "#6366f1",
+      "backtestEligible": false,
+      "defaultData": {
+        "integrationType": "httpRequestNode",
+        "method": "GET",
+        "url": "",
+        "headers": {},
+        "body": "null",
+        "authentication": "none",
+        "credentialAlias": ""
+      }
+    },
+    {
+      "type": "databaseQueryNode",
+      "nodeType": "integration",
+      "label": "Database Query",
+      "description": "Run SQL query",
+      "tooltip": "Execute a SQL query against the strategy database. Useful for fetching historical data, custom analytics, or writing computed results.",
+      "inputs": [
+        "Trigger"
+      ],
+      "outputs": [
+        "Data",
+        "Signal"
+      ],
+      "category": "integrations",
+      "subcategory": "Data",
+      "icon": "Database",
+      "color": "#0ea5e9",
+      "backtestEligible": false,
+      "defaultData": {
+        "integrationType": "databaseQueryNode",
+        "query": "SELECT * FROM ...",
+        "parameterized": true
+      }
+    },
+    {
+      "type": "codePythonNode",
+      "nodeType": "integration",
+      "label": "Python Code",
+      "description": "Run custom Python",
+      "tooltip": "Execute custom Python code within the workflow. Code is sent to the Python compute service for execution. Access to pandas, numpy, ta-lib, and all Python libraries.",
+      "inputs": [
+        "Trigger",
+        "Data"
+      ],
+      "outputs": [
+        "Data",
+        "Signal"
+      ],
+      "category": "integrations",
+      "subcategory": "Code",
+      "icon": "Code",
+      "color": "#3776ab",
+      "backtestEligible": false,
+      "defaultData": {
+        "integrationType": "codePythonNode",
+        "code": "# Python code\\nimport pandas as pd\\n\\ndef execute(input_data):\\n    return {\"result\": input_data}",
+        "language": "python"
+      }
+    },
+    {
+      "type": "codeJavascriptNode",
+      "nodeType": "integration",
+      "label": "JavaScript Code",
+      "description": "Run custom JavaScript",
+      "tooltip": "Execute custom JavaScript code within the workflow. Runs in a sandboxed Node.js environment. Great for data transformation, calculations, and custom logic.",
+      "inputs": [
+        "Trigger",
+        "Data"
+      ],
+      "outputs": [
+        "Data",
+        "Signal"
+      ],
+      "category": "integrations",
+      "subcategory": "Code",
+      "icon": "FileCode",
+      "color": "#f7df1e",
+      "backtestEligible": false,
+      "defaultData": {
+        "integrationType": "codeJavascriptNode",
+        "code": "// JavaScript code\\nmodule.exports = function execute(inputData) {\\n  return { result: inputData };\\n};",
+        "language": "javascript"
+      }
+    },
+    {
+      "type": "aiAnalysisNode",
+      "nodeType": "integration",
+      "label": "AI Analysis",
+      "description": "AI-powered analysis",
+      "tooltip": "Send data to the Python ADK agent for AI-powered analysis. Used for sentiment analysis, regime detection, strategy recommendations, and complex decision-making.",
+      "inputs": [
+        "Trigger",
+        "Data"
+      ],
+      "outputs": [
+        "Data",
+        "Signal"
+      ],
+      "category": "integrations",
+      "subcategory": "AI",
+      "icon": "Brain",
+      "color": "#a855f7",
+      "backtestEligible": false,
+      "defaultData": {
+        "integrationType": "aiAnalysisNode",
+        "analysisType": "general",
+        "prompt": "",
+        "context": {},
+        "model": "gpt-4o"
+      }
+    },
+    {
+      "type": "mergeNode",
+      "nodeType": "integration",
+      "label": "Merge",
+      "description": "Combine multiple inputs",
+      "tooltip": "Combine outputs from multiple branches into one data stream. Modes: Append (concatenate), Join (match by key), or Wait (wait for all inputs). Inspired by n8n\\'s Merge node.",
+      "inputs": [
+        "Data A",
+        "Data B"
+      ],
+      "outputs": [
+        "Data"
+      ],
+      "category": "integrations",
+      "subcategory": "Flow",
+      "icon": "Merge",
+      "color": "#06b6d4",
+      "backtestEligible": true,
+      "defaultData": {
+        "integrationType": "mergeNode",
+        "mergeMode": "append",
+        "joinKey": ""
+      }
+    },
+    {
+      "type": "splitNode",
+      "nodeType": "integration",
+      "label": "Split Out",
+      "description": "Split to multiple branches",
+      "tooltip": "Split one output to multiple branches. Each item in the input array is sent to a separate output. Useful for processing each ticker in a scan result individually. Inspired by n8n\\'s Split Out node.",
+      "inputs": [
+        "Data"
+      ],
+      "outputs": [
+        "Item",
+        "Signal"
+      ],
+      "category": "integrations",
+      "subcategory": "Flow",
+      "icon": "GitBranch",
+      "color": "#06b6d4",
+      "backtestEligible": true,
+      "defaultData": {
+        "integrationType": "splitNode",
+        "fieldToSplit": "items"
+      }
+    },
+    {
+      "type": "setNode",
+      "nodeType": "integration",
+      "label": "Set",
+      "description": "Transform data fields",
+      "tooltip": "Set, rename, or delete fields on the data payload flowing through the workflow. Useful for reshaping data between nodes. Inspired by n8n\\'s Set node.",
+      "inputs": [
+        "Data"
+      ],
+      "outputs": [
+        "Data"
+      ],
+      "category": "integrations",
+      "subcategory": "Flow",
+      "icon": "Pencil",
+      "color": "#06b6d4",
+      "backtestEligible": true,
+      "defaultData": {
+        "integrationType": "setNode",
+        "assignments": []
+      }
+    },
+    {
+      "type": "filterNode",
+      "nodeType": "integration",
+      "label": "Filter",
+      "description": "Filter data by condition",
+      "tooltip": "Pass through only items that match a condition. Items that don\\'t match are discarded or sent to a \"rejected\" output. Useful for screening tickers or filtering signals. Inspired by n8n\\'s Filter node.",
+      "inputs": [
+        "Data"
+      ],
+      "outputs": [
+        "Passed",
+        "Rejected"
+      ],
+      "category": "integrations",
+      "subcategory": "Flow",
+      "icon": "Filter",
+      "color": "#06b6d4",
+      "backtestEligible": true,
+      "defaultData": {
+        "integrationType": "filterNode",
+        "field": "",
+        "operator": ">",
+        "value": 0
+      }
+    },
+    {
+      "type": "aggregateNode",
+      "nodeType": "integration",
+      "label": "Aggregate",
+      "description": "Aggregate data (sum, avg, count)",
+      "tooltip": "Aggregate multiple data items into summary statistics: sum, average, count, min, max. Useful for portfolio-level metrics or combining scanner results. Inspired by n8n\\'s Aggregate node.",
+      "inputs": [
+        "Data"
+      ],
+      "outputs": [
+        "Data"
+      ],
+      "category": "integrations",
+      "subcategory": "Flow",
+      "icon": "BarChart3",
+      "color": "#06b6d4",
+      "backtestEligible": true,
+      "defaultData": {
+        "integrationType": "aggregateNode",
+        "operation": "average",
+        "field": "value"
+      }
+    },
+    {
+      "type": "hitlNode",
+      "nodeType": "integration",
+      "label": "Human Approval",
+      "description": "Wait for human approval",
+      "tooltip": "Pauses workflow execution until a human approves or rejects via Telegram, Slack, or the web UI. The orchestrator holds state in Redis until the callback is received. Inspired by n8n\\'s Human-in-the-Loop pattern.",
+      "inputs": [
+        "Trigger",
+        "Data"
+      ],
+      "outputs": [
+        "Approved",
+        "Rejected"
+      ],
+      "category": "integrations",
+      "subcategory": "Flow",
+      "icon": "UserCheck",
+      "color": "#f97316",
+      "backtestEligible": false,
+      "defaultData": {
+        "integrationType": "hitlNode",
+        "channel": "telegram",
+        "message": "Approve this action?",
+        "timeoutMinutes": 30,
+        "credentialAlias": "telegram"
+      }
     }
   ],
   "llm": [
@@ -1030,6 +1873,7 @@
       "subcategory": "AI",
       "icon": "Sparkles",
       "color": "#a855f7",
+      "backtestEligible": false,
       "defaultData": {
         "label": "LLM Decision",
         "llmType": "llmDecision",
@@ -1064,6 +1908,7 @@
       "subcategory": "Analysis",
       "icon": "Brain",
       "color": "#ec4899",
+      "backtestEligible": false,
       "defaultData": {
         "label": "Sentiment Analysis",
         "llmType": "sentimentAnalysis",
@@ -1102,6 +1947,7 @@
       "subcategory": "Analysis",
       "icon": "Layers",
       "color": "#06b6d4",
+      "backtestEligible": false,
       "defaultData": {
         "label": "Regime Detection",
         "llmType": "regimeDetection",
@@ -1144,6 +1990,7 @@
       "subcategory": "Strategy",
       "icon": "FileText",
       "color": "#f59e0b",
+      "backtestEligible": false,
       "defaultData": {
         "label": "NL Strategy Rules",
         "llmType": "nlStrategyRules",
@@ -1179,6 +2026,7 @@
       "subcategory": "Optimization",
       "icon": "SlidersHorizontal",
       "color": "#10b981",
+      "backtestEligible": false,
       "defaultData": {
         "label": "Parameter Tuning",
         "llmType": "parameterTuning",
@@ -1222,6 +2070,7 @@
       "subcategory": "Analysis",
       "icon": "BarChart3",
       "color": "#8b5cf6",
+      "backtestEligible": false,
       "defaultData": {
         "label": "Market Classification",
         "llmType": "marketRegimeClassification",
@@ -1260,6 +2109,7 @@
       "subcategory": "Signals",
       "icon": "Newspaper",
       "color": "#ef4444",
+      "backtestEligible": false,
       "defaultData": {
         "label": "News → Signal",
         "llmType": "newsSentimentSignal",
@@ -1298,11 +2148,14 @@
       "subcategory": "Custom",
       "icon": "Code",
       "color": "#64748b",
+      "backtestEligible": false,
       "defaultData": {
         "label": "Custom Code",
         "llmType": "customCode",
         "prompt": "",
         "language": "python",
+        "customInputs": [],
+        "customOutputs": [],
         "code": "`# Custom trading logic\n# Available: data (OHLCV)",
         "schema": {
           "signal": "string",
@@ -1422,6 +2275,1025 @@
       }
     }
   ],
+  "pineScript": [
+    {
+      "type": "pine_strategy",
+      "nodeType": "pineScript",
+      "label": "strategy()",
+      "description": "Declares a TradingView strategy script",
+      "tooltip": "Root node for strategy scripts. Sets title, overlay, initial capital, and other strategy properties.",
+      "inputs": [],
+      "outputs": [
+        "Script"
+      ],
+      "category": "pineScript",
+      "subcategory": "Script Setup",
+      "icon": "FileCode2",
+      "color": "#2962FF",
+      "defaultData": {
+        "pineType": "pine_strategy",
+        "label": "strategy()",
+        "scriptTitle": "My Strategy",
+        "overlay": true
+      }
+    },
+    {
+      "type": "pine_indicator",
+      "nodeType": "pineScript",
+      "label": "indicator()",
+      "description": "Declares a TradingView indicator script",
+      "tooltip": "Root node for indicator-only scripts. Use this instead of strategy() when you only want overlays/plots.",
+      "inputs": [],
+      "outputs": [
+        "Script"
+      ],
+      "category": "pineScript",
+      "subcategory": "Script Setup",
+      "icon": "BarChart3",
+      "color": "#2962FF",
+      "defaultData": {
+        "pineType": "pine_indicator",
+        "label": "indicator()",
+        "scriptTitle": "My Indicator",
+        "overlay": true
+      }
+    },
+    {
+      "type": "pine_input_int",
+      "nodeType": "pineScript",
+      "label": "input.int",
+      "description": "Integer input parameter",
+      "tooltip": "Creates a user-configurable integer input in the script settings panel.",
+      "inputs": [],
+      "outputs": [
+        "Number"
+      ],
+      "category": "pineScript",
+      "subcategory": "Inputs",
+      "icon": "Hash",
+      "color": "#00BCD4",
+      "defaultData": {
+        "pineType": "pine_input_int",
+        "label": "input.int",
+        "inputName": "Length",
+        "inputDefault": 14
+      }
+    },
+    {
+      "type": "pine_input_float",
+      "nodeType": "pineScript",
+      "label": "input.float",
+      "description": "Float input parameter",
+      "tooltip": "Creates a user-configurable decimal number input.",
+      "inputs": [],
+      "outputs": [
+        "Number"
+      ],
+      "category": "pineScript",
+      "subcategory": "Inputs",
+      "icon": "Hash",
+      "color": "#00BCD4",
+      "defaultData": {
+        "pineType": "pine_input_float",
+        "label": "input.float",
+        "inputName": "Multiplier",
+        "inputDefault": 2.0
+      }
+    },
+    {
+      "type": "pine_input_bool",
+      "nodeType": "pineScript",
+      "label": "input.bool",
+      "description": "Boolean input parameter",
+      "tooltip": "Creates a toggle checkbox input in the script settings.",
+      "inputs": [],
+      "outputs": [
+        "Boolean"
+      ],
+      "category": "pineScript",
+      "subcategory": "Inputs",
+      "icon": "ToggleLeft",
+      "color": "#00BCD4",
+      "defaultData": {
+        "pineType": "pine_input_bool",
+        "label": "input.bool",
+        "inputName": "Use Filter",
+        "inputDefault": true
+      }
+    },
+    {
+      "type": "pine_input_source",
+      "nodeType": "pineScript",
+      "label": "input.source",
+      "description": "Source input (close, open, etc.)",
+      "tooltip": "Lets user choose a price source (close, open, high, low, hl2, etc.).",
+      "inputs": [],
+      "outputs": [
+        "Series"
+      ],
+      "category": "pineScript",
+      "subcategory": "Inputs",
+      "icon": "ArrowDownCircle",
+      "color": "#00BCD4",
+      "defaultData": {
+        "pineType": "pine_input_source",
+        "label": "input.source",
+        "inputName": "Source",
+        "inputDefault": "close"
+      }
+    },
+    {
+      "type": "pine_close",
+      "nodeType": "pineScript",
+      "label": "close",
+      "description": "Close price series",
+      "tooltip": "The closing price of each bar.",
+      "inputs": [],
+      "outputs": [
+        "Series"
+      ],
+      "category": "pineScript",
+      "subcategory": "Data",
+      "icon": "TrendingUp",
+      "color": "#4CAF50",
+      "defaultData": {
+        "pineType": "pine_close",
+        "label": "close"
+      }
+    },
+    {
+      "type": "pine_open",
+      "nodeType": "pineScript",
+      "label": "open",
+      "description": "Open price series",
+      "tooltip": "The opening price of each bar.",
+      "inputs": [],
+      "outputs": [
+        "Series"
+      ],
+      "category": "pineScript",
+      "subcategory": "Data",
+      "icon": "TrendingUp",
+      "color": "#4CAF50",
+      "defaultData": {
+        "pineType": "pine_open",
+        "label": "open"
+      }
+    },
+    {
+      "type": "pine_high",
+      "nodeType": "pineScript",
+      "label": "high",
+      "description": "High price series",
+      "tooltip": "The highest price of each bar.",
+      "inputs": [],
+      "outputs": [
+        "Series"
+      ],
+      "category": "pineScript",
+      "subcategory": "Data",
+      "icon": "ArrowUp",
+      "color": "#4CAF50",
+      "defaultData": {
+        "pineType": "pine_high",
+        "label": "high"
+      }
+    },
+    {
+      "type": "pine_low",
+      "nodeType": "pineScript",
+      "label": "low",
+      "description": "Low price series",
+      "tooltip": "The lowest price of each bar.",
+      "inputs": [],
+      "outputs": [
+        "Series"
+      ],
+      "category": "pineScript",
+      "subcategory": "Data",
+      "icon": "ArrowDown",
+      "color": "#4CAF50",
+      "defaultData": {
+        "pineType": "pine_low",
+        "label": "low"
+      }
+    },
+    {
+      "type": "pine_volume",
+      "nodeType": "pineScript",
+      "label": "volume",
+      "description": "Volume series",
+      "tooltip": "The trading volume of each bar.",
+      "inputs": [],
+      "outputs": [
+        "Series"
+      ],
+      "category": "pineScript",
+      "subcategory": "Data",
+      "icon": "BarChart",
+      "color": "#4CAF50",
+      "defaultData": {
+        "pineType": "pine_volume",
+        "label": "volume"
+      }
+    },
+    {
+      "type": "pine_bar_index",
+      "nodeType": "pineScript",
+      "label": "bar_index",
+      "description": "Current bar index number",
+      "tooltip": "Integer index of the current bar, starting from 0.",
+      "inputs": [],
+      "outputs": [
+        "Number"
+      ],
+      "category": "pineScript",
+      "subcategory": "Data",
+      "icon": "Hash",
+      "color": "#4CAF50",
+      "defaultData": {
+        "pineType": "pine_bar_index",
+        "label": "bar_index"
+      }
+    },
+    {
+      "type": "pine_ta_sma",
+      "nodeType": "pineScript",
+      "label": "ta.sma",
+      "description": "Simple Moving Average",
+      "tooltip": "Calculates Simple Moving Average over the specified length.",
+      "inputs": [
+        "Series",
+        "Number"
+      ],
+      "outputs": [
+        "Series"
+      ],
+      "category": "pineScript",
+      "subcategory": "Indicators",
+      "icon": "TrendingUp",
+      "color": "#7C4DFF",
+      "defaultData": {
+        "pineType": "pine_ta_sma",
+        "label": "ta.sma",
+        "period": 14,
+        "source": "close"
+      }
+    },
+    {
+      "type": "pine_ta_ema",
+      "nodeType": "pineScript",
+      "label": "ta.ema",
+      "description": "Exponential Moving Average",
+      "tooltip": "Calculates Exponential Moving Average, more weight to recent prices.",
+      "inputs": [
+        "Series",
+        "Number"
+      ],
+      "outputs": [
+        "Series"
+      ],
+      "category": "pineScript",
+      "subcategory": "Indicators",
+      "icon": "TrendingUp",
+      "color": "#7C4DFF",
+      "defaultData": {
+        "pineType": "pine_ta_ema",
+        "label": "ta.ema",
+        "period": 14,
+        "source": "close"
+      }
+    },
+    {
+      "type": "pine_ta_rsi",
+      "nodeType": "pineScript",
+      "label": "ta.rsi",
+      "description": "Relative Strength Index",
+      "tooltip": "Momentum oscillator measuring speed and change of price movements (0-100).",
+      "inputs": [
+        "Series",
+        "Number"
+      ],
+      "outputs": [
+        "Series"
+      ],
+      "category": "pineScript",
+      "subcategory": "Indicators",
+      "icon": "Activity",
+      "color": "#7C4DFF",
+      "defaultData": {
+        "pineType": "pine_ta_rsi",
+        "label": "ta.rsi",
+        "period": 14,
+        "source": "close"
+      }
+    },
+    {
+      "type": "pine_ta_macd",
+      "nodeType": "pineScript",
+      "label": "ta.macd",
+      "description": "MACD indicator (line, signal, histogram)",
+      "tooltip": "Returns MACD line, signal line, and histogram as a tuple.",
+      "inputs": [
+        "Series"
+      ],
+      "outputs": [
+        "MACD",
+        "Signal",
+        "Histogram"
+      ],
+      "category": "pineScript",
+      "subcategory": "Indicators",
+      "icon": "BarChart2",
+      "color": "#7C4DFF",
+      "defaultData": {
+        "pineType": "pine_ta_macd",
+        "label": "ta.macd",
+        "source": "close"
+      }
+    },
+    {
+      "type": "pine_ta_bb",
+      "nodeType": "pineScript",
+      "label": "ta.bb",
+      "description": "Bollinger Bands (basis, upper, lower)",
+      "tooltip": "Returns middle, upper, and lower Bollinger Bands.",
+      "inputs": [
+        "Series",
+        "Number"
+      ],
+      "outputs": [
+        "Basis",
+        "Upper",
+        "Lower"
+      ],
+      "category": "pineScript",
+      "subcategory": "Indicators",
+      "icon": "Maximize2",
+      "color": "#7C4DFF",
+      "defaultData": {
+        "pineType": "pine_ta_bb",
+        "label": "ta.bb",
+        "period": 20,
+        "source": "close"
+      }
+    },
+    {
+      "type": "pine_ta_atr",
+      "nodeType": "pineScript",
+      "label": "ta.atr",
+      "description": "Average True Range",
+      "tooltip": "Measures market volatility as the average of true ranges.",
+      "inputs": [
+        "Number"
+      ],
+      "outputs": [
+        "Series"
+      ],
+      "category": "pineScript",
+      "subcategory": "Indicators",
+      "icon": "Zap",
+      "color": "#7C4DFF",
+      "defaultData": {
+        "pineType": "pine_ta_atr",
+        "label": "ta.atr",
+        "period": 14
+      }
+    },
+    {
+      "type": "pine_ta_stoch",
+      "nodeType": "pineScript",
+      "label": "ta.stoch",
+      "description": "Stochastic oscillator",
+      "tooltip": "Compares closing price to price range. Returns %K value.",
+      "inputs": [
+        "Series",
+        "Number"
+      ],
+      "outputs": [
+        "Series"
+      ],
+      "category": "pineScript",
+      "subcategory": "Indicators",
+      "icon": "Activity",
+      "color": "#7C4DFF",
+      "defaultData": {
+        "pineType": "pine_ta_stoch",
+        "label": "ta.stoch",
+        "period": 14,
+        "source": "close"
+      }
+    },
+    {
+      "type": "pine_ta_vwap",
+      "nodeType": "pineScript",
+      "label": "ta.vwap",
+      "description": "Volume Weighted Average Price",
+      "tooltip": "Institutional benchmark price weighted by volume.",
+      "inputs": [
+        "Series"
+      ],
+      "outputs": [
+        "Series"
+      ],
+      "category": "pineScript",
+      "subcategory": "Indicators",
+      "icon": "BarChart",
+      "color": "#7C4DFF",
+      "defaultData": {
+        "pineType": "pine_ta_vwap",
+        "label": "ta.vwap",
+        "source": "close"
+      }
+    },
+    {
+      "type": "pine_ta_crossover",
+      "nodeType": "pineScript",
+      "label": "ta.crossover",
+      "description": "Series A crosses above Series B",
+      "tooltip": "Returns true when series1 crosses above series2.",
+      "inputs": [
+        "Series",
+        "Series"
+      ],
+      "outputs": [
+        "Boolean"
+      ],
+      "category": "pineScript",
+      "subcategory": "Indicators",
+      "icon": "ArrowUpRight",
+      "color": "#7C4DFF",
+      "defaultData": {
+        "pineType": "pine_ta_crossover",
+        "label": "ta.crossover"
+      }
+    },
+    {
+      "type": "pine_ta_crossunder",
+      "nodeType": "pineScript",
+      "label": "ta.crossunder",
+      "description": "Series A crosses below Series B",
+      "tooltip": "Returns true when series1 crosses below series2.",
+      "inputs": [
+        "Series",
+        "Series"
+      ],
+      "outputs": [
+        "Boolean"
+      ],
+      "category": "pineScript",
+      "subcategory": "Indicators",
+      "icon": "ArrowDownRight",
+      "color": "#7C4DFF",
+      "defaultData": {
+        "pineType": "pine_ta_crossunder",
+        "label": "ta.crossunder"
+      }
+    },
+    {
+      "type": "pine_compare",
+      "nodeType": "pineScript",
+      "label": "Compare",
+      "description": "Compare two values (>, <, ==, etc.)",
+      "tooltip": "Comparison operator between two series or values.",
+      "inputs": [
+        "Series",
+        "Series"
+      ],
+      "outputs": [
+        "Boolean"
+      ],
+      "category": "pineScript",
+      "subcategory": "Conditions",
+      "icon": "GitBranch",
+      "color": "#FF9800",
+      "defaultData": {
+        "pineType": "pine_compare",
+        "label": "Compare",
+        "operator": ">"
+      }
+    },
+    {
+      "type": "pine_and",
+      "nodeType": "pineScript",
+      "label": "and",
+      "description": "Logical AND",
+      "tooltip": "Returns true when both conditions are true.",
+      "inputs": [
+        "Boolean",
+        "Boolean"
+      ],
+      "outputs": [
+        "Boolean"
+      ],
+      "category": "pineScript",
+      "subcategory": "Conditions",
+      "icon": "GitMerge",
+      "color": "#FF9800",
+      "defaultData": {
+        "pineType": "pine_and",
+        "label": "and"
+      }
+    },
+    {
+      "type": "pine_or",
+      "nodeType": "pineScript",
+      "label": "or",
+      "description": "Logical OR",
+      "tooltip": "Returns true when either condition is true.",
+      "inputs": [
+        "Boolean",
+        "Boolean"
+      ],
+      "outputs": [
+        "Boolean"
+      ],
+      "category": "pineScript",
+      "subcategory": "Conditions",
+      "icon": "GitBranch",
+      "color": "#FF9800",
+      "defaultData": {
+        "pineType": "pine_or",
+        "label": "or"
+      }
+    },
+    {
+      "type": "pine_not",
+      "nodeType": "pineScript",
+      "label": "not",
+      "description": "Logical NOT",
+      "tooltip": "Inverts a boolean value.",
+      "inputs": [
+        "Boolean"
+      ],
+      "outputs": [
+        "Boolean"
+      ],
+      "category": "pineScript",
+      "subcategory": "Conditions",
+      "icon": "XCircle",
+      "color": "#FF9800",
+      "defaultData": {
+        "pineType": "pine_not",
+        "label": "not"
+      }
+    },
+    {
+      "type": "pine_strategy_entry",
+      "nodeType": "pineScript",
+      "label": "strategy.entry",
+      "description": "Enter a trade (long/short)",
+      "tooltip": "Opens a position. Specify id, direction, and optional quantity.",
+      "inputs": [
+        "Boolean"
+      ],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "pineScript",
+      "subcategory": "Strategy",
+      "icon": "LogIn",
+      "color": "#4CAF50",
+      "defaultData": {
+        "pineType": "pine_strategy_entry",
+        "label": "strategy.entry",
+        "entryId": "Long",
+        "direction": "long"
+      }
+    },
+    {
+      "type": "pine_strategy_close",
+      "nodeType": "pineScript",
+      "label": "strategy.close",
+      "description": "Close a position by id",
+      "tooltip": "Closes an existing position by its entry id.",
+      "inputs": [
+        "Boolean"
+      ],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "pineScript",
+      "subcategory": "Strategy",
+      "icon": "LogOut",
+      "color": "#F44336",
+      "defaultData": {
+        "pineType": "pine_strategy_close",
+        "label": "strategy.close",
+        "entryId": "Long"
+      }
+    },
+    {
+      "type": "pine_strategy_exit",
+      "nodeType": "pineScript",
+      "label": "strategy.exit",
+      "description": "Set stop-loss / take-profit exit",
+      "tooltip": "Configures SL/TP for an existing position.",
+      "inputs": [
+        "Boolean"
+      ],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "pineScript",
+      "subcategory": "Strategy",
+      "icon": "Shield",
+      "color": "#FF9800",
+      "defaultData": {
+        "pineType": "pine_strategy_exit",
+        "label": "strategy.exit",
+        "entryId": "Long"
+      }
+    },
+    {
+      "type": "pine_plot",
+      "nodeType": "pineScript",
+      "label": "plot",
+      "description": "Plot a series on the chart",
+      "tooltip": "Draws a line on the chart for a given series.",
+      "inputs": [
+        "Series"
+      ],
+      "outputs": [],
+      "category": "pineScript",
+      "subcategory": "Plotting",
+      "icon": "LineChart",
+      "color": "#E91E63",
+      "defaultData": {
+        "pineType": "pine_plot",
+        "label": "plot",
+        "plotColor": "#2962FF",
+        "plotTitle": "Plot",
+        "plotLineWidth": 2
+      }
+    },
+    {
+      "type": "pine_plotshape",
+      "nodeType": "pineScript",
+      "label": "plotshape",
+      "description": "Plot shapes on the chart",
+      "tooltip": "Draws shapes (triangles, circles, etc.) when condition is true.",
+      "inputs": [
+        "Boolean"
+      ],
+      "outputs": [],
+      "category": "pineScript",
+      "subcategory": "Plotting",
+      "icon": "Triangle",
+      "color": "#E91E63",
+      "defaultData": {
+        "pineType": "pine_plotshape",
+        "label": "plotshape",
+        "plotColor": "#4CAF50"
+      }
+    },
+    {
+      "type": "pine_hline",
+      "nodeType": "pineScript",
+      "label": "hline",
+      "description": "Draw a horizontal line",
+      "tooltip": "Draws a fixed horizontal line at a specified price level.",
+      "inputs": [
+        "Number"
+      ],
+      "outputs": [],
+      "category": "pineScript",
+      "subcategory": "Plotting",
+      "icon": "Minus",
+      "color": "#E91E63",
+      "defaultData": {
+        "pineType": "pine_hline",
+        "label": "hline",
+        "plotColor": "#787B86"
+      }
+    },
+    {
+      "type": "pine_bgcolor",
+      "nodeType": "pineScript",
+      "label": "bgcolor",
+      "description": "Set background color conditionally",
+      "tooltip": "Colors the chart background when a condition is met.",
+      "inputs": [
+        "Boolean"
+      ],
+      "outputs": [],
+      "category": "pineScript",
+      "subcategory": "Plotting",
+      "icon": "Paintbrush",
+      "color": "#E91E63",
+      "defaultData": {
+        "pineType": "pine_bgcolor",
+        "label": "bgcolor",
+        "plotColor": "#2962FF"
+      }
+    },
+    {
+      "type": "pine_alertcondition",
+      "nodeType": "pineScript",
+      "label": "alertcondition",
+      "description": "Create an alert condition",
+      "tooltip": "Registers a condition that can trigger TradingView alerts.",
+      "inputs": [
+        "Boolean"
+      ],
+      "outputs": [],
+      "category": "pineScript",
+      "subcategory": "Alerts",
+      "icon": "Bell",
+      "color": "#FF5722",
+      "defaultData": {
+        "pineType": "pine_alertcondition",
+        "label": "alertcondition",
+        "alertMessage": "Alert triggered!"
+      }
+    },
+    {
+      "type": "pine_alert",
+      "nodeType": "pineScript",
+      "label": "alert",
+      "description": "Fire an alert",
+      "tooltip": "Fires an alert with a custom message when triggered.",
+      "inputs": [
+        "Boolean"
+      ],
+      "outputs": [],
+      "category": "pineScript",
+      "subcategory": "Alerts",
+      "icon": "BellRing",
+      "color": "#FF5722",
+      "defaultData": {
+        "pineType": "pine_alert",
+        "label": "alert",
+        "alertMessage": "Signal detected!"
+      }
+    }
+  ],
+  "portfolio": [
+    {
+      "type": "portfolio_read_holdings",
+      "nodeType": "portfolio",
+      "label": "Read Holdings",
+      "description": "Get portfolio positions",
+      "tooltip": "Read all current holdings from your portfolio. Outputs a list of assets with quantities, prices, and allocations for use in strategy logic.",
+      "inputs": [],
+      "outputs": [
+        "Holdings List"
+      ],
+      "category": "portfolio",
+      "subcategory": "Data",
+      "icon": "Briefcase",
+      "color": "#06b6d4",
+      "defaultData": {
+        "portfolioAction": "readHoldings"
+      }
+    },
+    {
+      "type": "portfolio_total_value",
+      "nodeType": "portfolio",
+      "label": "Portfolio Value",
+      "description": "Total portfolio value",
+      "tooltip": "Get the total current value of your portfolio in base currency. Use for position sizing relative to portfolio size.",
+      "inputs": [],
+      "outputs": [
+        "Number"
+      ],
+      "category": "portfolio",
+      "subcategory": "Data",
+      "icon": "DollarSign",
+      "color": "#06b6d4",
+      "defaultData": {
+        "portfolioAction": "totalValue"
+      }
+    },
+    {
+      "type": "portfolio_asset_weight",
+      "nodeType": "portfolio",
+      "label": "Asset Weight",
+      "description": "Current allocation %",
+      "tooltip": "Get the current percentage weight of a specific asset in your portfolio. Useful for rebalancing strategies.",
+      "inputs": [
+        "Symbol"
+      ],
+      "outputs": [
+        "Number"
+      ],
+      "category": "portfolio",
+      "subcategory": "Data",
+      "icon": "PieChart",
+      "color": "#06b6d4",
+      "defaultData": {
+        "portfolioAction": "assetWeight",
+        "symbol": ""
+      }
+    },
+    {
+      "type": "portfolio_asset_pnl",
+      "nodeType": "portfolio",
+      "label": "Asset P&L",
+      "description": "Profit/loss for asset",
+      "tooltip": "Get the unrealized P&L for a specific holding. Outputs both absolute and percentage returns.",
+      "inputs": [
+        "Symbol"
+      ],
+      "outputs": [
+        "Number",
+        "Percent"
+      ],
+      "category": "portfolio",
+      "subcategory": "Data",
+      "icon": "TrendingUp",
+      "color": "#06b6d4",
+      "defaultData": {
+        "portfolioAction": "assetPnl",
+        "symbol": ""
+      }
+    },
+    {
+      "type": "portfolio_day_change",
+      "nodeType": "portfolio",
+      "label": "Day Change",
+      "description": "Portfolio daily change",
+      "tooltip": "Get today\\'s portfolio change in value and percentage. Useful for daily loss limit or momentum signals.",
+      "inputs": [],
+      "outputs": [
+        "Number",
+        "Percent"
+      ],
+      "category": "portfolio",
+      "subcategory": "Data",
+      "icon": "BarChart3",
+      "color": "#06b6d4",
+      "defaultData": {
+        "portfolioAction": "dayChange"
+      }
+    },
+    {
+      "type": "portfolio_concentration_check",
+      "nodeType": "portfolio",
+      "label": "Concentration Risk",
+      "description": "Check overexposure",
+      "tooltip": "Check if any single asset exceeds a specified allocation threshold. Returns true if portfolio is over-concentrated.",
+      "inputs": [
+        "Threshold %"
+      ],
+      "outputs": [
+        "Boolean",
+        "Symbol"
+      ],
+      "category": "portfolio",
+      "subcategory": "Risk Analysis",
+      "icon": "ShieldAlert",
+      "color": "#f59e0b",
+      "defaultData": {
+        "portfolioAction": "concentrationCheck",
+        "threshold": 30
+      }
+    },
+    {
+      "type": "portfolio_diversification_score",
+      "nodeType": "portfolio",
+      "label": "Diversification Score",
+      "description": "Measure diversity",
+      "tooltip": "Calculate a diversification score (0-100) based on the number of asset classes, sectors, and position sizing. Higher = more diversified.",
+      "inputs": [],
+      "outputs": [
+        "Number"
+      ],
+      "category": "portfolio",
+      "subcategory": "Risk Analysis",
+      "icon": "Layers",
+      "color": "#f59e0b",
+      "defaultData": {
+        "portfolioAction": "diversificationScore"
+      }
+    },
+    {
+      "type": "portfolio_correlation_check",
+      "nodeType": "portfolio",
+      "label": "Correlation Check",
+      "description": "Asset correlation",
+      "tooltip": "Check the correlation between two portfolio assets. High correlation means less effective diversification.",
+      "inputs": [
+        "Symbol A",
+        "Symbol B"
+      ],
+      "outputs": [
+        "Number"
+      ],
+      "category": "portfolio",
+      "subcategory": "Risk Analysis",
+      "icon": "GitBranch",
+      "color": "#f59e0b",
+      "defaultData": {
+        "portfolioAction": "correlationCheck",
+        "symbolA": "",
+        "symbolB": ""
+      }
+    },
+    {
+      "type": "portfolio_drawdown",
+      "nodeType": "portfolio",
+      "label": "Portfolio Drawdown",
+      "description": "Max drawdown measure",
+      "tooltip": "Calculate the maximum drawdown of the portfolio from its peak value. Key risk metric for portfolio health.",
+      "inputs": [],
+      "outputs": [
+        "Number",
+        "Percent"
+      ],
+      "category": "portfolio",
+      "subcategory": "Risk Analysis",
+      "icon": "TrendingDown",
+      "color": "#f59e0b",
+      "defaultData": {
+        "portfolioAction": "drawdown"
+      }
+    },
+    {
+      "type": "portfolio_rebalance_signal",
+      "nodeType": "portfolio",
+      "label": "Rebalance Signal",
+      "description": "Drift-based rebalance",
+      "tooltip": "Generate a rebalance signal when any asset drifts beyond a threshold from its target allocation. Outputs which assets need buying/selling.",
+      "inputs": [
+        "Drift Threshold %"
+      ],
+      "outputs": [
+        "Signal",
+        "Actions List"
+      ],
+      "category": "portfolio",
+      "subcategory": "Management",
+      "icon": "RefreshCw",
+      "color": "#10b981",
+      "defaultData": {
+        "portfolioAction": "rebalanceSignal",
+        "driftThreshold": 5
+      }
+    },
+    {
+      "type": "portfolio_set_target",
+      "nodeType": "portfolio",
+      "label": "Set Target Weight",
+      "description": "Define target allocation",
+      "tooltip": "Set the target percentage allocation for a specific asset. Used together with Rebalance Signal to maintain your ideal portfolio composition.",
+      "inputs": [
+        "Symbol",
+        "Target %"
+      ],
+      "outputs": [
+        "Confirmation"
+      ],
+      "category": "portfolio",
+      "subcategory": "Management",
+      "icon": "Target",
+      "color": "#10b981",
+      "defaultData": {
+        "portfolioAction": "setTarget",
+        "symbol": "",
+        "targetPct": 0
+      }
+    },
+    {
+      "type": "portfolio_optimizer",
+      "nodeType": "portfolio",
+      "label": "Portfolio Optimizer",
+      "description": "Optimize allocations",
+      "tooltip": "Run mean-variance optimization on your portfolio to suggest optimal weights for maximum Sharpe ratio or minimum variance.",
+      "inputs": [
+        "Optimization Goal"
+      ],
+      "outputs": [
+        "Weights Map"
+      ],
+      "category": "portfolio",
+      "subcategory": "Management",
+      "icon": "Sparkles",
+      "color": "#10b981",
+      "defaultData": {
+        "portfolioAction": "optimize",
+        "goal": "maxSharpe"
+      }
+    },
+    {
+      "type": "portfolio_sector_exposure",
+      "nodeType": "portfolio",
+      "label": "Sector Exposure",
+      "description": "By asset class",
+      "tooltip": "Break down portfolio exposure by asset class (stocks, crypto, gold, etc.). Useful for sector rotation strategies.",
+      "inputs": [],
+      "outputs": [
+        "Breakdown"
+      ],
+      "category": "portfolio",
+      "subcategory": "Management",
+      "icon": "BarChart",
+      "color": "#10b981",
+      "defaultData": {
+        "portfolioAction": "sectorExposure"
+      }
+    }
+  ],
   "risk": [
     {
       "type": "risk_max_drawdown",
@@ -1516,6 +3388,25 @@
         "riskType": "trailingStop",
         "value": 20
       }
+    },
+    {
+      "type": "portfolio_allocation",
+      "nodeType": "risk",
+      "label": "Target Allocation",
+      "description": "Asset target weights",
+      "tooltip": "Define target percentage allocation for an asset in the portfolio. Used by rebalancing actions.",
+      "inputs": [],
+      "outputs": [
+        "Target Weight"
+      ],
+      "category": "risk",
+      "subcategory": "Portfolio",
+      "icon": "PieChart",
+      "color": "#f97316",
+      "defaultData": {
+        "riskType": "portfolioAllocation",
+        "targetPercentage": 20
+      }
     }
   ],
   "tradeInfo": [
@@ -1589,6 +3480,168 @@
       "color": "#8b5cf6",
       "defaultData": {
         "tradeInfoType": "tradeDuration"
+      }
+    }
+  ],
+  "trigger": [
+    {
+      "type": "heartbeatTrigger",
+      "nodeType": "trigger",
+      "label": "Heartbeat",
+      "description": "Schedule-based trigger",
+      "tooltip": "Fires workflow on a configurable schedule — every N minutes, at market open/close, or daily at a specific time. Powered by BullMQ repeatable jobs. Inspired by OpenClaw heartbeat daemon.",
+      "inputs": [],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "triggers",
+      "subcategory": "Polling",
+      "icon": "HeartPulse",
+      "color": "#8b5cf6",
+      "backtestEligible": true,
+      "defaultData": {
+        "triggerType": "heartbeatTrigger",
+        "intervalMinutes": 5,
+        "atMarketOpen": false,
+        "atMarketClose": false,
+        "specificTime": "null"
+      }
+    },
+    {
+      "type": "webhookTrigger",
+      "nodeType": "trigger",
+      "label": "Webhook",
+      "description": "HTTP POST trigger",
+      "tooltip": "Fires instantly when an external HTTP POST is received. Connect TradingView alerts, Zapier, or any service that sends webhooks. HMAC signature verification for security.",
+      "inputs": [],
+      "outputs": [
+        "Signal",
+        "Data"
+      ],
+      "category": "triggers",
+      "subcategory": "Event",
+      "icon": "Webhook",
+      "color": "#3b82f6",
+      "backtestEligible": false,
+      "defaultData": {
+        "triggerType": "webhookTrigger",
+        "webhookPath": "",
+        "hmacSecret": "",
+        "expectedFields": []
+      }
+    },
+    {
+      "type": "priceAlertTrigger",
+      "nodeType": "trigger",
+      "label": "Price Alert",
+      "description": "Price threshold trigger",
+      "tooltip": "Fires when a specific asset crosses a price threshold. Runs as a cheap pre-check in Node.js — no LLM or Python compute required. Extremely fast and cost-effective.",
+      "inputs": [],
+      "outputs": [
+        "Signal",
+        "Price"
+      ],
+      "category": "triggers",
+      "subcategory": "Event",
+      "icon": "TrendingUp",
+      "color": "#22c55e",
+      "backtestEligible": true,
+      "defaultData": {
+        "triggerType": "priceAlertTrigger",
+        "symbol": "AAPL",
+        "condition": "crosses_above",
+        "priceLevel": 0
+      }
+    },
+    {
+      "type": "newsTrigger",
+      "nodeType": "trigger",
+      "label": "News Event",
+      "description": "News keyword trigger",
+      "tooltip": "Fires when a keyword or topic is detected in financial news feeds. Monitors NewsAPI, RSS, and SEC filings. Source-filtered to reduce false positives.",
+      "inputs": [],
+      "outputs": [
+        "Signal",
+        "Data"
+      ],
+      "category": "triggers",
+      "subcategory": "Event",
+      "icon": "Newspaper",
+      "color": "#f59e0b",
+      "backtestEligible": false,
+      "defaultData": {
+        "triggerType": "newsTrigger",
+        "keywords": [],
+        "sources": [
+          "newsapi",
+          "sec"
+        ],
+        "symbols": [],
+        "minRelevanceScore": 0.7
+      }
+    },
+    {
+      "type": "brokerEventTrigger",
+      "nodeType": "trigger",
+      "label": "Broker Event",
+      "description": "Broker event trigger",
+      "tooltip": "Fires on broker events: order filled, margin call, position liquidated, dividend received. Connects to your linked brokerage account via the credential vault.",
+      "inputs": [],
+      "outputs": [
+        "Signal",
+        "Data"
+      ],
+      "category": "triggers",
+      "subcategory": "Event",
+      "icon": "Landmark",
+      "color": "#ef4444",
+      "backtestEligible": false,
+      "defaultData": {
+        "triggerType": "brokerEventTrigger",
+        "eventTypes": [
+          "order_filled"
+        ],
+        "credentialAlias": ""
+      }
+    },
+    {
+      "type": "manualTrigger",
+      "nodeType": "trigger",
+      "label": "Manual Trigger",
+      "description": "Run on demand",
+      "tooltip": "Fires when you explicitly click \"Run\" in the UI or call the execute API. Inspired by n8n\\'s Manual Trigger node. Useful for ad-hoc testing and one-off executions.",
+      "inputs": [],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "triggers",
+      "subcategory": "Manual",
+      "icon": "Play",
+      "color": "#10b981",
+      "backtestEligible": true,
+      "defaultData": {
+        "triggerType": "'manualTrigger' as any"
+      }
+    },
+    {
+      "type": "cronTrigger",
+      "nodeType": "trigger",
+      "label": "Schedule (Cron)",
+      "description": "Cron expression trigger",
+      "tooltip": "Fires workflow on a precise cron schedule. Supports standard cron expressions (e.g., \"30 9 * * 1-5\" for weekdays at 9:30 AM). Inspired by n8n\\'s Schedule Trigger node. Timezone-aware.",
+      "inputs": [],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "triggers",
+      "subcategory": "Polling",
+      "icon": "Clock",
+      "color": "#6366f1",
+      "backtestEligible": true,
+      "defaultData": {
+        "triggerType": "'cronTrigger' as any",
+        "cronExpression": "0 9 * * 1-5",
+        "timezone": "America/New_York"
       }
     }
   ],

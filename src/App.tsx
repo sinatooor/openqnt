@@ -14,6 +14,7 @@ import AgentConfig from "./pages/AgentConfig";
 import Research from "./pages/Research";
 import Settings from "./pages/Settings";
 import Portfolio from "./pages/Portfolio";
+import News from "./pages/News";
 import NotFound from "./pages/NotFound";
 import Onboarding from "./pages/Onboarding";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -91,11 +92,7 @@ const AppRoutes = () => {
       <Route
         path="/login"
         element={
-          isAuthenticated
-            ? hasCompletedOnboarding
-              ? <Navigate to="/dashboard" replace />
-              : <Navigate to="/onboarding" replace />
-            : <Login />
+          <Navigate to="/dashboard" replace />
         }
       />
 
@@ -106,6 +103,7 @@ const AppRoutes = () => {
         <Route path="/executions" element={<ExecutionHistory />} />
         <Route path="/execution/:id" element={<ExecutionDetails />} />
         <Route path="/research" element={<Research />} />
+        <Route path="/news" element={<News />} />
         <Route path="/agent" element={<AgentConfig />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/portfolio" element={<Portfolio />} />

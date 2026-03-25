@@ -24,11 +24,11 @@ from pathlib import Path
 # RAG & GCG Imports
 from rag_system import block_library
 from vector_rag import get_vector_rag, two_stage_retrieve, STRATEGY_TYPES
-from strategy_compiler import strategy_compiler
-from backtest_service import XML_TO_PYTHON_PROMPT, run_backtest_pipeline, validate_nautilus_code
+# from strategy_compiler import strategy_compiler
+# from backtest_service import XML_TO_PYTHON_PROMPT, run_backtest_pipeline, validate_nautilus_code
 from backtest_runner import run_backtest, run_backtest_simple
 from strategy_store import hash_xml, save_strategy_version, load_by_id, load_latest_by_hash
-from ai_strategy_reviewer import review_strategy
+# from ai_strategy_reviewer import review_strategy
 import local_database as database # Local DB module
 from routers import live_trading # Live Trading Router
 from risk_controls import PanicService
@@ -238,11 +238,14 @@ from routers.compute import router as compute_router
 app.include_router(compute_router)
 
 # Agent runner endpoints for orchestrator
-from routers.agent_runner import router as agent_runner_router
-app.include_router(agent_runner_router)
+# from routers.agent_runner import router as agent_runner_router
+# app.include_router(agent_runner_router)
 
 from routers.portfolio import router as portfolio_router
 app.include_router(portfolio_router)
+
+from routers import news
+app.include_router(news.router)
 
 
 # ============================================================
