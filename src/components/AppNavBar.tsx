@@ -12,7 +12,8 @@ import {
     Settings,
     User,
     Briefcase,
-    FlaskConical
+    FlaskConical,
+    Newspaper
 } from 'lucide-react';
 import {
     Tooltip,
@@ -38,6 +39,7 @@ const NAV_ITEMS: NavItemDef[] = [
     { icon: <Briefcase className="w-4 h-4" />, label: 'Portfolio', path: '/portfolio' },
     { icon: <LineChart className="w-4 h-4" />, label: 'Executions', path: '/executions' },
     { icon: <FlaskConical className="w-4 h-4" />, label: 'Research', path: '/research' },
+    { icon: <Newspaper className="w-4 h-4" />, label: 'News', path: '/news' },
     { icon: <Settings className="w-4 h-4" />, label: 'Settings', path: '/settings' },
 ];
 

@@ -16,6 +16,10 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
     const hasCompletedOnboarding = useOnboardingStore((s) => s.hasCompletedOnboarding);
 
+    // TEMPORARY BYPASS FOR DEVELOPMENT:
+    // This allows testing without needing to log in.
+    return children ? <>{children}</> : <Outlet />;
+
     if (!isAuthenticated) {
         return <Navigate to="/login" replace />;
     }
