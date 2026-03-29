@@ -60,6 +60,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { PAGE_CONTENT_CLASS } from '@/components/PageHeader';
+import DashboardCanvas from '../features/dashboard/canvas/DashboardCanvas';
 
 const Dashboard = () => {
   const { user, isAuthenticated } = useAuthStore();
@@ -71,6 +72,7 @@ const Dashboard = () => {
   const [portfolios, setPortfolios] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [viewMode, setViewMode] = useState<'classic' | 'modular'>('modular');
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -224,6 +226,42 @@ const Dashboard = () => {
                 </button>
               </div>
             </div>
+
+            {/* ─── View Toggle ─── */}
+            <div className="flex justify-end -mt-2">
+              <div className="flex gap-1 p-1 bg-white/5 rounded-lg border border-white/10">
+                <button
+                  onClick={() => setViewMode('classic')}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'classic' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-white'}`}
+                >
+                  Classic View
+                </button>
+                <button
+                  onClick={() => setViewMode('modular')}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'modular' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-white'}`}
+                >
+                  Modular View
+                </button>
+              </div>
+            </div>
+
+            {viewMode === 'modular' ? (
+              <div className="space-y-2">
+                <div className="terminal-fkeybar flex items-center gap-1 overflow-x-auto px-2 py-1 no-scrollbar">
+                  {['SPX', 'NDX', 'DJI', 'DAX', 'VIX', 'US10Y', 'GOLD', 'OIL', 'BTC'].map((sym) => (
+                    <span
+                      key={sym}
+                      className="rounded-sm border border-zinc-800 bg-black px-2 py-0.5 text-[10px] text-zinc-400"
+                    >
+                      {sym}
+                    </span>
+                  ))}
+                </div>
+                <DashboardCanvas />
+              </div>
+            ) : (
+              <>
+
             {/* ─── Stats Row ─── */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -554,8 +592,10 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
             </motion.div>
-          </div>
+              </>
+            )}
 
+          </div>
 
         </div>
       </TooltipProvider>

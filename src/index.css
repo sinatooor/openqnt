@@ -143,6 +143,96 @@ All colors MUST be HSL.
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
+  /* Bloomberg-inspired terminal surfaces */
+  .terminal-panel {
+    border: 1px solid #332200;
+    background: #050505;
+    border-radius: 2px;
+    overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(255, 140, 0, 0.04);
+  }
+
+  .terminal-panel-header {
+    height: 28px;
+    border-bottom: 1px solid #332200;
+    background: #141005;
+    padding: 0 10px;
+  }
+
+  .terminal-title {
+    color: #ff9f1a;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  .terminal-subheader {
+    height: 24px;
+    display: flex;
+    align-items: center;
+    background: #111111;
+    border-top: 1px solid #242424;
+    border-bottom: 1px solid #242424;
+    color: #71717a;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+
+  .terminal-section {
+    border-bottom: 1px solid #171717;
+  }
+
+  .terminal-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #131313;
+    padding: 6px 0;
+  }
+
+  .terminal-commandbar,
+  .terminal-footerbar,
+  .terminal-fkeybar {
+    border: 1px solid #332200;
+    background: #0a0a00;
+  }
+
+  .terminal-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+
+  .terminal-table th {
+    color: #71717a;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    padding: 6px 8px;
+    border-bottom: 1px solid #242424;
+  }
+
+  .terminal-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid #131313;
+  }
+
+  .terminal-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .terminal-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .terminal-scroll::-webkit-scrollbar-thumb {
+    background: #27272a;
+    border-radius: 9999px;
+  }
+
   /* Professional shadows */
   .shadow-trading {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 1px rgba(0, 0, 0, 0.5);
