@@ -247,6 +247,9 @@ app.include_router(portfolio_router)
 from routers import news
 app.include_router(news.router)
 
+from routers.adk_web import router as adk_web_router
+app.include_router(adk_web_router)
+
 
 # ============================================================
 # Root-level health and custom-blocks endpoints

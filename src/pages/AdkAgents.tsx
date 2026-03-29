@@ -16,6 +16,7 @@ import {
   Code2,
   Network,
   Play,
+  Square,
   RefreshCw,
   ExternalLink,
   ChevronDown,
@@ -31,7 +32,6 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 const PYTHON_BASE = import.meta.env.VITE_PYTHON_BACKEND_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-const ADK_WEB_URL = `${PYTHON_BASE}`;
 
 /* ─── Agent catalogue ─────────────────────────────────────── */
 const AGENTS = [
@@ -159,6 +159,15 @@ const AdkAgents = () => {
   const [agentRuns, setAgentRuns] = useState<AgentRunState>({});
   const [symbols, setSymbols] = useState(DEFAULT_SYMBOLS.join(', '));
 
+  // ADK Web UI process state
+  const [adkWeb, setAdkWeb] = useState<{
+    launching: boolean;
+    running: boolean;
+    url: string | null;
+    port: number | null;
+    error: string | null;
+  }>({ launching: false, running: false, url: null, port: null, error: null });
+
   /* ── Check backend health ────────────────────────────────── */
   const checkHealth = useCallback(async () => {
     try {
@@ -183,9 +192,51 @@ const AdkAgents = () => {
   useEffect(() => {
     checkHealth();
     fetchAgentTypes();
-    const id = setInterval(checkHealth, 15_000);
+    // Also poll adk web status
+    const syncAdkStatus = async () => {
+      try {
+        const res = await fetch(`${PYTHON_BASE}/adk/status`, { signal: AbortSignal.timeout(3000) });
+        if (res.ok) {
+          const data = await res.json();
+          setAdkWeb(prev => ({
+            ...prev,
+            running: data.running,
+            url: data.url,
+            port: data.port,
+          }));
+        }
+      } catch { /* backend offline */ }
+    };
+    syncAdkStatus();
+    const id = setInterval(() => { checkHealth(); syncAdkStatus(); }, 15_000);
     return () => clearInterval(id);
   }, [checkHealth, fetchAgentTypes]);
+
+  /* ── Launch ADK Web UI ───────────────────────────────────── */
+  const launchAdkWeb = async () => {
+    setAdkWeb(prev => ({ ...prev, launching: true, error: null }));
+    try {
+      const res = await fetch(`${PYTHON_BASE}/adk/start`, {
+        method: 'POST',
+        signal: AbortSignal.timeout(30_000),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to start ADK Web UI');
+      setAdkWeb({ launching: false, running: true, url: data.url, port: data.port, error: null });
+      window.open(data.url, '_blank');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to launch ADK Web UI';
+      setAdkWeb(prev => ({ ...prev, launching: false, error: msg }));
+    }
+  };
+
+  /* ── Stop ADK Web UI ─────────────────────────────────────── */
+  const stopAdkWeb = async () => {
+    try {
+      await fetch(`${PYTHON_BASE}/adk/stop`, { method: 'POST' });
+      setAdkWeb({ launching: false, running: false, url: null, port: null, error: null });
+    } catch { /* silent */ }
+  };
 
   /* ── Run full pipeline ───────────────────────────────────── */
   const runPipeline = async () => {
@@ -272,7 +323,7 @@ const AdkAgents = () => {
             <Button
               size="sm"
               className="gap-1.5 bg-primary/15 text-primary hover:bg-primary/25 border border-primary/20 text-xs h-7"
-              onClick={() => window.open(`${ADK_WEB_URL}/docs`, '_blank')}
+              onClick={() => window.open(`${PYTHON_BASE}/docs`, '_blank')}
             >
               <ExternalLink className="w-3 h-3" />
               Open API Docs
@@ -284,27 +335,81 @@ const AdkAgents = () => {
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-4 p-4 rounded-xl border border-purple-500/20 bg-purple-500/5"
+          className={`flex items-center gap-4 p-4 rounded-xl border transition-colors ${
+            adkWeb.running
+              ? 'border-green-500/30 bg-green-500/5'
+              : 'border-purple-500/20 bg-purple-500/5'
+          }`}
         >
-          <div className="p-2.5 rounded-lg bg-purple-500/15">
-            <Bot className="w-5 h-5 text-purple-400" />
+          <div className={`p-2.5 rounded-lg ${adkWeb.running ? 'bg-green-500/15' : 'bg-purple-500/15'}`}>
+            <Bot className={`w-5 h-5 ${adkWeb.running ? 'text-green-400' : 'text-purple-400'}`} />
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white">Google ADK Web UI</p>
-            <p className="text-xs text-white/50 mt-0.5">
-              Run <code className="bg-white/10 px-1 rounded text-purple-300">adk web</code> in your{' '}
-              <code className="bg-white/10 px-1 rounded text-purple-300">backend/</code> folder to launch the
-              interactive agent debugger at <span className="text-purple-300">localhost:8000</span>.
-            </p>
+          <div className="flex-1 min-w-0 space-y-1">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium text-white">Google ADK Web UI</p>
+              {adkWeb.running && (
+                <span className="flex items-center gap-1 text-[10px] text-green-400 bg-green-500/15 border border-green-500/20 px-2 py-0.5 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                  Running on port {adkWeb.port}
+                </span>
+              )}
+            </div>
+            {adkWeb.running && adkWeb.url ? (
+              <p className="text-xs text-white/50">
+                Available at{' '}
+                <button
+                  onClick={() => adkWeb.url && window.open(adkWeb.url, '_blank')}
+                  className="text-green-400 hover:text-green-300 underline underline-offset-2 transition-colors"
+                >
+                  {adkWeb.url}
+                </button>
+              </p>
+            ) : (
+              <p className="text-xs text-white/50">
+                Click <span className="text-purple-300 font-medium">Launch ADK UI</span> — the backend will run{' '}
+                <code className="bg-white/10 px-1 rounded text-purple-300">adk web</code>, find a free port, and open it automatically.
+              </p>
+            )}
+            {adkWeb.error && (
+              <p className="text-xs text-red-400/80 bg-red-500/10 rounded px-2 py-1">{adkWeb.error}</p>
+            )}
           </div>
-          <Button
-            size="sm"
-            className="shrink-0 gap-1.5 bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 border border-purple-500/25 text-xs h-8"
-            onClick={() => window.open(ADK_WEB_URL, '_blank')}
-          >
-            <ExternalLink className="w-3 h-3" />
-            Open ADK UI
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            {adkWeb.running ? (
+              <>
+                <Button
+                  size="sm"
+                  className="gap-1.5 bg-green-500/20 text-green-300 hover:bg-green-500/30 border border-green-500/25 text-xs h-8"
+                  onClick={() => adkWeb.url && window.open(adkWeb.url, '_blank')}
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  Open
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 border-red-500/20 text-red-400/70 hover:text-red-400 hover:border-red-500/40 text-xs h-8"
+                  onClick={stopAdkWeb}
+                >
+                  <Square className="w-3 h-3" />
+                  Stop
+                </Button>
+              </>
+            ) : (
+              <Button
+                size="sm"
+                className="gap-1.5 bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 border border-purple-500/25 text-xs h-8"
+                onClick={launchAdkWeb}
+                disabled={adkWeb.launching || !backendOnline}
+              >
+                {adkWeb.launching ? (
+                  <><Loader2 className="w-3 h-3 animate-spin" />Launching…</>
+                ) : (
+                  <><Play className="w-3 h-3" />Launch ADK UI</>
+                )}
+              </Button>
+            )}
+          </div>
         </motion.div>
 
         {/* ── Symbol input + pipeline trigger ───────────────── */}
