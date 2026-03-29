@@ -85,7 +85,7 @@ export default function DashboardCanvas() {
       </div>
 
       {/* Main grid + pulse sidebar */}
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_300px]">
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_320px]">
         <div ref={containerRef}>
           {mounted && (
             <ResponsiveGridLayout
@@ -94,7 +94,7 @@ export default function DashboardCanvas() {
               layouts={layouts}
               breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480 }}
               cols={{ lg: 12, md: 10, sm: 6, xs: 4 }}
-              rowHeight={60}
+              rowHeight={58}
               margin={[6, 6]}
               containerPadding={[0, 0]}
               dragConfig={{
