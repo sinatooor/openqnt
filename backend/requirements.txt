@@ -31,6 +31,9 @@ aiohttp
 # Market Data
 yfinance
 
+# News Feeds
+feedparser
+
 # Quantitative Analytics
 quantstats
 statsmodels
