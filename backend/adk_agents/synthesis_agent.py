@@ -102,11 +102,11 @@ class SynthesisAgent(BaseAnalysisAgent):
         Expected context:
         - symbols: list[str] — portfolio symbols
         - agent_outputs: list[dict] — AgentOutput dicts from other agents
-        - model: str — LLM model (default: gemini-2.0-flash)
+        - model: str — LLM model (default: gemini-2.5-flash)
         """
         symbols = context.get("symbols", [])
         agent_outputs = context.get("agent_outputs", [])
-        model = context.get("model", "gemini-2.0-flash")
+        model = context.get("model", "gemini-2.5-flash")
 
         if not agent_outputs:
             return AgentOutput(

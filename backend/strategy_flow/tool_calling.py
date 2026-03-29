@@ -619,7 +619,7 @@ async def generate_with_tool_calling(
 
     import httpx
 
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
     tools_payload = _build_gemini_tools()
 
     async with httpx.AsyncClient(timeout=120.0) as client:

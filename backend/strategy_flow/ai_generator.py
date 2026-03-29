@@ -60,7 +60,7 @@ def _get_tool_calling():
 async def call_gemini(
     messages: List[Dict[str, str]], 
     temperature: float = 0.3,
-    model: str = "gemini-2.0-flash"
+    model: str = "gemini-2.5-flash"
 ) -> str:
     """Call Gemini API."""
     api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")

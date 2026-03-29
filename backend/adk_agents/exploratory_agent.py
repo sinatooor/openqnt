@@ -21,7 +21,7 @@ from .tools.exploration_tools import (
 # Exploratory Agent - Primary exploration capabilities
 exploratory_agent = Agent(
     name="exploratory_agent",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="Autonomous codebase explorer that identifies improvement opportunities",
     instruction="""You are an expert code explorer and analyzer, similar to Microsoft AutoGen's exploratory capabilities.
 
@@ -110,7 +110,7 @@ objective = generate_plan_objective(
 # Specialized analyzer for deep file analysis
 code_analyzer_agent = Agent(
     name="code_analyzer_agent",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="Deep code analysis specialist",
     instruction="""You are a code analysis expert focused on understanding complex code.
 

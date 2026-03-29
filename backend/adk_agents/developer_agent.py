@@ -224,7 +224,7 @@ def run_command(command: str, timeout: int = 60) -> dict:
 # Developer Agent - Code implementation
 developer_agent = Agent(
     name="developer_agent",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="Autonomous code developer that implements improvements",
     instruction="""You are an expert software developer that implements code changes.
 
