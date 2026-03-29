@@ -46,6 +46,7 @@ import {
   KeyOutlined,
   CodeOutlined,
   LineChartOutlined,
+  RobotOutlined,
 } from '@ant-design/icons';
 
 // Lucide icons (same as strategy builder)
@@ -388,6 +389,12 @@ const Dashboard = () => {
                       color="blue"
                     />
                     <QuickActionButton
+                      icon={<RobotOutlined />}
+                      label="ADK Agents"
+                      onClick={() => navigate('/adk')}
+                      color="rose"
+                    />
+                    <QuickActionButton
                       icon={<SafetyCertificateOutlined />}
                       label="Settings"
                       onClick={() => navigate('/settings')}
@@ -649,13 +656,14 @@ const QuickActionButton = ({
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
-  color: 'purple' | 'amber' | 'blue' | 'green';
+  color: 'purple' | 'amber' | 'blue' | 'green' | 'rose';
 }) => {
   const colorMap = {
     purple: 'hover:bg-purple-500/10 hover:border-purple-500/20 text-purple-400',
     amber: 'hover:bg-amber-500/10 hover:border-amber-500/20 text-amber-400',
     blue: 'hover:bg-blue-500/10 hover:border-blue-500/20 text-blue-400',
     green: 'hover:bg-green-500/10 hover:border-green-500/20 text-green-400',
+    rose: 'hover:bg-rose-500/10 hover:border-rose-500/20 text-rose-400',
   };
 
   return (

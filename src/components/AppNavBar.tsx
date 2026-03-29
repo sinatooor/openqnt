@@ -14,7 +14,9 @@ import {
     Briefcase,
     FlaskConical,
     Newspaper,
-    TerminalSquare,
+    ChartCandlestick,
+    BotMessageSquare,
+    Network,
 } from 'lucide-react';
 import {
     Tooltip,
@@ -41,7 +43,9 @@ const NAV_ITEMS: NavItemDef[] = [
     { icon: <LineChart className="w-4 h-4" />, label: 'Executions', path: '/executions' },
     { icon: <FlaskConical className="w-4 h-4" />, label: 'Research', path: '/research' },
     { icon: <Newspaper className="w-4 h-4" />, label: 'News', path: '/news' },
-    { icon: <TerminalSquare className="w-4 h-4" />, label: 'Terminal', path: '/terminal' },
+    { icon: <ChartCandlestick className="w-4 h-4" />, label: 'Terminal', path: '/terminal' },
+    { icon: <BotMessageSquare className="w-4 h-4" />, label: 'AI-Chat', path: '/ai-chat' },
+    { icon: <Network className="w-4 h-4" />, label: 'ADK', path: '/adk' },
     { icon: <Settings className="w-4 h-4" />, label: 'Settings', path: '/settings' },
 ];
 
@@ -75,7 +79,7 @@ export const AppNavBar = () => {
                                     }`}
                                 >
                                     {item.icon}
-                                    <span className="hidden sm:inline">{item.label}</span>
+                                    <span className="hidden sm:inline whitespace-nowrap">{item.label}</span>
                                 </button>
                             </TooltipTrigger>
                             <TooltipContent side="bottom" className="text-xs">
