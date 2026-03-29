@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ComponentType } from 'react';
 import PortfolioSummaryWidget from '../widgets/PortfolioSummaryWidget';
 import MarketSentimentWidget from '../widgets/MarketSentimentWidget';
 import NewsFeedWidget from '../widgets/NewsFeedWidget';
@@ -9,52 +9,51 @@ import IndicesWidget from '../widgets/IndicesWidget';
 import SectorHeatmapWidget from '../widgets/SectorHeatmapWidget';
 
 export interface WidgetDefinition {
-  type: string;
   name: string;
   description: string;
-  component: ReactNode;
+  Component: ComponentType;
 }
 
-export const widgetRegistry: Record<string, Omit<WidgetDefinition, 'type'>> = {
+export const widgetRegistry: Record<string, WidgetDefinition> = {
   'portfolio-summary': {
     name: 'Portfolio Summary',
     description: 'High-level metrics of your accounts and total equity',
-    component: <PortfolioSummaryWidget />,
+    Component: PortfolioSummaryWidget,
   },
   'market-sentiment': {
     name: 'Market Sentiment',
     description: 'Fear & Greed index and NLP sentiment overview',
-    component: <MarketSentimentWidget />,
+    Component: MarketSentimentWidget,
   },
   'news-feed': {
     name: 'News Feed',
     description: 'Latest financial news and major events',
-    component: <NewsFeedWidget />,
+    Component: NewsFeedWidget,
   },
   'economic-calendar': {
     name: 'Economic Calendar',
     description: 'Upcoming macroeconomic events and earnings',
-    component: <EconomicCalendarWidget />,
+    Component: EconomicCalendarWidget,
   },
-  'watchlist': {
+  watchlist: {
     name: 'Watchlist',
     description: 'Monitor your favorite tickers in real time',
-    component: <WatchlistWidget />,
+    Component: WatchlistWidget,
   },
   'top-movers': {
     name: 'Top Movers',
     description: 'Biggest gainers and losers in the market today',
-    component: <TopMoversWidget />,
+    Component: TopMoversWidget,
   },
   indices: {
     name: 'World Indices',
     description: 'Major global index tape with live net and percentage change',
-    component: <IndicesWidget />,
+    Component: IndicesWidget,
   },
   'sector-heatmap': {
-    name: 'Sector Heatmap',
-    description: 'S&P sector breadth heatmap similar to a terminal mosaic',
-    component: <SectorHeatmapWidget />,
+    name: 'DJ30 Heatmap',
+    description: 'Dow Jones 30 treemap weighted by market cap',
+    Component: SectorHeatmapWidget,
   },
 };
 

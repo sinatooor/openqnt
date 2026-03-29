@@ -8,7 +8,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { api } from '../services/api';
-import { useAppModeStore, type AppMode } from '../stores/appModeStore';
+import { useAppModeStore } from '../stores/appModeStore';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // shadcn
@@ -59,9 +59,6 @@ import {
   Clock,
   ExternalLink,
 } from 'lucide-react';
-import { PAGE_CONTENT_CLASS } from '@/components/PageHeader';
-import DashboardCanvas from '../features/dashboard/canvas/DashboardCanvas';
-
 const Dashboard = () => {
   const { user, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
@@ -72,7 +69,7 @@ const Dashboard = () => {
   const [portfolios, setPortfolios] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [viewMode, setViewMode] = useState<'classic' | 'modular'>('modular');
+  
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -170,7 +167,7 @@ const Dashboard = () => {
           </AnimatePresence>
 
           {/* ─── Main Content ─── */}
-          <div className={`p-6 ${PAGE_CONTENT_CLASS} space-y-6`}>
+          <div className="w-full max-w-none space-y-6 p-4 md:p-6">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="flex items-center gap-2">
                 <DashboardOutlined className="text-primary text-lg" />
@@ -226,41 +223,6 @@ const Dashboard = () => {
                 </button>
               </div>
             </div>
-
-            {/* ─── View Toggle ─── */}
-            <div className="flex justify-end -mt-2">
-              <div className="flex gap-1 p-1 bg-white/5 rounded-lg border border-white/10">
-                <button
-                  onClick={() => setViewMode('classic')}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'classic' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-white'}`}
-                >
-                  Classic View
-                </button>
-                <button
-                  onClick={() => setViewMode('modular')}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'modular' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-white'}`}
-                >
-                  Modular View
-                </button>
-              </div>
-            </div>
-
-            {viewMode === 'modular' ? (
-              <div className="space-y-2">
-                <div className="terminal-fkeybar flex items-center gap-1 overflow-x-auto px-2 py-1 no-scrollbar">
-                  {['SPX', 'NDX', 'DJI', 'DAX', 'VIX', 'US10Y', 'GOLD', 'OIL', 'BTC'].map((sym) => (
-                    <span
-                      key={sym}
-                      className="rounded-sm border border-zinc-800 bg-black px-2 py-0.5 text-[10px] text-zinc-400"
-                    >
-                      {sym}
-                    </span>
-                  ))}
-                </div>
-                <DashboardCanvas />
-              </div>
-            ) : (
-              <>
 
             {/* ─── Stats Row ─── */}
             <motion.div
@@ -592,8 +554,6 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
             </motion.div>
-              </>
-            )}
 
           </div>
 
