@@ -92,11 +92,12 @@ DEEPSEEK_MODEL = "deepseek-chat"       # Fast, cheaper - good for code generatio
 # ============================================================
 # Gemini Model Configuration  
 # ============================================================
-# Available models (verified 2026-01-28):
-# - gemini-2.5-pro (best capability)
-# - gemini-2.5-flash (fast)
-# - gemini-2.0-flash (stable)
-# - gemini-3-pro-preview (matches original edge function)
+# Available models (updated 2026-03-29):
+# - gemini-3.1-pro-preview (latest, best capability)
+# - gemini-3.1-flash-lite-preview (latest, lightweight)
+# - gemini-3-flash-preview (fast preview)
+# - gemini-2.5-pro (stable, strong capability)
+# - gemini-2.5-flash (stable, fast)
 GEMINI_MODEL = "gemini-2.5-pro"  # Best capability with large context window
 
 # Primary LLM Provider: "gemini" or "deepseek"
@@ -1262,13 +1263,12 @@ async def call_gemini(
             elif role == "assistant":
                 full_prompt += f"Model: {content}\n\n"
         
-        # Define model fallback chain (verified available 2026-01-28)
-        # Prioritize user-requested model, then fall back to working models
         fallback_models = [
-            target_model,  # Primary requested model
-            "gemini-2.5-pro",  # Best capability, large context
-            "gemini-2.5-flash",  # Fast fallback  
-            "gemini-2.0-flash",  # Stable fallback
+            target_model,
+            "gemini-2.5-pro",
+            "gemini-2.5-flash",
+            "gemini-3-flash-preview",
+            "gemini-3.1-flash-lite-preview",
         ]
         
         # Remove duplicates while preserving order

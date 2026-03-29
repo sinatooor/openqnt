@@ -76,7 +76,7 @@ def _summarize_output(output: dict) -> dict:
 class AgentRunRequest(BaseModel):
     agent_type: str          # "news_analyst", "macro_analyst", "social_monitor"
     context: dict[str, Any]  # Agent-specific context (symbols, events, etc.)
-    model: Optional[str] = "gemini-2.0-flash"  # LLM model override
+    model: Optional[str] = "gemini-2.5-flash"  # LLM model override
 
 
 class AgentRunResponse(BaseModel):
@@ -151,7 +151,7 @@ class PipelineRequest(BaseModel):
     social_events: list[dict[str, Any]] = []
     technical_data: dict[str, Any] = {}
     thresholds: dict[str, Any] = {}
-    model: Optional[str] = "gemini-2.0-flash"
+    model: Optional[str] = "gemini-2.5-flash"
 
 
 class PipelineResponse(BaseModel):
@@ -176,7 +176,7 @@ async def run_full_pipeline(req: PipelineRequest):
     import asyncio
 
     agent_outputs: dict[str, dict] = {}
-    model = req.model or "gemini-2.0-flash"
+    model = req.model or "gemini-2.5-flash"
 
     # Run specialist agents in parallel
     tasks = {}

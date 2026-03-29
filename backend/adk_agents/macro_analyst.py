@@ -92,11 +92,11 @@ class MacroAnalystAgent(BaseAnalysisAgent):
         Expected context:
         - symbols: list[str] — portfolio symbols
         - macro_events: list[dict] — recent DataEvents (type=macro)
-        - model: str — LLM model (default: gemini-2.0-flash)
+        - model: str — LLM model (default: gemini-2.5-flash)
         """
         symbols = context.get("symbols", [])
         macro_events = context.get("macro_events", [])
-        model = context.get("model", "gemini-2.0-flash")
+        model = context.get("model", "gemini-2.5-flash")
 
         if not macro_events:
             return AgentOutput(

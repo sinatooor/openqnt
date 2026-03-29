@@ -18,7 +18,7 @@ async def _google_search(query: str) -> dict:
     if not api_key:
         return {"error": "GEMINI_API_KEY not configured"}
     
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
     
     payload = {
         "contents": [{"role": "user", "parts": [{"text": query}]}],

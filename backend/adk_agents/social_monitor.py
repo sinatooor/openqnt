@@ -97,11 +97,11 @@ class SocialMonitorAgent(BaseAnalysisAgent):
         Expected context:
         - symbols: list[str] — portfolio symbols
         - social_events: list[dict] — recent DataEvents (type=social)
-        - model: str — LLM model (default: gemini-2.0-flash)
+        - model: str — LLM model (default: gemini-2.5-flash)
         """
         symbols = context.get("symbols", [])
         social_events = context.get("social_events", [])
-        model = context.get("model", "gemini-2.0-flash")
+        model = context.get("model", "gemini-2.5-flash")
 
         if not social_events:
             return AgentOutput(

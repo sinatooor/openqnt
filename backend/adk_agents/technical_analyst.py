@@ -111,7 +111,7 @@ class TechnicalAnalysisAgent(BaseAnalysisAgent):
         symbols = context.get("symbols", [])
         technical_data = context.get("technical_data", {})
         thresholds = context.get("thresholds", {})
-        model = context.get("model", "gemini-2.0-flash")
+        model = context.get("model", "gemini-2.5-flash")
 
         if not technical_data:
             return AgentOutput(

@@ -217,26 +217,36 @@ async def _gemini_analyze(headlines: list[str], query: str, api_key: str) -> Opt
         ' "market_impact": "Expected impact on portfolios"}'
     )
 
-    gemini_url = (
-        "https://generativelanguage.googleapis.com/v1beta/models/"
-        f"gemini-2.0-flash:generateContent?key={api_key}"
-    )
+    models = [
+        "gemini-2.5-flash",
+        "gemini-3-flash-preview",
+        "gemini-3.1-flash-lite-preview",
+    ]
     payload = {
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
         "generationConfig": {"temperature": 0.3, "maxOutputTokens": 1024},
     }
 
     try:
+        resp = None
         async with httpx.AsyncClient(timeout=30.0) as client:
-            for attempt in range(2):
-                resp = await client.post(gemini_url, json=payload)
-                if resp.status_code == 429:
-                    await asyncio.sleep(2 ** attempt * 2)
-                    continue
-                break
+            for model in models:
+                gemini_url = (
+                    "https://generativelanguage.googleapis.com/v1beta/models/"
+                    f"{model}:generateContent?key={api_key}"
+                )
+                for attempt in range(2):
+                    resp = await client.post(gemini_url, json=payload)
+                    if resp.status_code == 429:
+                        await asyncio.sleep(2 ** attempt * 2)
+                        continue
+                    break
+                if resp is not None and resp.status_code == 200:
+                    break
+                logger.warning("Model %s returned %d, trying next…", model, resp.status_code if resp else 0)
 
-            if resp.status_code != 200:
-                logger.warning("Gemini analysis unavailable (HTTP %d)", resp.status_code)
+            if resp is None or resp.status_code != 200:
+                logger.warning("Gemini analysis unavailable (HTTP %s)", resp.status_code if resp else "?")
                 return None
 
             data = resp.json()

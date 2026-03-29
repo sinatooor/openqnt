@@ -19,7 +19,7 @@ async def _google_search(query: str, num_results: int = 5) -> list[dict]:
         return [{"error": "GEMINI_API_KEY not configured"}]
     
     # Use Gemini with Google Search grounding
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
     
     payload = {
         "contents": [{

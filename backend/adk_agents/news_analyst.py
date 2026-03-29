@@ -92,11 +92,11 @@ class NewsAnalystAgent(BaseAnalysisAgent):
         Expected context:
         - symbols: list[str] — portfolio symbols to monitor
         - news_events: list[dict] — recent DataEvents (type=news)
-        - model: str — LLM model to use (default: gemini-2.0-flash)
+        - model: str — LLM model to use (default: gemini-2.5-flash)
         """
         symbols = context.get("symbols", [])
         news_events = context.get("news_events", [])
-        model = context.get("model", "gemini-2.0-flash")
+        model = context.get("model", "gemini-2.5-flash")
 
         if not news_events:
             return AgentOutput(
