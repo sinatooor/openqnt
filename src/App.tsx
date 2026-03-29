@@ -17,7 +17,7 @@ import Portfolio from "./pages/Portfolio";
 import News from "./pages/News";
 import Terminal from "./pages/Terminal";
 import AiChat from "./pages/AiChat";
-import AdkAgents from "./pages/AdkAgents";
+import Agents from "./pages/Agents";
 import NotFound from "./pages/NotFound";
 import Onboarding from "./pages/Onboarding";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -110,7 +110,7 @@ const AppRoutes = () => {
         <Route path="/terminal" element={<Terminal />} />
         <Route path="/ai-chat" element={<AiChat />} />
         <Route path="/agent" element={<AgentConfig />} />
-        <Route path="/adk" element={<AdkAgents />} />
+        <Route path="/agents" element={<Agents />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/portfolio" element={<Portfolio />} />
       </Route>

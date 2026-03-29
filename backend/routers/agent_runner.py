@@ -4,11 +4,17 @@ Agent Runner API — FastAPI endpoint for triggering analysis agents.
 This endpoint allows the orchestrator to invoke specialized agents
 (news_analyst, macro_analyst, social_monitor) with context data
 and receive standardized AgentOutput responses.
+
+Also provides a run-history log so the frontend Agents page can
+display past runs, statuses, and outputs.
 """
 
+from collections import deque
+from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Any, Optional
+import uuid
 
 from adk_agents.news_analyst import news_analyst
 from adk_agents.macro_analyst import macro_analyst
@@ -27,6 +33,43 @@ AGENT_REGISTRY = {
     "synthesis": synthesis_agent,
     "technical_analyst": technical_analyst,
 }
+
+# ── In-memory run log (last 200 runs) ────────────────────────
+MAX_LOG_SIZE = 200
+_run_log: deque[dict] = deque(maxlen=MAX_LOG_SIZE)
+
+
+def _log_run(
+    run_id: str,
+    agent_type: str,
+    status: str,
+    duration_ms: int = 0,
+    output: dict | None = None,
+    error: str | None = None,
+    context_summary: dict | None = None,
+):
+    _run_log.appendleft({
+        "id": run_id,
+        "agent_type": agent_type,
+        "status": status,
+        "duration_ms": duration_ms,
+        "output_summary": _summarize_output(output) if output else None,
+        "error": error,
+        "context_summary": context_summary,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+
+
+def _summarize_output(output: dict) -> dict:
+    """Keep only the key fields so the log stays lightweight."""
+    return {
+        "overall_signal": output.get("overall_signal"),
+        "overall_confidence": output.get("overall_confidence"),
+        "summary": (output.get("summary") or "")[:300],
+        "findings_count": len(output.get("findings", [])),
+        "recommendations_count": len(output.get("recommendations", [])),
+        "tokens_used": output.get("tokens_used", 0),
+    }
 
 # ── Request/Response Models ───────────────────────────────────
 
@@ -58,33 +101,31 @@ async def run_agent(req: AgentRunRequest):
             detail=f"Unknown agent type: {req.agent_type}. Available: {list(AGENT_REGISTRY.keys())}"
         )
 
-    # Inject model preference into context
+    run_id = str(uuid.uuid4())[:8]
     context = {**req.context}
     if req.model:
         context["model"] = req.model
 
+    context_summary = {"symbols": context.get("symbols", []), "model": context.get("model")}
+    _log_run(run_id, req.agent_type, "running", context_summary=context_summary)
+
     try:
         output = await agent.run(context)
+        output_dict = output.to_dict()
 
         if output.error:
-            return AgentRunResponse(
-                success=False,
-                agent_type=req.agent_type,
-                output=output.to_dict(),
-                error=output.error,
-            )
+            _log_run(run_id, req.agent_type, "error",
+                     duration_ms=output.duration_ms, output=output_dict, error=output.error)
+            return AgentRunResponse(success=False, agent_type=req.agent_type,
+                                   output=output_dict, error=output.error)
 
-        return AgentRunResponse(
-            success=True,
-            agent_type=req.agent_type,
-            output=output.to_dict(),
-        )
+        _log_run(run_id, req.agent_type, "success",
+                 duration_ms=output.duration_ms, output=output_dict)
+        return AgentRunResponse(success=True, agent_type=req.agent_type, output=output_dict)
+
     except Exception as e:
-        return AgentRunResponse(
-            success=False,
-            agent_type=req.agent_type,
-            error=str(e),
-        )
+        _log_run(run_id, req.agent_type, "error", error=str(e))
+        return AgentRunResponse(success=False, agent_type=req.agent_type, error=str(e))
 
 
 @router.get("/types")
@@ -214,3 +255,36 @@ async def run_full_pipeline(req: PipelineRequest):
             agent_outputs=agent_outputs,
             error=f"Synthesis failed: {e}",
         )
+
+
+# ── Run History / Logs ────────────────────────────────────────
+
+@router.get("/logs")
+async def get_agent_logs(limit: int = 50):
+    """Return recent agent run logs for the monitoring UI."""
+    return {"logs": list(_run_log)[:limit]}
+
+
+@router.get("/logs/stats")
+async def get_agent_log_stats():
+    """Aggregate stats across recent runs."""
+    logs = list(_run_log)
+    total = len(logs)
+    by_agent: dict[str, dict] = {}
+    for entry in logs:
+        agent = entry["agent_type"]
+        if agent not in by_agent:
+            by_agent[agent] = {"total": 0, "success": 0, "error": 0, "running": 0, "avg_duration_ms": 0, "total_duration": 0}
+        by_agent[agent]["total"] += 1
+        by_agent[agent][entry["status"]] = by_agent[agent].get(entry["status"], 0) + 1
+        by_agent[agent]["total_duration"] += entry.get("duration_ms", 0)
+
+    for agent, stats in by_agent.items():
+        completed = stats["success"] + stats["error"]
+        stats["avg_duration_ms"] = round(stats["total_duration"] / completed) if completed else 0
+        del stats["total_duration"]
+
+    return {
+        "total_runs": total,
+        "by_agent": by_agent,
+    }

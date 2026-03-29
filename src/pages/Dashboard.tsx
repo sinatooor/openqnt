@@ -390,8 +390,8 @@ const Dashboard = () => {
                     />
                     <QuickActionButton
                       icon={<RobotOutlined />}
-                      label="ADK Agents"
-                      onClick={() => navigate('/adk')}
+                      label="Agents"
+                      onClick={() => navigate('/agents')}
                       color="rose"
                     />
                     <QuickActionButton
