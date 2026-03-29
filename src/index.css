@@ -233,6 +233,78 @@ All colors MUST be HSL.
     border-radius: 9999px;
   }
 
+  /* react-grid-layout overrides for terminal theme */
+  .dashboard-grid .react-grid-item {
+    transition: none;
+  }
+
+  .dashboard-grid .react-grid-item.react-draggable-dragging {
+    z-index: 100;
+    opacity: 0.92;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 140, 0, 0.25);
+  }
+
+  .dashboard-grid .react-grid-item.resizing {
+    z-index: 50;
+    opacity: 0.95;
+  }
+
+  .dashboard-grid .react-grid-placeholder {
+    background: rgba(255, 140, 0, 0.08) !important;
+    border: 1px dashed rgba(255, 140, 0, 0.35) !important;
+    border-radius: 2px;
+    opacity: 1 !important;
+  }
+
+  .dashboard-grid .react-resizable-handle {
+    background: none;
+  }
+
+  .dashboard-grid .react-resizable-handle::after {
+    border-right: 2px solid rgba(255, 140, 0, 0.25);
+    border-bottom: 2px solid rgba(255, 140, 0, 0.25);
+  }
+
+  .dashboard-grid .react-resizable-handle:hover::after {
+    border-color: rgba(255, 140, 0, 0.6);
+  }
+
+  .dashboard-grid .react-resizable-handle-se {
+    bottom: 2px;
+    right: 2px;
+    cursor: se-resize;
+  }
+
+  .dashboard-grid .react-resizable-handle-sw {
+    bottom: 2px;
+    left: 2px;
+    cursor: sw-resize;
+  }
+
+  .dashboard-grid .react-resizable-handle-ne {
+    top: 2px;
+    right: 2px;
+    cursor: ne-resize;
+  }
+
+  .dashboard-grid .react-resizable-handle-nw {
+    top: 2px;
+    left: 2px;
+    cursor: nw-resize;
+  }
+
+  .dashboard-grid .react-resizable-handle-e,
+  .dashboard-grid .react-resizable-handle-w {
+    width: 6px;
+    cursor: ew-resize;
+  }
+
+  .dashboard-grid .react-resizable-handle-n,
+  .dashboard-grid .react-resizable-handle-s {
+    height: 6px;
+    cursor: ns-resize;
+  }
+
   /* Professional shadows */
   .shadow-trading {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 1px rgba(0, 0, 0, 0.5);

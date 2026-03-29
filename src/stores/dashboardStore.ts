@@ -1,63 +1,68 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-
-export interface WidgetLayout {
-  id: string;
-  type: string;
-  w: number;
-  h: number;
-  x: number; // for grid layouts
-  y: number; // for grid layouts
-}
+import type { Layout } from 'react-grid-layout';
 
 export interface DashboardState {
-  widgets: WidgetLayout[];
+  layout: Layout[];
+  widgetTypes: Record<string, string>; // maps layout item "i" → widget type id
   addWidget: (type: string) => void;
   removeWidget: (id: string) => void;
-  reorderWidgets: (newWidgets: WidgetLayout[]) => void;
+  updateLayout: (layout: Layout[]) => void;
   resetToDefault: () => void;
 }
 
-const defaultWidgets: WidgetLayout[] = [
-  { id: '1', type: 'indices', w: 6, h: 4, x: 0, y: 0 },
-  { id: '2', type: 'sector-heatmap', w: 6, h: 4, x: 6, y: 0 },
-  { id: '3', type: 'top-movers', w: 4, h: 3, x: 0, y: 4 },
-  { id: '4', type: 'market-sentiment', w: 4, h: 3, x: 4, y: 4 },
-  { id: '5', type: 'portfolio-summary', w: 4, h: 3, x: 8, y: 4 },
-  { id: '6', type: 'watchlist', w: 6, h: 4, x: 0, y: 7 },
-  { id: '7', type: 'news-feed', w: 6, h: 4, x: 6, y: 7 },
-  { id: '8', type: 'economic-calendar', w: 12, h: 3, x: 0, y: 11 },
+const defaultLayout: Layout[] = [
+  { i: '1', x: 0, y: 0, w: 12, h: 6, minW: 4, minH: 3 },
+  { i: '2', x: 0, y: 6, w: 6, h: 5, minW: 3, minH: 3 },
+  { i: '3', x: 6, y: 6, w: 6, h: 5, minW: 3, minH: 3 },
+  { i: '4', x: 0, y: 11, w: 6, h: 5, minW: 3, minH: 3 },
+  { i: '5', x: 6, y: 11, w: 6, h: 5, minW: 3, minH: 3 },
+  { i: '6', x: 0, y: 16, w: 4, h: 4, minW: 2, minH: 3 },
+  { i: '7', x: 4, y: 16, w: 4, h: 4, minW: 2, minH: 3 },
+  { i: '8', x: 8, y: 16, w: 4, h: 4, minW: 2, minH: 3 },
 ];
+
+const defaultWidgetTypes: Record<string, string> = {
+  '1': 'sector-heatmap',
+  '2': 'indices',
+  '3': 'top-movers',
+  '4': 'watchlist',
+  '5': 'news-feed',
+  '6': 'market-sentiment',
+  '7': 'portfolio-summary',
+  '8': 'economic-calendar',
+};
 
 export const useDashboardStore = create<DashboardState>()(
   persist(
     (set) => ({
-      widgets: defaultWidgets,
+      layout: defaultLayout,
+      widgetTypes: defaultWidgetTypes,
       addWidget: (type) =>
         set((state) => {
           const newId = Date.now().toString();
           return {
-            widgets: [
-              ...state.widgets,
-              { id: newId, type, w: 6, h: 2, x: 0, y: 100 }, // appended to bottom roughly
+            layout: [
+              ...state.layout,
+              { i: newId, x: 0, y: Infinity, w: 6, h: 4, minW: 2, minH: 3 },
             ],
+            widgetTypes: { ...state.widgetTypes, [newId]: type },
           };
         }),
       removeWidget: (id) =>
-        set((state) => ({
-          widgets: state.widgets.filter((w) => w.id !== id),
-        })),
-      reorderWidgets: (newWidgets) =>
-        set({
-          widgets: newWidgets,
+        set((state) => {
+          const { [id]: _, ...rest } = state.widgetTypes;
+          return {
+            layout: state.layout.filter((l) => l.i !== id),
+            widgetTypes: rest,
+          };
         }),
+      updateLayout: (layout) => set({ layout }),
       resetToDefault: () =>
-        set({
-          widgets: defaultWidgets,
-        }),
+        set({ layout: defaultLayout, widgetTypes: defaultWidgetTypes }),
     }),
     {
-      name: 'fyer-dashboard-layout',
-    }
-  )
+      name: 'fyer-dashboard-layout-v2',
+    },
+  ),
 );

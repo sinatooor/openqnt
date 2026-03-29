@@ -15,6 +15,7 @@ import Research from "./pages/Research";
 import Settings from "./pages/Settings";
 import Portfolio from "./pages/Portfolio";
 import News from "./pages/News";
+import Terminal from "./pages/Terminal";
 import NotFound from "./pages/NotFound";
 import Onboarding from "./pages/Onboarding";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -104,6 +105,7 @@ const AppRoutes = () => {
         <Route path="/execution/:id" element={<ExecutionDetails />} />
         <Route path="/research" element={<Research />} />
         <Route path="/news" element={<News />} />
+        <Route path="/terminal" element={<Terminal />} />
         <Route path="/agent" element={<AgentConfig />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/portfolio" element={<Portfolio />} />
