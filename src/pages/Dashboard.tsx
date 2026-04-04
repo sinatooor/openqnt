@@ -59,6 +59,10 @@ import {
   Layers,
   Clock,
   ExternalLink,
+  Newspaper,
+  ShieldCheck,
+  Check,
+  X,
 } from 'lucide-react';
 const Dashboard = () => {
   const { user, isAuthenticated } = useAuthStore();
@@ -68,9 +72,10 @@ const Dashboard = () => {
   const [strategies, setStrategies] = useState<any[]>([]);
   const [recentRuns, setRecentRuns] = useState<any[]>([]);
   const [portfolios, setPortfolios] = useState<any[]>([]);
+  const [newsEvents, setNewsEvents] = useState<any[]>([]);
+  const [pendingApprovals, setPendingApprovals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -84,11 +89,13 @@ const Dashboard = () => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     try {
-      const [statsData, strategiesData, runsData, portfolioData] = await Promise.allSettled([
+      const [statsData, strategiesData, runsData, portfolioData, newsData, approvalsData] = await Promise.allSettled([
         api.getExecutionStats(),
         api.listStrategies(),
         api.listExecutions({ page: 1 }),
         api.getPortfolios(),
+        api.listDataEvents({ limit: 10 }),
+        api.listPendingApprovals(),
       ]);
       if (statsData.status === 'fulfilled') setStats(statsData.value?.stats);
       if (strategiesData.status === 'fulfilled')
@@ -98,6 +105,10 @@ const Dashboard = () => {
       if (portfolioData.status === 'fulfilled') {
         setPortfolios(portfolioData.value?.portfolios ?? []);
       }
+      if (newsData.status === 'fulfilled')
+        setNewsEvents(newsData.value?.events ?? newsData.value?.dataEvents ?? []);
+      if (approvalsData.status === 'fulfilled')
+        setPendingApprovals(approvalsData.value?.approvals ?? []);
     } catch {
       /* silent */
     }
@@ -472,6 +483,140 @@ const Dashboard = () => {
                     )}
                   </CardContent>
                 </Card>
+
+                {/* News Feed */}
+                <Card className="bg-card/60 backdrop-blur-sm border-border/30 shadow-trading">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-foreground">
+                      <Newspaper className="w-4 h-4 text-sky-400" />
+                      News Feed
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {newsEvents.length === 0 ? (
+                      <p className="text-muted-foreground text-xs">
+                        No recent news events. Configure data sources to start ingesting market news.
+                      </p>
+                    ) : (
+                      <ScrollArea className="h-[280px]">
+                        <div className="space-y-2">
+                          {newsEvents.slice(0, 8).map((ev: any, i: number) => (
+                            <motion.div
+                              key={ev.id ?? i}
+                              initial={{ opacity: 0, x: -5 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: i * 0.03 }}
+                              className="px-2 py-2 rounded-md bg-white/[0.03] hover:bg-white/[0.06] transition-colors cursor-pointer group"
+                              onClick={() => ev.url && window.open(ev.url, '_blank')}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <p className="text-foreground text-xs font-medium leading-snug line-clamp-2 group-hover:text-white transition-colors">
+                                  {ev.headline}
+                                </p>
+                                {ev.symbol && (
+                                  <Tag
+                                    color="blue"
+                                    className="text-[10px] leading-tight !mr-0 shrink-0"
+                                    bordered={false}
+                                  >
+                                    {ev.symbol}
+                                  </Tag>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[10px] text-muted-foreground">
+                                  {ev.publishedAt ? new Date(ev.publishedAt).toLocaleDateString([], { month: 'short', day: 'numeric' }) : ''}
+                                </span>
+                                {ev.sentiment && (
+                                  <Badge
+                                    className="text-[9px] px-1.5 py-0"
+                                    style={{
+                                      backgroundColor: ev.sentiment === 'bullish' ? 'rgba(34,197,94,0.15)' : ev.sentiment === 'bearish' ? 'rgba(239,68,68,0.15)' : 'rgba(148,163,184,0.15)',
+                                      color: ev.sentiment === 'bullish' ? '#22c55e' : ev.sentiment === 'bearish' ? '#ef4444' : '#94a3b8',
+                                      borderColor: 'transparent',
+                                    }}
+                                  >
+                                    {ev.sentiment}
+                                  </Badge>
+                                )}
+                                {ev.impact && ev.impact !== 'none' && (
+                                  <Badge
+                                    className="text-[9px] px-1.5 py-0"
+                                    style={{
+                                      backgroundColor: ev.impact === 'critical' || ev.impact === 'high' ? 'rgba(245,158,11,0.15)' : 'rgba(148,163,184,0.1)',
+                                      color: ev.impact === 'critical' || ev.impact === 'high' ? '#f59e0b' : '#94a3b8',
+                                      borderColor: 'transparent',
+                                    }}
+                                  >
+                                    {ev.impact}
+                                  </Badge>
+                                )}
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Approval Queue */}
+                {pendingApprovals.length > 0 && (
+                  <Card className="bg-card/60 backdrop-blur-sm border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.08)]">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="flex items-center gap-2 text-foreground">
+                        <ShieldCheck className="w-4 h-4 text-amber-400" />
+                        Pending Approvals
+                        <Badge className="text-[10px] ml-auto" style={{ backgroundColor: 'rgba(245,158,11,0.15)', color: '#f59e0b', borderColor: 'transparent' }}>
+                          {pendingApprovals.length}
+                        </Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {pendingApprovals.slice(0, 5).map((approval: any) => (
+                        <div
+                          key={approval.id}
+                          className="px-3 py-2.5 rounded-lg bg-amber-500/5 border border-amber-500/10"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <p className="text-foreground text-xs font-medium">
+                                {approval.message || 'Approval Required'}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground">
+                                Node: {approval.nodeId?.slice(0, 8)}… • {approval.createdAt ? new Date(approval.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await api.approveRequest(approval.id);
+                                    setPendingApprovals(prev => prev.filter(a => a.id !== approval.id));
+                                  } catch { /* silent */ }
+                                }}
+                                className="p-1.5 rounded-md bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await api.rejectRequest(approval.id);
+                                    setPendingApprovals(prev => prev.filter(a => a.id !== approval.id));
+                                  } catch { /* silent */ }
+                                }}
+                                className="p-1.5 rounded-md bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
               </motion.div>
             </div>
 

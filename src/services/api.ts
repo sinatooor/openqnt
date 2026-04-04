@@ -295,6 +295,36 @@ class ApiClient {
     async runMCPT(params: { symbol: string, startDate: string, endDate: string, timeframe?: string, permutations?: number }) {
         return this.post<any>('/api/research/mcpt', params);
     }
+
+    // Data Events (News Feed)
+    async listDataEvents(params?: { type?: string; symbol?: string; impact?: string; limit?: number; offset?: number }) {
+        const query = new URLSearchParams();
+        if (params?.type) query.set('type', params.type);
+        if (params?.symbol) query.set('symbol', params.symbol);
+        if (params?.impact) query.set('impact', params.impact);
+        if (params?.limit) query.set('limit', String(params.limit));
+        if (params?.offset) query.set('offset', String(params.offset));
+        return this.get<any>(`/api/data-events?${query}`);
+    }
+
+    // Approvals (HITL Queue)
+    async listPendingApprovals() {
+        return this.get<any>('/api/approvals/pending');
+    }
+
+    async approveRequest(approvalId: string, notes?: string) {
+        return this.post<any>(`/api/approvals/${approvalId}/approve`, { notes });
+    }
+
+    async rejectRequest(approvalId: string, notes?: string) {
+        return this.post<any>(`/api/approvals/${approvalId}/reject`, { notes });
+    }
+
+    async getApprovalHistory(params?: { page?: number }) {
+        const query = new URLSearchParams();
+        if (params?.page) query.set('page', String(params.page));
+        return this.get<any>(`/api/approvals/history?${query}`);
+    }
 }
 
 // Export singleton instance

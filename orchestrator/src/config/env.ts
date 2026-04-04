@@ -38,6 +38,9 @@ const envSchema = z.object({
     TWILIO_PHONE_NUMBER: z.string().optional(),
     SENDGRID_API_KEY: z.string().optional(),
     EMAIL_FROM_ADDRESS: z.string().default('noreply@strategyflow.app'),
+
+    // External Data APIs
+    FMP_API_KEY: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
