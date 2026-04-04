@@ -325,7 +325,82 @@ class ApiClient {
         if (params?.page) query.set('page', String(params.page));
         return this.get<any>(`/api/approvals/history?${query}`);
     }
+
+    // ── AI Assistant (Global Chat) ─────────────────────────────
+
+    /**
+     * Stream a chat message to the AI assistant via SSE.
+     * Returns a ReadableStream of parsed SSE events.
+     */
+    streamAiChat(
+        message: string,
+        history: { role: string; content: string }[],
+        context?: Record<string, any>,
+        onEvent?: (event: AiChatEvent) => void,
+        signal?: AbortSignal,
+    ): { cancel: () => void } {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+        const controller = new AbortController();
+        const combinedSignal = signal || controller.signal;
+
+        (async () => {
+            try {
+                const response = await fetch(`${backendUrl}/api/ai-assistant/chat/stream`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message, history, context }),
+                    signal: combinedSignal,
+                });
+
+                if (!response.ok) {
+                    onEvent?.({ type: 'error', message: `HTTP ${response.status}` });
+                    return;
+                }
+
+                const reader = response.body?.getReader();
+                if (!reader) return;
+
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const event = JSON.parse(line.slice(6)) as AiChatEvent;
+                                onEvent?.(event);
+                            } catch { /* skip malformed events */ }
+                        }
+                    }
+                }
+            } catch (err: any) {
+                if (err.name !== 'AbortError') {
+                    onEvent?.({ type: 'error', message: err.message || 'Stream failed' });
+                }
+            }
+        })();
+
+        return { cancel: () => controller.abort() };
+    }
 }
+
+// AI Chat SSE event types
+export type AiChatEvent =
+    | { type: 'text_delta'; content: string }
+    | { type: 'tool_call'; tool: string; args: Record<string, any> }
+    | { type: 'tool_result'; tool: string; result: Record<string, any> }
+    | { type: 'strategy_node'; node: any; index: number; total: number }
+    | { type: 'strategy_edges'; edges: any[] }
+    | { type: 'action'; action: string; data: Record<string, any> }
+    | { type: 'done' }
+    | { type: 'error'; message: string };
 
 // Export singleton instance
 export const api = new ApiClient();

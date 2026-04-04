@@ -251,6 +251,9 @@ app.include_router(news.router)
 from routers.adk_web import router as adk_web_router
 app.include_router(adk_web_router)
 
+from routers.ai_assistant import router as ai_assistant_router
+app.include_router(ai_assistant_router)
+
 
 # ============================================================
 # Root-level health and custom-blocks endpoints
