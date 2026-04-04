@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth.js';
 import { prisma } from '../../config/database.js';
 import { logger } from '../../utils/logger.js';
+import { resumeExecution } from '../../services/executionService.js';
 
 const router = Router();
 
@@ -157,14 +158,23 @@ router.post('/:id/approve', async (req: Request, res: Response) => {
             },
         });
 
-        // TODO: Resume the paused execution from the HITL node
-        // This will require the execution service to load the paused state
-        // from Redis and continue evaluating from the HITL node onwards.
-        // For now, we mark the execution as successful (can be enhanced later).
-        await prisma.executionRun.update({
-            where: { id: approval.executionRunId },
-            data: { status: 'success', finishedAt: new Date() },
-        });
+        // Resume the paused execution from the HITL node
+        // This loads saved state from Redis and continues evaluating downstream nodes.
+        try {
+            await resumeExecution(approval.executionRunId);
+        } catch (resumeErr) {
+            logger.error({
+                approvalId: approval.id,
+                executionRunId: approval.executionRunId,
+                error: resumeErr,
+            }, 'Failed to resume execution after approval');
+
+            // Mark execution as error if resume fails
+            await prisma.executionRun.update({
+                where: { id: approval.executionRunId },
+                data: { status: 'error', finishedAt: new Date() },
+            });
+        }
 
         logger.info({
             approvalId: approval.id,

@@ -159,8 +159,11 @@ export class FlowInterpreter {
         return this.resolveValue(outputs, sources[0]);
     }
 
-    async evaluate(ctx: EvaluationContext): Promise<EvaluationResult> {
-        const outputs: Record<string, Record<string, any>> = {};
+    async evaluate(
+        ctx: EvaluationContext,
+        preSeededOutputs?: Record<string, Record<string, any>>,
+    ): Promise<EvaluationResult> {
+        const outputs: Record<string, Record<string, any>> = { ...(preSeededOutputs ?? {}) };
         const orderIntents: OrderIntent[] = [];
         const nodeLogs: NodeLog[] = [];
         let nodesExecuted = 0;

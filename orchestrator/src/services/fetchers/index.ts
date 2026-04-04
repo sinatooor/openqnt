@@ -27,15 +27,17 @@ import { fetchNews } from './newsFetcher.js';
 import { fetchMacro } from './macroFetcher.js';
 import { fetchSocial } from './socialFetcher.js';
 import { fetchInsider } from './insiderFetcher.js';
+import { fetchEarnings } from './earningsFetcher.js';
+import { fetchFilings } from './filingsFetcher.js';
 
 const fetcherRegistry: Partial<Record<DataSourceType, FetcherFn>> = {
     news: fetchNews,
     macro: fetchMacro,
     social: fetchSocial,
     insider: fetchInsider,
+    earnings: fetchEarnings,
+    filing: fetchFilings,
     // Future fetchers:
-    // earnings: fetchEarnings,
-    // filing: fetchFilings,
     // congress: fetchCongress,
     // whale_13f: fetchWhale13F,
     // analyst: fetchAnalyst,
