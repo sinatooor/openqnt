@@ -9,7 +9,7 @@ FROM continuumio/miniconda3:latest AS base
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies (including TA-Lib C library)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     gcc \
@@ -18,7 +18,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libssl-dev \
     curl \
     git \
+    wget \
     && rm -rf /var/lib/apt/lists/*
+
+# Install TA-Lib C library from source
+RUN wget -q https://github.com/TA-Lib/ta-lib/releases/download/v0.6.4/ta-lib-0.6.4-src.tar.gz \
+    && tar -xzf ta-lib-0.6.4-src.tar.gz \
+    && cd ta-lib-0.6.4 \
+    && ./configure --prefix=/usr \
+    && make -j$(nproc) \
+    && make install \
+    && cd .. \
+    && rm -rf ta-lib-0.6.4 ta-lib-0.6.4-src.tar.gz
 
 # Create conda environment with Python 3.12
 RUN conda create -n openqwnt python=3.12 -y -c conda-forge
@@ -29,44 +40,30 @@ SHELL ["conda", "run", "-n", "openqwnt", "/bin/bash", "-c"]
 # Copy requirements first for better caching
 COPY requirements.txt .
 
-# Install Python dependencies
-# Split heavy packages for better caching
+# Install CPU-only torch first to avoid downloading ~5GB of CUDA libraries.
+# NautilusTrader depends on torch, but the trading backend does not need GPU.
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+
+# Install core framework packages
 RUN pip install --no-cache-dir \
-    fastapi==0.115.6 \
-    uvicorn==0.34.0 \
-    python-dotenv==1.0.1 \
-    httpx==0.28.1 \
-    pydantic==2.10.3
+    fastapi uvicorn[standard] python-dotenv httpx pydantic python-multipart
 
+# Install data processing and trading packages
 RUN pip install --no-cache-dir \
-    pandas>=2.0.0 \
-    numpy>=1.26.0 \
-    sqlalchemy>=2.0.0 \
-    aiohttp>=3.9.0
+    pandas numpy sqlalchemy aiosqlite aiohttp yfinance pytz \
+    feedparser quantstats statsmodels redis
 
+# Install backtesting engines and broker clients
 RUN pip install --no-cache-dir \
-    yfinance>=0.2.0 \
-    pytz>=2023.3
+    nautilus_trader backtesting backtrader trading-ig python-binance TA-Lib
 
-# Install NautilusTrader (heavy package)
-RUN pip install --no-cache-dir nautilus_trader>=1.200.0
-
-# Install RAG dependencies
+# Install RAG and vector DB
 RUN pip install --no-cache-dir \
-    chromadb>=0.4.0 \
-    sentence-transformers>=2.2.2
+    chromadb sentence-transformers
 
-# Install trading broker clients
-RUN pip install --no-cache-dir trading-ig>=0.0.22
-
-# Install Google ADK for AI agents
-RUN pip install --no-cache-dir google-adk
-
-# Install additional AI/LLM dependencies
+# Install AI/LLM packages
 RUN pip install --no-cache-dir \
-    openai \
-    anthropic \
-    google-generativeai
+    google-adk google-generativeai openai anthropic
 
 # =============================================================================
 # Stage 2: Production image
@@ -75,8 +72,16 @@ FROM continuumio/miniconda3:latest AS production
 
 WORKDIR /app
 
+# Install curl for healthcheck
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy conda environment from builder
 COPY --from=base /opt/conda/envs/openqwnt /opt/conda/envs/openqwnt
+
+# Copy TA-Lib shared libraries
+COPY --from=base /usr/lib/libta_lib* /usr/lib/
+COPY --from=base /usr/include/ta-lib /usr/include/ta-lib
 
 # Set environment variables
 ENV PATH=/opt/conda/envs/openqwnt/bin:$PATH
@@ -106,11 +111,7 @@ FROM production AS development
 
 # Install development dependencies
 RUN pip install --no-cache-dir \
-    pytest>=7.0.0 \
-    pytest-asyncio \
-    black \
-    isort \
-    mypy
+    pytest pytest-asyncio black isort mypy
 
 # Enable hot reloading
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
