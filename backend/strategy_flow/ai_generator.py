@@ -327,8 +327,130 @@ async def validate_and_fix(
     return extract_json(response)
 
 
+# ============================================================
+# Topological Layout
+# ============================================================
+
+# Fallback layer for disconnected nodes (by type)
+_TYPE_LAYER_HINT = {
+    "environment": 0, "indicator": 0, "llm": 0, "trigger": 0,
+    "math": 1, "variable": 1, "tradeInfo": 1,
+    "condition": 2,
+    "control": 3, "risk": 3,
+    "action": 4, "integration": 4,
+}
+
+_LAYER_GAP_X = 260
+_NODE_GAP_Y  = 160
+_ORIGIN_X    = 80
+_ORIGIN_Y    = 80
+
+_TYPE_SORT_PRIORITY = {
+    "environment": 0, "indicator": 1, "trigger": 2, "llm": 3,
+    "math": 4, "variable": 5, "tradeInfo": 6,
+    "condition": 7, "control": 8, "risk": 9,
+    "action": 10, "integration": 11,
+}
+
+
+def _topological_layout(
+    nodes: List[Dict[str, Any]],
+    edges: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """
+    Topologically sort nodes and assign layered positions so they
+    flow left-to-right with no overlaps.
+    """
+    if len(nodes) <= 1:
+        if nodes:
+            nodes[0]["position"] = {"x": _ORIGIN_X, "y": _ORIGIN_Y}
+        return nodes
+
+    node_ids = [n["id"] for n in nodes]
+    node_map = {n["id"]: n for n in nodes}
+    id_set = set(node_ids)
+
+    # Build adjacency
+    adj: Dict[str, list] = {nid: [] for nid in node_ids}
+    in_deg: Dict[str, int] = {nid: 0 for nid in node_ids}
+    for e in edges:
+        s, t = e.get("source"), e.get("target")
+        if s in id_set and t in id_set:
+            adj[s].append(t)
+            in_deg[t] = in_deg.get(t, 0) + 1
+
+    # Kahn's topological sort
+    queue = [nid for nid in node_ids if in_deg[nid] == 0]
+    sorted_ids: List[str] = []
+    while queue:
+        nid = queue.pop(0)
+        sorted_ids.append(nid)
+        for nb in adj.get(nid, []):
+            in_deg[nb] -= 1
+            if in_deg[nb] == 0:
+                queue.append(nb)
+    # Append any remaining (cycles/disconnected)
+    for nid in node_ids:
+        if nid not in sorted_ids:
+            sorted_ids.append(nid)
+
+    # Assign layers via longest-path from sources
+    layer: Dict[str, int] = {}
+    for nid in node_ids:
+        if in_deg.get(nid, 0) == 0 or all(
+            e.get("target") != nid for e in edges if e.get("source") in id_set
+        ):
+            layer[nid] = _TYPE_LAYER_HINT.get(node_map[nid].get("type", ""), 0)
+        else:
+            layer[nid] = -1
+
+    for nid in sorted_ids:
+        cur = layer.get(nid, 0)
+        for nb in adj.get(nid, []):
+            layer[nb] = max(layer.get(nb, -1), cur + 1)
+
+    # Fill any still-unassigned
+    for nid in node_ids:
+        if layer.get(nid, -1) < 0:
+            layer[nid] = _TYPE_LAYER_HINT.get(node_map[nid].get("type", ""), 0)
+
+    # Group by layer
+    layer_groups: Dict[int, list] = {}
+    for nid in node_ids:
+        l = layer[nid]
+        layer_groups.setdefault(l, []).append(nid)
+
+    sorted_layers = sorted(layer_groups.keys())
+
+    # Sort within each layer by type priority then label
+    for l in sorted_layers:
+        layer_groups[l].sort(key=lambda nid: (
+            _TYPE_SORT_PRIORITY.get(node_map[nid].get("type", ""), 50),
+            node_map[nid].get("data", {}).get("label", nid),
+        ))
+
+    # Compute positions
+    max_group_size = max(len(g) for g in layer_groups.values())
+    total_height = (max_group_size - 1) * _NODE_GAP_Y
+
+    layer_index = {l: i for i, l in enumerate(sorted_layers)}
+
+    for l in sorted_layers:
+        group = layer_groups[l]
+        col = layer_index[l]
+        x = _ORIGIN_X + col * _LAYER_GAP_X
+        group_height = (len(group) - 1) * _NODE_GAP_Y
+        start_y = _ORIGIN_Y + (total_height - group_height) / 2
+
+        for i, nid in enumerate(group):
+            node_map[nid]["position"] = {"x": x, "y": start_y + i * _NODE_GAP_Y}
+
+    # Return in topological order
+    return [node_map[nid] for nid in sorted_ids]
+
+
 def auto_fix_flow(
-    nodes: List[Dict[str, Any]], 
+    nodes: List[Dict[str, Any]],
     edges: List[Dict[str, Any]]
 ) -> tuple:
     """
@@ -486,7 +608,12 @@ def auto_fix_flow(
             valid_edges.append(edge)
         else:
             fixes.append(f"Removed invalid edge: {source} -> {target}")
-    
+
+    # ── Topological layout pass ───────────────────────────────
+    # Re-position nodes in a clean left-to-right DAG based on edges
+    nodes = _topological_layout(nodes, valid_edges)
+    fixes.append("Applied topological layout")
+
     return nodes, valid_edges, fixes
 
 

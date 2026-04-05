@@ -36,6 +36,7 @@ import {
   generatePineScriptCode,
 } from '../generators';
 import type { StrategyFlowNode, StrategyFlowEdge } from '../types';
+import { layoutStrategyNodes } from '../utils/layoutNodes';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -166,9 +167,12 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
     return () => clearInterval(interval);
   }, [genMode]);
 
-  // Add generated nodes to canvas
+  // Add generated nodes to canvas — applies topological layout first
   const addNodesToCanvas = useCallback(
-    (newNodes: StrategyFlowNode[], newEdges: StrategyFlowEdge[], replace: boolean = false) => {
+    (rawNodes: StrategyFlowNode[], rawEdges: StrategyFlowEdge[], replace: boolean = false) => {
+      // Run topological sort + layered layout so nodes don't overlap
+      const { nodes: newNodes, edges: newEdges } = layoutStrategyNodes(rawNodes, rawEdges);
+
       if (replace) {
         setNodes(newNodes);
         setEdges(newEdges);
@@ -178,11 +182,12 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
         const existingEdges = useStrategyFlowStore.getState().edges;
 
         const maxX = existingNodes.reduce((max, n) => Math.max(max, n.position.x), 0);
-        const offsetX = maxX > 0 ? maxX + 300 : 0;
+        const offsetX = maxX > 0 ? maxX + 350 : 0;
 
+        const stamp = Date.now();
         const offsetNodes = newNodes.map((node) => ({
           ...node,
-          id: `${node.id}-${Date.now()}`,
+          id: `${node.id}-${stamp}`,
           position: {
             x: node.position.x + offsetX,
             y: node.position.y,
@@ -192,7 +197,7 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
         const idMap = new Map(newNodes.map((n, i) => [n.id, offsetNodes[i].id]));
         const offsetEdges = newEdges.map((edge) => ({
           ...edge,
-          id: `${edge.id}-${Date.now()}`,
+          id: `${edge.id}-${stamp}`,
           source: idMap.get(edge.source) || edge.source,
           target: idMap.get(edge.target) || edge.target,
         }));
