@@ -72,7 +72,10 @@ export class IGClient implements BrokerClient {
         return [];
     }
 
-    async getBars(_symbol: string, _timeframe: string, _limit: number): Promise<Bar[]> {
-        throw new Error('IG Markets market data not yet implemented');
+    async getBars(symbol: string, timeframe: string, limit: number): Promise<Bar[]> {
+        // Fall back to the Python compute service (yfinance) for market data.
+        const { fetchMarketBars } = await import('../services/computeClient.js');
+        const result = await fetchMarketBars({ symbol, timeframe, limit });
+        return result.data.bars;
     }
 }

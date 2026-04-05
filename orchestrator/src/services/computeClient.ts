@@ -366,6 +366,35 @@ export interface StrategyListItem {
     defaultParams: Record<string, any>;
 }
 
+// ─── Market Data (yfinance fallback) ───────────────────────
+
+export interface MarketBarsRequest {
+    symbol: string;
+    timeframe: string;
+    limit: number;
+}
+
+export interface MarketBar {
+    timestamp: string;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+    symbol: string;
+}
+
+export interface MarketBarsResponse {
+    success: boolean;
+    bars: MarketBar[];
+}
+
+export async function fetchMarketBars(
+    request: MarketBarsRequest
+): Promise<ComputeResponse<MarketBarsResponse>> {
+    return computeRequest<MarketBarsResponse>('/compute/market-bars', request);
+}
+
 export async function listQuantStrategies(): Promise<ComputeResponse<{ success: boolean; strategies: StrategyListItem[] }>> {
     const url = `${BASE_URL}/compute/quant-strategies-list`;
     const start = Date.now();

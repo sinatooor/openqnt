@@ -268,7 +268,11 @@ export class IbkrClient implements BrokerClient {
         };
     }
 
-    async getBars(_symbol: string, _timeframe: string, _limit: number): Promise<Bar[]> {
-        throw new Error('IBKR market data not yet implemented');
+    async getBars(symbol: string, timeframe: string, limit: number): Promise<Bar[]> {
+        // IBKR Client Portal API doesn't expose simple bar endpoints.
+        // Fall back to the Python compute service (yfinance) for market data.
+        const { fetchMarketBars } = await import('../services/computeClient.js');
+        const result = await fetchMarketBars({ symbol, timeframe, limit });
+        return result.data.bars;
     }
 }

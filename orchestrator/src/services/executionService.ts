@@ -18,6 +18,7 @@ import { notificationQueue } from './notificationService.js';
 import { getBrokerClient } from './brokerGateway.js';
 import { computeIndicators } from './computeClient.js';
 import { getRedis } from '../config/redis.js';
+import { emitExecutionStarted, emitNodeUpdate, emitExecutionCompleted } from '../api/websocket.js';
 
 type TriggerType = 'heartbeat' | 'webhook' | 'price_alert' | 'news' | 'manual' | 'replay';
 
@@ -129,6 +130,9 @@ export async function executeStrategy(input: ExecuteStrategyInput): Promise<Exec
             status: preChecks.passed ? 'running' : 'skipped',
         },
     });
+
+    // Emit execution started event via WebSocket
+    emitExecutionStarted(input.userId, input.strategyId, executionRun.id);
 
     if (!preChecks.passed) {
         return {
@@ -353,7 +357,7 @@ export async function executeStrategy(input: ExecuteStrategyInput): Promise<Exec
         },
     });
 
-    // 8. Log individual node executions
+    // 8. Log individual node executions & emit real-time updates
     if (result.nodeLogs.length > 0) {
         await prisma.executionNodeLog.createMany({
             data: result.nodeLogs.map((log) => ({
@@ -368,7 +372,25 @@ export async function executeStrategy(input: ExecuteStrategyInput): Promise<Exec
                 executionOrder: log.executionOrder,
             })),
         });
+
+        // Emit per-node progress updates via WebSocket
+        for (const log of result.nodeLogs) {
+            emitNodeUpdate(input.userId, input.strategyId, {
+                nodeId: log.nodeId,
+                status: log.status,
+                outputData: log.outputData ?? {},
+                durationMs: log.durationMs,
+            });
+        }
     }
+
+    // Emit execution completed event via WebSocket
+    emitExecutionCompleted(input.userId, input.strategyId, {
+        executionRunId: executionRun.id,
+        status: result.nodesErrored > 0 ? 'error' : 'success',
+        durationMs,
+        orderIntents: result.orderIntents.length,
+    });
 
     logger.info(
         {
