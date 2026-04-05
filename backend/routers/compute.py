@@ -982,3 +982,62 @@ async def list_quant_strategies():
         return {"success": True, "strategies": list_strategies()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to list strategies: {str(e)}")
+
+
+@router.post("/market-bars")
+async def get_market_bars(payload: Dict[str, Any]):
+    """
+    Fetch historical OHLCV bars via yfinance.
+    Used as a fallback for brokers that don't provide market data (IBKR, IG, Nordnet).
+    """
+    try:
+        import yfinance as yf
+        from datetime import datetime, timedelta
+
+        symbol = payload.get("symbol", "SPY")
+        limit = payload.get("limit", 200)
+        timeframe = payload.get("timeframe", "1d")
+
+        # Map timeframes to yfinance intervals
+        tf_map = {
+            "1": "1m", "5": "5m", "15": "15m", "30": "30m", "60": "1h",
+            "1m": "1m", "5m": "5m", "15m": "15m", "30m": "30m", "1h": "1h",
+            "1d": "1d", "1440": "1d", "1w": "1wk", "1M": "1mo",
+        }
+        yf_interval = tf_map.get(timeframe, "1d")
+
+        # Calculate period based on limit and interval
+        if yf_interval in ("1m", "5m", "15m", "30m"):
+            days = max(7, limit // 78)  # ~78 bars per day for 5m
+            period = f"{days}d"
+        elif yf_interval == "1h":
+            days = max(30, limit // 7)
+            period = f"{days}d"
+        else:
+            days = max(365, limit * 2)
+            period = f"{days}d"
+
+        ticker = yf.Ticker(symbol)
+        df = ticker.history(period=period, interval=yf_interval)
+
+        if df.empty:
+            return {"success": True, "bars": []}
+
+        # Take last N bars
+        df = df.tail(limit)
+
+        bars = []
+        for idx, row in df.iterrows():
+            bars.append({
+                "timestamp": idx.isoformat() if hasattr(idx, 'isoformat') else str(idx),
+                "open": float(row.get("Open", 0)),
+                "high": float(row.get("High", 0)),
+                "low": float(row.get("Low", 0)),
+                "close": float(row.get("Close", 0)),
+                "volume": float(row.get("Volume", 0)),
+                "symbol": symbol,
+            })
+
+        return {"success": True, "bars": bars}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch market data: {str(e)}")

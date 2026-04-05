@@ -8,6 +8,8 @@ import { z } from 'zod';
 import { prisma } from '../../config/database.js';
 import { logger } from '../../utils/logger.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { executeStrategy } from '../../services/executionService.js';
+import { emitExecutionStarted, emitExecutionCompleted } from '../websocket.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -18,7 +20,7 @@ const listQuerySchema = z.object({
     page: z.coerce.number().min(1).default(1),
     limit: z.coerce.number().min(1).max(100).default(20),
     strategyId: z.string().uuid().optional(),
-    status: z.enum(['running', 'success', 'error', 'skipped', 'cancelled']).optional(),
+    status: z.enum(['running', 'success', 'error', 'skipped', 'cancelled', 'pending_approval']).optional(),
 });
 
 // ── Routes ──────────────────────────────────────────────────
@@ -142,6 +144,54 @@ router.get('/stats/summary', async (req: Request, res: Response) => {
     } catch (error) {
         logger.error({ error }, 'Failed to get stats');
         res.status(500).json({ error: 'Failed to get stats' });
+    }
+});
+
+/** POST /api/strategies/:id/execute — manually trigger strategy execution */
+router.post('/strategies/:id/execute', async (req: Request, res: Response) => {
+    try {
+        const strategy = await prisma.strategy.findFirst({
+            where: { id: req.params.id, userId: req.user!.userId },
+        });
+
+        if (!strategy) {
+            res.status(404).json({ error: 'Strategy not found' });
+            return;
+        }
+
+        // Emit execution started event
+        emitExecutionStarted(req.user!.userId, strategy.id, 'pending');
+
+        // Execute asynchronously so we can return the run ID immediately
+        const resultPromise = executeStrategy({
+            strategyId: strategy.id,
+            userId: req.user!.userId,
+            triggerType: 'manual',
+            triggerData: req.body.triggerData,
+        });
+
+        // Wait for execution to complete (strategy runs are typically fast, <30s)
+        const result = await resultPromise;
+
+        // Emit completion event
+        emitExecutionCompleted(req.user!.userId, strategy.id, {
+            executionRunId: result.executionRunId,
+            status: result.result.nodesErrored > 0 ? 'error' : 'success',
+            durationMs: 0,
+            orderIntents: result.result.orderIntents.length,
+        });
+
+        res.status(201).json({
+            executionRunId: result.executionRunId,
+            preChecksPassed: result.preChecksPassed,
+            preCheckFailures: result.preCheckFailures,
+            nodesExecuted: result.result.nodesExecuted,
+            nodesErrored: result.result.nodesErrored,
+            orderIntents: result.result.orderIntents.length,
+        });
+    } catch (error: any) {
+        logger.error({ error: error.message }, 'Manual execution failed');
+        res.status(500).json({ error: error.message || 'Execution failed' });
     }
 });
 

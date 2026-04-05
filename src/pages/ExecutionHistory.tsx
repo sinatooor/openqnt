@@ -62,7 +62,7 @@ const ExecutionHistory = () => {
                         animate={{ opacity: 1, y: 0 }}
                         className="flex items-center gap-2 overflow-x-auto pb-2"
                     >
-                        {['', 'success', 'error', 'running', 'skipped'].map((status) => (
+                        {['', 'success', 'error', 'running', 'pending_approval', 'skipped'].map((status) => (
                             <button
                                 key={status}
                                 onClick={() => setStatusFilter(status)}
@@ -216,6 +216,7 @@ const RunStatusBadge = ({ status }: { status: string }) => {
         success: { color: '#22c55e', bg: 'rgba(34,197,94,0.1)' },
         error: { color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
         running: { color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
+        pending_approval: { color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
         skipped: { color: '#94a3b8', bg: 'rgba(148,163,184,0.1)' },
     };
     const c = map[status] ?? map.skipped;

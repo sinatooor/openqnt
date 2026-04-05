@@ -129,7 +129,10 @@ export class PaperClient implements BrokerClient {
         return results;
     }
 
-    async getBars(_symbol: string, _timeframe: string, _limit: number): Promise<Bar[]> {
-        throw new Error('Paper trading market data not implemented (use real broker for data)');
+    async getBars(symbol: string, timeframe: string, limit: number): Promise<Bar[]> {
+        // Paper broker uses the Python compute service (yfinance) for market data.
+        const { fetchMarketBars } = await import('../services/computeClient.js');
+        const result = await fetchMarketBars({ symbol, timeframe, limit });
+        return result.data.bars;
     }
 }

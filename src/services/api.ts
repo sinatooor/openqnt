@@ -205,6 +205,10 @@ class ApiClient {
     }
 
     // Executions
+    async executeStrategy(strategyId: string, triggerData?: Record<string, any>) {
+        return this.post<any>(`/api/executions/strategies/${strategyId}/execute`, { triggerData });
+    }
+
     async listExecutions(params?: { page?: number; strategyId?: string; status?: string }) {
         const query = new URLSearchParams();
         if (params?.page) query.set('page', String(params.page));

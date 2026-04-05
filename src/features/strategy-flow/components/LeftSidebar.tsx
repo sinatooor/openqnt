@@ -41,6 +41,8 @@ import {
   RISK_NODES,
   TRADE_INFO_NODES,
   LLM_NODES,
+  TRIGGER_NODES,
+  INTEGRATION_NODES,
   PINE_SCRIPT_NODES,
   PORTFOLIO_NODES,
   AGENT_NODES,
@@ -99,6 +101,14 @@ const TOOL_CATEGORIES: SidebarCategory[] = [
     description: 'Frequently used tools'
   },
   {
+    id: 'triggers',
+    label: 'Triggers',
+    icon: Zap,
+    color: '#8b5cf6',
+    nodes: TRIGGER_NODES,
+    description: 'Workflow entry points'
+  },
+  {
     id: 'environment',
     label: 'Environment',
     icon: Globe,
@@ -153,6 +163,14 @@ const TOOL_CATEGORIES: SidebarCategory[] = [
     color: '#10b981',
     nodes: ACTION_NODES,
     description: 'Execution and alerts'
+  },
+  {
+    id: 'integrations',
+    label: 'Integrations',
+    icon: Globe,
+    color: '#0088cc',
+    nodes: INTEGRATION_NODES,
+    description: 'External service connections'
   },
   {
     id: 'control',
