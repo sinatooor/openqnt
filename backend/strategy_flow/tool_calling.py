@@ -500,14 +500,18 @@ class StrategyBuilder:
         return {"x": x, "y": y}
 
     def get_result(self) -> Dict[str, Any]:
-        """Get the final strategy result."""
+        """Get the final strategy result with topological layout applied."""
+        # Apply topological layout so nodes flow left-to-right without overlap
+        from .ai_generator import _topological_layout
+        laid_out = _topological_layout(self.nodes, self.edges) if self.nodes else self.nodes
+
         return {
-            "success": len(self.nodes) > 0,
-            "nodes": self.nodes,
+            "success": len(laid_out) > 0,
+            "nodes": laid_out,
             "edges": self.edges,
-            "message": self.message or f"Generated strategy with {len(self.nodes)} nodes",
+            "message": self.message or f"Generated strategy with {len(laid_out)} nodes",
             "errors": self.errors,
-            "toolCalls": len(self.nodes) + len(self.edges),
+            "toolCalls": len(laid_out) + len(self.edges),
         }
 
 

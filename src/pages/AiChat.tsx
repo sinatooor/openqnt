@@ -44,6 +44,7 @@ import { toast } from 'sonner';
 import { api, type AiChatEvent } from '@/services/api';
 import { useAiChatStore, type ChatMessage, type ToolCallEvent } from '@/stores/aiChatStore';
 import { useStrategyFlowStore } from '@/features/strategy-flow/store/strategyFlowStore';
+import { layoutStrategyNodes } from '@/features/strategy-flow/utils/layoutNodes';
 
 // ── Suggestion cards ─────────────────────────────────────────
 
@@ -136,6 +137,22 @@ const ToolCallCard = ({ tc }: { tc: ToolCallEvent }) => {
 
 // ── Strategy Nodes Preview ───────────────────────────────────
 
+// Node type → color for the mini flow diagram
+const NODE_TYPE_COLORS: Record<string, string> = {
+  environment: 'border-indigo-500/40 bg-indigo-500/10 text-indigo-300',
+  indicator:   'border-purple-500/40 bg-purple-500/10 text-purple-300',
+  trigger:     'border-amber-500/40 bg-amber-500/10 text-amber-300',
+  llm:         'border-violet-500/40 bg-violet-500/10 text-violet-300',
+  math:        'border-teal-500/40 bg-teal-500/10 text-teal-300',
+  variable:    'border-pink-500/40 bg-pink-500/10 text-pink-300',
+  tradeInfo:   'border-cyan-500/40 bg-cyan-500/10 text-cyan-300',
+  condition:   'border-amber-500/40 bg-amber-500/10 text-amber-300',
+  control:     'border-slate-400/40 bg-slate-500/10 text-slate-300',
+  risk:        'border-red-500/40 bg-red-500/10 text-red-300',
+  action:      'border-emerald-500/40 bg-emerald-500/10 text-emerald-300',
+  integration: 'border-blue-500/40 bg-blue-500/10 text-blue-300',
+};
+
 const StrategyNodesPreview = ({
   nodes,
   edges,
@@ -147,11 +164,19 @@ const StrategyNodesPreview = ({
 }) => {
   if (!nodes || nodes.length === 0) return null;
 
-  const nodeTypeCounts: Record<string, number> = {};
-  for (const n of nodes) {
-    const t = n.type || 'unknown';
-    nodeTypeCounts[t] = (nodeTypeCounts[t] || 0) + 1;
+  // Layout nodes topologically
+  const { nodes: layouted } = layoutStrategyNodes(nodes, edges);
+
+  // Group by layer (x position) for the flow visualization
+  const layerMap = new Map<number, typeof layouted>();
+  for (const n of layouted) {
+    const x = n.position.x;
+    if (!layerMap.has(x)) layerMap.set(x, []);
+    layerMap.get(x)!.push(n);
   }
+  const layers = Array.from(layerMap.entries())
+    .sort(([a], [b]) => a - b)
+    .map(([, group]) => group);
 
   return (
     <motion.div
@@ -159,36 +184,43 @@ const StrategyNodesPreview = ({
       animate={{ opacity: 1, scale: 1 }}
       className="mt-2 rounded-lg border border-pink-500/20 bg-pink-500/5 overflow-hidden"
     >
+      {/* Header */}
       <div className="px-3 py-2 border-b border-pink-500/10 flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs text-pink-300">
           <Blocks className="w-3.5 h-3.5" />
           <span className="font-medium">{nodes.length} Nodes Generated</span>
         </div>
-        <div className="flex items-center gap-1 text-[10px] text-white/40">
-          {Object.entries(nodeTypeCounts).map(([type, count]) => (
-            <span
-              key={type}
-              className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10"
-            >
-              {type} x{count}
-            </span>
-          ))}
-        </div>
+        <span className="text-[10px] text-white/30">{layers.length} layers &middot; {edges.length} connections</span>
       </div>
 
-      {/* Mini node list */}
-      <div className="px-3 py-2 max-h-[120px] overflow-y-auto">
-        <div className="flex flex-wrap gap-1.5">
-          {nodes.map((node: any, i: number) => (
-            <motion.div
-              key={node.id || i}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: i * 0.05 }}
-              className="px-2 py-1 rounded-md bg-white/5 border border-white/10 text-[10px] text-white/60"
-            >
-              {node.data?.label || node.type || 'Node'}
-            </motion.div>
+      {/* Flow diagram: layers left → right */}
+      <div className="px-3 py-3 overflow-x-auto">
+        <div className="flex items-start gap-2 min-w-min">
+          {layers.map((layer, li) => (
+            <div key={li} className="flex items-center gap-2">
+              {/* Layer column */}
+              <div className="flex flex-col gap-1.5 min-w-[110px]">
+                {layer.map((node: any, ni: number) => {
+                  const colors = NODE_TYPE_COLORS[node.type || ''] || 'border-white/20 bg-white/5 text-white/50';
+                  return (
+                    <motion.div
+                      key={node.id || ni}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: (li * layer.length + ni) * 0.04 }}
+                      className={`px-2.5 py-1.5 rounded-md border text-[10px] font-medium truncate ${colors}`}
+                      title={`${node.type}: ${node.data?.label || node.id}`}
+                    >
+                      {node.data?.label || node.type || 'Node'}
+                    </motion.div>
+                  );
+                })}
+              </div>
+              {/* Arrow between layers */}
+              {li < layers.length - 1 && (
+                <ChevronRight className="w-3.5 h-3.5 text-white/15 flex-shrink-0" />
+              )}
+            </div>
           ))}
         </div>
       </div>
@@ -377,37 +409,41 @@ const AiChat = () => {
     inputRef.current?.focus();
   }, []);
 
-  // Add strategy nodes to canvas
+  // Add strategy nodes to canvas — applies topological layout first
   const handleAddToCanvas = useCallback(
-    (newNodes: any[], newEdges: any[], replace: boolean) => {
+    (rawNodes: any[], rawEdges: any[], replace: boolean) => {
+      // Run topological sort + layered layout
+      const { nodes: layouted, edges: layoutedEdges } = layoutStrategyNodes(rawNodes, rawEdges);
+
       const store = useStrategyFlowStore.getState();
       if (replace) {
-        setNodes(newNodes);
-        setEdges(newEdges);
-        toast.success(`Replaced canvas with ${newNodes.length} nodes`);
+        setNodes(layouted);
+        setEdges(layoutedEdges);
+        toast.success(`Replaced canvas with ${layouted.length} nodes`);
       } else {
         const existingNodes = store.nodes;
         const existingEdges = store.edges;
         const maxX = existingNodes.reduce((max, n) => Math.max(max, n.position.x), 0);
-        const offsetX = maxX > 0 ? maxX + 300 : 0;
+        const offsetX = maxX > 0 ? maxX + 350 : 0;
 
-        const offsetNodes = newNodes.map((node: any) => ({
+        const stamp = Date.now();
+        const offsetNodes = layouted.map((node: any) => ({
           ...node,
-          id: `${node.id}-${Date.now()}`,
+          id: `${node.id}-${stamp}`,
           position: { x: node.position.x + offsetX, y: node.position.y },
         }));
 
-        const idMap = new Map(newNodes.map((n: any, i: number) => [n.id, offsetNodes[i].id]));
-        const offsetEdges = newEdges.map((edge: any) => ({
+        const idMap = new Map(layouted.map((n: any, i: number) => [n.id, offsetNodes[i].id]));
+        const offsetEdges = layoutedEdges.map((edge: any) => ({
           ...edge,
-          id: `${edge.id}-${Date.now()}`,
+          id: `${edge.id}-${stamp}`,
           source: idMap.get(edge.source) || edge.source,
           target: idMap.get(edge.target) || edge.target,
         }));
 
         setNodes([...existingNodes, ...offsetNodes]);
         setEdges([...existingEdges, ...offsetEdges]);
-        toast.success(`Added ${newNodes.length} nodes to canvas`);
+        toast.success(`Added ${layouted.length} nodes to canvas`);
       }
       toast('Switch to Builder to see your strategy', {
         action: { label: 'Go to Builder', onClick: () => navigate('/') },
