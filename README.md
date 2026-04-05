@@ -178,65 +178,176 @@ flowchart LR
 
 ### Prerequisites
 
-- [Bun](https://bun.sh/) v1.0+
-- Python 3.10+
-- Redis
 - Git
+- [Bun](https://bun.sh/) v1.0+
+- [Conda](https://docs.conda.io/en/latest/miniconda.html) (Miniconda or Anaconda) with Python 3.12
+- [Docker](https://www.docker.com/) & Docker Compose (for Docker method)
+- Redis (for local method)
+- PostgreSQL 16 (for local method)
 
-### 1. Clone the Repository
+### Clone the Repository
 
 ```bash
 git clone git@github.com:sinatooor/project-prometheus.git
 cd project-prometheus
 ```
 
-### 2. Frontend Setup
+### Environment Variables
 
 ```bash
-bun install
-bun run dev
-# Access at http://localhost:5173
+cp .env.example .env
+# Edit .env and fill in your API keys:
+#   DEEPSEEK_API_KEY   — https://platform.deepseek.com/
+#   GEMINI_API_KEY     — https://aistudio.google.com/
+#   IG_API_KEY/USER/PW — https://labs.ig.com/ (optional, for live trading)
+
+cp backend/.env.example backend/.env
+# Add the same LLM keys + any broker keys
 ```
 
-### 3. Python Compute Service
+---
+
+### Method 1: Docker (Recommended)
+
+Docker Compose starts all five services (backend, orchestrator, frontend, PostgreSQL, Redis) in one command.
+
+#### 1. Build and start
 
 ```bash
+# Core services (backend + orchestrator + postgres + redis)
+docker-compose up --build
+
+# Include the frontend dev server
+docker-compose --profile frontend up --build
+
+# Run in detached mode
+docker-compose up -d --build
+```
+
+#### 2. Verify services are healthy
+
+```bash
+docker-compose ps
+
+# Test health endpoints
+curl http://localhost:8000/health   # Backend (FastAPI)
+curl http://localhost:3000/health   # Orchestrator (Bun/Express)
+```
+
+#### 3. Stop
+
+```bash
+docker-compose down
+
+# Stop and remove volumes (full reset)
+docker-compose down -v
+```
+
+#### Docker services overview
+
+| Container | Service | Port | Description |
+|-----------|---------|------|-------------|
+| `openqwnt-backend` | backend | 8000 | Python FastAPI — AI agents, backtesting, indicators |
+| `openqwnt-orchestrator` | orchestrator | 3000 | Bun/Express — API server, BullMQ workflows |
+| `openqwnt-frontend` | frontend | 5173 | React/Vite dev server (profile: `frontend`) |
+| `openqwnt-postgres` | postgres | 5432 | PostgreSQL 16 — primary database |
+| `openqwnt-redis` | redis | 6379 | Redis 7 — BullMQ broker, caching |
+
+---
+
+### Method 2: Local Development (Conda)
+
+Run each service individually for faster iteration and debugging.
+
+#### 1. Backend — Python Compute Service (Conda)
+
+```bash
+# Create the conda environment (one-time setup)
+conda create -n openqwnt python=3.12 -c conda-forge -y
+conda activate openqwnt
+
+# Install dependencies
 cd backend
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
+# Copy and configure environment
 cp .env.example .env
-# Add: GEMINI_API_KEY, DEEPSEEK_API_KEY, FMP_API_KEY
+# Edit .env — add GEMINI_API_KEY, DEEPSEEK_API_KEY, etc.
 ```
 
-### 4. Running Services
+> **Note:** TA-Lib requires the C library. Install it first:
+> - macOS: `brew install ta-lib`
+> - Ubuntu/Debian: `sudo apt-get install libta-lib-dev`
+> - Or build from source: https://github.com/TA-Lib/ta-lib/releases
+
+#### 2. Orchestrator — Node.js/Bun
 
 ```bash
-# Terminal 1 — Python Compute Service
-cd backend && conda activate openqwnt && uvicorn main:app --reload --port 8000
+cd orchestrator
+bun install
 
-# Terminal 2 — React Frontend
-bun run dev
+# Configure environment
+cp .env.example .env
+# Edit .env — set DATABASE_URL, REDIS_HOST, etc.
+
+# Generate Prisma client and run migrations
+bunx prisma generate
+bunx prisma migrate dev
+```
+
+#### 3. Frontend — React/Vite
+
+```bash
+# From the project root
+bun install
+```
+
+#### 4. Infrastructure — PostgreSQL & Redis
+
+```bash
+# Option A: Use Docker for just the databases
+docker run -d --name openqwnt-postgres -p 5432:5432 \
+  -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=strategyflow \
+  postgres:16-alpine
+
+docker run -d --name openqwnt-redis -p 6379:6379 redis:7-alpine
+
+# Option B: Install and run natively
+# macOS:
+brew install postgresql@16 redis
+brew services start postgresql@16
+brew services start redis
+
+# Ubuntu:
+sudo apt-get install postgresql redis-server
+sudo systemctl start postgresql redis
+```
+
+#### 5. Start all services (4 terminals)
+
+```bash
+# Terminal 1 — Redis (skip if using Docker or brew services)
+redis-server
+
+# Terminal 2 — Python Backend
+cd backend && conda activate openqwnt && uvicorn main:app --reload --port 8000
 
 # Terminal 3 — Node.js Orchestrator
 cd orchestrator && bun run dev
 
-# Terminal 4 — Redis (required for BullMQ)
-redis-server
+# Terminal 4 — React Frontend
+bun run dev
 ```
+
+#### Service URLs
 
 | Service | URL | Description |
 |---------|-----|-------------|
 | Frontend | http://localhost:5173 | React UI |
-| Orchestrator | http://localhost:3000 | Bun API server |
-| Python API | http://localhost:8000/docs | FastAPI Swagger (compute) |
-
-### 5. Docker (Full Stack)
-
-```bash
-docker-compose up --build
-```
+| Orchestrator | http://localhost:3000 | Bun API + WebSocket server |
+| Backend API | http://localhost:8000/docs | FastAPI Swagger (compute layer) |
+| PostgreSQL | localhost:5432 | Database (user: `postgres`, pass: `postgres`) |
+| Redis | localhost:6379 | BullMQ broker & cache |
 
 ---
 
