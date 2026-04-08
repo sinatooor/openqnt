@@ -144,4 +144,18 @@ export const ACTION_NODES: NodeCatalogItem[] = [
         color: '#8b5cf6',
         defaultData: { actionType: 'portfolio_rebalance', rebalanceThresholdPercent: 5 },
     },
+    {
+        type: 'phoneCall',
+        nodeType: 'action',
+        label: 'Phone Call',
+        description: 'Call user with alert',
+        tooltip: 'Place an automated phone call to notify you of urgent opportunities or risks. Uses Twilio Voice API. Reads a text-to-speech message with the alert details.',
+        inputs: ['Trigger'],
+        outputs: ['Signal'],
+        category: 'actions',
+        subcategory: 'Alerts',
+        icon: 'Phone',
+        color: '#ef4444',
+        defaultData: { actionType: 'phoneCall', phoneNumber: '', message: 'Urgent trading alert', voiceType: 'alice', urgencyLevel: 'high' },
+    },
 ];

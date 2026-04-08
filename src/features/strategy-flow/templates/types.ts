@@ -18,7 +18,8 @@ export interface StrategyTemplate {
     | 'hedging'
     | 'portfolio'
     | 'risk-management'
-    | 'pinescript';
+    | 'pinescript'
+    | 'agentic';
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   indicators: string[];
   nodes: StrategyFlowNode[];
