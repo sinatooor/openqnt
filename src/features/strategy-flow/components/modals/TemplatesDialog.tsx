@@ -21,6 +21,7 @@ import {
   ShieldAlert,
   PieChart,
   LineChart,
+  Bot,
 } from 'lucide-react';
 import { useStrategyFlowStore, EDGE_DATA_TYPE_COLORS } from '../../store/strategyFlowStore';
 import { StrategyFlowNode, StrategyFlowEdge } from '../../types';
@@ -31,6 +32,7 @@ import {
   PINE_SCRIPT_TEMPLATES,
   ADDITIONAL_STRATEGY_TEMPLATES,
   ADVANCED_STRATEGY_TEMPLATES,
+  AGENTIC_STRATEGY_TEMPLATES,
 } from '../../templates';
 
 interface TemplatesDialogProps {
@@ -49,6 +51,7 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   portfolio: <PieChart className="w-4 h-4" />,
   'risk-management': <ShieldAlert className="w-4 h-4" />,
   pinescript: <LineChart className="w-4 h-4" />,
+  agentic: <Bot className="w-4 h-4" />,
 };
 
 const DIFFICULTY_COLORS: Record<string, string> = {
@@ -68,7 +71,7 @@ export const TemplatesDialog = memo(({ open, onOpenChange }: TemplatesDialogProp
     if (pineScriptMode) {
       return PINE_SCRIPT_TEMPLATES;
     }
-    return [...STRATEGY_TEMPLATES, ...ADDITIONAL_STRATEGY_TEMPLATES, ...ADVANCED_STRATEGY_TEMPLATES];
+    return [...AGENTIC_STRATEGY_TEMPLATES, ...STRATEGY_TEMPLATES, ...ADDITIONAL_STRATEGY_TEMPLATES, ...ADVANCED_STRATEGY_TEMPLATES];
   }, [pineScriptMode]);
 
   const filteredTemplates = useMemo(() => {

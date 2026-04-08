@@ -671,6 +671,56 @@ const ActionProperties = memo(({ nodeId, data }: ActionPropertiesProps) => {
         </div>
       );
 
+    case 'phoneCall':
+      return (
+        <div className="space-y-4">
+          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <p className="text-xs text-red-200/80">
+              Places an automated phone call via Twilio Voice API. Use for urgent, time-sensitive alerts.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Phone Number</Label>
+            <Input
+              value={data.phoneNumber || ''}
+              onChange={(e) => updateField('phoneNumber', e.target.value)}
+              placeholder="+1234567890"
+              className="text-sm"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Message (Text-to-Speech)</Label>
+            <Textarea
+              value={data.message || ''}
+              onChange={(e) => updateField('message', e.target.value)}
+              placeholder="Urgent trading alert..."
+              className="text-sm min-h-[80px]"
+            />
+          </div>
+          <SelectInput
+            label="Voice"
+            value={data.voiceType || 'alice'}
+            onChange={(v) => updateField('voiceType', v)}
+            options={[
+              { value: 'alice', label: 'Alice (Natural)' },
+              { value: 'man', label: 'Man' },
+              { value: 'woman', label: 'Woman' },
+              { value: 'Polly.Joanna', label: 'Polly Joanna (AWS)' },
+            ]}
+          />
+          <SelectInput
+            label="Urgency Level"
+            value={data.urgencyLevel || 'high'}
+            onChange={(v) => updateField('urgencyLevel', v)}
+            options={[
+              { value: 'low', label: 'Low (single call)' },
+              { value: 'medium', label: 'Medium (retry once)' },
+              { value: 'high', label: 'High (retry 3x, escalate to SMS)' },
+            ]}
+          />
+        </div>
+      );
+
     default:
       return null;
   }
@@ -1586,15 +1636,76 @@ interface AgentPropertiesProps {
   data: AgentNodeData;
 }
 
+const MultiSelectChips = memo(({ label, values, onChange, options, description }: {
+  label: string;
+  values: string[];
+  onChange: (values: string[]) => void;
+  options: { value: string; label: string }[];
+  description?: string;
+}) => (
+  <div className="space-y-2">
+    <Label className="text-xs text-muted-foreground">{label}</Label>
+    <div className="flex flex-wrap gap-1.5">
+      {options.map(opt => {
+        const active = values.includes(opt.value);
+        return (
+          <button
+            key={opt.value}
+            onClick={() => {
+              if (active) onChange(values.filter(v => v !== opt.value));
+              else onChange([...values, opt.value]);
+            }}
+            className={cn(
+              "px-2 py-1 text-[10px] rounded-md border transition-colors",
+              active
+                ? "bg-blue-500/20 text-blue-300 border-blue-500/40"
+                : "bg-white/5 text-muted-foreground border-white/10 hover:bg-white/10"
+            )}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+    {description && <p className="text-[10px] text-muted-foreground/70">{description}</p>}
+  </div>
+));
+MultiSelectChips.displayName = 'MultiSelectChips';
+
+const TagsInput = memo(({ label, values, onChange, placeholder, description }: {
+  label: string;
+  values: string[];
+  onChange: (values: string[]) => void;
+  placeholder?: string;
+  description?: string;
+}) => (
+  <div className="space-y-2">
+    <Label className="text-xs text-muted-foreground">{label}</Label>
+    <Input
+      value={values.join(', ')}
+      onChange={(e) => {
+        const items = e.target.value.split(/[,]+/).map(s => s.trim()).filter(Boolean);
+        onChange(items);
+      }}
+      placeholder={placeholder}
+      className="text-sm"
+    />
+    {description && <p className="text-[10px] text-muted-foreground/70">{description}</p>}
+  </div>
+));
+TagsInput.displayName = 'TagsInput';
+
 const AgentProperties = memo(({ nodeId, data }: AgentPropertiesProps) => {
   const { updateNodeData } = useStrategyFlowStore();
+
+  const agentType = data.agentNodeType || data.agentType;
 
   return (
     <div className="space-y-4">
       {/* Agent Description */}
       <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
         <p className="text-xs text-amber-200/80">
-          This node runs an AI agent that analyzes data and produces signals. 
+          This node runs an AI agent that analyzes data and produces signals.
           Agents call LLMs and are not available during backtesting.
         </p>
       </div>
@@ -1645,6 +1756,191 @@ const AgentProperties = memo(({ nodeId, data }: AgentPropertiesProps) => {
       <p className="text-[10px] text-muted-foreground -mt-2">
         Minimum confidence (0-1) required to emit a signal to downstream nodes.
       </p>
+
+      {/* ── Per-Agent-Type Settings ──────────────────────────────────── */}
+
+      {/* News Agent Settings */}
+      {agentType === 'newsAgentNode' && (
+        <div className="space-y-3 pt-2 border-t border-white/5">
+          <p className="text-[10px] font-medium text-blue-400 uppercase tracking-wider">News Settings</p>
+          <MultiSelectChips
+            label="News Sources"
+            values={data.newsSources || ['newsapi', 'sec']}
+            onChange={(v) => updateNodeData(nodeId, { newsSources: v })}
+            options={[
+              { value: 'newsapi', label: 'NewsAPI' },
+              { value: 'sec', label: 'SEC Filings' },
+              { value: 'bloomberg', label: 'Bloomberg' },
+              { value: 'reuters', label: 'Reuters' },
+              { value: 'finnhub', label: 'Finnhub' },
+              { value: 'alphavantage', label: 'Alpha Vantage' },
+            ]}
+            description="Select which news services to monitor"
+          />
+          <TagsInput
+            label="Keywords Filter"
+            values={data.newsKeywords || []}
+            onChange={(v) => updateNodeData(nodeId, { newsKeywords: v })}
+            placeholder="e.g. earnings, FDA approval, tariff"
+            description="Additional keywords to filter news (comma-separated)"
+          />
+          <NumberInput
+            label="Max News Age (hours)"
+            value={data.newsMaxAge ?? 24}
+            onChange={(v) => updateNodeData(nodeId, { newsMaxAge: v })}
+            min={1}
+            max={168}
+            step={1}
+            description="Only consider news articles within this time window"
+          />
+        </div>
+      )}
+
+      {/* Social Monitor Settings */}
+      {agentType === 'socialAgentNode' && (
+        <div className="space-y-3 pt-2 border-t border-white/5">
+          <p className="text-[10px] font-medium text-pink-400 uppercase tracking-wider">Social Monitor Settings</p>
+          <MultiSelectChips
+            label="Platforms"
+            values={data.socialPlatforms || ['twitter', 'reddit']}
+            onChange={(v) => updateNodeData(nodeId, { socialPlatforms: v })}
+            options={[
+              { value: 'twitter', label: 'Twitter / X' },
+              { value: 'reddit', label: 'Reddit' },
+              { value: 'truthsocial', label: 'Truth Social' },
+              { value: 'stocktwits', label: 'StockTwits' },
+              { value: 'youtube', label: 'YouTube' },
+            ]}
+            description="Which social platforms to monitor"
+          />
+          <TagsInput
+            label="Accounts to Track"
+            values={data.socialAccounts || []}
+            onChange={(v) => updateNodeData(nodeId, { socialAccounts: v })}
+            placeholder="e.g. @realDonaldTrump, @elonmusk"
+            description="Specific accounts whose posts trigger analysis"
+          />
+          <TagsInput
+            label="Keywords / Hashtags"
+            values={data.socialKeywords || []}
+            onChange={(v) => updateNodeData(nodeId, { socialKeywords: v })}
+            placeholder="e.g. #tariffs, $AAPL, interest rates"
+            description="Track specific keywords or cashtags"
+          />
+        </div>
+      )}
+
+      {/* Fundamentals Agent Settings */}
+      {agentType === 'fundamentalsAgentNode' && (
+        <div className="space-y-3 pt-2 border-t border-white/5">
+          <p className="text-[10px] font-medium text-emerald-400 uppercase tracking-wider">Fundamentals Settings</p>
+          <MultiSelectChips
+            label="Report Types"
+            values={data.reportTypes || ['10-K', '10-Q', 'earnings']}
+            onChange={(v) => updateNodeData(nodeId, { reportTypes: v })}
+            options={[
+              { value: '10-K', label: '10-K (Annual)' },
+              { value: '10-Q', label: '10-Q (Quarterly)' },
+              { value: 'earnings', label: 'Earnings Reports' },
+              { value: 'guidance', label: 'Forward Guidance' },
+              { value: '8-K', label: '8-K (Current Events)' },
+              { value: 'proxy', label: 'Proxy Statements' },
+            ]}
+            description="Which SEC filings and reports to analyze"
+          />
+          <MultiSelectChips
+            label="Analyst Sources"
+            values={data.analystSources || ['wallstreet', 'institutional']}
+            onChange={(v) => updateNodeData(nodeId, { analystSources: v })}
+            options={[
+              { value: 'wallstreet', label: 'Wall Street Analysts' },
+              { value: 'institutional', label: 'Institutional Reports' },
+              { value: 'insider', label: 'Insider Transactions' },
+              { value: 'shortinterest', label: 'Short Interest Data' },
+            ]}
+            description="Sources for expert expectations and analyst ratings"
+          />
+          <NumberInput
+            label="Lookback Quarters"
+            value={data.lookbackQuarters ?? 4}
+            onChange={(v) => updateNodeData(nodeId, { lookbackQuarters: v })}
+            min={1}
+            max={20}
+            step={1}
+            description="How many quarters of financial history to analyze"
+          />
+        </div>
+      )}
+
+      {/* Technical Agent Settings */}
+      {agentType === 'technicalAgentNode' && (
+        <div className="space-y-3 pt-2 border-t border-white/5">
+          <p className="text-[10px] font-medium text-cyan-400 uppercase tracking-wider">Technical Analysis Settings</p>
+          <MultiSelectChips
+            label="Timeframes"
+            values={data.technicalTimeframes || ['1H', '4H', '1D']}
+            onChange={(v) => updateNodeData(nodeId, { technicalTimeframes: v })}
+            options={[
+              { value: '5m', label: '5min' },
+              { value: '15m', label: '15min' },
+              { value: '1H', label: '1H' },
+              { value: '4H', label: '4H' },
+              { value: '1D', label: 'Daily' },
+              { value: '1W', label: 'Weekly' },
+            ]}
+            description="Which timeframes to run technical analysis on"
+          />
+          <MultiSelectChips
+            label="Focus Indicators"
+            values={data.technicalIndicators || ['rsi', 'macd', 'bollinger', 'volume']}
+            onChange={(v) => updateNodeData(nodeId, { technicalIndicators: v })}
+            options={[
+              { value: 'rsi', label: 'RSI' },
+              { value: 'macd', label: 'MACD' },
+              { value: 'bollinger', label: 'Bollinger' },
+              { value: 'ema', label: 'EMA' },
+              { value: 'volume', label: 'Volume Profile' },
+              { value: 'ichimoku', label: 'Ichimoku' },
+              { value: 'fibonacci', label: 'Fibonacci' },
+              { value: 'support_resistance', label: 'S/R Levels' },
+            ]}
+            description="Which indicators the agent should focus on"
+          />
+        </div>
+      )}
+
+      {/* Research Agent Settings */}
+      {agentType === 'researchAgentNode' && (
+        <div className="space-y-3 pt-2 border-t border-white/5">
+          <p className="text-[10px] font-medium text-teal-400 uppercase tracking-wider">Research Settings</p>
+          <MultiSelectChips
+            label="Research Tools"
+            values={data.researchTools || ['quantstats', 'var', 'stress_test']}
+            onChange={(v) => updateNodeData(nodeId, { researchTools: v })}
+            options={[
+              { value: 'quantstats', label: 'QuantStats' },
+              { value: 'montecarlo', label: 'Monte Carlo' },
+              { value: 'var', label: 'VaR / CVaR' },
+              { value: 'stress_test', label: 'Stress Testing' },
+              { value: 'walk_forward', label: 'Walk-Forward' },
+              { value: 'parameter_sweep', label: 'Param Sweep' },
+              { value: 'cointegration', label: 'Cointegration' },
+              { value: 'hmm_regime', label: 'HMM Regime' },
+            ]}
+            description="Which research tools from the Research page to use"
+          />
+          <SelectInput
+            label="Research Depth"
+            value={data.researchDepth || 'standard'}
+            onChange={(v) => updateNodeData(nodeId, { researchDepth: v })}
+            options={[
+              { value: 'quick', label: 'Quick (1-2 min)' },
+              { value: 'standard', label: 'Standard (5-10 min)' },
+              { value: 'deep', label: 'Deep (15-30 min)' },
+            ]}
+          />
+        </div>
+      )}
 
       {/* Agent Type Info */}
       <div className="pt-2 border-t border-white/5 space-y-1">

@@ -513,7 +513,8 @@ export type AgentNodeType =
   | 'sentimentAgentNode'
   | 'socialAgentNode'
   | 'fundamentalsAgentNode'
-  | 'synthesisAgentNode';
+  | 'synthesisAgentNode'
+  | 'researchAgentNode';
 
 export interface AgentNodeData extends BaseNodeData {
   agentNodeType: AgentNodeType;
@@ -521,6 +522,29 @@ export interface AgentNodeData extends BaseNodeData {
   model?: string;               // LLM model override (default: gemini-2.0-flash)
   symbols?: string[];           // target symbols to analyze
   confidenceThreshold?: number; // min confidence (0-1) to emit signal output (default: 0.5)
+
+  // News Agent settings
+  newsSources?: string[];       // e.g. ['newsapi', 'sec', 'bloomberg', 'reuters']
+  newsKeywords?: string[];      // additional keywords to filter news
+  newsMaxAge?: number;          // max age in hours for news articles
+
+  // Social Monitor settings
+  socialPlatforms?: string[];   // e.g. ['twitter', 'reddit', 'truthsocial']
+  socialAccounts?: string[];    // specific accounts to track (e.g. '@realDonaldTrump')
+  socialKeywords?: string[];    // keywords/hashtags to track
+
+  // Fundamentals Agent settings
+  reportTypes?: string[];       // e.g. ['10-K', '10-Q', 'earnings', 'guidance']
+  analystSources?: string[];    // e.g. ['wallstreet', 'institutional', 'insider']
+  lookbackQuarters?: number;    // how many quarters of data to analyze
+
+  // Technical Agent settings
+  technicalTimeframes?: string[];  // e.g. ['1H', '4H', '1D']
+  technicalIndicators?: string[];  // which indicators to focus on
+
+  // Research Agent settings
+  researchTools?: string[];     // e.g. ['quantstats', 'montecarlo', 'var', 'stress_test']
+  researchDepth?: 'quick' | 'standard' | 'deep';
 }
 
 // Union type for all node data

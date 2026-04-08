@@ -158,4 +158,30 @@ export const AGENT_NODES: NodeCatalogItem[] = [
             confidenceThreshold: 0.5,
         },
     },
+    // =========================================================================
+    // Research Agent
+    // =========================================================================
+    {
+        type: 'researchAgentNode',
+        nodeType: 'agent',
+        label: 'Research Agent',
+        description: 'Quantitative research & backtesting',
+        tooltip: 'Runs quantitative research using the app\'s built-in tools: QuantStats analysis, Monte Carlo simulations, VaR/CVaR risk assessment, stress testing, and parameter optimization. Outputs data-driven insights to inform trading decisions.',
+        inputs: ['Trigger', 'Symbols'],
+        outputs: ['Signal', 'Confidence', 'Findings'],
+        category: 'agents',
+        subcategory: 'Research',
+        icon: 'FlaskConical',
+        color: '#14b8a6',
+        backtestEligible: false,
+        defaultData: {
+            agentNodeType: 'researchAgentNode',
+            agentType: 'research_analyst',
+            model: 'gemini-2.0-flash',
+            symbols: [],
+            confidenceThreshold: 0.5,
+            researchTools: ['quantstats', 'var', 'stress_test'],
+            researchDepth: 'standard',
+        },
+    },
 ];

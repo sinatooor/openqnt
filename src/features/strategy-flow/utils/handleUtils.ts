@@ -782,6 +782,16 @@ export const getHandleConfigs = (nodeType: string, subType?: string, data?: Stra
                     { id: 'score', type: 'source', position: 'right', label: 'Score', dataType: 'number' },
                 ];
             }
+            if (subType === 'research_analyst') {
+                return [
+                    { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
+                    { id: 'symbols', type: 'target', position: 'left', label: 'Symbols', dataType: 'any' },
+                    { id: 'signal', type: 'source', position: 'right', label: 'Signal', dataType: 'signal' },
+                    { id: 'confidence', type: 'source', position: 'right', label: 'Confidence', dataType: 'number' },
+                    { id: 'findings', type: 'source', position: 'right', label: 'Findings', dataType: 'any' },
+                    { id: 'riskScore', type: 'source', position: 'right', label: 'Risk Score', dataType: 'number' },
+                ];
+            }
             return [
                 { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
                 { id: 'symbols', type: 'target', position: 'left', label: 'Symbols', dataType: 'any' },
