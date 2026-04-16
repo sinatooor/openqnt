@@ -28,6 +28,7 @@ import '@xyflow/react/dist/style.css';
 import { Sparkles, Boxes, Play, AlertCircle, CheckCircle2, Cloud, CloudOff } from 'lucide-react';
 
 import { nodeTypes } from './nodes';
+import { ExecutionEdge } from './edges/ExecutionEdge';
 import { FloatingToolbar } from './FloatingToolbar';
 import { LeftSidebar } from './LeftSidebar';
 import { RightPropertyPanel } from './RightPropertyPanel';
@@ -45,6 +46,8 @@ import {
 
 } from './modals';
 import { useStrategyFlowStore, isValidConnection, validateStrategy } from '../store/strategyFlowStore';
+import { useExecutionStore } from '../store/executionStore';
+import { useExecutionFlow } from '../hooks/useExecutionFlow';
 import type { StrategyFlowNode, NodeCatalogItem } from '../types';
 import { Component, ReactNode } from 'react';
 
@@ -71,6 +74,9 @@ class ErrorBoundary extends Component<
 
 // Memoized node types - CRITICAL: must be stable reference
 const memoizedNodeTypes = nodeTypes;
+
+// Custom edge types - stable reference to prevent re-registration
+const edgeTypes = { bezier: ExecutionEdge };
 
 // Professional edge styling (defaults for new edges - actual color is set per-edge in store)
 const defaultEdgeOptions = {
@@ -278,6 +284,10 @@ const StrategyFlowCanvasInner = () => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition, zoomIn, zoomOut, fitView } = useReactFlow();
 
+  // Execution flow orchestrator
+  const { startExecution, stopExecution, resetExecution } = useExecutionFlow();
+  const executionPhase = useExecutionStore((s) => s.phase);
+
   // Panel visibility states
   const [showCodePanel, setShowCodePanel] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
@@ -455,6 +465,7 @@ const StrategyFlowCanvasInner = () => {
         nodes={nodes}
         edges={edges}
         nodeTypes={memoizedNodeTypes}
+        edgeTypes={edgeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
         connectionLineStyle={connectionLineStyle}
         onNodesChange={onNodesChange as OnNodesChange}
@@ -525,12 +536,44 @@ const StrategyFlowCanvasInner = () => {
             onFitView={() => fitView({ padding: 0.2 })}
             showCode={showCodePanel}
             showAI={showAIPanel}
+            onStartExecution={startExecution}
+            onStopExecution={stopExecution}
+            onResetExecution={resetExecution}
+            executionPhase={executionPhase}
           />
         </Panel>
 
         {/* Top Right: Status indicators (below app header) */}
         <Panel position="top-right" className="!mt-2 !mr-4 !mb-0">
           <div className="flex items-center gap-3 px-3 py-2 bg-card/80 backdrop-blur-sm border border-border/30 rounded-lg">
+            {/* Execution phase badge */}
+            {executionPhase === 'running' && (
+              <>
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs bg-blue-500/20 text-blue-400">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                  Executing
+                </div>
+                <div className="w-px h-4 bg-border/50" />
+              </>
+            )}
+            {executionPhase === 'completed' && (
+              <>
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs bg-green-500/20 text-green-400">
+                  <CheckCircle2 className="w-3 h-3" />
+                  Complete
+                </div>
+                <div className="w-px h-4 bg-border/50" />
+              </>
+            )}
+            {executionPhase === 'error' && (
+              <>
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs bg-red-500/20 text-red-400">
+                  <AlertCircle className="w-3 h-3" />
+                  Error
+                </div>
+                <div className="w-px h-4 bg-border/50" />
+              </>
+            )}
             <SaveStatusIndicator lastSavedAt={lastSavedAt} isModified={isModified} />
             <div className="w-px h-4 bg-border/50" />
             <StrategyValidationBadge nodes={nodes} edges={edges} />

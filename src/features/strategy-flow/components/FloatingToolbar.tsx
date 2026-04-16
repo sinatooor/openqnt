@@ -7,6 +7,8 @@ import { memo, useState } from 'react';
 import * as Toolbar from '@radix-ui/react-toolbar';
 import {
   Play,
+  Square,
+  RotateCcw,
   Layers,
   LineChart,
   Code2,
@@ -56,6 +58,11 @@ interface FloatingToolbarProps {
   onFitView: () => void;
   showCode?: boolean;
   showAI?: boolean;
+  // Execution flow
+  onStartExecution?: () => void;
+  onStopExecution?: () => void;
+  onResetExecution?: () => void;
+  executionPhase?: 'idle' | 'running' | 'paused' | 'completed' | 'error';
 }
 
 export const FloatingToolbar = memo(({
@@ -73,6 +80,10 @@ export const FloatingToolbar = memo(({
   onFitView,
   showCode,
   showAI,
+  onStartExecution,
+  onStopExecution,
+  onResetExecution,
+  executionPhase = 'idle',
 }: FloatingToolbarProps) => {
   const { strategyName, isRunning, exportStrategy, importStrategy, clearCanvas, nodes } = useStrategyFlowStore();
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -181,21 +192,62 @@ export const FloatingToolbar = memo(({
 
         <Toolbar.Separator className="w-px h-5 bg-border/50 mx-1" />
 
-        {/* Backtest */}
+        {/* Run Execution / Backtest */}
+        {executionPhase === 'running' ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Toolbar.Button
+                onClick={onStopExecution}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-sm bg-loss/20 text-loss hover:bg-loss/30 transition-all duration-200 hover:scale-105"
+              >
+                <Square className="w-3.5 h-3.5" />
+                Stop
+              </Toolbar.Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">Stop Execution</TooltipContent>
+          </Tooltip>
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Toolbar.Button
+                onClick={onStartExecution}
+                disabled={nodes.length === 0}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-sm bg-profit/20 text-profit hover:bg-profit/30 transition-all duration-200 hover:scale-105 disabled:opacity-30 disabled:pointer-events-none"
+              >
+                <Play className="w-3.5 h-3.5" />
+                Run
+              </Toolbar.Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">Run Strategy Execution</TooltipContent>
+          </Tooltip>
+        )}
+
+        {/* Reset execution results */}
+        {(executionPhase === 'completed' || executionPhase === 'error') && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Toolbar.Button
+                onClick={onResetExecution}
+                className="p-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-all duration-200 hover:scale-105"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+              </Toolbar.Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">Clear Results</TooltipContent>
+          </Tooltip>
+        )}
+
+        {/* Backtest (modal) */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Toolbar.Button
               onClick={onOpenBacktest}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-sm transition-all duration-200 ${isRunning
-                  ? 'bg-loss/20 text-loss hover:bg-loss/30 hover:scale-105'
-                  : 'bg-profit/20 text-profit hover:bg-profit/30 hover:scale-105'
-                }`}
+              className="p-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-all duration-200 hover:scale-105"
             >
-              <Play className="w-3.5 h-3.5" />
-              {isRunning ? 'Stop' : 'Backtest'}
+              <FlaskConical className="w-4 h-4" />
             </Toolbar.Button>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs">Run Backtest</TooltipContent>
+          <TooltipContent side="bottom" className="text-xs">Backtest</TooltipContent>
         </Tooltip>
 
 
