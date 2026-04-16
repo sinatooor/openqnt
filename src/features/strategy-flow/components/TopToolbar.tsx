@@ -20,8 +20,13 @@ import {
   Layers,
   LineChart,
   Sparkles,
+  Radio,
+  RadioTower,
+  History,
+  SortAsc,
 } from 'lucide-react';
 import { useStrategyFlowStore } from '../store/strategyFlowStore';
+import { useWorkflowManagerStore } from '../store/workflowManagerStore';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { toast } from 'sonner';
 
@@ -33,9 +38,10 @@ interface TopToolbarProps {
   onOpenCode?: () => void;
   onOpenChart?: () => void;
   onOpenAI?: () => void;
+  onOpenHistory?: () => void;
 }
 
-export const TopToolbar = memo(({ 
+export const TopToolbar = memo(({
   className = '',
   onOpenBacktest,
   onOpenSettings,
@@ -43,6 +49,7 @@ export const TopToolbar = memo(({
   onOpenCode,
   onOpenChart,
   onOpenAI,
+  onOpenHistory,
 }: TopToolbarProps) => {
   const {
     nodes,
@@ -52,10 +59,17 @@ export const TopToolbar = memo(({
     isModified,
     isRunning,
     setIsRunning,
+    isActive,
+    toggleActive,
+    executionOrder,
+    setExecutionOrder,
     exportStrategy,
     importStrategy,
     clearCanvas,
   } = useStrategyFlowStore();
+
+  const activeTabId = useWorkflowManagerStore((s) => s.activeTabId);
+  const { syncFromCanvas, saveWorkflow } = useWorkflowManagerStore.getState();
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(strategyName);
@@ -131,19 +145,29 @@ export const TopToolbar = memo(({
 
   const handleSaveToServer = async () => {
     try {
-      if (!isLoggedIn) {
-        toast.error('Please sign in to save strategies');
-        return;
+      // Always sync to the workflow manager library first
+      const { viewport } = useStrategyFlowStore.getState();
+      syncFromCanvas(activeTabId, {
+        nodes,
+        edges,
+        viewport,
+        name: strategyName,
+        description: useStrategyFlowStore.getState().strategyDescription,
+      });
+      saveWorkflow(activeTabId);
+      toast.success('Workflow saved to library');
+
+      if (isLoggedIn) {
+        await saveStrategy(strategyName, nodes, edges);
+        toast.success('Strategy also saved to your account');
       }
-      await saveStrategy(strategyName, nodes, edges);
-      toast.success('Strategy saved to your account');
     } catch (error: any) {
       toast.error(error?.message ?? 'Failed to save strategy');
     }
   };
 
   return (
-    <div className={`absolute top-0 left-0 right-0 z-20 ${className}`}>
+    <div className={`w-full ${className}`}>
       <div className="flex items-center justify-between px-4 py-2 bg-[#252526]/90 backdrop-blur-sm border-b border-white/10">
         {/* Left: Strategy Name */}
         <div className="flex items-center gap-3">
@@ -238,8 +262,52 @@ export const TopToolbar = memo(({
           </button>
         </div>
 
-        {/* Right: File Operations */}
+        {/* Right: File Operations + Activation */}
         <div className="flex items-center gap-1">
+          {/* Execution order toggle */}
+          <button
+            onClick={() => setExecutionOrder(executionOrder === 'v1' ? 'v0' : 'v1')}
+            className="flex items-center gap-1 px-2 py-1 rounded text-xs text-white/50 hover:text-white/80 hover:bg-white/10 transition-colors"
+            title={`Execution order: ${executionOrder === 'v1' ? 'v1 (one branch fully before next)' : 'v0 (legacy interleaved)'}`}
+          >
+            <SortAsc className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">{executionOrder}</span>
+          </button>
+
+          {/* Activation toggle (n8n-style Active/Inactive) */}
+          <button
+            onClick={toggleActive}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+              isActive
+                ? 'bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30'
+                : 'bg-white/5 text-white/40 border-white/10 hover:bg-white/10 hover:text-white/60'
+            }`}
+            title={isActive ? 'Workflow is Active — click to deactivate' : 'Workflow is Inactive — click to activate/publish'}
+          >
+            {isActive ? (
+              <>
+                <RadioTower className="w-3.5 h-3.5" />
+                Active
+              </>
+            ) : (
+              <>
+                <Radio className="w-3.5 h-3.5" />
+                Inactive
+              </>
+            )}
+          </button>
+
+          {/* Execution history */}
+          {onOpenHistory && (
+            <button
+              onClick={onOpenHistory}
+              className="p-2 rounded hover:bg-white/10 text-white/70 hover:text-white transition-colors"
+              title="Execution History"
+            >
+              <History className="w-4 h-4" />
+            </button>
+          )}
+
           <button
             onClick={handleSaveToServer}
             className="p-2 rounded hover:bg-white/10 text-white/70 hover:text-white transition-colors"
