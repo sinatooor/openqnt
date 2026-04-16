@@ -11,7 +11,7 @@
 
 import { memo, ReactNode, useCallback, useMemo } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
-import { MoreHorizontal, Lock, Copy, Pencil, Trash2, Unlock } from 'lucide-react';
+import { MoreHorizontal, Lock, Copy, Pencil, Trash2, Unlock, Check, X, Loader2, Pause, MinusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   ContextMenu,
@@ -28,13 +28,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { 
+import {
   useStrategyFlowStore,
   selectSelectNode,
   selectDuplicateNode,
   selectDeleteNode,
   selectLockNode,
 } from '../../store/strategyFlowStore';
+import { useExecutionStore, selectNodeExecution, NodeExecutionStatus } from '../../store/executionStore';
 import { StrategyNodeData, HandleConfig } from '../../types';
 import { getHandleConfigs } from '../../utils/handleUtils';
 
@@ -138,6 +139,28 @@ const NodeHandle = memo(({ config, nodeColor, index, total, selected }: NodeHand
 NodeHandle.displayName = 'NodeHandle';
 
 // =============================================================================
+// EXECUTION STATUS ICON - small indicator in node header
+// =============================================================================
+
+const ExecutionStatusIcon = memo(({ status }: { status: NodeExecutionStatus }) => {
+  switch (status) {
+    case 'running':
+      return <Loader2 className="w-3.5 h-3.5 text-blue-400 exec-spinner" />;
+    case 'success':
+      return <Check className="w-3.5 h-3.5 text-green-400" />;
+    case 'error':
+      return <X className="w-3.5 h-3.5 text-red-400" />;
+    case 'waiting':
+      return <Pause className="w-3.5 h-3.5 text-purple-400 exec-spinner" style={{ animationDuration: '3s' }} />;
+    case 'skipped':
+      return <MinusCircle className="w-3.5 h-3.5 text-white/30" />;
+    default:
+      return null;
+  }
+});
+ExecutionStatusIcon.displayName = 'ExecutionStatusIcon';
+
+// =============================================================================
 // BASE NODE PROPS
 // =============================================================================
 
@@ -172,6 +195,9 @@ export const StrategyBaseNode = memo(({
   const deleteNode = useStrategyFlowStore(selectDeleteNode);
   const lockNode = useStrategyFlowStore(selectLockNode);
 
+  // Execution state for this node
+  const execState = useExecutionStore(selectNodeExecution(id));
+
   // Memoize handle configs to prevent recalculation
   const { leftHandles, rightHandles } = useMemo(() => {
     const configs = getHandleConfigs(nodeType, subType, data);
@@ -185,8 +211,36 @@ export const StrategyBaseNode = memo(({
     selectNode(id);
   }, [id, selectNode]);
 
+  // Execution-aware border class for the outer wrapper (conic gradient rotation)
+  const execOuterClass = useMemo(() => {
+    if (execState.status === 'running') return 'exec-node-running';
+    if (execState.status === 'waiting') return 'exec-node-running exec-node-waiting';
+    return '';
+  }, [execState.status]);
+
+  // Execution-aware class for the inner card (glow effects)
+  const execCardClass = useMemo(() => {
+    switch (execState.status) {
+      case 'success': return 'exec-node-success';
+      case 'error': return 'exec-node-error';
+      case 'skipped': return 'exec-node-skipped';
+      default: return '';
+    }
+  }, [execState.status]);
+
+  // Execution-aware border color
+  const execBorderColor = useMemo(() => {
+    switch (execState.status) {
+      case 'running': return 'border-blue-500/50';
+      case 'success': return 'border-green-500/40';
+      case 'error': return 'border-red-500/40';
+      case 'waiting': return 'border-purple-500/50';
+      default: return '';
+    }
+  }, [execState.status]);
+
   // Memoize glow style
-  const glowStyle = useMemo(() => 
+  const glowStyle = useMemo(() =>
     selected ? { boxShadow: `0 0 20px ${color}30` } : undefined,
     [selected, color]
   );
@@ -196,7 +250,7 @@ export const StrategyBaseNode = memo(({
       <ContextMenuTrigger>
         <div
           onClick={handleClick}
-          className="relative min-w-[180px] max-w-[280px] group"
+          className={cn("relative min-w-[180px] max-w-[280px] group", execOuterClass)}
           style={{ contain: 'layout style' }}
         >
           {/* Visual Card Content - Inner Wrapper handles the styling/overflow */}
@@ -204,10 +258,11 @@ export const StrategyBaseNode = memo(({
             className={cn(
               'rounded-xl overflow-hidden',
               'bg-[#1a1a1a] border-2',
-              selected
+              execBorderColor || (selected
                 ? 'border-white/30 shadow-lg shadow-black/50'
-                : 'border-white/10 hover:border-white/20',
-              data.locked && 'opacity-75'
+                : 'border-white/10 hover:border-white/20'),
+              data.locked && 'opacity-75',
+              execCardClass,
             )}
             style={glowStyle}
           >
@@ -225,6 +280,10 @@ export const StrategyBaseNode = memo(({
               <span className="text-sm font-medium text-white/90 flex-1 truncate">
                 {data.label}
               </span>
+
+              {/* Execution status indicator in header */}
+              <ExecutionStatusIcon status={execState.status} />
+
               {data.locked && (
                 <Lock className="w-3.5 h-3.5 text-white/50" />
               )}

@@ -4,7 +4,7 @@
  */
 
 import { memo, useCallback, useState } from 'react';
-import { X, Lock, Unlock, Copy, Trash2, MoreHorizontal, AlertTriangle, ExternalLink, Sparkles, Plus, Trash } from 'lucide-react';
+import { X, Lock, Unlock, Copy, Trash2, MoreHorizontal, AlertTriangle, ExternalLink, Sparkles, Plus, Trash, Clock, CheckCircle2, XCircle, Loader2, Database, Code2, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,7 +27,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useStrategyFlowStore, selectSelectedNode } from '../store/strategyFlowStore';
+import { useExecutionStore, selectNodeExecution, type NodeExecutionStatus } from '../store/executionStore';
 import {
   IndicatorNodeData,
   ActionNodeData,
@@ -1955,6 +1962,176 @@ const AgentProperties = memo(({ nodeId, data }: AgentPropertiesProps) => {
 AgentProperties.displayName = 'AgentProperties';
 
 // =============================================================================
+// EXECUTION DATA PANEL - Shows input/output when clicking a node during/after execution
+// =============================================================================
+
+const ExecutionStatusBadge = memo(({ status }: { status: NodeExecutionStatus }) => {
+  const config: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
+    running: { label: 'Running', color: 'text-blue-400', bg: 'bg-blue-500/15', icon: <Loader2 className="w-3 h-3 exec-spinner" /> },
+    success: { label: 'Success', color: 'text-green-400', bg: 'bg-green-500/15', icon: <CheckCircle2 className="w-3 h-3" /> },
+    error:   { label: 'Error',   color: 'text-red-400',   bg: 'bg-red-500/15',   icon: <XCircle className="w-3 h-3" /> },
+    waiting: { label: 'Waiting', color: 'text-purple-400', bg: 'bg-purple-500/15', icon: <Clock className="w-3 h-3" /> },
+    skipped: { label: 'Skipped', color: 'text-white/40',  bg: 'bg-white/5',      icon: null },
+    idle:    { label: 'Idle',    color: 'text-white/30',  bg: 'bg-white/5',      icon: null },
+  };
+  const c = config[status] || config.idle;
+  return (
+    <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium', c.bg, c.color)}>
+      {c.icon}
+      {c.label}
+    </span>
+  );
+});
+ExecutionStatusBadge.displayName = 'ExecutionStatusBadge';
+
+const JsonDataViewer = memo(({ data, maxLines = 12 }: { data: Record<string, unknown> | null; maxLines?: number }) => {
+  if (!data) return <span className="text-[10px] text-white/30 italic">No data</span>;
+  const json = JSON.stringify(data, null, 2);
+  const lines = json.split('\n');
+  const truncated = lines.length > maxLines;
+  const display = truncated ? lines.slice(0, maxLines).join('\n') + '\n  ...' : json;
+
+  return (
+    <pre className="text-[10px] leading-relaxed font-mono text-white/70 bg-black/30 rounded-md p-2 overflow-x-auto whitespace-pre max-h-40 overflow-y-auto no-scrollbar">
+      {display}
+    </pre>
+  );
+});
+JsonDataViewer.displayName = 'JsonDataViewer';
+
+const ExecutionDataPanel = memo(({ nodeId }: { nodeId: string }) => {
+  const execData = useExecutionStore(selectNodeExecution(nodeId));
+  const [showJsonModal, setShowJsonModal] = useState(false);
+  const [expandInput, setExpandInput] = useState(true);
+  const [expandOutput, setExpandOutput] = useState(true);
+
+  // Don't show anything if node hasn't been part of an execution
+  const phase = useExecutionStore((s) => s.phase);
+  if (phase === 'idle') return null;
+  if (execData.status === 'idle') return null;
+
+  const formatDuration = (ms: number | null) => {
+    if (ms === null) return '—';
+    if (ms < 1000) return `${ms}ms`;
+    return `${(ms / 1000).toFixed(2)}s`;
+  };
+
+  return (
+    <div className="space-y-3 pt-3 border-t border-border/50">
+      {/* Section header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Database className="w-3.5 h-3.5 text-blue-400" />
+          <span className="text-xs font-medium text-white/80">Execution Data</span>
+        </div>
+        <ExecutionStatusBadge status={execData.status} />
+      </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="px-2 py-1.5 bg-white/5 rounded-md">
+          <p className="text-[9px] text-white/40 uppercase tracking-wider">Duration</p>
+          <p className="text-xs font-mono text-white/80">{formatDuration(execData.durationMs)}</p>
+        </div>
+        <div className="px-2 py-1.5 bg-white/5 rounded-md">
+          <p className="text-[9px] text-white/40 uppercase tracking-wider">Items</p>
+          <p className="text-xs font-mono text-white/80">{execData.itemsProcessed}</p>
+        </div>
+      </div>
+
+      {/* Error message */}
+      {execData.error && (
+        <div className="px-2 py-1.5 bg-red-500/10 border border-red-500/20 rounded-md">
+          <p className="text-[10px] text-red-400">{execData.error}</p>
+        </div>
+      )}
+
+      {/* Input data */}
+      <div>
+        <button
+          onClick={() => setExpandInput(!expandInput)}
+          className="flex items-center gap-1 text-[10px] font-medium text-white/60 hover:text-white/80 transition-colors mb-1"
+        >
+          {expandInput ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+          Input Data
+        </button>
+        {expandInput && <JsonDataViewer data={execData.inputData} />}
+      </div>
+
+      {/* Output data */}
+      <div>
+        <button
+          onClick={() => setExpandOutput(!expandOutput)}
+          className="flex items-center gap-1 text-[10px] font-medium text-white/60 hover:text-white/80 transition-colors mb-1"
+        >
+          {expandOutput ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+          Output Data
+        </button>
+        {expandOutput && <JsonDataViewer data={execData.outputData} />}
+      </div>
+
+      {/* View full JSON button */}
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full h-7 text-[10px] gap-1.5 border-white/10 bg-white/5 hover:bg-white/10 text-white/60"
+        onClick={() => setShowJsonModal(true)}
+      >
+        <Code2 className="w-3 h-3" />
+        View Full JSON
+      </Button>
+
+      {/* Full JSON Modal */}
+      <Dialog open={showJsonModal} onOpenChange={setShowJsonModal}>
+        <DialogContent className="max-w-2xl max-h-[80vh] bg-[#0f0f0f] border-white/10">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-medium text-white/90">Node Execution Data</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 overflow-y-auto max-h-[60vh] pr-2">
+            <div>
+              <p className="text-[10px] font-medium text-white/50 uppercase tracking-wider mb-1">Status</p>
+              <ExecutionStatusBadge status={execData.status} />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <p className="text-[10px] text-white/40 uppercase tracking-wider">Duration</p>
+                <p className="text-sm font-mono text-white/80">{formatDuration(execData.durationMs)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-white/40 uppercase tracking-wider">Items</p>
+                <p className="text-sm font-mono text-white/80">{execData.itemsProcessed}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-white/40 uppercase tracking-wider">Branch</p>
+                <p className="text-sm font-mono text-white/80">{execData.takenBranch || '—'}</p>
+              </div>
+            </div>
+            {execData.error && (
+              <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-md">
+                <p className="text-xs text-red-400">{execData.error}</p>
+              </div>
+            )}
+            <div>
+              <p className="text-[10px] font-medium text-white/50 uppercase tracking-wider mb-1">Input</p>
+              <pre className="text-xs leading-relaxed font-mono text-white/70 bg-black/40 rounded-lg p-3 overflow-auto max-h-52">
+                {execData.inputData ? JSON.stringify(execData.inputData, null, 2) : 'null'}
+              </pre>
+            </div>
+            <div>
+              <p className="text-[10px] font-medium text-white/50 uppercase tracking-wider mb-1">Output</p>
+              <pre className="text-xs leading-relaxed font-mono text-white/70 bg-black/40 rounded-lg p-3 overflow-auto max-h-52">
+                {execData.outputData ? JSON.stringify(execData.outputData, null, 2) : 'null'}
+              </pre>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+});
+ExecutionDataPanel.displayName = 'ExecutionDataPanel';
+
+// =============================================================================
 // MAIN COMPONENT
 // =============================================================================
 
@@ -2087,6 +2264,9 @@ export const RightPropertyPanel = memo(() => {
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-4">
           {renderProperties()}
+
+          {/* Execution Data - shown during/after execution */}
+          <ExecutionDataPanel nodeId={selectedNode.id} />
         </div>
       </ScrollArea>
 
