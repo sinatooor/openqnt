@@ -295,6 +295,15 @@ interface StrategyFlowState {
   strategyDescription: string;
   isModified: boolean;
 
+  // Workflow identity (links to workflowManagerStore)
+  workflowId: string | null;
+
+  // Activation / Published state (n8n-style "Active" toggle)
+  isActive: boolean;
+
+  // Execution order setting: v1 = one branch fully before next; v0 = legacy interleaved
+  executionOrder: 'v0' | 'v1';
+
   // Execution State
   isRunning: boolean;
 
@@ -359,6 +368,28 @@ interface StrategyFlowActions {
   // Execution
   setIsRunning: (running: boolean) => void;
 
+  // Activation (n8n-style Active toggle)
+  toggleActive: () => void;
+  setIsActive: (active: boolean) => void;
+
+  // Execution order
+  setExecutionOrder: (order: 'v0' | 'v1') => void;
+
+  // Workflow identity
+  setWorkflowId: (id: string | null) => void;
+
+  // Hydrate canvas from an external source (e.g. switching workflow tabs)
+  hydrateCanvas: (data: {
+    nodes: StrategyFlowNode[];
+    edges: StrategyFlowEdge[];
+    viewport?: Viewport;
+    strategyName?: string;
+    strategyDescription?: string;
+    isActive?: boolean;
+    executionOrder?: 'v0' | 'v1';
+    workflowId?: string | null;
+  }) => void;
+
   // Canvas Controls
   togglePanMode: () => void;
   toggleGrid: () => void;
@@ -412,6 +443,9 @@ const initialState: StrategyFlowState = {
   strategyName: 'Untitled Strategy',
   strategyDescription: '',
   isModified: false,
+  workflowId: null,
+  isActive: false,
+  executionOrder: 'v1',
   isRunning: false,
   lastSavedAt: null,
   isSaving: false,
@@ -741,6 +775,42 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
         set({ isRunning: running });
       },
 
+      toggleActive: () => {
+        set((s) => ({ isActive: !s.isActive, isModified: true }));
+      },
+
+      setIsActive: (active) => {
+        set({ isActive: active, isModified: true });
+      },
+
+      setExecutionOrder: (order) => {
+        set({ executionOrder: order, isModified: true });
+      },
+
+      setWorkflowId: (id) => {
+        set({ workflowId: id });
+      },
+
+      hydrateCanvas: (data) => {
+        const { nodes, edges } = data;
+        const repairedEdges = repairEdges(nodes, edges);
+        set({
+          nodes,
+          edges: repairedEdges,
+          ...(data.viewport ? { viewport: data.viewport } : {}),
+          ...(data.strategyName !== undefined ? { strategyName: data.strategyName } : {}),
+          ...(data.strategyDescription !== undefined ? { strategyDescription: data.strategyDescription } : {}),
+          ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
+          ...(data.executionOrder !== undefined ? { executionOrder: data.executionOrder } : {}),
+          ...(data.workflowId !== undefined ? { workflowId: data.workflowId } : {}),
+          isModified: false,
+          selectedNodeId: null,
+          rightPanelOpen: false,
+          history: [],
+          historyIndex: -1,
+        });
+      },
+
       // =========================================================================
       // HISTORY (UNDO/REDO)
       // =========================================================================
@@ -801,11 +871,13 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
       // =========================================================================
 
       exportStrategy: () => {
-        const { nodes, edges, strategyName, strategyDescription } = get();
+        const { nodes, edges, strategyName, strategyDescription, isActive, executionOrder } = get();
         return JSON.stringify({
           version: '1.0',
           name: strategyName,
           description: strategyDescription,
+          isActive,
+          executionOrder,
           nodes,
           edges,
           exportedAt: new Date().toISOString(),
@@ -954,6 +1026,9 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
         viewport: state.viewport,
         strategyName: state.strategyName,
         strategyDescription: state.strategyDescription,
+        isActive: state.isActive,
+        executionOrder: state.executionOrder,
+        workflowId: state.workflowId,
         leftSidebarWidth: state.leftSidebarWidth,
         rightPanelWidth: state.rightPanelWidth,
         pineScriptMode: state.pineScriptMode,

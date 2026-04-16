@@ -9,7 +9,7 @@
  * - Reduced MiniMap update frequency
  */
 
-import { useCallback, useRef, useState, useEffect, useMemo, DragEvent, memo } from 'react';
+import { useCallback, useRef, useState, useEffect, useMemo, DragEvent, memo, MutableRefObject } from 'react';
 import {
   ReactFlow,
   Background,
@@ -35,6 +35,8 @@ import { RightPropertyPanel } from './RightPropertyPanel';
 import { ContextMenu } from './ContextMenu';
 import { CodeViewPanel } from './CodeViewPanel';
 import { AIChatPanel } from './AIChatPanel';
+import { WorkflowTabBar } from './WorkflowTabBar';
+import { ExecutionHistoryPanel } from './ExecutionHistoryPanel';
 import {
   BacktestModal,
   TemplatesDialog,
@@ -48,6 +50,7 @@ import {
 import { useStrategyFlowStore, isValidConnection, validateStrategy } from '../store/strategyFlowStore';
 import { useExecutionStore } from '../store/executionStore';
 import { useExecutionFlow } from '../hooks/useExecutionFlow';
+import { TopToolbar } from './TopToolbar';
 import type { StrategyFlowNode, NodeCatalogItem } from '../types';
 import { Component, ReactNode } from 'react';
 
@@ -279,8 +282,22 @@ const StrategyValidationBadge = memo(({ nodes, edges }: { nodes: StrategyFlowNod
 
 StrategyValidationBadge.displayName = 'StrategyValidationBadge';
 
+/** Callbacks the outer shell needs to reach into the inner component */
+interface PanelCallbacks {
+  openBacktest?: () => void;
+  openSettings?: () => void;
+  openTemplates?: () => void;
+  openCode?: () => void;
+  openChart?: () => void;
+  openAI?: () => void;
+}
+
 // Inner component that uses ReactFlow hooks
-const StrategyFlowCanvasInner = () => {
+const StrategyFlowCanvasInner = ({
+  panelCallbacksRef,
+}: {
+  panelCallbacksRef: MutableRefObject<PanelCallbacks>;
+}) => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition, zoomIn, zoomOut, fitView } = useReactFlow();
 
@@ -302,6 +319,18 @@ const StrategyFlowCanvasInner = () => {
   const [showJournal, setShowJournal] = useState(false);
   const [showScreener, setShowScreener] = useState(false);
   const [showLiveTrading, setShowLiveTrading] = useState(false);
+
+  // Expose panel callbacks to the outer component via ref
+  useEffect(() => {
+    panelCallbacksRef.current = {
+      openBacktest: () => setShowBacktest(true),
+      openSettings: () => {/* settings modal is handled in TopToolbar's MoreHorizontal menu */},
+      openTemplates: () => setShowTemplates(true),
+      openCode: () => setShowCodePanel((v) => !v),
+      openChart: () => setShowChart(true),
+      openAI: () => setShowAIPanel((v) => !v),
+    };
+  });
 
 
   // Use shallow comparison for store values to prevent unnecessary re-renders
@@ -457,7 +486,7 @@ const StrategyFlowCanvasInner = () => {
   return (
     <div
       ref={reactFlowWrapper}
-      className="w-full h-full bg-background pt-14"
+      className="w-full h-full bg-background"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
@@ -653,24 +682,51 @@ const StrategyFlowErrorFallback = () => (
 
 // Main component wrapped with ReactFlowProvider and ErrorBoundary
 export const StrategyFlowCanvas = () => {
+  const [showHistory, setShowHistory] = useState(false);
+  const panelCallbacksRef = useRef<PanelCallbacks>({});
+
   return (
     <ErrorBoundary fallback={<StrategyFlowErrorFallback />}>
-      <div className="relative h-screen w-screen bg-background overflow-hidden">
-        {/* Canvas fills entire background */}
-        <div className="absolute inset-0">
-          <ReactFlowProvider>
-            <StrategyFlowCanvasInner />
-          </ReactFlowProvider>
+      <div className="relative h-screen w-screen bg-background overflow-hidden flex flex-col">
+
+        {/* ── Top chrome: strategy toolbar + workflow tabs ── */}
+        <div className="relative z-30 flex-none">
+          <TopToolbar
+            onOpenBacktest={() => panelCallbacksRef.current.openBacktest?.()}
+            onOpenTemplates={() => panelCallbacksRef.current.openTemplates?.()}
+            onOpenCode={() => panelCallbacksRef.current.openCode?.()}
+            onOpenChart={() => panelCallbacksRef.current.openChart?.()}
+            onOpenAI={() => panelCallbacksRef.current.openAI?.()}
+            onOpenHistory={() => setShowHistory((v) => !v)}
+          />
+          <WorkflowTabBar />
         </div>
 
-        {/* Left Sidebar overlays canvas */}
-        <div className="absolute left-0 top-0 h-full z-20">
-          <LeftSidebar />
-        </div>
+        {/* ── Main area: canvas + sidebars ── */}
+        <div className="relative flex-1 overflow-hidden">
+          {/* Canvas fills the main area */}
+          <div className="absolute inset-0">
+            <ReactFlowProvider>
+              <StrategyFlowCanvasInner panelCallbacksRef={panelCallbacksRef} />
+            </ReactFlowProvider>
+          </div>
 
-        {/* Right Property Panel overlays canvas */}
-        <div className="absolute right-0 top-0 h-full z-20">
-          <RightPropertyPanel />
+          {/* Left Sidebar overlays canvas */}
+          <div className="absolute left-0 top-0 h-full z-20">
+            <LeftSidebar />
+          </div>
+
+          {/* Right Property Panel overlays canvas */}
+          <div className="absolute right-0 top-0 h-full z-20">
+            <RightPropertyPanel />
+          </div>
+
+          {/* Execution History Panel (slide-over) */}
+          {showHistory && (
+            <div className="absolute right-0 top-0 h-full z-30 animate-in slide-in-from-right duration-200">
+              <ExecutionHistoryPanel onClose={() => setShowHistory(false)} />
+            </div>
+          )}
         </div>
       </div>
     </ErrorBoundary>

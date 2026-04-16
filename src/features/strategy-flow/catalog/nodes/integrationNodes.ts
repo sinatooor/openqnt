@@ -318,4 +318,32 @@ export const INTEGRATION_NODES: NodeCatalogItem[] = [
             credentialAlias: 'telegram',
         },
     },
+    // =========================================================================
+    // Sub-workflow
+    // =========================================================================
+    {
+        type: 'subWorkflowNode',
+        nodeType: 'integration',
+        label: 'Sub-Workflow',
+        description: 'Execute another saved workflow as a reusable module',
+        tooltip: 'Runs a saved workflow as a black-box sub-process. Data from this node\'s inputs is passed as the trigger payload; the sub-workflow\'s final output is returned as this node\'s output. Equivalent to n8n\'s Execute Sub-workflow node.',
+        inputs: ['Trigger', 'Data'],
+        outputs: ['Result', 'Error'],
+        category: 'integrations',
+        subcategory: 'Flow',
+        icon: 'GitBranch',
+        color: '#6366f1',
+        backtestEligible: false,
+        defaultData: {
+            integrationType: 'subWorkflowNode',
+            /** ID of the SavedWorkflow to execute */
+            subWorkflowId: '',
+            /** Human-readable name (resolved at runtime) */
+            subWorkflowName: '',
+            /** How to handle sub-workflow errors */
+            onError: 'stop',
+            /** Timeout in seconds (0 = no timeout) */
+            timeoutSeconds: 0,
+        },
+    },
 ];

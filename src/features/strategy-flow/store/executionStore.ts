@@ -32,6 +32,9 @@ export interface NodeExecutionData {
   itemsProcessed: number;
   /** For IF/Switch nodes, which branch was taken (handle id) */
   takenBranch: string | null;
+  /** Data pinning: frozen output that won't be re-run */
+  isPinned: boolean;
+  pinnedAt: number | null;
 }
 
 export interface EdgeExecutionData {
@@ -89,6 +92,11 @@ interface ExecutionActions {
   setEdgeActive: (edgeId: string, itemCount?: number) => void;
   setEdgeRunning: (edgeId: string) => void;
   clearEdgeRunning: (edgeId: string) => void;
+
+  // Pinning
+  pinNode: (nodeId: string) => void;
+  unpinNode: (nodeId: string) => void;
+  isPinned: (nodeId: string) => boolean;
 }
 
 // =============================================================================
@@ -105,6 +113,8 @@ const defaultNodeState: NodeExecutionData = {
   durationMs: null,
   itemsProcessed: 0,
   takenBranch: null,
+  isPinned: false,
+  pinnedAt: null,
 };
 
 const defaultEdgeState: EdgeExecutionData = {
@@ -132,9 +142,17 @@ export const useExecutionStore = create<ExecutionState & ExecutionActions>()(
     ...initialState,
 
     startExecution: () => {
+      // Preserve pinned nodes across execution runs — their frozen output
+      // should survive so traversal can skip them.
+      const prev = get().nodeStates;
+      const pinned: Record<string, NodeExecutionData> = {};
+      for (const [id, ns] of Object.entries(prev)) {
+        if (ns.isPinned) pinned[id] = ns;
+      }
+
       set({
         phase: 'running',
-        nodeStates: {},
+        nodeStates: pinned,
         edgeStates: {},
         executionOrder: [],
         activeNodeId: null,
@@ -277,6 +295,46 @@ export const useExecutionStore = create<ExecutionState & ExecutionActions>()(
           },
         },
       }));
+    },
+
+    // -----------------------------------------------------------------------
+    // Pinning
+    // -----------------------------------------------------------------------
+
+    pinNode: (nodeId) => {
+      set((state) => {
+        const existing = state.nodeStates[nodeId] || defaultNodeState;
+        return {
+          nodeStates: {
+            ...state.nodeStates,
+            [nodeId]: {
+              ...existing,
+              isPinned: true,
+              pinnedAt: Date.now(),
+            },
+          },
+        };
+      });
+    },
+
+    unpinNode: (nodeId) => {
+      set((state) => {
+        const existing = state.nodeStates[nodeId] || defaultNodeState;
+        return {
+          nodeStates: {
+            ...state.nodeStates,
+            [nodeId]: {
+              ...existing,
+              isPinned: false,
+              pinnedAt: null,
+            },
+          },
+        };
+      });
+    },
+
+    isPinned: (nodeId) => {
+      return !!(get().nodeStates[nodeId]?.isPinned);
     },
   }),
 );

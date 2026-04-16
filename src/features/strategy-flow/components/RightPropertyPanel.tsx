@@ -4,7 +4,7 @@
  */
 
 import { memo, useCallback, useState } from 'react';
-import { X, Lock, Unlock, Copy, Trash2, MoreHorizontal, AlertTriangle, ExternalLink, Sparkles, Plus, Trash, Clock, CheckCircle2, XCircle, Loader2, Database, Code2, ChevronDown, ChevronRight } from 'lucide-react';
+import { X, Lock, Unlock, Copy, Trash2, MoreHorizontal, AlertTriangle, ExternalLink, Sparkles, Plus, Trash, Clock, CheckCircle2, XCircle, Loader2, Database, Code2, ChevronDown, ChevronRight, Pin, PinOff, GitBranch, Braces } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/dialog';
 import { useStrategyFlowStore, selectSelectedNode } from '../store/strategyFlowStore';
 import { useExecutionStore, selectNodeExecution, type NodeExecutionStatus } from '../store/executionStore';
+import { useWorkflowManagerStore } from '../store/workflowManagerStore';
 import {
   IndicatorNodeData,
   ActionNodeData,
@@ -1962,6 +1963,102 @@ const AgentProperties = memo(({ nodeId, data }: AgentPropertiesProps) => {
 AgentProperties.displayName = 'AgentProperties';
 
 // =============================================================================
+// SUB-WORKFLOW PROPERTIES
+// =============================================================================
+
+interface SubWorkflowPropertiesProps {
+  nodeId: string;
+  data: Record<string, unknown>;
+}
+
+const SubWorkflowProperties = memo(({ nodeId, data }: SubWorkflowPropertiesProps) => {
+  const { updateNodeData } = useStrategyFlowStore();
+  const savedWorkflows = useWorkflowManagerStore((s) => s.savedWorkflows);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start gap-2 p-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg">
+        <GitBranch className="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" />
+        <div className="text-xs text-indigo-200/80">
+          <p className="font-medium">Sub-Workflow</p>
+          <p className="text-indigo-200/60 mt-0.5">
+            Runs a saved workflow as a reusable module. The sub-workflow receives this node's
+            input and returns its final output.
+          </p>
+        </div>
+      </div>
+
+      {/* Workflow selector */}
+      <div className="space-y-2">
+        <Label className="text-xs text-muted-foreground">Select Workflow</Label>
+        {savedWorkflows.length === 0 ? (
+          <div className="px-3 py-2 bg-white/5 border border-white/10 rounded-md text-[10px] text-white/40">
+            No saved workflows. Save a workflow in the library first.
+          </div>
+        ) : (
+          <Select
+            value={data.subWorkflowId as string || ''}
+            onValueChange={(v) => {
+              const wf = savedWorkflows.find((w) => w.id === v);
+              updateNodeData(nodeId, {
+                subWorkflowId: v,
+                subWorkflowName: wf?.name ?? '',
+              });
+            }}
+          >
+            <SelectTrigger className="h-8 text-sm">
+              <SelectValue placeholder="Choose a workflow…" />
+            </SelectTrigger>
+            <SelectContent>
+              {savedWorkflows.map((wf) => (
+                <SelectItem key={wf.id} value={wf.id}>
+                  <div className="flex items-center gap-2">
+                    <GitBranch className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>{wf.name}</span>
+                    <span className="text-[10px] text-muted-foreground ml-1">
+                      ({wf.nodes.length} nodes)
+                    </span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
+
+      {/* On error */}
+      <SelectInput
+        label="On Sub-Workflow Error"
+        value={data.onError as string || 'stop'}
+        onChange={(v) => updateNodeData(nodeId, { onError: v })}
+        options={[
+          { value: 'stop', label: 'Stop workflow' },
+          { value: 'continue', label: 'Continue with error output' },
+          { value: 'retry', label: 'Retry once' },
+        ]}
+      />
+
+      {/* Timeout */}
+      <NumberInput
+        label="Timeout (seconds, 0 = none)"
+        value={data.timeoutSeconds as number || 0}
+        onChange={(v) => updateNodeData(nodeId, { timeoutSeconds: v })}
+        min={0}
+        step={1}
+        description="Max time to wait for the sub-workflow. 0 = unlimited."
+      />
+
+      {data.subWorkflowId && (
+        <div className="px-2 py-1.5 bg-white/5 border border-white/10 rounded-md text-[10px] text-white/50">
+          Selected: <span className="font-mono text-white/70">{data.subWorkflowName as string || data.subWorkflowId as string}</span>
+        </div>
+      )}
+    </div>
+  );
+});
+SubWorkflowProperties.displayName = 'SubWorkflowProperties';
+
+// =============================================================================
 // EXECUTION DATA PANEL - Shows input/output when clicking a node during/after execution
 // =============================================================================
 
@@ -2001,6 +2098,7 @@ JsonDataViewer.displayName = 'JsonDataViewer';
 
 const ExecutionDataPanel = memo(({ nodeId }: { nodeId: string }) => {
   const execData = useExecutionStore(selectNodeExecution(nodeId));
+  const { pinNode, unpinNode } = useExecutionStore.getState();
   const [showJsonModal, setShowJsonModal] = useState(false);
   const [expandInput, setExpandInput] = useState(true);
   const [expandOutput, setExpandOutput] = useState(true);
@@ -2024,8 +2122,32 @@ const ExecutionDataPanel = memo(({ nodeId }: { nodeId: string }) => {
           <Database className="w-3.5 h-3.5 text-blue-400" />
           <span className="text-xs font-medium text-white/80">Execution Data</span>
         </div>
-        <ExecutionStatusBadge status={execData.status} />
+        <div className="flex items-center gap-1">
+          {/* Pin / Unpin output data */}
+          <button
+            onClick={() => execData.isPinned ? unpinNode(nodeId) : pinNode(nodeId)}
+            className={cn(
+              'flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium border transition-colors',
+              execData.isPinned
+                ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                : 'bg-white/5 text-white/40 border-white/10 hover:bg-white/10',
+            )}
+            title={execData.isPinned ? 'Unpin data (re-run on next execution)' : 'Pin data (freeze output, skip on next execution)'}
+          >
+            {execData.isPinned ? <PinOff className="w-2.5 h-2.5" /> : <Pin className="w-2.5 h-2.5" />}
+            {execData.isPinned ? 'Pinned' : 'Pin'}
+          </button>
+          <ExecutionStatusBadge status={execData.status} />
+        </div>
       </div>
+      {execData.isPinned && (
+        <div className="px-2 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-md flex items-center gap-2">
+          <Pin className="w-3 h-3 text-amber-400 shrink-0" />
+          <p className="text-[10px] text-amber-300">
+            Data is pinned — this node will be skipped on the next run and its frozen output reused.
+          </p>
+        </div>
+      )}
 
       {/* Stats row */}
       <div className="grid grid-cols-2 gap-2">
@@ -2148,6 +2270,7 @@ export const RightPropertyPanel = memo(() => {
   } = useStrategyFlowStore();
 
   const selectedNode = useStrategyFlowStore(selectSelectedNode);
+  const [showCodeModal, setShowCodeModal] = useState(false);
 
   if (!rightPanelOpen || !selectedNode) {
     return null;
@@ -2156,7 +2279,29 @@ export const RightPropertyPanel = memo(() => {
   const data = selectedNode.data;
   const isLocked = data.locked;
 
+  // Generate a simple JSON representation of this node for the "Code" view
+  const getNodeCode = () => {
+    return JSON.stringify(
+      {
+        id: selectedNode.id,
+        type: selectedNode.type,
+        data: selectedNode.data,
+        position: selectedNode.position,
+      },
+      null,
+      2,
+    );
+  };
+
   const renderProperties = () => {
+    // Check for sub-workflow node
+    if (selectedNode.type === 'integration') {
+      const intType = (data as Record<string, unknown>).integrationType as string;
+      if (intType === 'subWorkflowNode') {
+        return <SubWorkflowProperties nodeId={selectedNode.id} data={data as Record<string, unknown>} />;
+      }
+    }
+
     switch (selectedNode.type) {
       case 'indicator':
         return <IndicatorProperties nodeId={selectedNode.id} data={data as IndicatorNodeData} />;
@@ -2202,6 +2347,16 @@ export const RightPropertyPanel = memo(() => {
           <span className="text-sm font-medium truncate">{data.label}</span>
         </div>
         <div className="flex items-center gap-1">
+          {/* "Code" button — shows node JSON definition */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-purple-400/70 hover:text-purple-400 hover:bg-purple-500/10"
+            onClick={() => setShowCodeModal(true)}
+            title="View node code / JSON definition"
+          >
+            <Braces className="w-4 h-4" />
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-7 w-7">
@@ -2248,6 +2403,28 @@ export const RightPropertyPanel = memo(() => {
           </Button>
         </div>
       </div>
+
+      {/* Node Code Modal */}
+      <Dialog open={showCodeModal} onOpenChange={setShowCodeModal}>
+        <DialogContent className="max-w-2xl max-h-[80vh] bg-[#0f0f0f] border-white/10">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-medium text-white/90 flex items-center gap-2">
+              <Braces className="w-4 h-4 text-purple-400" />
+              Node Definition — {data.label}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-[11px] text-white/40">
+              This is the JSON representation of this node as stored in the workflow graph.
+              Use <code className="text-purple-300">{"{{ $node.NodeId.output.field }}"}</code> in
+              any parameter field to reference runtime output from another node.
+            </p>
+            <pre className="text-xs leading-relaxed font-mono text-white/70 bg-black/40 rounded-lg p-4 overflow-auto max-h-[50vh] border border-white/10">
+              {getNodeCode()}
+            </pre>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Node Label Edit */}
       <div className="px-4 py-3 border-b border-border/50">
