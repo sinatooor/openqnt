@@ -16,6 +16,8 @@ import Settings from "./pages/Settings";
 import Portfolio from "./pages/Portfolio";
 import News from "./pages/News";
 import Terminal from "./pages/Terminal";
+import TerminalRmap from "./pages/TerminalRmap";
+import TerminalBmap from "./pages/TerminalBmap";
 import AiChat from "./pages/AiChat";
 import Agents from "./pages/Agents";
 import NotFound from "./pages/NotFound";
@@ -108,6 +110,9 @@ const AppRoutes = () => {
         <Route path="/research" element={<Research />} />
         <Route path="/news" element={<News />} />
         <Route path="/terminal" element={<Terminal />} />
+        <Route path="/terminal/rmap" element={<TerminalRmap />} />
+        <Route path="/terminal/rmap/:ticker" element={<TerminalRmap />} />
+        <Route path="/terminal/bmap" element={<TerminalBmap />} />
         <Route path="/ai-chat" element={<AiChat />} />
         <Route path="/agent" element={<AgentConfig />} />
         <Route path="/agents" element={<Agents />} />
