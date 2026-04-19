@@ -159,6 +159,33 @@ export const AGENT_NODES: NodeCatalogItem[] = [
         },
     },
     // =========================================================================
+    // Quant Agent — invokes terminal functions (HDS, DES, GIP, SPLC, WEI, …)
+    // =========================================================================
+    {
+        type: 'quantAgentNode',
+        nodeType: 'agent',
+        label: 'Quant Agent',
+        description: 'Terminal-function analyst',
+        tooltip: 'Quantitative agent with read access to Bloomberg-style terminal functions (HDS holders, DES description, GIP intraday graph, SPLC supply chain, WEI world indices, …). Pick which functions it can call; the agent fetches each one, synthesizes the data, and emits a signal with confidence.',
+        inputs: ['Trigger', 'Symbols'],
+        outputs: ['Signal', 'Confidence', 'Findings'],
+        category: 'agents',
+        subcategory: 'Research',
+        icon: 'Calculator',
+        color: '#6366f1',
+        backtestEligible: false,
+        defaultData: {
+            agentNodeType: 'quantAgentNode',
+            agentType: 'quant_analyst',
+            model: 'gemini-2.0-flash',
+            symbols: [],
+            confidenceThreshold: 0.5,
+            // Default: give it access to every currently registered terminal tool.
+            terminalTools: ['HDS', 'DES', 'GIP', 'SPLC', 'WEI'],
+            terminalToolMaxCalls: 8,
+        },
+    },
+    // =========================================================================
     // Research Agent
     // =========================================================================
     {

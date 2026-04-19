@@ -36,6 +36,7 @@ import {
 import { useStrategyFlowStore, selectSelectedNode } from '../store/strategyFlowStore';
 import { useExecutionStore, selectNodeExecution, type NodeExecutionStatus } from '../store/executionStore';
 import { useWorkflowManagerStore } from '../store/workflowManagerStore';
+import { listTerminalTools } from '@/features/terminal/agentTools/registry';
 import {
   IndicatorNodeData,
   ActionNodeData,
@@ -1916,6 +1917,66 @@ const AgentProperties = memo(({ nodeId, data }: AgentPropertiesProps) => {
           />
         </div>
       )}
+
+      {/* Quant Agent Settings — terminal-function tool selection */}
+      {agentType === 'quantAgentNode' && (() => {
+        // Resolve currently registered terminal tools at render time.
+        // The registry self-registers on first import, so this is always fresh.
+        const toolOptions = listTerminalTools().map((t) => ({
+          value: t.code,
+          label: `${t.code} — ${t.label}`,
+        }));
+        const defaultTools = toolOptions.map((o) => o.value);
+
+        return (
+          <div className="space-y-3 pt-2 border-t border-white/5">
+            <p className="text-[10px] font-medium text-indigo-400 uppercase tracking-wider">
+              Quant Agent Settings
+            </p>
+
+            <MultiSelectChips
+              label="Terminal Functions"
+              values={data.terminalTools ?? defaultTools}
+              onChange={(v) => updateNodeData(nodeId, { terminalTools: v })}
+              options={toolOptions}
+              description="Which terminal functions (HDS, DES, GIP, SPLC, WEI, …) this agent is allowed to call. The agent decides when to invoke each one based on the current task."
+            />
+
+            {(data.terminalTools ?? defaultTools).length === 0 && (
+              <div className="p-2 bg-red-500/10 border border-red-500/20 rounded text-[10px] text-red-300">
+                No terminal functions selected — the quant agent won't have any data source to reason over.
+              </div>
+            )}
+
+            <NumberInput
+              label="Max Tool Calls / Run"
+              value={data.terminalToolMaxCalls ?? 8}
+              onChange={(v) => updateNodeData(nodeId, { terminalToolMaxCalls: v })}
+              min={1}
+              max={50}
+              step={1}
+              description="Safety cap on how many terminal-function calls the agent can make per execution."
+            />
+
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Ticker Override (optional)</Label>
+              <Input
+                value={data.terminalToolTicker ?? ''}
+                onChange={(e) =>
+                  updateNodeData(nodeId, {
+                    terminalToolTicker: e.target.value.trim().toUpperCase() || undefined,
+                  })
+                }
+                placeholder="e.g. AAPL (falls back to Target Symbols)"
+                className="text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground/70">
+                Ticker to pass to ticker-scoped tools (HDS, DES, GIP, SPLC). Leave empty to use the first Target Symbol above.
+              </p>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Research Agent Settings */}
       {agentType === 'researchAgentNode' && (

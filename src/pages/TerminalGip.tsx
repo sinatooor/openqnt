@@ -15,7 +15,8 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { useAuthStore } from '../stores/authStore';
 import GipView, { type ChartType } from '@/features/terminal/gip/GipView';
 import { gipTool } from '@/features/terminal/gip/tool';
-import type { GipInterval } from '@/features/terminal/gip/mockData';
+import { generateGipData, type GipInterval } from '@/features/terminal/gip/mockData';
+import { useTerminalData } from '@/features/terminal/useTerminalData';
 import AgentContextDrawer from '@/features/terminal/agentTools/AgentContextDrawer';
 
 const DEFAULT_TICKER = 'AAPL';
@@ -58,15 +59,10 @@ export default function TerminalGip() {
     [navigate],
   );
 
-  const data = useMemo(
-    () =>
-      gipTool.fetch({
-        ticker,
-        interval,
-        extendedHours,
-        seedSalt: refreshSalt,
-      }),
-    [ticker, interval, extendedHours, refreshSalt],
+  const data = useTerminalData(
+    gipTool,
+    { ticker, interval, extendedHours, seedSalt: refreshSalt },
+    () => generateGipData({ ticker, interval, extendedHours, seedSalt: refreshSalt }),
   );
 
   return (

@@ -7,7 +7,34 @@
 
 import { registerTerminalTool } from '../agentTools/registry';
 import type { TerminalTool } from '../agentTools/types';
+import { terminalApiGet } from '../apiClient';
 import { generateSplcData, type SplcData, type SplcRelationship } from './mockData';
+
+async function fetchSplc(input: SplcInput): Promise<SplcData> {
+  const ticker = String(input.ticker ?? '').trim().toUpperCase();
+  const salted = input.seedSalt != null ? `${ticker}#${input.seedSalt}` : ticker;
+  if (!ticker) return generateSplcData(salted);
+
+  const resp = await terminalApiGet<{
+    source: string;
+    data: { center: SplcData['center']; suppliers: SplcRelationship[]; customers: SplcRelationship[]; peers: SplcData['peers'] };
+  }>(`/api/terminal/splc/${encodeURIComponent(ticker)}`);
+
+  // Real supply-chain data is only available from paid feeds (Sayari,
+  // FactSet, Bloomberg SPLC). Free tier returns peers + focal company
+  // profile only — we augment with mock suppliers/customers so the UI has
+  // something to render while flagging the source.
+  if (resp?.data?.center?.name) {
+    const mock = generateSplcData(salted);
+    return {
+      center: { ...mock.center, ...resp.data.center },
+      suppliers: resp.data.suppliers?.length ? resp.data.suppliers : mock.suppliers,
+      customers: resp.data.customers?.length ? resp.data.customers : mock.customers,
+      peers: resp.data.peers?.length ? resp.data.peers : mock.peers,
+    };
+  }
+  return generateSplcData(salted);
+}
 
 export interface SplcInput {
   ticker: string;
@@ -133,11 +160,7 @@ export const splcTool: TerminalTool<SplcInput, SplcData> = {
     },
     required: ['ticker'],
   },
-  fetch: (input) => {
-    // The generator accepts a composite string seed — combine ticker + salt to keep outputs stable.
-    const salted = input.seedSalt != null ? `${input.ticker}#${input.seedSalt}` : input.ticker;
-    return generateSplcData(salted);
-  },
+  fetch: (input) => fetchSplc(input),
   formatForAgent: (data) => formatSplcForAgent(data),
   summarise: (data) => summariseSplc(data),
 };

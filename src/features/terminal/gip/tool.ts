@@ -5,8 +5,23 @@
 
 import { registerTerminalTool } from '../agentTools/registry';
 import type { TerminalTool } from '../agentTools/types';
+import { terminalApiGet } from '../apiClient';
 import { generateGipData, type GipData, type GipInput, type GipInterval } from './mockData';
 import { formatGipForAgent, summariseGip } from './formatForAgent';
+
+async function fetchGip(input: GipInput): Promise<GipData> {
+  const ticker = String(input.ticker ?? '').trim().toUpperCase();
+  if (!ticker) return generateGipData(input);
+  const resp = await terminalApiGet<{ source: string; data: GipData }>(
+    `/api/terminal/gip/${encodeURIComponent(ticker)}`,
+    {
+      interval: input.interval ?? '5m',
+      extended: input.extendedHours ?? true,
+    },
+  );
+  if (resp?.data?.bars?.length) return resp.data;
+  return generateGipData(input);
+}
 
 export const gipTool: TerminalTool<GipInput, GipData> = {
   code: 'GIP',
@@ -45,7 +60,7 @@ export const gipTool: TerminalTool<GipInput, GipData> = {
     },
     required: ['ticker'],
   },
-  fetch: (input) => generateGipData(input),
+  fetch: (input) => fetchGip(input),
   formatForAgent: (data) => formatGipForAgent(data),
   summarise: (data) => summariseGip(data),
 };

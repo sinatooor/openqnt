@@ -30,6 +30,10 @@ aiohttp
 
 # Market Data
 yfinance
+# curl_cffi provides a chrome-impersonating Session that dodges the
+# YFRateLimitError storm Yahoo introduced in 2025-2026. Optional — the
+# terminal_data router checks for it at runtime and falls back cleanly.
+curl_cffi
 
 # News Feeds
 feedparser

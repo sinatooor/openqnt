@@ -633,3 +633,55 @@ All colors MUST be HSL.
 .exec-spinner {
   animation: exec-spin 1s linear infinite;
 }
+
+/* ===================================================================== */
+/*  Agent HQ — markdown styling for memory.md and conclusion messages.   */
+/* ===================================================================== */
+.prose-agent h1,
+.prose-agent h2,
+.prose-agent h3 {
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0.9rem 0 0.4rem;
+}
+.prose-agent h1 { font-size: 1rem; }
+.prose-agent h2 { font-size: 0.9rem; }
+.prose-agent h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255,255,255,0.6); }
+.prose-agent p  { margin: 0.35rem 0; line-height: 1.55; }
+.prose-agent ul,
+.prose-agent ol { margin: 0.35rem 0 0.35rem 1.1rem; }
+.prose-agent li { margin: 0.15rem 0; }
+.prose-agent code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: #c4b5fd;
+}
+.prose-agent pre {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+  overflow-x: auto;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+.prose-agent blockquote {
+  border-left: 2px solid rgba(124, 58, 237, 0.5);
+  padding-left: 0.6rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-style: italic;
+  margin: 0.5rem 0;
+}
+.prose-agent hr {
+  border: none;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+  margin: 0.8rem 0;
+}
+.prose-agent strong { color: #ffffff; }
+.prose-agent a { color: #a78bfa; text-decoration: none; border-bottom: 1px dotted #a78bfa55; }
+.prose-agent a:hover { border-bottom-color: #a78bfa; }
+

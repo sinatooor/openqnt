@@ -8,6 +8,7 @@
 
 import { registerTerminalTool } from '../agentTools/registry';
 import type { TerminalTool } from '../agentTools/types';
+import { terminalApiGet } from '../apiClient';
 import {
   COUNTRY_INDICES,
   generateWeiData,
@@ -15,6 +16,64 @@ import {
   type WeiData,
   type WeiInput,
 } from './countryIndices';
+
+/**
+ * Live WEI fetch: hit the backend /api/terminal/wei endpoint which batches
+ * yfinance downloads for every flagship index we track. The backend returns
+ * partial data (only countries where yfinance has coverage) so we merge
+ * those snapshots onto the curated metadata and fall back to synthetic for
+ * any country the provider could not resolve. This keeps the map complete.
+ */
+async function fetchWei(input: WeiInput): Promise<WeiData> {
+  const resp = await terminalApiGet<{
+    source: string;
+    asOf: string;
+    snapshots: Array<{
+      iso3: string;
+      price: number;
+      prevClose: number;
+      changeAbs: number;
+      changePct: number;
+      ytdPct: number | null;
+    }>;
+  }>('/api/terminal/wei');
+
+  if (!resp?.snapshots?.length) return generateWeiData(input);
+
+  const liveByIso = new Map(resp.snapshots.map((s) => [s.iso3, s]));
+  const mock = generateWeiData(input);
+
+  const merged: IndexSnapshot[] = COUNTRY_INDICES.map((idx) => {
+    const live = liveByIso.get(idx.iso3);
+    if (live) {
+      return {
+        ...idx,
+        price: live.price,
+        prevClose: live.prevClose,
+        changeAbs: live.changeAbs,
+        changePct: live.changePct,
+        ytdPct: live.ytdPct ?? 0,
+      };
+    }
+    // Fallback to whatever the mock generated for this country.
+    return mock.snapshots.find((s) => s.iso3 === idx.iso3) ?? {
+      ...idx,
+      price: idx.basePrice,
+      prevClose: idx.basePrice,
+      changeAbs: 0,
+      changePct: 0,
+      ytdPct: 0,
+    };
+  });
+
+  const sortedByChg = [...merged].sort((a, b) => b.changePct - a.changePct);
+  return {
+    asOf: resp.asOf,
+    snapshots: merged,
+    topGainers: sortedByChg.slice(0, 5),
+    topLosers: sortedByChg.slice(-5).reverse(),
+  };
+}
 
 function signed(n: number, decimals = 2): string {
   const v = n.toFixed(decimals);
@@ -134,7 +193,7 @@ export const weiTool: TerminalTool<WeiInput, WeiData> = {
       },
     },
   },
-  fetch: (input) => generateWeiData(input),
+  fetch: (input) => fetchWei(input),
   formatForAgent: (data) => formatWeiForAgent(data),
   summarise: (data) => summariseWei(data),
 };
