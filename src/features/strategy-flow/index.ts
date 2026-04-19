@@ -9,7 +9,7 @@ export { StrategyFlowCanvas } from './components/StrategyFlowCanvas';
 // Sub-components
 export { LeftSidebar } from './components/LeftSidebar';
 export { RightPropertyPanel } from './components/RightPropertyPanel';
-export { TopToolbar } from './components/TopToolbar';
+export { FloatingToolbar } from './components/FloatingToolbar';
 export { BottomToolbar } from './components/BottomToolbar';
 export { ContextMenu } from './components/ContextMenu';
 export { CodeViewPanel } from './components/CodeViewPanel';
