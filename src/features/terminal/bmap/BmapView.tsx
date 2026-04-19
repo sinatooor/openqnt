@@ -11,10 +11,11 @@
  *   Terminals, Mines, Ports, Vessels, Wind Farms, Storms.
  */
 
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import L from 'leaflet';
 import {
   CircleMarker,
+  GeoJSON,
   MapContainer,
   Marker,
   Polygon,
@@ -36,6 +37,15 @@ import {
   type VesselAsset,
   type LatLng,
 } from './mockAssets';
+import {
+  generateWeiData,
+  heatmapFill,
+  heatmapStroke,
+  HEATMAP_LEGEND,
+  type IndexSnapshot,
+  type WeiData,
+} from './countryIndices';
+import type { Feature, FeatureCollection, Geometry } from 'geojson';
 
 /* -------------------------- custom marker builders ------------------------ */
 
@@ -165,9 +175,22 @@ interface SidePanelProps {
   onAll: (on: boolean) => void;
   total: number;
   onRegen: () => void;
+  showHeatmap: boolean;
+  onToggleHeatmap: () => void;
+  wei: WeiData;
 }
 
-function SidePanel({ layers, counts, onToggle, onAll, total, onRegen }: SidePanelProps) {
+function SidePanel({
+  layers,
+  counts,
+  onToggle,
+  onAll,
+  total,
+  onRegen,
+  showHeatmap,
+  onToggleHeatmap,
+  wei,
+}: SidePanelProps) {
   return (
     <aside className="bmap-sidebar">
       <div className="bmap-sidebar-header">
@@ -177,6 +200,26 @@ function SidePanel({ layers, counts, onToggle, onAll, total, onRegen }: SidePane
           <button className="bmap-btn" onClick={() => onAll(false)}>NONE</button>
         </div>
       </div>
+
+      {/* Dedicated heatmap toggle — separate from the commodity layers to
+          make its unique nature (choropleth over full country polygons)
+          obvious to the user. */}
+      <button
+        onClick={onToggleHeatmap}
+        className={`bmap-layer-row bmap-layer-heatmap ${showHeatmap ? 'on' : ''}`}
+        title="Colour each country by its flagship index day-change."
+      >
+        <span
+          className="bmap-swatch"
+          style={{
+            background: 'linear-gradient(90deg, #991b1b 0%, #ef4444 25%, #71717a 50%, #10b981 75%, #047857 100%)',
+          }}
+        />
+        <span className="bmap-layer-label">Indices Heatmap</span>
+        <span className="bmap-layer-count">{wei.snapshots.length}</span>
+        <span className={`bmap-toggle ${showHeatmap ? 'on' : ''}`} />
+      </button>
+
       <div className="bmap-layer-list">
         {LAYER_ORDER.map((id) => {
           const meta = LAYER_META[id];
@@ -195,6 +238,37 @@ function SidePanel({ layers, counts, onToggle, onAll, total, onRegen }: SidePane
           );
         })}
       </div>
+
+      {/* Top global movers — only relevant when the heatmap is on, but we
+          keep them mounted so the data shape stays consistent. */}
+      {showHeatmap && (
+        <div className="bmap-movers">
+          <div className="bmap-movers-title">Top Movers</div>
+          <div className="bmap-movers-cols">
+            <div className="bmap-movers-col">
+              <span className="bmap-movers-label">Gainers</span>
+              {wei.topGainers.slice(0, 4).map((s) => (
+                <div key={s.iso3} className="bmap-mover-row">
+                  <span className="bmap-mover-ticker">{s.ticker}</span>
+                  <span className="bmap-mover-country">{s.country}</span>
+                  <span className="bmap-mover-pct bmap-pos">+{s.changePct.toFixed(2)}%</span>
+                </div>
+              ))}
+            </div>
+            <div className="bmap-movers-col">
+              <span className="bmap-movers-label">Losers</span>
+              {wei.topLosers.slice(0, 4).map((s) => (
+                <div key={s.iso3} className="bmap-mover-row">
+                  <span className="bmap-mover-ticker">{s.ticker}</span>
+                  <span className="bmap-mover-country">{s.country}</span>
+                  <span className="bmap-mover-pct bmap-neg">{s.changePct.toFixed(2)}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="bmap-sidebar-footer">
         <div className="bmap-footer-row">
           <span>Assets on map</span>
@@ -207,6 +281,38 @@ function SidePanel({ layers, counts, onToggle, onAll, total, onRegen }: SidePane
       </div>
     </aside>
   );
+}
+
+/* ----------------------- country heatmap (choropleth) --------------------- */
+
+// CDN-hosted, well-maintained world-country GeoJSON keyed by ISO-3 country
+// code.  Cached in module scope so re-mounts don't re-fetch.
+const WORLD_GEOJSON_URL =
+  'https://cdn.jsdelivr.net/gh/johan/world.geo.json@master/countries.geo.json';
+
+type WorldFeature = Feature<Geometry, { name?: string }>;
+type WorldGeo = FeatureCollection<Geometry, { name?: string }>;
+
+let worldGeoCache: WorldGeo | null = null;
+let worldGeoPromise: Promise<WorldGeo> | null = null;
+
+function loadWorldGeoJSON(): Promise<WorldGeo> {
+  if (worldGeoCache) return Promise.resolve(worldGeoCache);
+  if (worldGeoPromise) return worldGeoPromise;
+  worldGeoPromise = fetch(WORLD_GEOJSON_URL)
+    .then((r) => {
+      if (!r.ok) throw new Error(`Failed to load world GeoJSON (${r.status})`);
+      return r.json() as Promise<WorldGeo>;
+    })
+    .then((geo) => {
+      worldGeoCache = geo;
+      return geo;
+    })
+    .catch((e) => {
+      worldGeoPromise = null;
+      throw e;
+    });
+  return worldGeoPromise;
 }
 
 /* ---------------------------------- view ---------------------------------- */
@@ -228,8 +334,29 @@ const DEFAULT_LAYERS: Record<AssetLayerId, boolean> = {
 export default function BmapView() {
   const [seed, setSeed] = useState(0);
   const [layers, setLayers] = useState<Record<AssetLayerId, boolean>>(DEFAULT_LAYERS);
+  const [showHeatmap, setShowHeatmap] = useState(true);
+  const [worldGeo, setWorldGeo] = useState<WorldGeo | null>(worldGeoCache);
+  const [geoError, setGeoError] = useState<string | null>(null);
 
   const data: BmapData = useMemo(() => generateBmapData(`BMAP-${seed}`), [seed]);
+  const wei: WeiData = useMemo(() => generateWeiData({ seedSalt: seed }), [seed]);
+
+  // ISO-3 → snapshot lookup for the GeoJSON style callback.
+  const bySeed = useMemo(() => {
+    const m = new Map<string, IndexSnapshot>();
+    wei.snapshots.forEach((s) => m.set(s.iso3, s));
+    return m;
+  }, [wei]);
+
+  // Load the world GeoJSON once (and only if the heatmap is ever requested).
+  useEffect(() => {
+    if (!showHeatmap || worldGeo) return;
+    let cancelled = false;
+    loadWorldGeoJSON()
+      .then((geo) => { if (!cancelled) setWorldGeo(geo); })
+      .catch((e) => { if (!cancelled) setGeoError(String(e.message ?? e)); });
+    return () => { cancelled = true; };
+  }, [showHeatmap, worldGeo]);
 
   const counts = useMemo<Record<AssetLayerId, number>>(
     () => ({
@@ -272,6 +399,9 @@ export default function BmapView() {
         onAll={setAll}
         total={total}
         onRegen={() => setSeed((s) => s + 1)}
+        showHeatmap={showHeatmap}
+        onToggleHeatmap={() => setShowHeatmap((v) => !v)}
+        wei={wei}
       />
 
       <div className="bmap-mapwrap">
@@ -298,6 +428,71 @@ export default function BmapView() {
             opacity={0.9}
           />
           <ZoomControl position="bottomright" />
+
+          {/* Country Indices Heatmap — choropleth sitting directly on top of
+              the dark tile basemap so the fill colours read cleanly.  Each
+              feature is joined on its ISO-3 id. */}
+          {showHeatmap && worldGeo && (
+            <GeoJSON
+              key={`heatmap-${seed}`}
+              data={worldGeo}
+              style={(feature) => {
+                const f = feature as WorldFeature | undefined;
+                const iso3 = (f?.id ?? '') as string;
+                const snap = bySeed.get(iso3);
+                const chg = snap?.changePct;
+                return {
+                  color: heatmapStroke(chg),
+                  weight: 0.6,
+                  opacity: snap ? 0.6 : 0.25,
+                  fillColor: heatmapFill(chg, 1),
+                  fillOpacity: snap ? 0.55 : 0.12,
+                };
+              }}
+              onEachFeature={(feature, layer) => {
+                const f = feature as WorldFeature;
+                const iso3 = (f.id ?? '') as string;
+                const snap = bySeed.get(iso3);
+                const countryName = snap?.country ?? f.properties?.name ?? iso3;
+                if (!snap) {
+                  layer.bindTooltip(
+                    `<div class="bmap-heat-tip">
+                       <div class="bmap-heat-tip-country">${countryName}</div>
+                       <div class="bmap-heat-tip-note">No flagship index tracked</div>
+                     </div>`,
+                    { sticky: true, direction: 'top', className: 'bmap-heat-tooltip' },
+                  );
+                  return;
+                }
+                const sign = snap.changePct >= 0 ? '+' : '';
+                const tone = snap.changePct >= 0 ? 'bmap-pos' : 'bmap-neg';
+                layer.bindTooltip(
+                  `<div class="bmap-heat-tip">
+                     <div class="bmap-heat-tip-country">${snap.country}</div>
+                     <div class="bmap-heat-tip-index">${snap.index} <span class="bmap-heat-tip-tkr">${snap.ticker}</span></div>
+                     <div class="bmap-heat-tip-row"><span>Last</span><b>${snap.price.toLocaleString()} ${snap.currency}</b></div>
+                     <div class="bmap-heat-tip-row"><span>Day</span><b class="${tone}">${sign}${snap.changePct.toFixed(2)}%</b></div>
+                     <div class="bmap-heat-tip-row"><span>YTD</span><b class="${snap.ytdPct >= 0 ? 'bmap-pos' : 'bmap-neg'}">${snap.ytdPct >= 0 ? '+' : ''}${snap.ytdPct.toFixed(1)}%</b></div>
+                   </div>`,
+                  { sticky: true, direction: 'top', className: 'bmap-heat-tooltip' },
+                );
+                layer.bindPopup(
+                  `<div class="bmap-popup">
+                     <div class="bmap-popup-header">
+                       <span class="bmap-popup-title">${snap.index}</span>
+                       <span class="bmap-popup-sub">${snap.ticker} · ${snap.country}</span>
+                     </div>
+                     <div class="bmap-popup-body">
+                       <div class="bmap-popup-row"><span class="bmap-popup-label">Last</span><span class="bmap-popup-value">${snap.price.toLocaleString()} ${snap.currency}</span></div>
+                       <div class="bmap-popup-row"><span class="bmap-popup-label">Day</span><span class="bmap-popup-value bmap-tone-${snap.changePct >= 0 ? 'good' : 'bad'}">${sign}${snap.changePct.toFixed(2)}%</span></div>
+                       <div class="bmap-popup-row"><span class="bmap-popup-label">YTD</span><span class="bmap-popup-value bmap-tone-${snap.ytdPct >= 0 ? 'good' : 'bad'}">${snap.ytdPct >= 0 ? '+' : ''}${snap.ytdPct.toFixed(1)}%</span></div>
+                       <div class="bmap-popup-row"><span class="bmap-popup-label">Prev close</span><span class="bmap-popup-value">${snap.prevClose.toLocaleString()}</span></div>
+                     </div>
+                   </div>`,
+                );
+              }}
+            />
+          )}
 
           {/* Shale Basins — polygons underneath everything */}
           {layers.shaleBasins &&
@@ -507,8 +702,51 @@ export default function BmapView() {
           </span>
         </div>
 
+        {/* Indices tape — only visible while the heatmap is active. */}
+        {showHeatmap && (
+          <div className="bmap-indices-tape">
+            <span className="bmap-overlay-chip" style={{ color: '#ff9f1a' }}>WEI</span>
+            {wei.topGainers.map((s) => (
+              <span key={`g-${s.iso3}`} className="bmap-overlay-chip">
+                {s.ticker}
+                <span className="bmap-pos">+{s.changePct.toFixed(2)}%</span>
+              </span>
+            ))}
+            <span className="bmap-overlay-chip bmap-tape-sep">|</span>
+            {wei.topLosers.map((s) => (
+              <span key={`l-${s.iso3}`} className="bmap-overlay-chip">
+                {s.ticker}
+                <span className="bmap-neg">{s.changePct.toFixed(2)}%</span>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Loading / error overlay for the choropleth fetch. */}
+        {showHeatmap && !worldGeo && !geoError && (
+          <div className="bmap-heat-status">Loading country boundaries…</div>
+        )}
+        {showHeatmap && geoError && (
+          <div className="bmap-heat-status bmap-heat-error">
+            Heatmap unavailable: {geoError}
+          </div>
+        )}
+
         {/* Bottom overlay - legend */}
         <div className="bmap-overlay-bottom">
+          {showHeatmap && (
+            <div className="bmap-heat-legend">
+              <span className="bmap-heat-legend-title">Index Day Change</span>
+              <div className="bmap-heat-legend-scale">
+                {HEATMAP_LEGEND.map((step) => (
+                  <span key={step.label} className="bmap-heat-legend-step">
+                    <span className="bmap-heat-legend-swatch" style={{ background: step.color }} />
+                    <span>{step.label}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
           {LAYER_ORDER.filter((id) => layers[id]).map((id) => {
             const m = LAYER_META[id];
             return (
