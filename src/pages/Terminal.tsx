@@ -41,6 +41,20 @@ const FUNCTIONS: FunctionSpec[] = [
     toPath: () => '/terminal/bmap',
     requiresTicker: false,
   },
+  {
+    code: 'SPLC',
+    label: 'Supply Chain',
+    description: 'Suppliers, customers & peers with exposure analytics',
+    toPath: (t) => `/terminal/splc/${encodeURIComponent(t ?? '')}`.replace(/\/$/, ''),
+    requiresTicker: true,
+  },
+  {
+    code: 'HDS',
+    label: 'Holders Detail',
+    description: 'Institutional, fund, ETF, hedge fund & insider holders',
+    toPath: (t) => `/terminal/hds/${encodeURIComponent(t ?? '')}`.replace(/\/$/, ''),
+    requiresTicker: true,
+  },
 ];
 
 const FUNCTION_CODES = new Set(FUNCTIONS.map((f) => f.code));

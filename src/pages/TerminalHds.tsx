@@ -1,0 +1,123 @@
+/**
+ * TerminalHds Page — the Bloomberg HDS (Holdings Detail) function.
+ *
+ * URL:  /terminal/hds  or  /terminal/hds/:ticker
+ *
+ * Carries the standard Bloomberg-style command input and exposes an
+ * "AGENT CONTEXT" drawer so any quant agent (or a human) can see / copy
+ * the exact text payload the function will inject into an LLM prompt.
+ */
+
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { ConfigProvider, theme as antTheme } from 'antd';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { useAuthStore } from '../stores/authStore';
+import HdsView from '@/features/terminal/hds/HdsView';
+import AgentContextDrawer from '@/features/terminal/agentTools/AgentContextDrawer';
+
+const DEFAULT_TICKER = 'AAPL';
+
+export default function TerminalHds() {
+  const { isAuthenticated } = useAuthStore();
+  const navigate = useNavigate();
+  const { ticker: urlTicker } = useParams<{ ticker?: string }>();
+  const [searchParams] = useSearchParams();
+  const queryTicker = searchParams.get('ticker') || undefined;
+
+  const initialTicker = (urlTicker || queryTicker || DEFAULT_TICKER).toUpperCase();
+  const [ticker, setTicker] = useState(initialTicker);
+  const [input, setInput] = useState(initialTicker);
+  const [refreshSalt, setRefreshSalt] = useState(0);
+
+  useEffect(() => {
+    if (!isAuthenticated) navigate('/login');
+  }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    const next = (urlTicker || queryTicker || DEFAULT_TICKER).toUpperCase();
+    setTicker(next);
+    setInput(next);
+  }, [urlTicker, queryTicker]);
+
+  const submit = useMemo(
+    () => (value: string) => {
+      const clean = value.trim().toUpperCase();
+      if (!clean) return;
+      setTicker(clean);
+      navigate(`/terminal/hds/${encodeURIComponent(clean)}`, { replace: true });
+    },
+    [navigate],
+  );
+
+  return (
+    <ConfigProvider
+      theme={{
+        algorithm: antTheme.darkAlgorithm,
+        token: {
+          colorPrimary: '#ff9f1a',
+          colorBgContainer: 'transparent',
+          colorText: '#e2e8f0',
+          colorTextSecondary: '#94a3b8',
+          borderRadius: 2,
+          fontSize: 13,
+        },
+      }}
+    >
+      <TooltipProvider delayDuration={200}>
+        <div className="min-h-screen bg-background pt-14">
+          <div className="w-full max-w-none space-y-2 p-4 md:p-6">
+            {/* Bloomberg-style command input */}
+            <div className="terminal-commandbar flex flex-wrap items-center gap-2 px-3 py-1.5">
+              <span className="font-mono text-[10px] text-amber-400">
+                &lt;HELP&gt; for explanation
+              </span>
+              <div className="flex flex-1 items-center gap-1">
+                <form
+                  className="flex flex-1 items-center gap-1"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    submit(input);
+                  }}
+                >
+                  <input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value.toUpperCase())}
+                    className="w-40 rounded-sm border border-[#332200] bg-black px-2 py-1 font-mono text-[11px] text-amber-300 outline-none focus:border-amber-500"
+                    placeholder="TICKER"
+                    autoFocus
+                  />
+                  <span className="font-mono text-[10px] text-zinc-500">&lt;EQUITY&gt;</span>
+                  <span className="rounded-sm border border-amber-500/50 bg-[#141005] px-2 py-0.5 font-mono text-[10px] font-bold text-amber-300">
+                    HDS
+                  </span>
+                  <button
+                    type="submit"
+                    className="rounded-sm border border-emerald-500/50 bg-emerald-900/40 px-2 py-0.5 font-mono text-[10px] font-bold text-emerald-300 hover:bg-emerald-800/60"
+                  >
+                    GO
+                  </button>
+                </form>
+              </div>
+              <div className="ml-auto flex items-center gap-2">
+                <AgentContextDrawer
+                  toolCode="HDS"
+                  input={{ ticker, seedSalt: refreshSalt }}
+                />
+                <button
+                  onClick={() => setRefreshSalt((s) => s + 1)}
+                  className="rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 font-mono text-[10px] text-zinc-300 hover:bg-zinc-800"
+                >
+                  REFRESH
+                </button>
+                <span className="font-mono text-[10px] text-amber-400">P179</span>
+              </div>
+            </div>
+
+            <HdsView ticker={ticker} seedSalt={refreshSalt} />
+          </div>
+        </div>
+      </TooltipProvider>
+    </ConfigProvider>
+  );
+}
