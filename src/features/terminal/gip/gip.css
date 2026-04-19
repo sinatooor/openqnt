@@ -1,0 +1,279 @@
+/* =============================================================================
+   GIP — Bloomberg-style intraday chart styles.
+   ============================================================================= */
+
+.gip-root {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 560px;
+}
+
+/* -------------------------------- quote ---------------------------------- */
+
+.gip-quote {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 8px 12px;
+  background: #0a0a00;
+  border: 1px solid #332200;
+  border-radius: 2px;
+}
+
+.gip-quote-main {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  padding-right: 10px;
+  border-right: 1px solid #332200;
+}
+
+.gip-quote-ticker {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fafafa;
+  letter-spacing: 0.05em;
+}
+
+.gip-quote-name {
+  color: #d4d4d8;
+  font-size: 12px;
+}
+
+.gip-quote-ex {
+  color: #71717a;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.gip-quote-prices {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.gip-quote-last {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+.gip-quote-last b {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.gip-quote-last em {
+  font-style: normal;
+  font-size: 11px;
+}
+
+.gip-up   { color: #10b981; }
+.gip-down { color: #ef4444; }
+
+.gip-quote-cell {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  line-height: 1.1;
+}
+
+.gip-quote-cell span {
+  font-size: 9px;
+  color: #71717a;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.gip-quote-cell b {
+  font-size: 13px;
+  color: #fafafa;
+  font-weight: 600;
+}
+
+.gip-quote-cell em {
+  font-style: normal;
+  font-size: 9px;
+  color: #52525b;
+}
+
+/* -------------------------------- toolbar -------------------------------- */
+
+.gip-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 6px 10px;
+  background: #0a0a00;
+  border: 1px solid #332200;
+  border-radius: 2px;
+}
+
+.gip-toolbar-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gip-toolbar-label {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: #71717a;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.gip-segmented {
+  display: inline-flex;
+  border: 1px solid #332200;
+  border-radius: 2px;
+  overflow: hidden;
+  background: #050505;
+}
+
+.gip-segmented > button {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  padding: 3px 9px;
+  background: transparent;
+  color: #a1a1aa;
+  border: none;
+  border-right: 1px solid #332200;
+  cursor: pointer;
+  min-width: 38px;
+}
+
+.gip-segmented > button:last-child {
+  border-right: none;
+}
+
+.gip-segmented > button:hover {
+  background: #141005;
+  color: #fafafa;
+}
+
+.gip-segmented > button.on {
+  background: #141005;
+  color: #ff9f1a;
+}
+
+.gip-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #a1a1aa;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  user-select: none;
+}
+
+.gip-check input {
+  accent-color: #ff9f1a;
+}
+
+/* ------------------------------- chart box ------------------------------- */
+
+.gip-chart-wrap {
+  position: relative;
+  background: #050505;
+  border: 1px solid #332200;
+  border-radius: 2px;
+  height: 560px;
+  overflow: hidden;
+}
+
+.gip-chart {
+  position: absolute;
+  inset: 0;
+}
+
+/* ----------------------------- crosshair HUD ----------------------------- */
+
+.gip-hud {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 6px 12px;
+  background: rgba(10, 10, 0, 0.88);
+  border: 1px solid #332200;
+  border-radius: 2px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  color: #e4e4e7;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+  max-width: calc(100% - 20px);
+}
+
+.gip-hud span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.gip-hud em {
+  font-style: normal;
+  font-size: 9px;
+  color: #71717a;
+  letter-spacing: 0.08em;
+}
+
+.gip-hud b {
+  font-weight: 600;
+  color: #fafafa;
+}
+
+.gip-hud-time {
+  color: #ff9f1a;
+  letter-spacing: 0.06em;
+  padding-right: 6px;
+  border-right: 1px solid #332200;
+}
+
+.gip-hud-vwap b { color: #22d3ee; }
+.gip-hud-sma  b { color: #f472b6; }
+
+.gip-hud-session {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  padding: 1px 5px;
+  border-radius: 2px;
+  border: 1px solid #332200;
+}
+
+.gip-session-pre     { background: rgba(99, 102, 241, 0.16); color: #a5b4fc; border-color: rgba(99, 102, 241, 0.45); }
+.gip-session-regular { background: rgba(255, 159, 26, 0.14); color: #fbbf77; border-color: rgba(255, 159, 26, 0.45); }
+.gip-session-after   { background: rgba(34, 211, 238, 0.14); color: #67e8f9; border-color: rgba(34, 211, 238, 0.45); }
+
+/* --------------------------------- footer -------------------------------- */
+
+.gip-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border: 1px solid #332200;
+  background: #0a0a00;
+  border-radius: 2px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 10px;
+  color: #a1a1aa;
+}
+
+.gip-footer-spacer { flex: 1; }

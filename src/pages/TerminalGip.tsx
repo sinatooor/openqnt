@@ -1,8 +1,11 @@
 /**
- * TerminalSplc Page — the Bloomberg SPLC (Supply Chain Analysis) function.
+ * TerminalGip Page — the Bloomberg GIP (Intraday Graph) function.
  *
- * URL: /terminal/splc  or  /terminal/splc/:ticker
- * A ticker can also be supplied via ?ticker=AAPL.
+ * URL: /terminal/gip  or  /terminal/gip/:ticker
+ *
+ * Carries the Bloomberg-style command input, passes the ticker and
+ * interval/indicator state through the `gipTool` so data rendered in the
+ * UI and data delivered to agents stay bit-identical.
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -10,12 +13,14 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ConfigProvider, theme as antTheme } from 'antd';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useAuthStore } from '../stores/authStore';
-import SplcView from '@/features/terminal/splc/SplcView';
+import GipView, { type ChartType } from '@/features/terminal/gip/GipView';
+import { gipTool } from '@/features/terminal/gip/tool';
+import type { GipInterval } from '@/features/terminal/gip/mockData';
 import AgentContextDrawer from '@/features/terminal/agentTools/AgentContextDrawer';
 
 const DEFAULT_TICKER = 'AAPL';
 
-export default function TerminalSplc() {
+export default function TerminalGip() {
   const { isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
   const { ticker: urlTicker } = useParams<{ ticker?: string }>();
@@ -26,6 +31,12 @@ export default function TerminalSplc() {
   const [ticker, setTicker] = useState(initialTicker);
   const [input, setInput] = useState(initialTicker);
   const [refreshSalt, setRefreshSalt] = useState(0);
+
+  const [interval, setInterval] = useState<GipInterval>('5m');
+  const [chartType, setChartType] = useState<ChartType>('candles');
+  const [extendedHours, setExtendedHours] = useState(true);
+  const [showVwap, setShowVwap] = useState(true);
+  const [showSma, setShowSma] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) navigate('/login');
@@ -42,9 +53,20 @@ export default function TerminalSplc() {
       const clean = value.trim().toUpperCase();
       if (!clean) return;
       setTicker(clean);
-      navigate(`/terminal/splc/${encodeURIComponent(clean)}`, { replace: true });
+      navigate(`/terminal/gip/${encodeURIComponent(clean)}`, { replace: true });
     },
     [navigate],
+  );
+
+  const data = useMemo(
+    () =>
+      gipTool.fetch({
+        ticker,
+        interval,
+        extendedHours,
+        seedSalt: refreshSalt,
+      }),
+    [ticker, interval, extendedHours, refreshSalt],
   );
 
   return (
@@ -86,7 +108,7 @@ export default function TerminalSplc() {
                   />
                   <span className="font-mono text-[10px] text-zinc-500">&lt;EQUITY&gt;</span>
                   <span className="rounded-sm border border-amber-500/50 bg-[#141005] px-2 py-0.5 font-mono text-[10px] font-bold text-amber-300">
-                    SPLC
+                    GIP
                   </span>
                   <button
                     type="submit"
@@ -98,8 +120,8 @@ export default function TerminalSplc() {
               </div>
               <div className="ml-auto flex items-center gap-2">
                 <AgentContextDrawer
-                  toolCode="SPLC"
-                  input={{ ticker, seedSalt: refreshSalt }}
+                  toolCode="GIP"
+                  input={{ ticker, interval, extendedHours, seedSalt: refreshSalt }}
                 />
                 <button
                   onClick={() => setRefreshSalt((s) => s + 1)}
@@ -107,14 +129,22 @@ export default function TerminalSplc() {
                 >
                   REFRESH
                 </button>
-                <span className="font-mono text-[10px] text-amber-400">P169</span>
+                <span className="font-mono text-[10px] text-amber-400">P804</span>
               </div>
             </div>
 
-            <SplcView
-              ticker={ticker}
-              seedSalt={refreshSalt}
-              onRefresh={() => setRefreshSalt((s) => s + 1)}
+            <GipView
+              data={data}
+              interval={interval}
+              chartType={chartType}
+              extendedHours={extendedHours}
+              showVwap={showVwap}
+              showSma={showSma}
+              onChangeInterval={setInterval}
+              onChangeChartType={setChartType}
+              onToggleExtendedHours={setExtendedHours}
+              onToggleVwap={setShowVwap}
+              onToggleSma={setShowSma}
             />
           </div>
         </div>

@@ -1,8 +1,11 @@
 /**
- * TerminalSplc Page — the Bloomberg SPLC (Supply Chain Analysis) function.
+ * TerminalDes Page — the Bloomberg DES (Company Description) function.
  *
- * URL: /terminal/splc  or  /terminal/splc/:ticker
- * A ticker can also be supplied via ?ticker=AAPL.
+ * URL: /terminal/des or /terminal/des/:ticker
+ *
+ * Like the other terminal function pages, this one exposes an
+ * "AGENT CONTEXT" drawer so any quant agent (or a human operator) can see
+ * / copy the exact Markdown payload the DES tool will inject into an LLM.
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -10,12 +13,12 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ConfigProvider, theme as antTheme } from 'antd';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useAuthStore } from '../stores/authStore';
-import SplcView from '@/features/terminal/splc/SplcView';
+import DesView from '@/features/terminal/des/DesView';
 import AgentContextDrawer from '@/features/terminal/agentTools/AgentContextDrawer';
 
 const DEFAULT_TICKER = 'AAPL';
 
-export default function TerminalSplc() {
+export default function TerminalDes() {
   const { isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
   const { ticker: urlTicker } = useParams<{ ticker?: string }>();
@@ -42,7 +45,7 @@ export default function TerminalSplc() {
       const clean = value.trim().toUpperCase();
       if (!clean) return;
       setTicker(clean);
-      navigate(`/terminal/splc/${encodeURIComponent(clean)}`, { replace: true });
+      navigate(`/terminal/des/${encodeURIComponent(clean)}`, { replace: true });
     },
     [navigate],
   );
@@ -86,7 +89,7 @@ export default function TerminalSplc() {
                   />
                   <span className="font-mono text-[10px] text-zinc-500">&lt;EQUITY&gt;</span>
                   <span className="rounded-sm border border-amber-500/50 bg-[#141005] px-2 py-0.5 font-mono text-[10px] font-bold text-amber-300">
-                    SPLC
+                    DES
                   </span>
                   <button
                     type="submit"
@@ -98,7 +101,7 @@ export default function TerminalSplc() {
               </div>
               <div className="ml-auto flex items-center gap-2">
                 <AgentContextDrawer
-                  toolCode="SPLC"
+                  toolCode="DES"
                   input={{ ticker, seedSalt: refreshSalt }}
                 />
                 <button
@@ -107,15 +110,11 @@ export default function TerminalSplc() {
                 >
                   REFRESH
                 </button>
-                <span className="font-mono text-[10px] text-amber-400">P169</span>
+                <span className="font-mono text-[10px] text-amber-400">P001</span>
               </div>
             </div>
 
-            <SplcView
-              ticker={ticker}
-              seedSalt={refreshSalt}
-              onRefresh={() => setRefreshSalt((s) => s + 1)}
-            />
+            <DesView ticker={ticker} seedSalt={refreshSalt} />
           </div>
         </div>
       </TooltipProvider>
