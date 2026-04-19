@@ -11,6 +11,7 @@ import { ConfigProvider, theme as antTheme } from 'antd';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useAuthStore } from '../stores/authStore';
 import SplcView from '@/features/terminal/splc/SplcView';
+import AgentContextDrawer from '@/features/terminal/agentTools/AgentContextDrawer';
 
 const DEFAULT_TICKER = 'AAPL';
 
@@ -96,6 +97,10 @@ export default function TerminalSplc() {
                 </form>
               </div>
               <div className="ml-auto flex items-center gap-2">
+                <AgentContextDrawer
+                  toolCode="SPLC"
+                  input={{ ticker, seedSalt: refreshSalt }}
+                />
                 <button
                   onClick={() => setRefreshSalt((s) => s + 1)}
                   className="rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 font-mono text-[10px] text-zinc-300 hover:bg-zinc-800"

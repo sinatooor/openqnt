@@ -54,5 +54,7 @@ export async function callTerminalTool(
 /*                                                                          */
 /* ------------------------------------------------------------------------ */
 
+import '../des/tool';
+import '../gip/tool';
 import '../hds/tool';
 import '../splc/tool';

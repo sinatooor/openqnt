@@ -55,6 +55,20 @@ const FUNCTIONS: FunctionSpec[] = [
     toPath: (t) => `/terminal/hds/${encodeURIComponent(t ?? '')}`.replace(/\/$/, ''),
     requiresTicker: true,
   },
+  {
+    code: 'GIP',
+    label: 'Intraday Graph',
+    description: 'Intraday OHLCV chart with VWAP, volume pane & extended hours',
+    toPath: (t) => `/terminal/gip/${encodeURIComponent(t ?? '')}`.replace(/\/$/, ''),
+    requiresTicker: true,
+  },
+  {
+    code: 'DES',
+    label: 'Company Description',
+    description: 'Business description, segments, execs, fundamentals, valuation & corporate identifiers',
+    toPath: (t) => `/terminal/des/${encodeURIComponent(t ?? '')}`.replace(/\/$/, ''),
+    requiresTicker: true,
+  },
 ];
 
 const FUNCTION_CODES = new Set(FUNCTIONS.map((f) => f.code));

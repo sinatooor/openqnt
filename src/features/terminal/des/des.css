@@ -1,0 +1,404 @@
+/* =============================================================================
+   DES — Bloomberg-style Company Description styles.
+   ============================================================================= */
+
+.des-root {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* -------------------------------- focal ---------------------------------- */
+
+.des-focal {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #0a0a00;
+  border: 1px solid #332200;
+  border-radius: 2px;
+}
+
+.des-focal-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 280px;
+}
+
+.des-focal-ticker-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.des-focal-ticker {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fafafa;
+  letter-spacing: 0.04em;
+}
+
+.des-focal-name {
+  color: #e4e4e7;
+  font-size: 14px;
+}
+
+.des-focal-exchange {
+  color: #a1a1aa;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.des-focal-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  color: #71717a;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.des-focal-meta b {
+  color: #e4e4e7;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  margin-left: 4px;
+}
+
+.des-focal-px {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+.des-focal-px-main {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fafafa;
+}
+
+.des-focal-px-delta {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.des-focal-px-sub {
+  font-size: 10px;
+  color: #a1a1aa;
+}
+
+.des-up    { color: #10b981; }
+.des-down  { color: #ef4444; }
+.des-flat  { color: #71717a; }
+
+/* ------------------------------- grid main ------------------------------- */
+
+.des-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 8px;
+}
+
+@media (max-width: 1024px) {
+  .des-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ------------------------------- panels ---------------------------------- */
+
+.des-panel {
+  background: #050505;
+  border: 1px solid #332200;
+  border-radius: 2px;
+}
+
+.des-panel-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 10px;
+  background: #141005;
+  border-bottom: 1px solid #332200;
+}
+
+.des-panel-title span {
+  color: #ff9f1a;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.des-panel-meta {
+  color: #71717a;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+
+.des-panel-body {
+  padding: 10px 12px;
+}
+
+/* ------------------------ description paragraph -------------------------- */
+
+.des-description {
+  color: #e4e4e7;
+  line-height: 1.55;
+  font-size: 12.5px;
+}
+
+/* -------------------------- kv rows (financials) ------------------------- */
+
+.des-kv {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3px 10px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11.5px;
+}
+
+.des-kv > div {
+  display: contents;
+}
+
+.des-kv .k {
+  color: #a1a1aa;
+  letter-spacing: 0.02em;
+}
+
+.des-kv .v {
+  color: #fafafa;
+  text-align: right;
+}
+
+.des-kv .v.dim { color: #a1a1aa; }
+
+.des-kv .v.good { color: #10b981; }
+.des-kv .v.bad  { color: #ef4444; }
+
+.des-kv-divider {
+  grid-column: 1 / -1;
+  height: 1px;
+  background: #332200;
+  margin: 4px 0;
+}
+
+/* --------------------------- segment bars -------------------------------- */
+
+.des-seg-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.des-seg-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(120px, 2fr) 50px;
+  align-items: center;
+  gap: 8px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+}
+
+.des-seg-name {
+  color: #fafafa;
+  font-weight: 600;
+}
+
+.des-seg-track {
+  position: relative;
+  background: #131313;
+  height: 9px;
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.des-seg-fill {
+  height: 100%;
+  background: rgba(255, 159, 26, 0.6);
+  transition: width 240ms ease;
+}
+
+.des-seg-pct {
+  color: #ff9f1a;
+  text-align: right;
+}
+
+.des-seg-desc {
+  grid-column: 1 / -1;
+  color: #a1a1aa;
+  font-size: 10px;
+  line-height: 1.45;
+  padding-left: 2px;
+}
+
+/* --------------------------- executives ---------------------------------- */
+
+.des-exec-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+}
+
+.des-exec-table th {
+  text-align: left;
+  color: #71717a;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 6px;
+  border-bottom: 1px solid #332200;
+}
+
+.des-exec-table td {
+  padding: 4px 6px;
+  color: #e4e4e7;
+  border-bottom: 1px solid #1a1a1a;
+  vertical-align: middle;
+}
+
+.des-exec-table td.des-exec-name {
+  color: #fafafa;
+  font-weight: 600;
+}
+
+.des-exec-table td.des-exec-title {
+  color: #ff9f1a;
+}
+
+.des-exec-table td.des-align-right { text-align: right; color: #a1a1aa; }
+
+/* ----------------------------- info grid --------------------------------- */
+
+.des-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 16px;
+}
+
+@media (max-width: 768px) {
+  .des-info-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 480px) {
+  .des-info-grid { grid-template-columns: 1fr; }
+}
+
+.des-info-group h4 {
+  color: #ff9f1a;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin: 0 0 4px 0;
+}
+
+/* ----------------------- narrative lists --------------------------------- */
+
+.des-narrative {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (max-width: 900px) {
+  .des-narrative { grid-template-columns: 1fr; }
+}
+
+.des-narrative-col {
+  background: #050505;
+  border: 1px solid #332200;
+  border-radius: 2px;
+}
+
+.des-narrative-col h4 {
+  margin: 0;
+  padding: 5px 10px;
+  background: #141005;
+  border-bottom: 1px solid #332200;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.des-narrative-col.highlights h4 { color: #10b981; }
+.des-narrative-col.risks h4     { color: #ef4444; }
+.des-narrative-col.catalysts h4 { color: #ff9f1a; }
+
+.des-narrative-col ul {
+  list-style: none;
+  margin: 0;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #e4e4e7;
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.des-narrative-col li {
+  position: relative;
+  padding-left: 12px;
+}
+
+.des-narrative-col li::before {
+  content: '▸';
+  position: absolute;
+  left: 0;
+  color: #52525b;
+  font-size: 9px;
+  top: 2px;
+}
+
+.des-narrative-col.highlights li::before { color: #10b981; }
+.des-narrative-col.risks li::before     { color: #ef4444; }
+.des-narrative-col.catalysts li::before { color: #ff9f1a; }
+
+/* ---------------------- valuation sparkbar ------------------------------- */
+
+.des-range {
+  margin-top: 6px;
+}
+
+.des-range-track {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  background: #131313;
+  border-radius: 2px;
+}
+
+.des-range-marker {
+  position: absolute;
+  top: -2px;
+  width: 2px;
+  height: 10px;
+  background: #ff9f1a;
+  border-radius: 1px;
+}
+
+.des-range-labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 9px;
+  color: #71717a;
+  margin-top: 2px;
+  letter-spacing: 0.04em;
+}
