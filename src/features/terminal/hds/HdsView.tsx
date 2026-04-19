@@ -15,7 +15,8 @@
 import { useMemo, useState } from 'react';
 import { ArrowDown, ArrowUp, Search } from 'lucide-react';
 import { hdsTool } from './tool';
-import type { FilingSource, Holder, HolderStatus, HolderType } from './mockData';
+import { generateHdsData, type FilingSource, type Holder, type HolderStatus, type HolderType } from './mockData';
+import { useTerminalData } from '../useTerminalData';
 import './hds.css';
 
 export interface HdsViewProps {
@@ -153,9 +154,10 @@ const ALL_SOURCES: FilingSource[] = ['13F', '13G', '13D', 'NPORT', 'Form 4', 'S-
 /* --------------------------------- root ---------------------------------- */
 
 export default function HdsView({ ticker, seedSalt = 0 }: HdsViewProps) {
-  const data = useMemo(
-    () => hdsTool.fetch({ ticker, seedSalt }),
-    [ticker, seedSalt],
+  const data = useTerminalData(
+    hdsTool,
+    { ticker, seedSalt },
+    () => generateHdsData({ ticker, seedSalt }),
   );
 
   const [typeFilter, setTypeFilter] = useState<Set<HolderType>>(new Set(ALL_TYPES));

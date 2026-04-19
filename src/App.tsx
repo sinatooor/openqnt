@@ -128,6 +128,7 @@ const AppRoutes = () => {
         <Route path="/ai-chat" element={<AiChat />} />
         <Route path="/agent" element={<AgentConfig />} />
         <Route path="/agents" element={<Agents />} />
+        <Route path="/agents/:id" element={<Agents />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/portfolio" element={<Portfolio />} />
       </Route>

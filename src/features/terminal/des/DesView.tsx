@@ -16,8 +16,9 @@
  * The view consumes `desTool.fetch(...)` so UI + agent share identical data.
  */
 
-import { useMemo } from 'react';
 import { desTool } from './tool';
+import { generateDesData } from './mockData';
+import { useTerminalData } from '../useTerminalData';
 import './des.css';
 
 export interface DesViewProps {
@@ -49,7 +50,11 @@ function deltaClass(n: number): string {
 }
 
 export default function DesView({ ticker, seedSalt = 0 }: DesViewProps) {
-  const data = useMemo(() => desTool.fetch({ ticker, seedSalt }), [ticker, seedSalt]);
+  const data = useTerminalData(
+    desTool,
+    { ticker, seedSalt },
+    () => generateDesData({ ticker, seedSalt }),
+  );
 
   const { center: c, financials: f, valuation: v, segments, executives, highlights, risks, catalysts } = data;
 

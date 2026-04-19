@@ -17,18 +17,32 @@
 
 import type { AnyTerminalTool, TerminalTool } from './types';
 
-const registry = new Map<string, AnyTerminalTool>();
+// The registry Map is stored as a property of the (hoisted) `getRegistry`
+// function rather than as a module-level `let`/`const`, because the
+// self-registering tool modules imported at the bottom of this file are
+// evaluated *before* any top-level code here runs. A `let` or `const` would
+// still be in its Temporal Dead Zone at that moment and throw
+// `ReferenceError: Cannot access 'registry' before initialization`.
+// Function declarations, on the other hand, are fully hoisted (name + value),
+// so `getRegistry` — and any property we hang off it — is always safe to use.
+function getRegistry(): Map<string, AnyTerminalTool> {
+  const self = getRegistry as typeof getRegistry & {
+    instance?: Map<string, AnyTerminalTool>;
+  };
+  if (!self.instance) self.instance = new Map<string, AnyTerminalTool>();
+  return self.instance;
+}
 
 export function registerTerminalTool<TInput, TData>(tool: TerminalTool<TInput, TData>): void {
-  registry.set(tool.code.toUpperCase(), tool as unknown as AnyTerminalTool);
+  getRegistry().set(tool.code.toUpperCase(), tool as unknown as AnyTerminalTool);
 }
 
 export function getTerminalTool(code: string): AnyTerminalTool | undefined {
-  return registry.get(code.toUpperCase());
+  return getRegistry().get(code.toUpperCase());
 }
 
 export function listTerminalTools(): AnyTerminalTool[] {
-  return Array.from(registry.values());
+  return Array.from(getRegistry().values());
 }
 
 /**

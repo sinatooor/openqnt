@@ -514,7 +514,8 @@ export type AgentNodeType =
   | 'socialAgentNode'
   | 'fundamentalsAgentNode'
   | 'synthesisAgentNode'
-  | 'researchAgentNode';
+  | 'researchAgentNode'
+  | 'quantAgentNode';
 
 export interface AgentNodeData extends BaseNodeData {
   agentNodeType: AgentNodeType;
@@ -545,6 +546,13 @@ export interface AgentNodeData extends BaseNodeData {
   // Research Agent settings
   researchTools?: string[];     // e.g. ['quantstats', 'montecarlo', 'var', 'stress_test']
   researchDepth?: 'quick' | 'standard' | 'deep';
+
+  // Quant Agent settings — lets the agent call into Bloomberg-style terminal
+  // functions (HDS, DES, GIP, SPLC, WEI, …). Values are tool codes from
+  // `src/features/terminal/agentTools/registry.ts`.
+  terminalTools?: string[];
+  terminalToolMaxCalls?: number;   // Safety cap on how many tool calls per run
+  terminalToolTicker?: string;     // Override ticker passed to ticker-scoped tools
 }
 
 // Union type for all node data

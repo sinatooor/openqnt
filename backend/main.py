@@ -254,6 +254,10 @@ app.include_router(adk_web_router)
 from routers.ai_assistant import router as ai_assistant_router
 app.include_router(ai_assistant_router)
 
+# Terminal-function real-data router (HDS / DES / GIP / SPLC / WEI)
+from routers.terminal_data import router as terminal_data_router
+app.include_router(terminal_data_router)
+
 
 # ============================================================
 # Root-level health and custom-blocks endpoints
