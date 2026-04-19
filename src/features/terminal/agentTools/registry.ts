@@ -54,6 +54,7 @@ export async function callTerminalTool(
 /*                                                                          */
 /* ------------------------------------------------------------------------ */
 
+import '../bmap/weiTool';
 import '../des/tool';
 import '../gip/tool';
 import '../hds/tool';

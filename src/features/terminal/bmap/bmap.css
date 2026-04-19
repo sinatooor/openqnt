@@ -425,3 +425,271 @@
 .leaflet-bar a:hover {
   background-color: #1e1706 !important;
 }
+
+/* =============================================================================
+   BMAP — country-index heatmap (choropleth) layer
+   ============================================================================= */
+
+/* Dedicated top-of-list toggle for the heatmap.  Slightly heavier visual
+   weight than the normal asset layers to signal its unique behaviour. */
+.bmap-layer-heatmap {
+  margin: 6px 6px 0;
+  padding: 8px 8px !important;
+  background: #0d0a02 !important;
+  border: 1px solid #332200 !important;
+  border-left: 3px solid rgba(16, 185, 129, 0.75) !important;
+  border-radius: 2px;
+}
+
+.bmap-layer-heatmap .bmap-swatch {
+  height: 12px;
+  width: 18px;
+  border-radius: 3px;
+  box-shadow: none;
+}
+
+.bmap-layer-heatmap.on {
+  background: #141005 !important;
+}
+
+/* ----------------------------- sidebar movers --------------------------- */
+
+.bmap-movers {
+  padding: 8px 10px;
+  border-top: 1px solid #332200;
+  background: #080800;
+}
+
+.bmap-movers-title {
+  color: #ff9f1a;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.bmap-movers-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.bmap-movers-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.bmap-movers-label {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: #71717a;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.bmap-mover-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 4px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 10px;
+}
+
+.bmap-mover-ticker {
+  color: #fafafa;
+  font-weight: 600;
+}
+
+.bmap-mover-country {
+  color: #71717a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 9px;
+}
+
+.bmap-mover-pct {
+  text-align: right;
+  font-weight: 600;
+}
+
+/* ------------------------------ indices tape ----------------------------- */
+
+.bmap-indices-tape {
+  position: absolute;
+  top: 42px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  background: rgba(5, 5, 5, 0.85);
+  border: 1px solid #332200;
+  border-radius: 2px;
+  backdrop-filter: blur(8px);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 10px;
+  max-width: calc(100% - 20px);
+  overflow-x: auto;
+  white-space: nowrap;
+  z-index: 499;
+}
+
+.bmap-tape-sep {
+  color: #52525b !important;
+  border-left: none !important;
+  padding-left: 4px !important;
+}
+
+/* --------------------------- status / errors --------------------------- */
+
+.bmap-heat-status {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 8px 14px;
+  background: rgba(5, 5, 5, 0.9);
+  border: 1px solid #332200;
+  border-radius: 2px;
+  color: #ff9f1a;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  z-index: 498;
+  animation: bmap-fade-pulse 1.4s ease-in-out infinite;
+}
+
+.bmap-heat-error {
+  color: #ef4444;
+  border-color: #7f1d1d;
+  animation: none;
+}
+
+@keyframes bmap-fade-pulse {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+
+/* ---------------------------- heatmap tooltip ---------------------------- */
+
+.bmap-heat-tooltip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.bmap-heat-tooltip.leaflet-tooltip-top::before,
+.bmap-heat-tooltip.leaflet-tooltip-bottom::before,
+.bmap-heat-tooltip.leaflet-tooltip-left::before,
+.bmap-heat-tooltip.leaflet-tooltip-right::before {
+  display: none;
+}
+
+.bmap-heat-tip {
+  background: #050505;
+  border: 1px solid #332200;
+  border-radius: 2px;
+  min-width: 180px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
+}
+
+.bmap-heat-tip-country {
+  background: #141005;
+  padding: 4px 8px;
+  border-bottom: 1px solid #332200;
+  color: #ff9f1a;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.bmap-heat-tip-index {
+  padding: 4px 8px 1px;
+  font-size: 10px;
+  color: #fafafa;
+}
+
+.bmap-heat-tip-tkr {
+  color: #a1a1aa;
+  margin-left: 4px;
+  font-size: 9px;
+}
+
+.bmap-heat-tip-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 8px;
+  font-size: 10px;
+  color: #a1a1aa;
+  border-top: 1px dashed #1f1f1f;
+}
+
+.bmap-heat-tip-row b {
+  color: #fafafa;
+  font-weight: 600;
+}
+
+.bmap-heat-tip-row b.bmap-pos { color: #10b981; }
+.bmap-heat-tip-row b.bmap-neg { color: #ef4444; }
+
+.bmap-heat-tip-note {
+  padding: 4px 8px;
+  font-size: 10px;
+  color: #52525b;
+  font-style: italic;
+}
+
+/* ---------------------------- heatmap legend ----------------------------- */
+
+.bmap-heat-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-right: 10px;
+  border-right: 1px solid #332200;
+  margin-right: 4px;
+}
+
+.bmap-heat-legend-title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #ff9f1a;
+  text-transform: uppercase;
+}
+
+.bmap-heat-legend-scale {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+.bmap-heat-legend-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 9px;
+  color: #d4d4d8;
+}
+
+.bmap-heat-legend-swatch {
+  width: 14px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1px solid rgba(0, 0, 0, 0.5);
+}
+
+/* Make sure the GeoJSON layer does not dim map labels too much. */
+.leaflet-interactive.leaflet-geojson-hover {
+  filter: brightness(1.15);
+}
