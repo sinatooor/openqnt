@@ -95,7 +95,7 @@ class SentimentAgent(BaseAnalysisAgent):
     def description(self) -> str:
         return "Fuses sentiment from news, social media, options flow, and technical indicators into composite scores"
 
-    async def analyze(self, context: dict[str, Any]) -> AgentOutput:
+    async def analyze(self, context: dict[str, Any], ctx=None) -> AgentOutput:
         """
         Analyze multi-source sentiment data.
 

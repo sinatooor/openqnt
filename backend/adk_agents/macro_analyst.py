@@ -85,7 +85,7 @@ class MacroAnalystAgent(BaseAnalysisAgent):
     def description(self) -> str:
         return "Analyzes macroeconomic indicators (GDP, CPI, rates, yields) for portfolio positioning"
 
-    async def analyze(self, context: dict[str, Any]) -> AgentOutput:
+    async def analyze(self, context: dict[str, Any], ctx=None) -> AgentOutput:
         """
         Analyze macro data against user's portfolio.
 

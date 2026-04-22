@@ -95,7 +95,7 @@ class SynthesisAgent(BaseAnalysisAgent):
     def description(self) -> str:
         return "Synthesizes outputs from all other agents into a unified investment decision"
 
-    async def analyze(self, context: dict[str, Any]) -> AgentOutput:
+    async def analyze(self, context: dict[str, Any], ctx=None) -> AgentOutput:
         """
         Synthesize multiple agent outputs into a unified action plan.
 

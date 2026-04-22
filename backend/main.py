@@ -258,6 +258,10 @@ app.include_router(ai_assistant_router)
 from routers.terminal_data import router as terminal_data_router
 app.include_router(terminal_data_router)
 
+# Live agent runtime (REST + WebSocket) — Phase B
+from routers import agent_live
+app.include_router(agent_live.router)
+
 
 # ============================================================
 # Root-level health and custom-blocks endpoints

@@ -220,6 +220,30 @@
         "actionType": "portfolio_rebalance",
         "rebalanceThresholdPercent": 5
       }
+    },
+    {
+      "type": "phoneCall",
+      "nodeType": "action",
+      "label": "Phone Call",
+      "description": "Call user with alert",
+      "tooltip": "Place an automated phone call to notify you of urgent opportunities or risks. Uses Twilio Voice API. Reads a text-to-speech message with the alert details.",
+      "inputs": [
+        "Trigger"
+      ],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "actions",
+      "subcategory": "Alerts",
+      "icon": "Phone",
+      "color": "#ef4444",
+      "defaultData": {
+        "actionType": "phoneCall",
+        "phoneNumber": "",
+        "message": "Urgent trading alert",
+        "voiceType": "alice",
+        "urgencyLevel": "high"
+      }
     }
   ],
   "agent": [
@@ -418,6 +442,76 @@
         "model": "gemini-2.0-flash",
         "symbols": [],
         "confidenceThreshold": 0.5
+      }
+    },
+    {
+      "type": "quantAgentNode",
+      "nodeType": "agent",
+      "label": "Quant Agent",
+      "description": "Terminal-function analyst",
+      "tooltip": "Quantitative agent with read access to Bloomberg-style terminal functions (HDS holders, DES description, GIP intraday graph, SPLC supply chain, WEI world indices, …). Pick which functions it can call; the agent fetches each one, synthesizes the data, and emits a signal with confidence.",
+      "inputs": [
+        "Trigger",
+        "Symbols"
+      ],
+      "outputs": [
+        "Signal",
+        "Confidence",
+        "Findings"
+      ],
+      "category": "agents",
+      "subcategory": "Research",
+      "icon": "Calculator",
+      "color": "#6366f1",
+      "backtestEligible": false,
+      "defaultData": {
+        "agentNodeType": "quantAgentNode",
+        "agentType": "quant_analyst",
+        "model": "gemini-2.0-flash",
+        "symbols": [],
+        "confidenceThreshold": 0.5,
+        "terminalTools": [
+          "HDS",
+          "DES",
+          "GIP",
+          "SPLC",
+          "WEI"
+        ],
+        "terminalToolMaxCalls": 8
+      }
+    },
+    {
+      "type": "researchAgentNode",
+      "nodeType": "agent",
+      "label": "Research Agent",
+      "description": "Quantitative research & backtesting",
+      "tooltip": "Runs quantitative research using the app\\'s built-in tools: QuantStats analysis, Monte Carlo simulations, VaR/CVaR risk assessment, stress testing, and parameter optimization. Outputs data-driven insights to inform trading decisions.",
+      "inputs": [
+        "Trigger",
+        "Symbols"
+      ],
+      "outputs": [
+        "Signal",
+        "Confidence",
+        "Findings"
+      ],
+      "category": "agents",
+      "subcategory": "Research",
+      "icon": "FlaskConical",
+      "color": "#14b8a6",
+      "backtestEligible": false,
+      "defaultData": {
+        "agentNodeType": "researchAgentNode",
+        "agentType": "research_analyst",
+        "model": "gemini-2.0-flash",
+        "symbols": [],
+        "confidenceThreshold": 0.5,
+        "researchTools": [
+          "quantstats",
+          "var",
+          "stress_test"
+        ],
+        "researchDepth": "standard"
       }
     }
   ],
@@ -1853,6 +1947,29 @@
         "message": "Approve this action?",
         "timeoutMinutes": 30,
         "credentialAlias": "telegram"
+      }
+    },
+    {
+      "type": "subWorkflowNode",
+      "nodeType": "integration",
+      "label": "Sub-Workflow",
+      "description": "Execute another saved workflow as a reusable module",
+      "tooltip": "Runs a saved workflow as a black-box sub-process. Data from this node\\'s inputs is passed as the trigger payload; the sub-workflow\\'s final output is returned as this node\\'s output. Equivalent to n8n\\'s Execute Sub-workflow node.",
+      "inputs": [
+        "Trigger",
+        "Data"
+      ],
+      "outputs": [
+        "Result",
+        "Error"
+      ],
+      "category": "integrations",
+      "subcategory": "Flow",
+      "icon": "GitBranch",
+      "color": "#6366f1",
+      "backtestEligible": false,
+      "defaultData": {
+        "integrationType": "subWorkflowNode"
       }
     }
   ],

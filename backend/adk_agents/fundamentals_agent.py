@@ -93,7 +93,7 @@ class FundamentalsAgent(BaseAnalysisAgent):
     def description(self) -> str:
         return "Analyzes company financial health: ratios, growth, profitability, balance sheet, and peer comparison"
 
-    async def analyze(self, context: dict[str, Any]) -> AgentOutput:
+    async def analyze(self, context: dict[str, Any], ctx=None) -> AgentOutput:
         """
         Analyze company fundamentals.
 

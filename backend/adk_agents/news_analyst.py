@@ -85,20 +85,52 @@ class NewsAnalystAgent(BaseAnalysisAgent):
     def description(self) -> str:
         return "Analyzes news headlines and articles for market impact on portfolio holdings"
 
-    async def analyze(self, context: dict[str, Any]) -> AgentOutput:
+    async def analyze(self, context: dict[str, Any], ctx=None) -> AgentOutput:
         """
         Analyze news events against user's portfolio.
 
         Expected context:
         - symbols: list[str] — portfolio symbols to monitor
-        - news_events: list[dict] — recent DataEvents (type=news)
+        - news_events: list[dict] — recent DataEvents (type=news).
+            If empty/missing, the agent fetches headlines itself per symbol
+            via the existing `news_tools.get_market_news` (Yahoo Finance RSS).
+        - per_symbol_limit: int — headlines fetched per symbol when auto-fetching (default 5)
         - model: str — LLM model to use (default: gemini-2.5-flash)
         """
-        symbols = context.get("symbols", [])
-        news_events = context.get("news_events", [])
+        symbols = context.get("symbols", []) or []
+        news_events = context.get("news_events", []) or []
+        per_symbol_limit = int(context.get("per_symbol_limit", 5))
         model = context.get("model", "gemini-2.5-flash")
 
+        # ── Auto-fetch news when none supplied ───────────────────
+        if not news_events and symbols:
+            from .tools.news_tools import get_market_news
+            if ctx:
+                ctx.status(f"Fetching latest headlines for {len(symbols)} symbol(s) via Yahoo Finance.")
+            for sym in symbols:
+                try:
+                    if ctx:
+                        with ctx.tool_call("news.search", {"symbol": sym, "limit": per_symbol_limit}) as h:
+                            md = get_market_news(sym, limit=per_symbol_limit)
+                            h.result(md[:400] + ("…" if len(md) > 400 else ""))
+                    else:
+                        md = get_market_news(sym, limit=per_symbol_limit)
+                except Exception as e:  # noqa: BLE001
+                    if ctx:
+                        ctx.error_event(f"news fetch failed for {sym}: {e}")
+                    continue
+                # The tool returns a markdown blob; we forward it to the LLM as one event.
+                news_events.append({
+                    "headline": f"{sym} — recent headlines digest",
+                    "symbol": sym,
+                    "publishedAt": "recent",
+                    "sourceName": "Yahoo Finance",
+                    "body": md,
+                })
+
         if not news_events:
+            if ctx:
+                ctx.status("No news events to analyze.")
             return AgentOutput(
                 agent_type=self.agent_type,
                 summary="No news events to analyze.",
@@ -121,22 +153,50 @@ class NewsAnalystAgent(BaseAnalysisAgent):
             news_items=news_items_text,
         )
 
-        # Call LLM
-        client = genai.Client()
-        response = await client.aio.models.generate_content(
-            model=model,
-            contents=prompt,
-            config=genai.types.GenerateContentConfig(
-                response_mime_type="application/json",
-                temperature=0.3,
-            ),
-        )
-
-        tokens_used = 0
-        if response.usage_metadata:
-            tokens_used = (response.usage_metadata.prompt_token_count or 0) + (
-                response.usage_metadata.candidates_token_count or 0
+        import os as _os
+        api_key = _os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            if ctx:
+                ctx.error_event("GEMINI_API_KEY not set in env (backend/.env)")
+            return AgentOutput(
+                agent_type=self.agent_type,
+                error="GEMINI_API_KEY not set",
             )
+
+        if ctx:
+            ctx.status(f"Calling LLM ({model}) for news synthesis…")
+        client = genai.Client(api_key=api_key)
+        if ctx:
+            with ctx.tool_call("llm.generate", {"model": model, "prompt_chars": len(prompt)}) as h:
+                response = await client.aio.models.generate_content(
+                    model=model,
+                    contents=prompt,
+                    config=genai.types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        temperature=0.3,
+                    ),
+                )
+                tokens_used = 0
+                if response.usage_metadata:
+                    tokens_used = (response.usage_metadata.prompt_token_count or 0) + (
+                        response.usage_metadata.candidates_token_count or 0
+                    )
+                ctx.add_tokens(tokens_used)
+                h.result(f"{tokens_used} tokens · {len(response.text or '')} chars")
+        else:
+            response = await client.aio.models.generate_content(
+                model=model,
+                contents=prompt,
+                config=genai.types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    temperature=0.3,
+                ),
+            )
+            tokens_used = 0
+            if response.usage_metadata:
+                tokens_used = (response.usage_metadata.prompt_token_count or 0) + (
+                    response.usage_metadata.candidates_token_count or 0
+                )
 
         # Parse LLM response
         import json
@@ -178,13 +238,27 @@ class NewsAnalystAgent(BaseAnalysisAgent):
                 time_horizon=r.get("time_horizon", "short_term"),
             ))
 
+        summary = result.get("summary", "")
+        signal = SignalType(result.get("overall_signal", "neutral"))
+        confidence = float(result.get("overall_confidence", 0.5))
+
+        if ctx:
+            ctx.save_json("news_findings.json", {
+                "summary": summary,
+                "signal": signal.value,
+                "confidence": confidence,
+                "findings_count": len(findings),
+                "recommendations_count": len(recommendations),
+            }, caption="News analysis snapshot")
+            ctx.message(f"**Conclusion:** {signal.value.upper()} (confidence {confidence:.0%}). {summary}")
+
         return AgentOutput(
             agent_type=self.agent_type,
             findings=findings,
             recommendations=recommendations,
-            summary=result.get("summary", ""),
-            overall_confidence=result.get("overall_confidence", 0.5),
-            overall_signal=SignalType(result.get("overall_signal", "neutral")),
+            summary=summary,
+            overall_confidence=confidence,
+            overall_signal=signal,
             tokens_used=tokens_used,
         )
 

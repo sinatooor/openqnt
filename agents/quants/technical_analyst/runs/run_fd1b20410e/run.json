@@ -1,0 +1,11 @@
+{
+  "agent_id": "technical_analyst",
+  "run_id": "run_fd1b20410e",
+  "task": "AAPL technical scan",
+  "symbols": [
+    "AAPL"
+  ],
+  "model": null,
+  "status": "running",
+  "started_at": "2026-04-22T03:30:49.995111+00:00"
+}
