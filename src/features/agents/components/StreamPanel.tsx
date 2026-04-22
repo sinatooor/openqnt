@@ -24,7 +24,9 @@ import {
   selectRunEvents,
 } from '../store/agentMonitorStore';
 import { simulateAgentRun } from '../runtime/simulatedRun';
+import { startLiveAgentRun } from '../runtime/liveRun';
 import { StreamEventView } from './StreamEventView';
+import { Zap } from 'lucide-react';
 
 interface StreamPanelProps {
   agentId: string;
@@ -103,14 +105,34 @@ export const StreamPanel = memo(({ agentId, runId }: StreamPanelProps) => {
               Stop
             </Button>
           ) : (
-            <Button
-              size="sm"
-              className="h-7 px-2 text-[11px] gap-1"
-              onClick={() => simulateAgentRun({ agentId })}
-            >
-              <Play className="w-3 h-3" />
-              Run
-            </Button>
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-[11px] gap-1"
+                onClick={() => simulateAgentRun({ agentId })}
+              >
+                <Play className="w-3 h-3" />
+                Sim
+              </Button>
+              <Button
+                size="sm"
+                className="h-7 px-2 text-[11px] gap-1"
+                onClick={() => {
+                  startLiveAgentRun({ agentId }).catch((e) => {
+                    useAgentMonitorStore.getState().emitEvent({
+                      agentId,
+                      runId: `failed_${Date.now()}`,
+                      kind: 'error',
+                      text: `Live run failed: ${(e as Error).message}`,
+                    });
+                  });
+                }}
+              >
+                <Zap className="w-3 h-3" />
+                Run live
+              </Button>
+            </>
           )}
         </div>
       </div>
