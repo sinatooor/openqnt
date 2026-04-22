@@ -90,7 +90,7 @@ class SocialMonitorAgent(BaseAnalysisAgent):
     def description(self) -> str:
         return "Monitors social media (Reddit, Twitter, Truth Social) for market-moving posts"
 
-    async def analyze(self, context: dict[str, Any]) -> AgentOutput:
+    async def analyze(self, context: dict[str, Any], ctx=None) -> AgentOutput:
         """
         Analyze social media posts for portfolio impact.
 

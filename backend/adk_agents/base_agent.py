@@ -123,7 +123,7 @@ class BaseAnalysisAgent(ABC):
         return f"{self.agent_type} agent"
 
     @abstractmethod
-    async def analyze(self, context: dict[str, Any]) -> AgentOutput:
+    async def analyze(self, context: dict[str, Any], ctx: Optional["AgentRunContext"] = None) -> AgentOutput:
         """
         Main analysis method. Subclasses implement their analysis here.
 
@@ -134,30 +134,69 @@ class BaseAnalysisAgent(ABC):
                 - data_events: Recent DataEvents to analyze
                 - time_range: Analysis time window
                 - user_preferences: User's risk tolerance, etc.
+            ctx: Optional AgentRunContext for emitting stream events
+                (thoughts, tool calls, artifacts) and persisting run state.
+                When provided, agents should use it to surface their work
+                in real time to the UI. When None, agents run "headless".
 
         Returns:
             AgentOutput with findings and recommendations.
         """
         ...
 
-    async def run(self, context: dict[str, Any]) -> AgentOutput:
+    async def run(
+        self,
+        context: dict[str, Any],
+        ctx: Optional["AgentRunContext"] = None,
+    ) -> AgentOutput:
         """
         Execute the agent with full lifecycle management.
-        This wraps analyze() with timing, error handling, and logging.
+        This wraps analyze() with timing, error handling, and (when ctx is
+        provided) on-disk run persistence + live event streaming.
         """
         start_time = time.time()
 
+        # Auto-create a context if the caller didn't pass one. This keeps
+        # legacy call sites (tests, scripts) working while the refactor lands.
+        own_ctx = False
+        if ctx is None:
+            try:
+                from agent_runtime import AgentRunContext  # local import to avoid cycles
+                ctx = AgentRunContext(
+                    agent_id=self.agent_type,
+                    task=context.get("task") or f"{self.agent_type} run",
+                    symbols=context.get("symbols", []),
+                    model=context.get("model"),
+                )
+                own_ctx = True
+            except Exception:
+                ctx = None
+
         try:
-            output = await self.analyze(context)
+            output = await self.analyze(context, ctx) if ctx is not None else await self.analyze(context)
             output.agent_type = self.agent_type
             output.duration_ms = int((time.time() - start_time) * 1000)
+            if ctx is not None:
+                output.run_id = ctx.run_id
+                if own_ctx:
+                    ctx.finish(
+                        status="error" if output.error else "success",
+                        conclusion=output.summary or None,
+                        signal=output.overall_signal.value if output.overall_signal else None,
+                        confidence=output.overall_confidence,
+                        error=output.error,
+                    )
             return output
 
         except Exception as e:
             duration_ms = int((time.time() - start_time) * 1000)
+            err_text = f"{type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
+            if ctx is not None and own_ctx:
+                ctx.finish(status="error", error=err_text)
             return AgentOutput(
                 agent_type=self.agent_type,
-                error=f"{type(e).__name__}: {str(e)}\n{traceback.format_exc()}",
+                error=err_text,
                 duration_ms=duration_ms,
                 overall_confidence=0.0,
+                run_id=ctx.run_id if ctx else None,
             )

@@ -65,6 +65,7 @@ interface AgentMonitorActions {
     task: string;
     symbols?: string[];
     model?: string;
+    runId?: string;
   }) => string;
   endRun: (runId: string, patch: {
     status: RunStatus;
@@ -181,8 +182,8 @@ export const useAgentMonitorStore = create<Store>()(
       },
 
       // ── Runs ────────────────────────────────────────────────────
-      startRun: ({ agentId, task, symbols, model }) => {
-        const runId = uid('run');
+      startRun: ({ agentId, task, symbols, model, runId: explicitRunId }) => {
+        const runId = explicitRunId ?? uid('run');
         const now = Date.now();
         const run: RunRecord = {
           id: runId,
