@@ -65,11 +65,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+      args:
+        VITE_MAPBOX_TOKEN: ${VITE_MAPBOX_TOKEN:-}
     container_name: openqwnt-frontend
     ports:
       - "5173:5173"
     environment:
       - VITE_BACKEND_URL=http://backend:8000
+      - VITE_MAPBOX_TOKEN=${VITE_MAPBOX_TOKEN:-}
     volumes:
       # Mount source for hot reloading
       - ./src:/app/src
@@ -80,8 +83,6 @@ services:
       - openqwnt-network
     depends_on:
       - backend
-    profiles:
-      - frontend # Only start with: docker-compose --profile frontend up
 
   # ===========================================================================
   # Node.js Orchestrator - Primary API + Workflow Engine

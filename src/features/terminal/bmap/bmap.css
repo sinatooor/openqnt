@@ -1,5 +1,6 @@
 /* =============================================================================
    BMAP - Bloomberg-style commodity asset map styles.
+   Mapbox GL JS dark-mode overrides + custom overlays.
    ============================================================================= */
 
 .bmap-root {
@@ -216,10 +217,89 @@
   height: 100%;
 }
 
-/* Kill Leaflet default focus blue outline */
-.leaflet-container:focus,
-.leaflet-container path:focus {
+/* ============================================================================
+   Mapbox GL JS — dark-mode overrides
+   ============================================================================ */
+
+/* Kill focus outlines on the map canvas */
+.mapboxgl-canvas:focus {
   outline: none;
+}
+
+/* Dark-mode attribution */
+.mapboxgl-ctrl-attrib {
+  background: rgba(5, 5, 5, 0.75) !important;
+  color: #71717a !important;
+  font-size: 9px !important;
+}
+
+.mapboxgl-ctrl-attrib a {
+  color: #a1a1aa !important;
+}
+
+/* Navigation control dark-mode */
+.mapboxgl-ctrl-group {
+  background: #0a0a00 !important;
+  border: 1px solid #332200 !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6) !important;
+  border-radius: 4px !important;
+}
+
+.mapboxgl-ctrl-group button {
+  background-color: #0a0a00 !important;
+  border-bottom: 1px solid #332200 !important;
+}
+
+.mapboxgl-ctrl-group button:hover {
+  background-color: #1e1706 !important;
+}
+
+.mapboxgl-ctrl-group button + button {
+  border-top: none !important;
+}
+
+.mapboxgl-ctrl-group button .mapboxgl-ctrl-icon {
+  filter: invert(0.7) sepia(1) saturate(3) hue-rotate(5deg);
+}
+
+/* Scale control dark-mode */
+.mapboxgl-ctrl-scale {
+  background: rgba(5, 5, 5, 0.75) !important;
+  color: #a1a1aa !important;
+  border-color: #332200 !important;
+  font-size: 9px !important;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace !important;
+  padding: 2px 6px !important;
+}
+
+/* Popup dark-mode — Bloomberg aesthetic */
+.bmap-mapbox-popup .mapboxgl-popup-content {
+  background: #050505 !important;
+  color: #fafafa !important;
+  border: 1px solid #332200 !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(51, 34, 0, 0.5) !important;
+  border-radius: 3px !important;
+  padding: 0 !important;
+  min-width: 200px;
+}
+
+.bmap-mapbox-popup .mapboxgl-popup-tip {
+  border-top-color: #050505 !important;
+}
+
+.bmap-mapbox-popup .mapboxgl-popup-close-button {
+  color: #a1a1aa !important;
+  font-size: 16px !important;
+  padding: 4px 8px !important;
+  right: 2px !important;
+  top: 2px !important;
+  z-index: 1;
+  line-height: 1;
+}
+
+.bmap-mapbox-popup .mapboxgl-popup-close-button:hover {
+  color: #ff9f1a !important;
+  background: transparent !important;
 }
 
 /* Top overlay ticker strip */
@@ -292,37 +372,6 @@
 }
 
 /* -------------------------------- popups ---------------------------------- */
-
-.leaflet-popup-content-wrapper {
-  background: #050505 !important;
-  color: #fafafa !important;
-  border: 1px solid #332200 !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7) !important;
-  border-radius: 2px !important;
-  padding: 0 !important;
-}
-
-.leaflet-popup-content {
-  margin: 0 !important;
-  width: 220px !important;
-  line-height: 1.4 !important;
-}
-
-.leaflet-popup-tip {
-  background: #050505 !important;
-  border: 1px solid #332200 !important;
-}
-
-.leaflet-popup-close-button {
-  color: #a1a1aa !important;
-  padding: 6px 8px !important;
-  font-size: 14px !important;
-}
-
-.leaflet-popup-close-button:hover {
-  color: #ff9f1a !important;
-  background: transparent !important;
-}
 
 .bmap-popup {
   font-family: inherit;
@@ -399,41 +448,18 @@
   to   { transform: rotate(360deg); }
 }
 
-/* Needed by Leaflet for attribution link visibility on dark tiles */
-.leaflet-control-attribution {
-  background: rgba(5, 5, 5, 0.75) !important;
-  color: #71717a !important;
-  font-size: 9px !important;
-}
-
-.leaflet-control-attribution a {
-  color: #a1a1aa !important;
-}
-
-/* Zoom control dark-mode */
-.leaflet-bar {
-  border: 1px solid #332200 !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6) !important;
-}
-
-.leaflet-bar a {
-  background-color: #0a0a00 !important;
-  color: #ff9f1a !important;
-  border-bottom: 1px solid #332200 !important;
-}
-
-.leaflet-bar a:hover {
-  background-color: #1e1706 !important;
+@keyframes bmap-fade-pulse {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
 }
 
 /* =============================================================================
    BMAP — country-index heatmap (choropleth) layer
    ============================================================================= */
 
-/* Dedicated top-of-list toggle for the heatmap.  Slightly heavier visual
-   weight than the normal asset layers to signal its unique behaviour. */
+/* Dedicated top-of-list toggle for the heatmap */
 .bmap-layer-heatmap {
-  margin: 6px 6px 0;
+  margin: 4px 6px 0;
   padding: 8px 8px !important;
   background: #0d0a02 !important;
   border: 1px solid #332200 !important;
@@ -450,6 +476,23 @@
 
 .bmap-layer-heatmap.on {
   background: #141005 !important;
+}
+
+/* Globe / Flat toggle */
+.bmap-layer-globe {
+  margin: 6px 6px 0;
+  padding: 8px 8px !important;
+  background: #0d0a02 !important;
+  border: 1px solid #332200 !important;
+  border-left: 3px solid rgba(99, 102, 241, 0.75) !important;
+  border-radius: 2px;
+}
+
+.bmap-layer-globe .bmap-swatch {
+  height: 12px;
+  width: 12px;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #6366f1;
 }
 
 /* ----------------------------- sidebar movers --------------------------- */
@@ -571,83 +614,6 @@
   animation: none;
 }
 
-@keyframes bmap-fade-pulse {
-  0%, 100% { opacity: 0.6; }
-  50%      { opacity: 1; }
-}
-
-/* ---------------------------- heatmap tooltip ---------------------------- */
-
-.bmap-heat-tooltip {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-}
-
-.bmap-heat-tooltip.leaflet-tooltip-top::before,
-.bmap-heat-tooltip.leaflet-tooltip-bottom::before,
-.bmap-heat-tooltip.leaflet-tooltip-left::before,
-.bmap-heat-tooltip.leaflet-tooltip-right::before {
-  display: none;
-}
-
-.bmap-heat-tip {
-  background: #050505;
-  border: 1px solid #332200;
-  border-radius: 2px;
-  min-width: 180px;
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  overflow: hidden;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
-}
-
-.bmap-heat-tip-country {
-  background: #141005;
-  padding: 4px 8px;
-  border-bottom: 1px solid #332200;
-  color: #ff9f1a;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-
-.bmap-heat-tip-index {
-  padding: 4px 8px 1px;
-  font-size: 10px;
-  color: #fafafa;
-}
-
-.bmap-heat-tip-tkr {
-  color: #a1a1aa;
-  margin-left: 4px;
-  font-size: 9px;
-}
-
-.bmap-heat-tip-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 2px 8px;
-  font-size: 10px;
-  color: #a1a1aa;
-  border-top: 1px dashed #1f1f1f;
-}
-
-.bmap-heat-tip-row b {
-  color: #fafafa;
-  font-weight: 600;
-}
-
-.bmap-heat-tip-row b.bmap-pos { color: #10b981; }
-.bmap-heat-tip-row b.bmap-neg { color: #ef4444; }
-
-.bmap-heat-tip-note {
-  padding: 4px 8px;
-  font-size: 10px;
-  color: #52525b;
-  font-style: italic;
-}
-
 /* ---------------------------- heatmap legend ----------------------------- */
 
 .bmap-heat-legend {
@@ -687,9 +653,4 @@
   height: 10px;
   border-radius: 2px;
   border: 1px solid rgba(0, 0, 0, 0.5);
-}
-
-/* Make sure the GeoJSON layer does not dim map labels too much. */
-.leaflet-interactive.leaflet-geojson-hover {
-  filter: brightness(1.15);
 }

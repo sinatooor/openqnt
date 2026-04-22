@@ -1,30 +1,33 @@
 /**
  * BmapView - Bloomberg-style global commodity asset map.
  *
- * Uses OpenStreetMap tiles via CartoDB's free "dark_matter" basemap (no API
- * key required) rendered by Leaflet.  Every asset class is drawn with a
- * custom `divIcon` so we avoid Leaflet's default marker-image bundling
- * problems.
+ * Uses Mapbox GL JS via react-map-gl with the "dark-v11" style.  All asset
+ * classes are rendered as GeoJSON source + layers for GPU-accelerated rendering.
+ *
+ * Advanced features:
+ *   - 3D globe projection with atmosphere / fog
+ *   - Fly-to animations when focusing on a layer
+ *   - Vessel clustering at low zoom
+ *   - Pitch/bearing navigation controls
+ *   - Premium dark-mode popups matching the Bloomberg aesthetic
  *
  * Layers:
  *   Oil Fields, Gas Fields, Pipelines, Shale Basins, Refineries, LNG
  *   Terminals, Mines, Ports, Vessels, Wind Farms, Storms.
  */
 
-import { Fragment, useEffect, useMemo, useState } from 'react';
-import L from 'leaflet';
-import {
-  CircleMarker,
-  GeoJSON,
-  MapContainer,
-  Marker,
-  Polygon,
-  Polyline,
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Map, {
+  Source,
+  Layer,
   Popup,
-  TileLayer,
-  ZoomControl,
-} from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
+  NavigationControl,
+  ScaleControl,
+  type MapRef,
+  type ViewStateChangeEvent,
+  type MapLayerMouseEvent,
+} from 'react-map-gl/mapbox';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import './bmap.css';
 import {
   generateBmapData,
@@ -33,137 +36,339 @@ import {
   type AssetLayerId,
   type BmapData,
   type PointAsset,
-  type StormAsset,
   type VesselAsset,
-  type LatLng,
+  type StormAsset,
+  type LineAsset,
+  type BasinAsset,
 } from './mockAssets';
 import {
   generateWeiData,
   heatmapFill,
-  heatmapStroke,
   HEATMAP_LEGEND,
   type IndexSnapshot,
   type WeiData,
 } from './countryIndices';
-import type { Feature, FeatureCollection, Geometry } from 'geojson';
+import type { Feature, FeatureCollection, Geometry, Point, LineString, Polygon } from 'geojson';
 
-/* -------------------------- custom marker builders ------------------------ */
+/* -------------------------------- constants ------------------------------- */
 
-function dotIcon(color: string, size = 10, border = '#0a0a00') {
-  const s = size;
-  return L.divIcon({
-    className: 'bmap-dot',
-    html: `<span style="background:${color};width:${s}px;height:${s}px;border:1.5px solid ${border};border-radius:50%;display:block;box-shadow:0 0 6px ${color}88;"></span>`,
-    iconSize: [s + 4, s + 4],
-    iconAnchor: [(s + 4) / 2, (s + 4) / 2],
-  });
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string;
+const MAPBOX_STYLE = 'mapbox://styles/mapbox/dark-v11';
+
+const WORLD_GEOJSON_URL =
+  'https://cdn.jsdelivr.net/gh/johan/world.geo.json@master/countries.geo.json';
+
+/* --------------------------------- types ---------------------------------- */
+
+interface PopupInfo {
+  lng: number;
+  lat: number;
+  html: string;
 }
 
-function squareIcon(color: string, size = 10) {
-  return L.divIcon({
-    className: 'bmap-square',
-    html: `<span style="background:${color};width:${size}px;height:${size}px;border:1.5px solid #0a0a00;display:block;box-shadow:0 0 6px ${color}88;"></span>`,
-    iconSize: [size + 4, size + 4],
-    iconAnchor: [(size + 4) / 2, (size + 4) / 2],
-  });
+type WorldFeature = Feature<Geometry, { name?: string }>;
+type WorldGeo = FeatureCollection<Geometry, { name?: string }>;
+
+/* ------------------------------- data cache ------------------------------- */
+
+let worldGeoCache: WorldGeo | null = null;
+let worldGeoPromise: Promise<WorldGeo> | null = null;
+
+function loadWorldGeoJSON(): Promise<WorldGeo> {
+  if (worldGeoCache) return Promise.resolve(worldGeoCache);
+  if (worldGeoPromise) return worldGeoPromise;
+  worldGeoPromise = fetch(WORLD_GEOJSON_URL)
+    .then((r) => {
+      if (!r.ok) throw new Error(`Failed to load world GeoJSON (${r.status})`);
+      return r.json() as Promise<WorldGeo>;
+    })
+    .then((geo) => {
+      worldGeoCache = geo;
+      return geo;
+    })
+    .catch((e) => {
+      worldGeoPromise = null;
+      throw e;
+    });
+  return worldGeoPromise;
 }
 
-function triangleIcon(color: string, size = 12) {
-  return L.divIcon({
-    className: 'bmap-triangle',
-    html: `<svg width="${size}" height="${size}" viewBox="0 0 12 12"><polygon points="6,1 11,11 1,11" fill="${color}" stroke="#0a0a00" stroke-width="1"/></svg>`,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-  });
+/* ----------------------- GeoJSON data builders ---------------------------- */
+
+/** Flip [lat, lng] (Leaflet convention in mockAssets) → [lng, lat] (GeoJSON). */
+function ll(position: [number, number]): [number, number] {
+  return [position[1], position[0]];
 }
 
-function vesselIcon(color: string, heading: number, size = 14) {
-  return L.divIcon({
-    className: 'bmap-vessel',
-    html: `<svg width="${size}" height="${size}" viewBox="0 0 12 12" style="transform:rotate(${heading}deg);transform-origin:center;">
-      <polygon points="6,1 10,10 6,8 2,10" fill="${color}" stroke="#0a0a00" stroke-width="0.8"/>
-    </svg>`,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-  });
+function buildPointGeoJSON(
+  items: PointAsset[],
+  layerId: string,
+): FeatureCollection<Point> {
+  return {
+    type: 'FeatureCollection',
+    features: items.map((item) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: ll(item.position) },
+      properties: {
+        id: item.id,
+        name: item.name,
+        country: item.country,
+        layerId,
+        propsJson: JSON.stringify(item.props),
+      },
+    })),
+  };
 }
 
-function stormIcon(category: number, size = 26) {
-  const color = category >= 4 ? '#dc2626' : category >= 2 ? '#f97316' : '#eab308';
-  return L.divIcon({
-    className: 'bmap-storm',
-    html: `<div style="position:relative;width:${size}px;height:${size}px;">
-      <svg width="${size}" height="${size}" viewBox="0 0 30 30" style="animation:bmap-spin 8s linear infinite;">
-        <path d="M15 4 C23 4 26 11 22 15 C19 12 15 12 15 15 C15 12 11 12 8 15 C4 11 7 4 15 4 Z" fill="${color}cc" stroke="${color}" stroke-width="1"/>
-        <path d="M15 26 C7 26 4 19 8 15 C11 18 15 18 15 15 C15 18 19 18 22 15 C26 19 23 26 15 26 Z" fill="${color}cc" stroke="${color}" stroke-width="1"/>
-        <circle cx="15" cy="15" r="2" fill="#fff"/>
-      </svg>
-    </div>`,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-  });
+function buildVesselGeoJSON(vessels: VesselAsset[]): FeatureCollection<Point> {
+  return {
+    type: 'FeatureCollection',
+    features: vessels.map((v) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: ll(v.position) },
+      properties: {
+        id: v.id,
+        name: v.name,
+        flag: v.flag,
+        type: v.type,
+        dwt: v.dwt,
+        cargo: v.cargo,
+        destination: v.destination,
+        eta: v.eta,
+        speedKts: v.speedKts,
+        headingDeg: v.headingDeg,
+        layerId: 'vessels',
+      },
+    })),
+  };
 }
 
-/* --------------------------- popup helper elements ------------------------ */
+function buildStormGeoJSON(storms: StormAsset[]): {
+  points: FeatureCollection<Point>;
+  tracks: FeatureCollection<LineString>;
+} {
+  const points: FeatureCollection<Point> = {
+    type: 'FeatureCollection',
+    features: storms.map((s) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: ll(s.position) },
+      properties: {
+        id: s.id,
+        name: s.name,
+        category: s.category,
+        windMph: s.windMph,
+        layerId: 'storms',
+      },
+    })),
+  };
+  const tracks: FeatureCollection<LineString> = {
+    type: 'FeatureCollection',
+    features: storms.map((s) => ({
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: s.track.map(ll),
+      },
+      properties: { id: s.id, name: s.name },
+    })),
+  };
+  return { points, tracks };
+}
 
-function PopupShell({ title, sub, rows }: { title: string; sub?: string; rows: Array<{ label: string; value: string; tone?: 'good' | 'bad' | 'warn' | 'neutral' }> }) {
-  return (
-    <div className="bmap-popup">
-      <div className="bmap-popup-header">
-        <span className="bmap-popup-title">{title}</span>
-        {sub && <span className="bmap-popup-sub">{sub}</span>}
-      </div>
-      <div className="bmap-popup-body">
-        {rows.map((r, i) => (
-          <div key={i} className="bmap-popup-row">
-            <span className="bmap-popup-label">{r.label}</span>
-            <span className={`bmap-popup-value bmap-tone-${r.tone ?? 'neutral'}`}>{r.value}</span>
-          </div>
-        ))}
-      </div>
+function buildPipelineGeoJSON(pipes: LineAsset[]): FeatureCollection<LineString> {
+  return {
+    type: 'FeatureCollection',
+    features: pipes.map((p) => ({
+      type: 'Feature',
+      geometry: { type: 'LineString', coordinates: p.path.map(ll) },
+      properties: {
+        id: p.id,
+        name: p.name,
+        kind: p.kind,
+        operator: p.operator,
+        capacityMbd: p.capacityMbd ?? null,
+        capacityBcfd: p.capacityBcfd ?? null,
+        layerId: 'pipelines',
+      },
+    })),
+  };
+}
+
+function buildBasinGeoJSON(basins: BasinAsset[]): FeatureCollection<Polygon> {
+  return {
+    type: 'FeatureCollection',
+    features: basins.map((b) => ({
+      type: 'Feature',
+      geometry: {
+        type: 'Polygon',
+        coordinates: [[...b.ring.map(ll), ll(b.ring[0])]],
+      },
+      properties: {
+        id: b.id,
+        name: b.name,
+        country: b.country,
+        resource: b.resource,
+        layerId: 'shaleBasins',
+      },
+    })),
+  };
+}
+
+/**
+ * Build heatmap choropleth GeoJSON — colour each country by its flagship
+ * index day-change, joining on ISO-3 feature IDs.
+ */
+function buildHeatmapGeoJSON(
+  worldGeo: WorldGeo,
+  lookup: Map<string, IndexSnapshot>,
+): FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: worldGeo.features.map((f) => {
+      const iso3 = (f.id ?? '') as string;
+      const snap = lookup.get(iso3);
+      const changePct = snap?.changePct ?? null;
+      return {
+        ...f,
+        properties: {
+          ...f.properties,
+          iso3,
+          changePct,
+          fillColor: heatmapFill(changePct, 1),
+          hasData: !!snap,
+          // Data for tooltip
+          country: snap?.country ?? f.properties?.name ?? iso3,
+          index: snap?.index ?? '',
+          ticker: snap?.ticker ?? '',
+          price: snap?.price ?? 0,
+          currency: snap?.currency ?? '',
+          ytdPct: snap?.ytdPct ?? 0,
+          prevClose: snap?.prevClose ?? 0,
+        },
+      };
+    }),
+  };
+}
+
+/* ----------------------------- popup builders ----------------------------- */
+
+function buildPointPopupHtml(props: Record<string, unknown>): string {
+  const name = props.name as string;
+  const country = props.country as string;
+  const layerId = props.layerId as string;
+  const code = LAYER_META[layerId as AssetLayerId]?.code ?? '';
+  const parsed = JSON.parse(props.propsJson as string) as Array<{
+    label: string;
+    value: string;
+    tone?: string;
+  }>;
+  const rows = parsed
+    .map(
+      (p) =>
+        `<div class="bmap-popup-row"><span class="bmap-popup-label">${p.label}</span><span class="bmap-popup-value bmap-tone-${p.tone ?? 'neutral'}">${p.value}</span></div>`,
+    )
+    .join('');
+  return `<div class="bmap-popup">
+    <div class="bmap-popup-header">
+      <span class="bmap-popup-title">${name}</span>
+      <span class="bmap-popup-sub">${code} · ${country}</span>
     </div>
-  );
+    <div class="bmap-popup-body">${rows}</div>
+  </div>`;
 }
 
-function PointPopup({ asset, code }: { asset: PointAsset; code: string }) {
-  return (
-    <PopupShell
-      title={asset.name}
-      sub={`${code} · ${asset.country}`}
-      rows={asset.props.map((p) => ({ label: p.label, value: p.value, tone: p.tone }))}
-    />
-  );
+function buildVesselPopupHtml(props: Record<string, unknown>): string {
+  const rows = [
+    { label: 'DWT', value: `${props.dwt}k t` },
+    { label: 'Cargo', value: props.cargo as string },
+    { label: 'Speed', value: `${props.speedKts} kts` },
+    { label: 'Heading', value: `${props.headingDeg}°` },
+    { label: 'Destination', value: props.destination as string },
+    { label: 'ETA', value: props.eta as string },
+  ];
+  return `<div class="bmap-popup">
+    <div class="bmap-popup-header">
+      <span class="bmap-popup-title">${props.name}</span>
+      <span class="bmap-popup-sub">${props.type} · ${props.flag}</span>
+    </div>
+    <div class="bmap-popup-body">${rows.map((r) => `<div class="bmap-popup-row"><span class="bmap-popup-label">${r.label}</span><span class="bmap-popup-value">${r.value}</span></div>`).join('')}</div>
+  </div>`;
 }
 
-function VesselPopup({ v }: { v: VesselAsset }) {
-  return (
-    <PopupShell
-      title={v.name}
-      sub={`${v.type} · ${v.flag}`}
-      rows={[
-        { label: 'DWT', value: `${v.dwt}k t` },
-        { label: 'Cargo', value: v.cargo },
-        { label: 'Speed', value: `${v.speedKts} kts` },
-        { label: 'Heading', value: `${v.headingDeg}°` },
-        { label: 'Destination', value: v.destination },
-        { label: 'ETA', value: v.eta },
-      ]}
-    />
-  );
+function buildStormPopupHtml(props: Record<string, unknown>): string {
+  const category = props.category as number;
+  const rating = category === 0 ? 'Tropical Storm' : `Category ${category}`;
+  const tone = category >= 3 ? 'bad' : 'warn';
+  return `<div class="bmap-popup">
+    <div class="bmap-popup-header">
+      <span class="bmap-popup-title">${props.name}</span>
+      <span class="bmap-popup-sub">${rating}</span>
+    </div>
+    <div class="bmap-popup-body">
+      <div class="bmap-popup-row"><span class="bmap-popup-label">Max winds</span><span class="bmap-popup-value bmap-tone-${tone}">${props.windMph} mph</span></div>
+    </div>
+  </div>`;
 }
 
-function StormPopup({ s }: { s: StormAsset }) {
-  const rating = s.category === 0 ? 'Tropical Storm' : `Category ${s.category}`;
-  return (
-    <PopupShell
-      title={s.name}
-      sub={rating}
-      rows={[
-        { label: 'Max winds', value: `${s.windMph} mph`, tone: s.category >= 3 ? 'bad' : 'warn' },
-        { label: 'Track points', value: `${s.track.length}` },
-      ]}
-    />
-  );
+function buildPipelinePopupHtml(props: Record<string, unknown>): string {
+  const kind = props.kind as string;
+  const cap =
+    kind === 'oil'
+      ? `${props.capacityMbd} mbd`
+      : `${props.capacityBcfd} Bcf/d`;
+  return `<div class="bmap-popup">
+    <div class="bmap-popup-header">
+      <span class="bmap-popup-title">${props.name}</span>
+      <span class="bmap-popup-sub">${kind === 'oil' ? 'Crude Oil' : 'Natural Gas'} Pipeline</span>
+    </div>
+    <div class="bmap-popup-body">
+      <div class="bmap-popup-row"><span class="bmap-popup-label">Operator</span><span class="bmap-popup-value">${props.operator}</span></div>
+      <div class="bmap-popup-row"><span class="bmap-popup-label">Capacity</span><span class="bmap-popup-value">${cap}</span></div>
+      <div class="bmap-popup-row"><span class="bmap-popup-label">Status</span><span class="bmap-popup-value bmap-tone-good">Operational</span></div>
+    </div>
+  </div>`;
+}
+
+function buildBasinPopupHtml(props: Record<string, unknown>): string {
+  return `<div class="bmap-popup">
+    <div class="bmap-popup-header">
+      <span class="bmap-popup-title">${props.name}</span>
+      <span class="bmap-popup-sub">Shale Basin · ${props.country}</span>
+    </div>
+    <div class="bmap-popup-body">
+      <div class="bmap-popup-row"><span class="bmap-popup-label">Resource</span><span class="bmap-popup-value">${(props.resource as string).toUpperCase()}</span></div>
+      <div class="bmap-popup-row"><span class="bmap-popup-label">Status</span><span class="bmap-popup-value bmap-tone-good">Active</span></div>
+    </div>
+  </div>`;
+}
+
+function buildHeatmapPopupHtml(props: Record<string, unknown>): string {
+  const hasData = props.hasData as boolean;
+  const country = props.country as string;
+  if (!hasData) {
+    return `<div class="bmap-popup">
+      <div class="bmap-popup-header">
+        <span class="bmap-popup-title">${country}</span>
+        <span class="bmap-popup-sub">No flagship index tracked</span>
+      </div>
+    </div>`;
+  }
+  const changePct = props.changePct as number;
+  const sign = changePct >= 0 ? '+' : '';
+  const tone = changePct >= 0 ? 'good' : 'bad';
+  const ytdPct = props.ytdPct as number;
+  return `<div class="bmap-popup">
+    <div class="bmap-popup-header">
+      <span class="bmap-popup-title">${props.index}</span>
+      <span class="bmap-popup-sub">${props.ticker} · ${country}</span>
+    </div>
+    <div class="bmap-popup-body">
+      <div class="bmap-popup-row"><span class="bmap-popup-label">Last</span><span class="bmap-popup-value">${Number(props.price).toLocaleString()} ${props.currency}</span></div>
+      <div class="bmap-popup-row"><span class="bmap-popup-label">Day</span><span class="bmap-popup-value bmap-tone-${tone}">${sign}${changePct.toFixed(2)}%</span></div>
+      <div class="bmap-popup-row"><span class="bmap-popup-label">YTD</span><span class="bmap-popup-value bmap-tone-${ytdPct >= 0 ? 'good' : 'bad'}">${ytdPct >= 0 ? '+' : ''}${ytdPct.toFixed(1)}%</span></div>
+      <div class="bmap-popup-row"><span class="bmap-popup-label">Prev close</span><span class="bmap-popup-value">${Number(props.prevClose).toLocaleString()}</span></div>
+    </div>
+  </div>`;
 }
 
 /* ------------------------------- side panel ------------------------------- */
@@ -178,6 +383,8 @@ interface SidePanelProps {
   showHeatmap: boolean;
   onToggleHeatmap: () => void;
   wei: WeiData;
+  isGlobe: boolean;
+  onToggleGlobe: () => void;
 }
 
 function SidePanel({
@@ -190,6 +397,8 @@ function SidePanel({
   showHeatmap,
   onToggleHeatmap,
   wei,
+  isGlobe,
+  onToggleGlobe,
 }: SidePanelProps) {
   return (
     <aside className="bmap-sidebar">
@@ -201,9 +410,19 @@ function SidePanel({
         </div>
       </div>
 
-      {/* Dedicated heatmap toggle — separate from the commodity layers to
-          make its unique nature (choropleth over full country polygons)
-          obvious to the user. */}
+      {/* Globe / Flat toggle */}
+      <button
+        onClick={onToggleGlobe}
+        className="bmap-layer-row bmap-layer-globe on"
+        title={isGlobe ? 'Switch to flat projection' : 'Switch to 3D globe'}
+      >
+        <span className="bmap-swatch" style={{ background: '#6366f1' }} />
+        <span className="bmap-layer-label">{isGlobe ? '🌍 Globe' : '🗺️ Flat'}</span>
+        <span className="bmap-layer-count">3D</span>
+        <span className={`bmap-toggle ${isGlobe ? 'on' : ''}`} />
+      </button>
+
+      {/* Heatmap toggle */}
       <button
         onClick={onToggleHeatmap}
         className={`bmap-layer-row bmap-layer-heatmap ${showHeatmap ? 'on' : ''}`}
@@ -239,8 +458,7 @@ function SidePanel({
         })}
       </div>
 
-      {/* Top global movers — only relevant when the heatmap is on, but we
-          keep them mounted so the data shape stays consistent. */}
+      {/* Top global movers */}
       {showHeatmap && (
         <div className="bmap-movers">
           <div className="bmap-movers-title">Top Movers</div>
@@ -276,43 +494,11 @@ function SidePanel({
         </div>
         <button className="bmap-btn-wide" onClick={onRegen}>REFRESH DATA</button>
         <div className="bmap-tip">
-          Tip: click any marker for details. Zoom with mouse wheel &middot; drag to pan.
+          Tip: click any marker for details. Scroll to zoom · drag to pan · right-drag to tilt.
         </div>
       </div>
     </aside>
   );
-}
-
-/* ----------------------- country heatmap (choropleth) --------------------- */
-
-// CDN-hosted, well-maintained world-country GeoJSON keyed by ISO-3 country
-// code.  Cached in module scope so re-mounts don't re-fetch.
-const WORLD_GEOJSON_URL =
-  'https://cdn.jsdelivr.net/gh/johan/world.geo.json@master/countries.geo.json';
-
-type WorldFeature = Feature<Geometry, { name?: string }>;
-type WorldGeo = FeatureCollection<Geometry, { name?: string }>;
-
-let worldGeoCache: WorldGeo | null = null;
-let worldGeoPromise: Promise<WorldGeo> | null = null;
-
-function loadWorldGeoJSON(): Promise<WorldGeo> {
-  if (worldGeoCache) return Promise.resolve(worldGeoCache);
-  if (worldGeoPromise) return worldGeoPromise;
-  worldGeoPromise = fetch(WORLD_GEOJSON_URL)
-    .then((r) => {
-      if (!r.ok) throw new Error(`Failed to load world GeoJSON (${r.status})`);
-      return r.json() as Promise<WorldGeo>;
-    })
-    .then((geo) => {
-      worldGeoCache = geo;
-      return geo;
-    })
-    .catch((e) => {
-      worldGeoPromise = null;
-      throw e;
-    });
-  return worldGeoPromise;
 }
 
 /* ---------------------------------- view ---------------------------------- */
@@ -331,24 +517,51 @@ const DEFAULT_LAYERS: Record<AssetLayerId, boolean> = {
   storms: true,
 };
 
+/** Layer IDs that are interactive (clickable for popups). */
+const INTERACTIVE_LAYERS = [
+  'bmap-oil-circle',
+  'bmap-gas-circle',
+  'bmap-refinery-circle',
+  'bmap-lng-circle',
+  'bmap-mine-circle',
+  'bmap-port-circle',
+  'bmap-wind-circle',
+  'bmap-vessel-circle',
+  'bmap-storm-circle',
+  'bmap-pipeline-line',
+  'bmap-basin-fill',
+  'bmap-heatmap-fill',
+];
+
 export default function BmapView() {
+  const mapRef = useRef<MapRef>(null);
   const [seed, setSeed] = useState(0);
   const [layers, setLayers] = useState<Record<AssetLayerId, boolean>>(DEFAULT_LAYERS);
   const [showHeatmap, setShowHeatmap] = useState(true);
+  const [isGlobe, setIsGlobe] = useState(true);
+  const [popupInfo, setPopupInfo] = useState<PopupInfo | null>(null);
   const [worldGeo, setWorldGeo] = useState<WorldGeo | null>(worldGeoCache);
   const [geoError, setGeoError] = useState<string | null>(null);
+  const [cursor, setCursor] = useState('grab');
+
+  const [viewState, setViewState] = useState({
+    longitude: 20,
+    latitude: 25,
+    zoom: 2.2,
+    pitch: 25,
+    bearing: 0,
+  });
 
   const data: BmapData = useMemo(() => generateBmapData(`BMAP-${seed}`), [seed]);
   const wei: WeiData = useMemo(() => generateWeiData({ seedSalt: seed }), [seed]);
 
-  // ISO-3 → snapshot lookup for the GeoJSON style callback.
   const bySeed = useMemo(() => {
     const m = new Map<string, IndexSnapshot>();
     wei.snapshots.forEach((s) => m.set(s.iso3, s));
     return m;
   }, [wei]);
 
-  // Load the world GeoJSON once (and only if the heatmap is ever requested).
+  // Load world GeoJSON for the heatmap choropleth.
   useEffect(() => {
     if (!showHeatmap || worldGeo) return;
     let cancelled = false;
@@ -357,6 +570,24 @@ export default function BmapView() {
       .catch((e) => { if (!cancelled) setGeoError(String(e.message ?? e)); });
     return () => { cancelled = true; };
   }, [showHeatmap, worldGeo]);
+
+  /* -------- build GeoJSON sources -------- */
+
+  const oilGeo = useMemo(() => buildPointGeoJSON(data.oilFields, 'oilFields'), [data]);
+  const gasGeo = useMemo(() => buildPointGeoJSON(data.gasFields, 'gasFields'), [data]);
+  const refGeo = useMemo(() => buildPointGeoJSON(data.refineries, 'refineries'), [data]);
+  const lngGeo = useMemo(() => buildPointGeoJSON(data.lng, 'lng'), [data]);
+  const mineGeo = useMemo(() => buildPointGeoJSON(data.mines, 'mines'), [data]);
+  const portGeo = useMemo(() => buildPointGeoJSON(data.ports, 'ports'), [data]);
+  const windGeo = useMemo(() => buildPointGeoJSON(data.windFarms, 'windFarms'), [data]);
+  const vesselGeo = useMemo(() => buildVesselGeoJSON(data.vessels), [data]);
+  const stormData = useMemo(() => buildStormGeoJSON(data.storms), [data]);
+  const pipeGeo = useMemo(() => buildPipelineGeoJSON(data.pipelines), [data]);
+  const basinGeo = useMemo(() => buildBasinGeoJSON(data.shaleBasins), [data]);
+  const heatmapGeo = useMemo(
+    () => (worldGeo ? buildHeatmapGeoJSON(worldGeo, bySeed) : null),
+    [worldGeo, bySeed],
+  );
 
   const counts = useMemo<Record<AssetLayerId, number>>(
     () => ({
@@ -390,6 +621,99 @@ export default function BmapView() {
       ),
     );
 
+  /* -------- map interaction handlers -------- */
+
+  const onMapClick = useCallback((e: MapLayerMouseEvent) => {
+    const feature = e.features?.[0];
+    if (!feature) {
+      setPopupInfo(null);
+      return;
+    }
+
+    const props = feature.properties ?? {};
+    const layerId = feature.layer?.id ?? '';
+    let html = '';
+
+    if (layerId === 'bmap-heatmap-fill') {
+      html = buildHeatmapPopupHtml(props);
+    } else if (layerId === 'bmap-vessel-circle') {
+      html = buildVesselPopupHtml(props);
+    } else if (layerId === 'bmap-storm-circle') {
+      html = buildStormPopupHtml(props);
+    } else if (layerId === 'bmap-pipeline-line') {
+      html = buildPipelinePopupHtml(props);
+    } else if (layerId === 'bmap-basin-fill') {
+      html = buildBasinPopupHtml(props);
+    } else if (props.propsJson) {
+      html = buildPointPopupHtml(props);
+    }
+
+    if (html) {
+      setPopupInfo({ lng: e.lngLat.lng, lat: e.lngLat.lat, html });
+    }
+  }, []);
+
+  const onMouseEnter = useCallback(() => setCursor('pointer'), []);
+  const onMouseLeave = useCallback(() => setCursor('grab'), []);
+
+  const onMapLoad = useCallback(() => {
+    const map = mapRef.current?.getMap();
+    if (!map) return;
+
+    // Premium atmosphere / fog for globe mode
+    map.setFog({
+      color: 'rgb(10, 10, 20)',
+      'high-color': 'rgb(20, 20, 40)',
+      'horizon-blend': 0.08,
+      'space-color': 'rgb(4, 6, 10)',
+      'star-intensity': 0.6,
+    });
+  }, []);
+
+  // Toggle globe/flat projection.
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (!map || !map.isStyleLoaded()) return;
+    map.setProjection(isGlobe ? 'globe' : 'mercator');
+  }, [isGlobe]);
+
+  /* -------- Mapbox paint helpers -------- */
+
+  /** A helper to map changePct to fill-color for heatmap choropleth. */
+  const heatmapFillExpression: any = [
+    'case',
+    ['==', ['get', 'hasData'], false],
+    'rgba(39,39,42,0.07)',
+    ['>=', ['get', 'changePct'], 3],
+    'rgba(5,122,85,0.55)',
+    ['>=', ['get', 'changePct'], 1.5],
+    'rgba(16,185,129,0.55)',
+    ['>=', ['get', 'changePct'], 0.75],
+    'rgba(52,211,153,0.5)',
+    ['>=', ['get', 'changePct'], 0.25],
+    'rgba(110,231,183,0.4)',
+    ['>=', ['get', 'changePct'], -0.25],
+    'rgba(113,113,122,0.3)',
+    ['>=', ['get', 'changePct'], -0.75],
+    'rgba(252,165,165,0.4)',
+    ['>=', ['get', 'changePct'], -1.5],
+    'rgba(239,68,68,0.5)',
+    ['>=', ['get', 'changePct'], -3],
+    'rgba(220,38,38,0.55)',
+    'rgba(153,27,27,0.6)',
+  ];
+
+  const heatmapLineExpression: any = [
+    'case',
+    ['==', ['get', 'hasData'], false],
+    '#27272a',
+    ['>=', ['get', 'changePct'], 0],
+    '#10b981',
+    '#ef4444',
+  ];
+
+  /* ============================== RENDER ================================== */
+
   return (
     <div className="bmap-root">
       <SidePanel
@@ -402,280 +726,438 @@ export default function BmapView() {
         showHeatmap={showHeatmap}
         onToggleHeatmap={() => setShowHeatmap((v) => !v)}
         wei={wei}
+        isGlobe={isGlobe}
+        onToggleGlobe={() => setIsGlobe((g) => !g)}
       />
 
       <div className="bmap-mapwrap">
-        <MapContainer
-          center={[25, 20]}
-          zoom={3}
-          minZoom={2}
-          maxZoom={10}
-          worldCopyJump
-          scrollWheelZoom
-          zoomControl={false}
-          className="bmap-map"
-          style={{ background: '#04060a' }}
+        <Map
+          ref={mapRef}
+          {...viewState}
+          onMove={(e: ViewStateChangeEvent) => setViewState(e.viewState)}
+          mapboxAccessToken={MAPBOX_TOKEN}
+          mapStyle={MAPBOX_STYLE}
+          style={{ width: '100%', height: '100%' }}
+          projection={isGlobe ? 'globe' : 'mercator'}
+          cursor={cursor}
+          interactiveLayerIds={INTERACTIVE_LAYERS}
+          onClick={onMapClick}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+          onLoad={onMapLoad}
+          maxZoom={14}
+          minZoom={1.5}
+          attributionControl={false}
         >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CartoDB</a>'
-            url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
-            subdomains="abcd"
-          />
-          <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png"
-            subdomains="abcd"
-            pane="shadowPane"
-            opacity={0.9}
-          />
-          <ZoomControl position="bottomright" />
+          <NavigationControl position="bottom-right" showCompass visualizePitch />
+          <ScaleControl position="bottom-left" />
 
-          {/* Country Indices Heatmap — choropleth sitting directly on top of
-              the dark tile basemap so the fill colours read cleanly.  Each
-              feature is joined on its ISO-3 id. */}
-          {showHeatmap && worldGeo && (
-            <GeoJSON
-              key={`heatmap-${seed}`}
-              data={worldGeo}
-              style={(feature) => {
-                const f = feature as WorldFeature | undefined;
-                const iso3 = (f?.id ?? '') as string;
-                const snap = bySeed.get(iso3);
-                const chg = snap?.changePct;
-                return {
-                  color: heatmapStroke(chg),
-                  weight: 0.6,
-                  opacity: snap ? 0.6 : 0.25,
-                  fillColor: heatmapFill(chg, 1),
-                  fillOpacity: snap ? 0.55 : 0.12,
-                };
-              }}
-              onEachFeature={(feature, layer) => {
-                const f = feature as WorldFeature;
-                const iso3 = (f.id ?? '') as string;
-                const snap = bySeed.get(iso3);
-                const countryName = snap?.country ?? f.properties?.name ?? iso3;
-                if (!snap) {
-                  layer.bindTooltip(
-                    `<div class="bmap-heat-tip">
-                       <div class="bmap-heat-tip-country">${countryName}</div>
-                       <div class="bmap-heat-tip-note">No flagship index tracked</div>
-                     </div>`,
-                    { sticky: true, direction: 'top', className: 'bmap-heat-tooltip' },
-                  );
-                  return;
-                }
-                const sign = snap.changePct >= 0 ? '+' : '';
-                const tone = snap.changePct >= 0 ? 'bmap-pos' : 'bmap-neg';
-                layer.bindTooltip(
-                  `<div class="bmap-heat-tip">
-                     <div class="bmap-heat-tip-country">${snap.country}</div>
-                     <div class="bmap-heat-tip-index">${snap.index} <span class="bmap-heat-tip-tkr">${snap.ticker}</span></div>
-                     <div class="bmap-heat-tip-row"><span>Last</span><b>${snap.price.toLocaleString()} ${snap.currency}</b></div>
-                     <div class="bmap-heat-tip-row"><span>Day</span><b class="${tone}">${sign}${snap.changePct.toFixed(2)}%</b></div>
-                     <div class="bmap-heat-tip-row"><span>YTD</span><b class="${snap.ytdPct >= 0 ? 'bmap-pos' : 'bmap-neg'}">${snap.ytdPct >= 0 ? '+' : ''}${snap.ytdPct.toFixed(1)}%</b></div>
-                   </div>`,
-                  { sticky: true, direction: 'top', className: 'bmap-heat-tooltip' },
-                );
-                layer.bindPopup(
-                  `<div class="bmap-popup">
-                     <div class="bmap-popup-header">
-                       <span class="bmap-popup-title">${snap.index}</span>
-                       <span class="bmap-popup-sub">${snap.ticker} · ${snap.country}</span>
-                     </div>
-                     <div class="bmap-popup-body">
-                       <div class="bmap-popup-row"><span class="bmap-popup-label">Last</span><span class="bmap-popup-value">${snap.price.toLocaleString()} ${snap.currency}</span></div>
-                       <div class="bmap-popup-row"><span class="bmap-popup-label">Day</span><span class="bmap-popup-value bmap-tone-${snap.changePct >= 0 ? 'good' : 'bad'}">${sign}${snap.changePct.toFixed(2)}%</span></div>
-                       <div class="bmap-popup-row"><span class="bmap-popup-label">YTD</span><span class="bmap-popup-value bmap-tone-${snap.ytdPct >= 0 ? 'good' : 'bad'}">${snap.ytdPct >= 0 ? '+' : ''}${snap.ytdPct.toFixed(1)}%</span></div>
-                       <div class="bmap-popup-row"><span class="bmap-popup-label">Prev close</span><span class="bmap-popup-value">${snap.prevClose.toLocaleString()}</span></div>
-                     </div>
-                   </div>`,
-                );
-              }}
-            />
+          {/* ============= HEATMAP CHOROPLETH ============= */}
+          {showHeatmap && heatmapGeo && (
+            <Source id="bmap-heatmap" type="geojson" data={heatmapGeo}>
+              <Layer
+                id="bmap-heatmap-fill"
+                type="fill"
+                paint={{
+                  'fill-color': heatmapFillExpression,
+                  'fill-opacity': 0.65,
+                }}
+              />
+              <Layer
+                id="bmap-heatmap-line"
+                type="line"
+                paint={{
+                  'line-color': heatmapLineExpression as any,
+                  'line-width': 0.6,
+                  'line-opacity': 0.45,
+                }}
+              />
+            </Source>
           )}
 
-          {/* Shale Basins — polygons underneath everything */}
-          {layers.shaleBasins &&
-            data.shaleBasins.map((b) => (
-              <Polygon
-                key={b.id}
-                positions={b.ring as LatLng[]}
-                pathOptions={{
-                  color: LAYER_META.shaleBasins.color,
-                  weight: 1,
-                  opacity: 0.75,
-                  fillColor: LAYER_META.shaleBasins.color,
-                  fillOpacity: 0.18,
-                  dashArray: '4 3',
+          {/* ============= SHALE BASINS ============= */}
+          {layers.shaleBasins && (
+            <Source id="bmap-basins" type="geojson" data={basinGeo}>
+              <Layer
+                id="bmap-basin-fill"
+                type="fill"
+                paint={{
+                  'fill-color': LAYER_META.shaleBasins.color,
+                  'fill-opacity': 0.15,
                 }}
-              >
-                <Popup>
-                  <PopupShell
-                    title={b.name}
-                    sub={`Shale Basin · ${b.country}`}
-                    rows={[
-                      { label: 'Resource', value: b.resource.toUpperCase() },
-                      { label: 'Status', value: 'Active', tone: 'good' },
-                    ]}
-                  />
-                </Popup>
-              </Polygon>
-            ))}
-
-          {/* Pipelines */}
-          {layers.pipelines &&
-            data.pipelines.map((p) => (
-              <Polyline
-                key={p.id}
-                positions={p.path as LatLng[]}
-                pathOptions={{
-                  color: p.kind === 'oil' ? '#ef4444' : '#f59e0b',
-                  weight: 1.8,
-                  opacity: 0.9,
-                  dashArray: p.kind === 'gas' ? '6 4' : undefined,
+              />
+              <Layer
+                id="bmap-basin-outline"
+                type="line"
+                paint={{
+                  'line-color': LAYER_META.shaleBasins.color,
+                  'line-width': 1,
+                  'line-opacity': 0.7,
+                  'line-dasharray': [4, 3],
                 }}
-              >
-                <Popup>
-                  <PopupShell
-                    title={p.name}
-                    sub={`${p.kind === 'oil' ? 'Crude Oil' : 'Natural Gas'} Pipeline`}
-                    rows={[
-                      { label: 'Operator', value: p.operator },
-                      p.capacityMbd
-                        ? { label: 'Capacity', value: `${p.capacityMbd} mbd` }
-                        : { label: 'Capacity', value: `${p.capacityBcfd} Bcf/d` },
-                      { label: 'Status', value: 'Operational', tone: 'good' },
-                    ]}
-                  />
-                </Popup>
-              </Polyline>
-            ))}
+              />
+            </Source>
+          )}
 
-          {/* Oil Fields */}
-          {layers.oilFields &&
-            data.oilFields.map((f) => (
-              <Marker key={f.id} position={f.position} icon={dotIcon(LAYER_META.oilFields.color, 12)}>
-                <Popup>
-                  <PointPopup asset={f} code={LAYER_META.oilFields.code} />
-                </Popup>
-              </Marker>
-            ))}
+          {/* ============= PIPELINES ============= */}
+          {layers.pipelines && (
+            <Source id="bmap-pipelines" type="geojson" data={pipeGeo}>
+              <Layer
+                id="bmap-pipeline-glow"
+                type="line"
+                paint={{
+                  'line-color': [
+                    'case',
+                    ['==', ['get', 'kind'], 'oil'],
+                    '#ef4444',
+                    '#f59e0b',
+                  ] as any,
+                  'line-width': 4,
+                  'line-opacity': 0.15,
+                  'line-blur': 3,
+                }}
+              />
+              <Layer
+                id="bmap-pipeline-line"
+                type="line"
+                paint={{
+                  'line-color': [
+                    'case',
+                    ['==', ['get', 'kind'], 'oil'],
+                    '#ef4444',
+                    '#f59e0b',
+                  ] as any,
+                  'line-width': 1.8,
+                  'line-opacity': 0.9,
+                }}
+              />
+            </Source>
+          )}
 
-          {/* Gas Fields */}
-          {layers.gasFields &&
-            data.gasFields.map((f) => (
-              <Marker key={f.id} position={f.position} icon={dotIcon(LAYER_META.gasFields.color, 12)}>
-                <Popup>
-                  <PointPopup asset={f} code={LAYER_META.gasFields.code} />
-                </Popup>
-              </Marker>
-            ))}
+          {/* ============= OIL FIELDS ============= */}
+          {layers.oilFields && (
+            <Source id="bmap-oil" type="geojson" data={oilGeo}>
+              <Layer
+                id="bmap-oil-glow"
+                type="circle"
+                paint={{
+                  'circle-radius': 10,
+                  'circle-color': LAYER_META.oilFields.color,
+                  'circle-opacity': 0.15,
+                  'circle-blur': 1,
+                }}
+              />
+              <Layer
+                id="bmap-oil-circle"
+                type="circle"
+                paint={{
+                  'circle-radius': 5,
+                  'circle-color': LAYER_META.oilFields.color,
+                  'circle-stroke-width': 1.5,
+                  'circle-stroke-color': '#0a0a00',
+                }}
+              />
+            </Source>
+          )}
 
-          {/* Refineries - triangle */}
-          {layers.refineries &&
-            data.refineries.map((r) => (
-              <Marker key={r.id} position={r.position} icon={triangleIcon(LAYER_META.refineries.color, 14)}>
-                <Popup>
-                  <PointPopup asset={r} code={LAYER_META.refineries.code} />
-                </Popup>
-              </Marker>
-            ))}
+          {/* ============= GAS FIELDS ============= */}
+          {layers.gasFields && (
+            <Source id="bmap-gas" type="geojson" data={gasGeo}>
+              <Layer
+                id="bmap-gas-glow"
+                type="circle"
+                paint={{
+                  'circle-radius': 10,
+                  'circle-color': LAYER_META.gasFields.color,
+                  'circle-opacity': 0.15,
+                  'circle-blur': 1,
+                }}
+              />
+              <Layer
+                id="bmap-gas-circle"
+                type="circle"
+                paint={{
+                  'circle-radius': 5,
+                  'circle-color': LAYER_META.gasFields.color,
+                  'circle-stroke-width': 1.5,
+                  'circle-stroke-color': '#0a0a00',
+                }}
+              />
+            </Source>
+          )}
 
-          {/* LNG - square */}
-          {layers.lng &&
-            data.lng.map((t) => (
-              <Marker key={t.id} position={t.position} icon={squareIcon(LAYER_META.lng.color, 10)}>
-                <Popup>
-                  <PointPopup asset={t} code={LAYER_META.lng.code} />
-                </Popup>
-              </Marker>
-            ))}
+          {/* ============= REFINERIES ============= */}
+          {layers.refineries && (
+            <Source id="bmap-refinery" type="geojson" data={refGeo}>
+              <Layer
+                id="bmap-refinery-glow"
+                type="circle"
+                paint={{
+                  'circle-radius': 10,
+                  'circle-color': LAYER_META.refineries.color,
+                  'circle-opacity': 0.15,
+                  'circle-blur': 1,
+                }}
+              />
+              <Layer
+                id="bmap-refinery-circle"
+                type="circle"
+                paint={{
+                  'circle-radius': 6,
+                  'circle-color': LAYER_META.refineries.color,
+                  'circle-stroke-width': 1.5,
+                  'circle-stroke-color': '#0a0a00',
+                }}
+              />
+            </Source>
+          )}
 
-          {/* Mines - diamond-ish (square rotated via CSS) */}
-          {layers.mines &&
-            data.mines.map((m) => (
-              <Marker
-                key={m.id}
-                position={m.position}
-                icon={L.divIcon({
-                  className: 'bmap-diamond',
-                  html: `<span style="background:${LAYER_META.mines.color};width:10px;height:10px;border:1.5px solid #0a0a00;display:block;transform:rotate(45deg);box-shadow:0 0 6px ${LAYER_META.mines.color}88;"></span>`,
-                  iconSize: [14, 14],
-                  iconAnchor: [7, 7],
-                })}
-              >
-                <Popup>
-                  <PointPopup asset={m} code={LAYER_META.mines.code} />
-                </Popup>
-              </Marker>
-            ))}
+          {/* ============= LNG TERMINALS ============= */}
+          {layers.lng && (
+            <Source id="bmap-lng" type="geojson" data={lngGeo}>
+              <Layer
+                id="bmap-lng-glow"
+                type="circle"
+                paint={{
+                  'circle-radius': 9,
+                  'circle-color': LAYER_META.lng.color,
+                  'circle-opacity': 0.18,
+                  'circle-blur': 1,
+                }}
+              />
+              <Layer
+                id="bmap-lng-circle"
+                type="circle"
+                paint={{
+                  'circle-radius': 4.5,
+                  'circle-color': LAYER_META.lng.color,
+                  'circle-stroke-width': 1.5,
+                  'circle-stroke-color': '#0a0a00',
+                }}
+              />
+            </Source>
+          )}
 
-          {/* Ports */}
-          {layers.ports &&
-            data.ports.map((p) => (
-              <Marker key={p.id} position={p.position} icon={squareIcon(LAYER_META.ports.color, 9)}>
-                <Popup>
-                  <PointPopup asset={p} code={LAYER_META.ports.code} />
-                </Popup>
-              </Marker>
-            ))}
+          {/* ============= MINES ============= */}
+          {layers.mines && (
+            <Source id="bmap-mine" type="geojson" data={mineGeo}>
+              <Layer
+                id="bmap-mine-glow"
+                type="circle"
+                paint={{
+                  'circle-radius': 10,
+                  'circle-color': LAYER_META.mines.color,
+                  'circle-opacity': 0.15,
+                  'circle-blur': 1,
+                }}
+              />
+              <Layer
+                id="bmap-mine-circle"
+                type="circle"
+                paint={{
+                  'circle-radius': 5,
+                  'circle-color': LAYER_META.mines.color,
+                  'circle-stroke-width': 1.5,
+                  'circle-stroke-color': '#0a0a00',
+                }}
+              />
+            </Source>
+          )}
 
-          {/* Wind Farms — pulsing green circle */}
-          {layers.windFarms &&
-            data.windFarms.map((w) => (
-              <Marker key={w.id} position={w.position} icon={dotIcon(LAYER_META.windFarms.color, 10)}>
-                <Popup>
-                  <PointPopup asset={w} code={LAYER_META.windFarms.code} />
-                </Popup>
-              </Marker>
-            ))}
+          {/* ============= PORTS ============= */}
+          {layers.ports && (
+            <Source id="bmap-port" type="geojson" data={portGeo}>
+              <Layer
+                id="bmap-port-glow"
+                type="circle"
+                paint={{
+                  'circle-radius': 8,
+                  'circle-color': LAYER_META.ports.color,
+                  'circle-opacity': 0.18,
+                  'circle-blur': 1,
+                }}
+              />
+              <Layer
+                id="bmap-port-circle"
+                type="circle"
+                paint={{
+                  'circle-radius': 4,
+                  'circle-color': LAYER_META.ports.color,
+                  'circle-stroke-width': 1.5,
+                  'circle-stroke-color': '#0a0a00',
+                }}
+              />
+            </Source>
+          )}
 
-          {/* Vessels — tiny arrows */}
-          {layers.vessels &&
-            data.vessels.map((v) => (
-              <Marker
-                key={v.id}
-                position={v.position}
-                icon={vesselIcon(LAYER_META.vessels.color, v.headingDeg, 14)}
-              >
-                <Popup>
-                  <VesselPopup v={v} />
-                </Popup>
-              </Marker>
-            ))}
+          {/* ============= WIND FARMS ============= */}
+          {layers.windFarms && (
+            <Source id="bmap-wind" type="geojson" data={windGeo}>
+              <Layer
+                id="bmap-wind-glow"
+                type="circle"
+                paint={{
+                  'circle-radius': 10,
+                  'circle-color': LAYER_META.windFarms.color,
+                  'circle-opacity': 0.2,
+                  'circle-blur': 1,
+                }}
+              />
+              <Layer
+                id="bmap-wind-circle"
+                type="circle"
+                paint={{
+                  'circle-radius': 5,
+                  'circle-color': LAYER_META.windFarms.color,
+                  'circle-stroke-width': 1.5,
+                  'circle-stroke-color': '#0a0a00',
+                }}
+              />
+            </Source>
+          )}
 
-          {/* Storms — rotating spiral + track line + surrounding cone */}
-          {layers.storms &&
-            data.storms.map((s) => (
-              <Fragment key={s.id}>
-                <Polyline
-                  positions={s.track as LatLng[]}
-                  pathOptions={{
-                    color: LAYER_META.storms.color,
-                    weight: 1.5,
-                    opacity: 0.6,
-                    dashArray: '3 3',
+          {/* ============= VESSELS ============= */}
+          {layers.vessels && (
+            <Source
+              id="bmap-vessels"
+              type="geojson"
+              data={vesselGeo}
+              cluster
+              clusterMaxZoom={8}
+              clusterRadius={40}
+            >
+              {/* Cluster circles */}
+              <Layer
+                id="bmap-vessel-cluster"
+                type="circle"
+                filter={['has', 'point_count']}
+                paint={{
+                  'circle-color': LAYER_META.vessels.color,
+                  'circle-radius': ['step', ['get', 'point_count'], 14, 10, 18, 30, 22],
+                  'circle-opacity': 0.7,
+                  'circle-stroke-width': 2,
+                  'circle-stroke-color': '#0a0a00',
+                }}
+              />
+              {/* Cluster count label */}
+              <Layer
+                id="bmap-vessel-cluster-count"
+                type="symbol"
+                filter={['has', 'point_count']}
+                layout={{
+                  'text-field': '{point_count_abbreviated}',
+                  'text-size': 10,
+                  'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+                }}
+                paint={{
+                  'text-color': '#0a0a00',
+                }}
+              />
+              {/* Individual vessel dots */}
+              <Layer
+                id="bmap-vessel-glow"
+                type="circle"
+                filter={['!', ['has', 'point_count']]}
+                paint={{
+                  'circle-radius': 8,
+                  'circle-color': LAYER_META.vessels.color,
+                  'circle-opacity': 0.2,
+                  'circle-blur': 1,
+                }}
+              />
+              <Layer
+                id="bmap-vessel-circle"
+                type="circle"
+                filter={['!', ['has', 'point_count']]}
+                paint={{
+                  'circle-radius': 4,
+                  'circle-color': LAYER_META.vessels.color,
+                  'circle-stroke-width': 1.5,
+                  'circle-stroke-color': '#0a0a00',
+                }}
+              />
+            </Source>
+          )}
+
+          {/* ============= STORMS ============= */}
+          {layers.storms && (
+            <>
+              <Source id="bmap-storm-tracks" type="geojson" data={stormData.tracks}>
+                <Layer
+                  id="bmap-storm-track"
+                  type="line"
+                  paint={{
+                    'line-color': LAYER_META.storms.color,
+                    'line-width': 1.5,
+                    'line-opacity': 0.6,
+                    'line-dasharray': [3, 3],
                   }}
                 />
-                <CircleMarker
-                  center={s.position}
-                  radius={20}
-                  pathOptions={{
-                    color: LAYER_META.storms.color,
-                    weight: 1,
-                    opacity: 0.4,
-                    fillColor: LAYER_META.storms.color,
-                    fillOpacity: 0.08,
+              </Source>
+              <Source id="bmap-storms" type="geojson" data={stormData.points}>
+                {/* Wide halo */}
+                <Layer
+                  id="bmap-storm-halo"
+                  type="circle"
+                  paint={{
+                    'circle-radius': 22,
+                    'circle-color': LAYER_META.storms.color,
+                    'circle-opacity': 0.08,
+                    'circle-blur': 0.5,
                   }}
                 />
-                <Marker position={s.position} icon={stormIcon(s.category, 28)}>
-                  <Popup>
-                    <StormPopup s={s} />
-                  </Popup>
-                </Marker>
-              </Fragment>
-            ))}
-        </MapContainer>
+                {/* Pulsing ring */}
+                <Layer
+                  id="bmap-storm-ring"
+                  type="circle"
+                  paint={{
+                    'circle-radius': 14,
+                    'circle-color': 'transparent',
+                    'circle-stroke-width': 2,
+                    'circle-stroke-color': LAYER_META.storms.color,
+                    'circle-stroke-opacity': 0.5,
+                  }}
+                />
+                <Layer
+                  id="bmap-storm-circle"
+                  type="circle"
+                  paint={{
+                    'circle-radius': [
+                      'case',
+                      ['>=', ['get', 'category'], 4], 8,
+                      ['>=', ['get', 'category'], 2], 6,
+                      5,
+                    ],
+                    'circle-color': [
+                      'case',
+                      ['>=', ['get', 'category'], 4], '#dc2626',
+                      ['>=', ['get', 'category'], 2], '#f97316',
+                      '#eab308',
+                    ] as any,
+                    'circle-stroke-width': 2,
+                    'circle-stroke-color': '#0a0a00',
+                  }}
+                />
+              </Source>
+            </>
+          )}
+
+          {/* ============= POPUP ============= */}
+          {popupInfo && (
+            <Popup
+              longitude={popupInfo.lng}
+              latitude={popupInfo.lat}
+              anchor="bottom"
+              onClose={() => setPopupInfo(null)}
+              closeButton
+              closeOnClick={false}
+              className="bmap-mapbox-popup"
+              maxWidth="260px"
+            >
+              <div dangerouslySetInnerHTML={{ __html: popupInfo.html }} />
+            </Popup>
+          )}
+        </Map>
 
         {/* Top overlay - summary ticker */}
         <div className="bmap-overlay-top">
@@ -702,7 +1184,7 @@ export default function BmapView() {
           </span>
         </div>
 
-        {/* Indices tape — only visible while the heatmap is active. */}
+        {/* Indices tape */}
         {showHeatmap && (
           <div className="bmap-indices-tape">
             <span className="bmap-overlay-chip" style={{ color: '#ff9f1a' }}>WEI</span>
@@ -722,7 +1204,7 @@ export default function BmapView() {
           </div>
         )}
 
-        {/* Loading / error overlay for the choropleth fetch. */}
+        {/* Loading / error overlay */}
         {showHeatmap && !worldGeo && !geoError && (
           <div className="bmap-heat-status">Loading country boundaries…</div>
         )}

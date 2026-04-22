@@ -1,0 +1,16 @@
+{
+  "symbol": "SPY",
+  "start": "2020-01-01",
+  "end": "2023-12-31",
+  "interval": "1d",
+  "initial_cash": 10000.0,
+  "commission": 0.002,
+  "strategy": "sma_crossover",
+  "params": {
+    "fast": 50,
+    "slow": 200
+  },
+  "code": null,
+  "save_artifacts": true,
+  "run_id": null
+}

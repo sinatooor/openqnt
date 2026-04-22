@@ -17,7 +17,7 @@
  */
 
 export type LonLat = [number, number]; // [lng, lat]
-export type LatLng = [number, number]; // [lat, lng] - Leaflet convention
+export type LatLng = [number, number]; // [lat, lng] — flipped to [lng, lat] in BmapView for GeoJSON
 
 export type AssetLayerId =
   | 'oilFields'

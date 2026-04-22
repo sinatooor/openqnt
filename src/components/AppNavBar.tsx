@@ -17,6 +17,7 @@ import {
     ChartCandlestick,
     BotMessageSquare,
     Network,
+    Brain,
 } from 'lucide-react';
 import {
     Tooltip,
@@ -46,6 +47,7 @@ const NAV_ITEMS: NavItemDef[] = [
     { icon: <ChartCandlestick className="w-4 h-4" />, label: 'Terminal', path: '/terminal' },
     { icon: <BotMessageSquare className="w-4 h-4" />, label: 'AI-Chat', path: '/ai-chat' },
     { icon: <Network className="w-4 h-4" />, label: 'Agents', path: '/agents' },
+    { icon: <Brain className="w-4 h-4" />, label: 'Boss', path: '/boss' },
     { icon: <Settings className="w-4 h-4" />, label: 'Settings', path: '/settings' },
 ];
 
