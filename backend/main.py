@@ -262,6 +262,14 @@ app.include_router(terminal_data_router)
 from routers import agent_live
 app.include_router(agent_live.router)
 
+# Canonical backtest API — Phase D
+from routers import backtest as backtest_router
+app.include_router(backtest_router.router)
+
+# Boss orchestration (REST + WebSocket) — Phase C
+from routers import boss as boss_router
+app.include_router(boss_router.router)
+
 
 # ============================================================
 # Root-level health and custom-blocks endpoints

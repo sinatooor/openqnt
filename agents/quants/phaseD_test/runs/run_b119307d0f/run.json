@@ -1,0 +1,17 @@
+{
+  "agent_id": "phaseD_test",
+  "run_id": "run_b119307d0f",
+  "task": "Verify backtest tool emits events + artifact",
+  "symbols": [
+    "SPY"
+  ],
+  "model": "local-test",
+  "status": "success",
+  "started_at": "2026-04-22T04:24:08.108444+00:00",
+  "ended_at": "2026-04-22T04:24:09.057089+00:00",
+  "tokens": 0,
+  "signal": null,
+  "confidence": null,
+  "conclusion": "Backtest tool verified.",
+  "error": null
+}

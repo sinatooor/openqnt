@@ -24,6 +24,8 @@ import TerminalGip from "./pages/TerminalGip";
 import TerminalDes from "./pages/TerminalDes";
 import AiChat from "./pages/AiChat";
 import Agents from "./pages/Agents";
+import Boss from "./pages/Boss";
+import Backtest from "./pages/Backtest";
 import NotFound from "./pages/NotFound";
 import Onboarding from "./pages/Onboarding";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -129,6 +131,8 @@ const AppRoutes = () => {
         <Route path="/agent" element={<AgentConfig />} />
         <Route path="/agents" element={<Agents />} />
         <Route path="/agents/:id" element={<Agents />} />
+        <Route path="/boss" element={<Boss />} />
+        <Route path="/backtest" element={<Backtest />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/portfolio" element={<Portfolio />} />
       </Route>

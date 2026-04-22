@@ -5,7 +5,7 @@
  *
  * Displays a global asset map covering oil/gas fields, pipelines,
  * refineries, LNG terminals, mines, ports, vessels, wind farms and live
- * storms, layered over an OpenStreetMap dark basemap.
+ * storms, rendered with Mapbox GL JS (dark-v11 style, 3D globe).
  */
 
 import { useEffect } from 'react';

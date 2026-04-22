@@ -15,6 +15,10 @@ RUN bun install
 # Copy source files
 COPY . .
 
+# Build-time env vars
+ARG VITE_MAPBOX_TOKEN
+ENV VITE_MAPBOX_TOKEN=$VITE_MAPBOX_TOKEN
+
 # Expose Vite dev server port
 EXPOSE 5173
 
@@ -34,6 +38,10 @@ RUN bun install
 
 # Copy source files
 COPY . .
+
+# Build-time env vars
+ARG VITE_MAPBOX_TOKEN
+ENV VITE_MAPBOX_TOKEN=$VITE_MAPBOX_TOKEN
 
 # Build production assets
 RUN bun run build
