@@ -157,6 +157,10 @@ export const TemplatesDialog = memo(({ open, onOpenChange }: TemplatesDialogProp
     store.onEdgesChange(styledEdges.map(e => ({ type: 'add' as const, item: e })));
 
     store.setStrategyName(template.name);
+    // Carry the canonical-engine spec along with the template so the
+    // Backtest button knows it can route through /api/backtest/run instead
+    // of the legacy code-gen path.
+    store.setTemplateBacktestSpec(template.backtestSpec ?? null);
     onOpenChange(false);
   };
 

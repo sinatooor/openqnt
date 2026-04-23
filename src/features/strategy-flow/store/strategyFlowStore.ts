@@ -28,6 +28,7 @@ import {
   StrategyFlowNodeType,
   NodeCatalogItem,
 } from '../types';
+import type { TemplateBacktestSpec } from '../templates/types';
 import { getHandleConfigs, repairEdges, getNodeSubType, validateEdgeHandles } from '../utils/handleUtils';
 
 // =============================================================================
@@ -328,6 +329,12 @@ interface StrategyFlowState {
 
   // Pine Script Mode
   pineScriptMode: boolean;
+
+  // When the canvas was loaded from a template that ships a canonical
+  // backtest spec, BacktestModal uses this to call the canonical engine
+  // (`/api/backtest/run`) instead of the legacy code-gen path. Cleared
+  // on clearCanvas / hydrateCanvas with no spec.
+  templateBacktestSpec: TemplateBacktestSpec | null;
 }
 
 // =============================================================================
@@ -423,6 +430,9 @@ interface StrategyFlowActions {
 
   // Pine Script Mode
   togglePineScriptMode: () => void;
+
+  // Template → canonical backtest hint
+  setTemplateBacktestSpec: (spec: TemplateBacktestSpec | null) => void;
 }
 
 // =============================================================================
@@ -457,6 +467,7 @@ const initialState: StrategyFlowState = {
   searchQuery: '',
   contextMenu: null,
   pineScriptMode: false,
+  templateBacktestSpec: null,
 };
 
 // =============================================================================
@@ -915,7 +926,12 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
           selectedNodeId: null,
           rightPanelOpen: false,
           isModified: true,
+          templateBacktestSpec: null,
         });
+      },
+
+      setTemplateBacktestSpec: (spec) => {
+        set({ templateBacktestSpec: spec });
       },
 
       // =========================================================================

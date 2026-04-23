@@ -114,7 +114,7 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
   const [isRunning, setIsRunning] = useState(false);
   const [result, setResult] = useState<BacktestResult | null>(null);
 
-  const { nodes, edges, strategyName } = useStrategyFlowStore();
+  const { nodes, edges, strategyName, templateBacktestSpec } = useStrategyFlowStore();
   
   // Check if strategy contains LLM nodes
   const hasLLMNodes = nodes.some(node => node.type === 'llm');
@@ -176,6 +176,73 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
 
     setIsRunning(true);
     setResult(null);
+
+    // Phase E / Phase D bridge: when the canvas was loaded from a template
+    // that ships a canonical backtest spec, route through the same engine
+    // the agents use. Numbers will match an agent's `run_backtest_tool`
+    // output for the identical inputs.
+    if (templateBacktestSpec) {
+      try {
+        toast.info('Running canonical backtest…');
+        const body = {
+          symbol: templateBacktestSpec.symbol ?? config.symbol,
+          start: templateBacktestSpec.start ?? config.startDate,
+          end: templateBacktestSpec.end ?? config.endDate,
+          interval: templateBacktestSpec.interval ?? config.timeframe,
+          initial_cash: templateBacktestSpec.initial_cash ?? config.initialCapital,
+          commission: templateBacktestSpec.commission ?? config.commission / 100,
+          strategy: templateBacktestSpec.strategy,
+          params: templateBacktestSpec.params ?? {},
+        };
+        const r = await fetch(`${backendUrl}/api/backtest/run`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = await r.json();
+        if (!data.success) {
+          toast.error('Backtest failed', { description: data.error });
+          setIsRunning(false);
+          return;
+        }
+        const m = data.metrics ?? {};
+        setResult({
+          success: true,
+          totalReturn: m.return_pct,
+          winRate: m.win_rate_pct,
+          totalTrades: m.n_trades,
+          maxDrawdown: m.max_drawdown_pct,
+          finalBalance: m.final_equity,
+          sharpeRatio: m.sharpe,
+          profitFactor: m.profit_factor,
+          sortinoRatio: m.sortino,
+          calmarRatio: m.calmar,
+          // The canonical engine returns plot_b64 — wrap it in a tiny HTML
+          // doc so the existing "Open Visualization" button keeps working.
+          visualizationHtml: data.plot_b64
+            ? `<html><body style="margin:0;background:#0a0a12"><img src="${data.plot_b64}" style="width:100%;display:block"/></body></html>`
+            : undefined,
+          trades: (data.trades ?? []).map((t: any) => ({
+            entry_time: t.entry_time ?? '',
+            exit_time: t.exit_time ?? '',
+            entry_price: t.entry_price ?? 0,
+            exit_price: t.exit_price ?? 0,
+            pnl: t.pnl ?? 0,
+            type: (t.size ?? 0) >= 0 ? 'long' : 'short',
+          })),
+        });
+        setActiveTab('results');
+        toast.success(`Backtest completed: ${formatNumber(m.return_pct)}% return`);
+      } catch (err) {
+        toast.error('Backtest failed', {
+          description: err instanceof Error ? err.message : 'Unknown error',
+        });
+      } finally {
+        setIsRunning(false);
+      }
+      return;
+    }
 
     try {
       // Generate Python code from flow nodes
@@ -243,7 +310,7 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
     } finally {
       setIsRunning(false);
     }
-  }, [nodes, edges, config, backendUrl]);
+  }, [nodes, edges, config, backendUrl, templateBacktestSpec]);
 
   const handleOpenVisualization = () => {
     if (result?.visualizationHtml) {
