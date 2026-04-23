@@ -6,6 +6,106 @@ import { StrategyTemplate } from './types';
 
 export const STRATEGY_TEMPLATES: StrategyTemplate[] = [
   {
+    // Phase E reference template — RSI(14) mean-reversion on SPY with
+    // stop-loss + take-profit + RSI-overbought exit. Carries a
+    // `backtestSpec` so the Backtest button routes through the canonical
+    // /api/backtest/run engine (same path agents use), guaranteeing
+    // matching numbers across UI ↔ agent.
+    id: 'rsi-mean-reversion-spy',
+    name: 'RSI(14) Mean Reversion · SPY',
+    description: 'Buy SPY when RSI(14) drops below 30 (oversold). Exit on RSI > 70, stop-loss -3%, take-profit +6%. Runs through the canonical backtest engine for byte-for-byte parity with the agent path.',
+    category: 'mean-reversion',
+    difficulty: 'beginner',
+    indicators: ['RSI(14)'],
+    featured: true,
+    backtestSpec: {
+      strategy: 'rsi_meanrev',
+      params: { rsi_period: 14, oversold: 30, overbought: 70 },
+      symbol: 'SPY',
+      start: '2018-01-01',
+      end: '2023-12-31',
+      interval: '1d',
+      initial_cash: 10_000,
+      commission: 0.002,
+    },
+    nodes: [
+      {
+        id: 'rsi',
+        type: 'indicator',
+        position: { x: 80, y: 220 },
+        data: { label: 'RSI(14)', indicatorType: 'rsi', timeframe: '1D', params: { period: 14 } },
+      },
+      {
+        id: 'oversold-30',
+        type: 'math',
+        position: { x: 80, y: 360 },
+        data: { label: '30', mathType: 'number', value: 30 },
+      },
+      {
+        id: 'overbought-70',
+        type: 'math',
+        position: { x: 80, y: 80 },
+        data: { label: '70', mathType: 'number', value: 70 },
+      },
+      {
+        id: 'cond-oversold',
+        type: 'condition',
+        position: { x: 360, y: 280 },
+        data: { label: 'RSI < 30', conditionType: 'compare', operator: '<' },
+      },
+      {
+        id: 'cond-overbought',
+        type: 'condition',
+        position: { x: 360, y: 120 },
+        data: { label: 'RSI > 70', conditionType: 'compare', operator: '>' },
+      },
+      {
+        id: 'buy',
+        type: 'action',
+        position: { x: 660, y: 280 },
+        data: {
+          label: 'Buy 10%',
+          actionType: 'order',
+          direction: 'long',
+          orderType: 'market',
+          size: 10,
+          sizeType: 'percent',
+        },
+      },
+      {
+        id: 'stop-loss',
+        type: 'action',
+        position: { x: 940, y: 220 },
+        data: { label: 'Stop Loss -3%', actionType: 'stopLoss', stopDistance: 'percent', stopPercent: 3 },
+      },
+      {
+        id: 'take-profit',
+        type: 'action',
+        position: { x: 940, y: 340 },
+        data: { label: 'Take Profit +6%', actionType: 'takeProfit', profitDistance: 'percent', profitPercent: 6 },
+      },
+      {
+        id: 'exit',
+        type: 'action',
+        position: { x: 660, y: 120 },
+        data: { label: 'Close on RSI>70', actionType: 'closePosition' },
+      },
+    ],
+    edges: [
+      // Entry: RSI < 30  → Buy
+      { id: 'e1', source: 'rsi', sourceHandle: 'value', target: 'cond-oversold', targetHandle: 'input-a' },
+      { id: 'e2', source: 'oversold-30', sourceHandle: 'output', target: 'cond-oversold', targetHandle: 'input-b' },
+      { id: 'e3', source: 'cond-oversold', sourceHandle: 'output', target: 'buy', targetHandle: 'trigger' },
+      // Risk legs chain off the entry
+      { id: 'e4', source: 'buy', sourceHandle: 'output', target: 'stop-loss', targetHandle: 'trigger' },
+      { id: 'e5', source: 'buy', sourceHandle: 'output', target: 'take-profit', targetHandle: 'trigger' },
+      // Exit: RSI > 70  → Close
+      { id: 'e6', source: 'rsi', sourceHandle: 'value', target: 'cond-overbought', targetHandle: 'input-a' },
+      { id: 'e7', source: 'overbought-70', sourceHandle: 'output', target: 'cond-overbought', targetHandle: 'input-b' },
+      { id: 'e8', source: 'cond-overbought', sourceHandle: 'output', target: 'exit', targetHandle: 'trigger' },
+    ],
+  },
+  {
     id: 'sma-crossover',
     name: 'SMA Crossover',
     description: 'Classic moving average crossover strategy. Buy when fast MA crosses above slow MA.',

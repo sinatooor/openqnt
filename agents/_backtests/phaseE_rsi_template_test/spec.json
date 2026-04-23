@@ -1,0 +1,17 @@
+{
+  "symbol": "SPY",
+  "start": "2018-01-01",
+  "end": "2023-12-31",
+  "interval": "1d",
+  "initial_cash": 10000,
+  "commission": 0.002,
+  "strategy": "rsi_meanrev",
+  "params": {
+    "rsi_period": 14,
+    "oversold": 30,
+    "overbought": 70
+  },
+  "code": null,
+  "save_artifacts": true,
+  "run_id": "phaseE_rsi_template_test"
+}
