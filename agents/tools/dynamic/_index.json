@@ -1,0 +1,17 @@
+[
+  {
+    "name": "compute_var_95",
+    "description": "Empirical 95% VaR",
+    "signature": "compute_var_95(returns: list[float]) -> dict",
+    "created_at": 1776973020.917044,
+    "updated_at": 1776973020.917044,
+    "source_path": "/Users/sina/project-fire/fyer/agents/tools/dynamic/compute_var_95.py",
+    "inputs": [
+      {
+        "name": "returns",
+        "annotation": "list[float]"
+      }
+    ],
+    "return_annotation": "dict"
+  }
+]

@@ -26,6 +26,9 @@ import AiChat from "./pages/AiChat";
 import Agents from "./pages/Agents";
 import Boss from "./pages/Boss";
 import Backtest from "./pages/Backtest";
+import Tools from "./pages/Tools";
+import Execution from "./pages/Execution";
+import SymbolPalette from "./features/terminal/SymbolPalette";
 import NotFound from "./pages/NotFound";
 import Onboarding from "./pages/Onboarding";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -133,6 +136,8 @@ const AppRoutes = () => {
         <Route path="/agents/:id" element={<Agents />} />
         <Route path="/boss" element={<Boss />} />
         <Route path="/backtest" element={<Backtest />} />
+        <Route path="/tools" element={<Tools />} />
+        <Route path="/execution" element={<Execution />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/portfolio" element={<Portfolio />} />
       </Route>
@@ -142,6 +147,9 @@ const AppRoutes = () => {
   );
 };
 
+// Always-mounted overlays that need router context (cmd+k symbol palette).
+const GlobalOverlays = () => <SymbolPalette />;
+
 const App = () => (
   <Theme appearance="dark" accentColor="purple" grayColor="slate" radius="small" scaling="90%">
     <QueryClientProvider client={queryClient}>
@@ -150,6 +158,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AppRoutes />
+          <GlobalOverlays />
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

@@ -759,6 +759,308 @@ async def get_wei() -> Dict[str, Any]:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# /rmap — Relationship Map
+#
+# Aggregates the 12 RMAP "data nodes" (Bloomberg ticker <EQUITY> RMAP <GO>)
+# from yfinance facts in a single best-effort batch. Anything yfinance
+# doesn't expose is returned as an empty list — the frontend already merges
+# this with its mock generator so empty sections fall back gracefully and
+# the layout never goes blank.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+_RMAP_BOARD_TITLES = {"director", "chair", "lead director"}
+_RMAP_EXEC_TITLES = {"chief executive", "chief financial", "chief operating",
+                     "chief technology", "president"}
+
+
+def _person_kind(title: str) -> str:
+    t = (title or "").lower()
+    if any(k in t for k in _RMAP_BOARD_TITLES):
+        return "board"
+    if any(k in t for k in _RMAP_EXEC_TITLES):
+        return "exec"
+    return "exec"
+
+
+@router.get("/rmap/{ticker}")
+async def get_rmap(ticker: str) -> Dict[str, Any]:
+    """Single-call relationship-map payload sourced from yfinance.
+
+    Output shape mirrors the frontend `RmapData` interface in
+    [src/features/terminal/rmap/mockData.ts]. Each section returns
+    `{ total, items }` so the UI can show "12 of N" badges even when only
+    the head of the list is populated.
+    """
+    ticker = ticker.strip().upper()
+    t = _yf_ticker(ticker)
+    if t is None:
+        raise HTTPException(503, "yfinance unavailable")
+
+    def _build() -> Dict[str, Any]:
+        info: Dict[str, Any] = {}
+        try:
+            info = t.get_info() if hasattr(t, "get_info") else (t.info or {})
+        except Exception as e:
+            logger.warning("rmap yf.info(%s) failed: %s", ticker, e)
+        fast: Dict[str, Any] = {}
+        try:
+            fast = dict(t.fast_info or {})
+        except Exception:
+            pass
+
+        price = _num(info.get("currentPrice") or fast.get("last_price")
+                     or info.get("regularMarketPrice")) or 0.0
+        prev = _num(info.get("previousClose") or fast.get("previous_close")) or price
+        change_pct = ((price - prev) / prev * 100) if prev else 0.0
+
+        # ── center ────────────────────────────────────────────────────
+        # 5-day close sparkline. Best-effort; the UI synthesises one if empty.
+        spark: List[float] = []
+        try:
+            hist = t.history(period="5d", interval="1d", auto_adjust=False)
+            if hist is not None and not hist.empty:
+                spark = [float(v) for v in hist["Close"].dropna().tolist()][-12:]
+        except Exception as e:
+            logger.info("rmap spark(%s) failed: %s", ticker, e)
+
+        center = {
+            "ticker": ticker,
+            "name": info.get("shortName") or info.get("longName") or ticker,
+            "exchange": info.get("exchange") or info.get("fullExchangeName") or "",
+            "price": round(price, 2),
+            "changePct": round(change_pct, 2),
+            "currency": info.get("currency") or fast.get("currency") or "USD",
+            "sparkline": spark,
+        }
+
+        # ── peers (analytics-friendly: peers' last %) ────────────────
+        peer_syms: List[str] = []
+        try:
+            peer_syms = list((info.get("recommendationKey") and []) or [])  # placeholder
+        except Exception:
+            pass
+        # yfinance does not expose peers reliably any more; pull from FMP
+        # if a key is present, else fall back to industry placeholder list.
+        if FMP_API_KEY:
+            try:
+                with httpx.Client(timeout=8.0) as cx:
+                    r = cx.get(
+                        "https://financialmodelingprep.com/api/v4/stock_peers",
+                        params={"symbol": ticker, "apikey": FMP_API_KEY},
+                    )
+                    if r.status_code == 200:
+                        body = r.json()
+                        if isinstance(body, list) and body:
+                            peer_syms = list(body[0].get("peersList") or [])[:12]
+            except Exception as e:
+                logger.info("FMP peers(%s) failed: %s", ticker, e)
+
+        peer_items: List[Dict[str, Any]] = []
+        if peer_syms:
+            try:
+                yf = _yf()
+                quotes = yf.download(
+                    " ".join(peer_syms[:12]),
+                    period="2d", interval="1d", group_by="ticker",
+                    progress=False, threads=True, auto_adjust=False,
+                )
+                for sym in peer_syms[:12]:
+                    try:
+                        sub = quotes[sym] if sym in quotes.columns.get_level_values(0) else None
+                        closes = sub["Close"].dropna() if sub is not None else None
+                        if closes is None or len(closes) < 2:
+                            continue
+                        last_, prev_ = float(closes.iloc[-1]), float(closes.iloc[-2])
+                        peer_items.append({
+                            "symbol": sym.upper(),
+                            "changePct": round((last_ - prev_) / prev_ * 100, 2) if prev_ else 0.0,
+                        })
+                    except Exception:
+                        continue
+            except Exception as e:
+                logger.info("rmap peer quotes failed: %s", e)
+
+        # ── holders (top 8 institutional) ─────────────────────────────
+        holder_items: List[Dict[str, Any]] = []
+        try:
+            inst = t.institutional_holders
+            if inst is not None and hasattr(inst, "iterrows"):
+                shares_out = info.get("sharesOutstanding") or 0
+                for _, row in inst.head(8).iterrows():
+                    shares = _num(row.get("Shares"))
+                    if not shares:
+                        continue
+                    pct = _num(row.get("% Out")) or (
+                        (shares / shares_out * 100) if shares_out else 0.0
+                    )
+                    holder_items.append({
+                        "name": str(row.get("Holder") or "Unknown"),
+                        "pctOwned": round(pct or 0.0, 2),
+                        "changePct": 0.0,
+                    })
+        except Exception as e:
+            logger.info("rmap holders(%s) failed: %s", ticker, e)
+
+        # ── analysts (recommendations, last row only — quick count) ──
+        analyst_items: List[Dict[str, Any]] = []
+        try:
+            recs = t.recommendations
+            if recs is not None and hasattr(recs, "iterrows"):
+                # Head rows are the most recent firm-level upgrades/downgrades.
+                for _, row in recs.tail(8).iterrows():
+                    grade = str(row.get("To Grade") or row.get("toGrade") or "").upper()
+                    firm = str(row.get("Firm") or row.get("firm") or "").strip()
+                    if not firm:
+                        continue
+                    if "BUY" in grade or "OUTPERFORM" in grade or "OVERWEIGHT" in grade:
+                        action = "BUY"
+                    elif "SELL" in grade or "UNDERPERFORM" in grade or "UNDERWEIGHT" in grade:
+                        action = "SELL"
+                    else:
+                        action = "HOLD"
+                    analyst_items.append({"firm": firm[:18], "action": action})
+        except Exception as e:
+            logger.info("rmap analysts(%s) failed: %s", ticker, e)
+
+        # ── people (board + execs from companyOfficers) ──────────────
+        board_items: List[Dict[str, Any]] = []
+        exec_items: List[Dict[str, Any]] = []
+        for o in (info.get("companyOfficers") or [])[:18]:
+            name = (o.get("name") or "").strip()
+            title = (o.get("title") or "").strip()
+            if not name or not title:
+                continue
+            tile = {"name": name, "role": title[:24]}
+            (exec_items if _person_kind(title) == "exec" else board_items).append(tile)
+        exec_items = exec_items[:6]
+        board_items = board_items[:6]
+
+        # ── news (yf news returns headlines + ts) ─────────────────────
+        news_items: List[Dict[str, Any]] = []
+        try:
+            for n in (t.news or [])[:10]:
+                content = n.get("content") or n
+                title_ = (content.get("title") or "").strip()
+                if not title_:
+                    continue
+                pub = content.get("pubDate") or content.get("providerPublishTime")
+                mins = 0
+                try:
+                    if isinstance(pub, str):
+                        dt = datetime.fromisoformat(pub.replace("Z", "+00:00"))
+                        mins = max(0, int((datetime.now(timezone.utc) - dt).total_seconds() / 60))
+                    elif isinstance(pub, (int, float)):
+                        mins = max(0, int((datetime.now(timezone.utc).timestamp() - float(pub)) / 60))
+                except Exception:
+                    mins = 0
+                provider = ((content.get("provider") or {}).get("displayName")
+                            or content.get("publisher") or "Yahoo")
+                news_items.append({
+                    "headline": title_[:90],
+                    "source": str(provider)[:14],
+                    "minutesAgo": mins,
+                })
+        except Exception as e:
+            logger.info("rmap news(%s) failed: %s", ticker, e)
+
+        # ── events (calendar) ────────────────────────────────────────
+        event_items: List[Dict[str, Any]] = []
+        try:
+            cal = t.calendar
+            if isinstance(cal, dict):
+                er = cal.get("Earnings Date") or cal.get("Earnings High")
+                if er:
+                    if isinstance(er, list):
+                        er = er[0]
+                    event_items.append({
+                        "title": "Next Earnings",
+                        "date": str(er)[:10],
+                        "kind": "earnings",
+                    })
+                exd = cal.get("Ex-Dividend Date")
+                if exd:
+                    event_items.append({
+                        "title": "Ex-Dividend",
+                        "date": str(exd)[:10],
+                        "kind": "dividend",
+                    })
+        except Exception as e:
+            logger.info("rmap calendar(%s) failed: %s", ticker, e)
+
+        # ── options (front-month chain — top 8 strikes by IV) ────────
+        option_items: List[Dict[str, Any]] = []
+        try:
+            expiries = t.options or []
+            if expiries:
+                opt = t.option_chain(expiries[0])
+                calls = opt.calls
+                if calls is not None and not calls.empty:
+                    rows = calls.dropna(subset=["impliedVolatility"]).head(8)
+                    for _, row in rows.iterrows():
+                        option_items.append({
+                            "strike": float(row.get("strike") or 0),
+                            "iv": float(row.get("impliedVolatility") or 0) * 100,
+                        })
+        except Exception as e:
+            logger.info("rmap options(%s) failed: %s", ticker, e)
+
+        # ── balance sheet (from info totals — order matters for the bar) ─
+        balance_items: List[Dict[str, Any]] = []
+        for label, key, tone in [
+            ("Cash", "totalCash", "asset"),
+            ("Total Debt", "totalDebt", "liability"),
+            ("Equity", "bookValue", "equity"),
+        ]:
+            v = _num(info.get(key))
+            if v is not None:
+                # bookValue is per-share; multiply by shares for parity with totals.
+                if key == "bookValue":
+                    so = _num(info.get("sharesOutstanding")) or 0
+                    v = v * so
+                balance_items.append({
+                    "label": label,
+                    "value": round(v / 1e9, 2),  # billions
+                    "tone": tone,
+                })
+
+        # ── exchanges (just the listing venue — yfinance only exposes one) ─
+        exchange_items = []
+        if center["exchange"]:
+            exchange_items.append({"code": center["exchange"][:10], "volumePct": 100.0})
+
+        # ── indices (parent indices from info) ────────────────────────
+        index_items: List[Dict[str, Any]] = []
+        # yfinance doesn't expose index membership; leave empty unless we want
+        # to inject a static "SPX" / "NDX" guess. The UI renders an empty
+        # card with the count badge, which is honest about the gap.
+
+        return {
+            "asOf": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            "center": center,
+            "indices":   {"total": len(index_items),   "items": index_items},
+            "peers":     {"total": len(peer_items),    "items": peer_items},
+            "holders":   {"total": len(holder_items),  "items": holder_items},
+            "analysts":  {"total": len(analyst_items), "items": analyst_items},
+            "board":     {"total": len(board_items),   "items": board_items},
+            "executives": {"total": len(exec_items),   "items": exec_items},
+            "news":      {"total": len(news_items),    "items": news_items},
+            "events":    {"total": len(event_items),   "items": event_items},
+            "options":   {"total": len(option_items),  "items": option_items},
+            "exchanges": {"total": len(exchange_items),"items": exchange_items},
+            "cds":       {"total": 0, "items": []},  # CDS spreads need a paid feed
+            "balanceSheet": {"items": balance_items},
+        }
+
+    try:
+        data = await _run(_build)
+        return {"source": "yfinance", "data": data}
+    except Exception as e:
+        logger.warning("RMAP(%s) failed: %s", ticker, e)
+        raise HTTPException(502, f"RMAP upstream failed: {e}")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # tiny helpers
 # ─────────────────────────────────────────────────────────────────────────────
 

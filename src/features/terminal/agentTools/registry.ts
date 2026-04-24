@@ -72,4 +72,5 @@ import '../bmap/weiTool';
 import '../des/tool';
 import '../gip/tool';
 import '../hds/tool';
+import '../rmap/tool';
 import '../splc/tool';

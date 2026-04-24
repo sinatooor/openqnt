@@ -6,6 +6,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+.env
 
 node_modules
 dist
@@ -35,6 +36,9 @@ __pycache__/
 *.pyc
 *.db
 *.sqlite
+
+Backend/twsapi_ib
+
 
 n8n-reference/
 openclaw-reference/

@@ -12,8 +12,10 @@ import { ConfigProvider, theme as antTheme } from 'antd';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useAuthStore } from '../stores/authStore';
 import RmapView from '@/features/terminal/rmap/RmapView';
-
-const DEFAULT_TICKER = 'AAPL';
+import {
+  useDefaultTerminalSymbol,
+  useSyncTerminalSymbol,
+} from '@/features/terminal/useSyncTerminalSymbol';
 
 export default function TerminalRmap() {
   const { isAuthenticated } = useAuthStore();
@@ -22,20 +24,24 @@ export default function TerminalRmap() {
   const [searchParams] = useSearchParams();
   const queryTicker = searchParams.get('ticker') || undefined;
 
-  const initialTicker = (urlTicker || queryTicker || DEFAULT_TICKER).toUpperCase();
+  const fallbackTicker = useDefaultTerminalSymbol('AAPL');
+  const initialTicker = (urlTicker || queryTicker || fallbackTicker).toUpperCase();
   const [ticker, setTicker] = useState(initialTicker);
   const [input, setInput] = useState(initialTicker);
   const [refreshSalt, setRefreshSalt] = useState(0);
+  // Mirror the URL ticker into the global active-symbol store so the
+  // cmd+k palette reflects what the user is currently viewing.
+  useSyncTerminalSymbol(ticker);
 
   useEffect(() => {
     if (!isAuthenticated) navigate('/login');
   }, [isAuthenticated, navigate]);
 
   useEffect(() => {
-    const next = (urlTicker || queryTicker || DEFAULT_TICKER).toUpperCase();
+    const next = (urlTicker || queryTicker || fallbackTicker).toUpperCase();
     setTicker(next);
     setInput(next);
-  }, [urlTicker, queryTicker]);
+  }, [urlTicker, queryTicker, fallbackTicker]);
 
   const submit = useMemo(
     () => (value: string) => {

@@ -15,6 +15,10 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { useAuthStore } from '../stores/authStore';
 import HdsView from '@/features/terminal/hds/HdsView';
 import AgentContextDrawer from '@/features/terminal/agentTools/AgentContextDrawer';
+import {
+  useDefaultTerminalSymbol,
+  useSyncTerminalSymbol,
+} from '@/features/terminal/useSyncTerminalSymbol';
 
 const DEFAULT_TICKER = 'AAPL';
 
@@ -25,20 +29,22 @@ export default function TerminalHds() {
   const [searchParams] = useSearchParams();
   const queryTicker = searchParams.get('ticker') || undefined;
 
-  const initialTicker = (urlTicker || queryTicker || DEFAULT_TICKER).toUpperCase();
+  const fallbackTicker = useDefaultTerminalSymbol(DEFAULT_TICKER);
+  const initialTicker = (urlTicker || queryTicker || fallbackTicker).toUpperCase();
   const [ticker, setTicker] = useState(initialTicker);
   const [input, setInput] = useState(initialTicker);
   const [refreshSalt, setRefreshSalt] = useState(0);
+  useSyncTerminalSymbol(ticker);
 
   useEffect(() => {
     if (!isAuthenticated) navigate('/login');
   }, [isAuthenticated, navigate]);
 
   useEffect(() => {
-    const next = (urlTicker || queryTicker || DEFAULT_TICKER).toUpperCase();
+    const next = (urlTicker || queryTicker || fallbackTicker).toUpperCase();
     setTicker(next);
     setInput(next);
-  }, [urlTicker, queryTicker]);
+  }, [urlTicker, queryTicker, fallbackTicker]);
 
   const submit = useMemo(
     () => (value: string) => {
