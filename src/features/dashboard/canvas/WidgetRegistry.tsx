@@ -7,6 +7,7 @@ import WatchlistWidget from '../widgets/WatchlistWidget';
 import TopMoversWidget from '../widgets/TopMoversWidget';
 import IndicesWidget from '../widgets/IndicesWidget';
 import SectorHeatmapWidget from '../widgets/SectorHeatmapWidget';
+import AgentActivityWidget from '../widgets/AgentActivityWidget';
 
 export interface WidgetDefinition {
   name: string;
@@ -54,6 +55,11 @@ export const widgetRegistry: Record<string, WidgetDefinition> = {
     name: 'DJ30 Heatmap',
     description: 'Dow Jones 30 treemap weighted by market cap',
     Component: SectorHeatmapWidget,
+  },
+  'agent-activity': {
+    name: 'Agent Activity',
+    description: 'Live feed of recent Boss runs — task, status, signal, confidence',
+    Component: AgentActivityWidget,
   },
 };
 

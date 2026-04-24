@@ -33,6 +33,8 @@ import type {
   ExchangeTile,
 } from './mockData';
 import { generateRmapData } from './mockData';
+import { rmapTool } from './tool';
+import { useTerminalData } from '../useTerminalData';
 
 /* ------------------------------ color helpers ----------------------------- */
 
@@ -441,9 +443,19 @@ export interface RmapViewProps {
 
 export default function RmapView({ ticker, seedSalt = 0, onRefresh }: RmapViewProps) {
   const navigate = useNavigate();
-  const data = useMemo(
-    () => generateRmapData(`${ticker}#${seedSalt}`),
+  // Live yfinance fetch with deterministic mock fallback so the layout
+  // never flashes empty. `seedSalt` is folded into the input key so the
+  // Refresh button still re-issues the request.
+  const fallback = useMemo(
+    () => () => generateRmapData(`${ticker}#${seedSalt}`),
     [ticker, seedSalt],
+  );
+  // `seedSalt` deliberately rolls into the input key (via JSON.stringify in
+  // useTerminalData) so the Refresh button forces a re-fetch.
+  const data = useTerminalData(
+    rmapTool,
+    { ticker, ...(seedSalt ? { __salt: seedSalt } : {}) } as { ticker: string },
+    fallback,
   );
 
   return (

@@ -266,6 +266,14 @@ app.include_router(agent_live.router)
 from routers import backtest as backtest_router
 app.include_router(backtest_router.router)
 
+# Sandbox + dynamic tools — Phase G
+from routers import tools as tools_router
+app.include_router(tools_router.router)
+
+# Live execution path (paper / Alpaca) — Phase H
+from routers import execution as execution_router
+app.include_router(execution_router.router)
+
 # Boss orchestration (REST + WebSocket) — Phase C
 from routers import boss as boss_router
 app.include_router(boss_router.router)
