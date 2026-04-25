@@ -274,6 +274,16 @@ app.include_router(tools_router.router)
 from routers import execution as execution_router
 app.include_router(execution_router.router)
 
+# Strategy self-improvement loop — Phase I
+from routers import improvement as improvement_router
+app.include_router(improvement_router.router)
+
+# Telemetry counters — Phase J3
+from routers import telemetry as telemetry_router
+app.include_router(telemetry_router.router)
+import telemetry as _telemetry
+_telemetry.hook_into_context()
+
 # Boss orchestration (REST + WebSocket) — Phase C
 from routers import boss as boss_router
 app.include_router(boss_router.router)

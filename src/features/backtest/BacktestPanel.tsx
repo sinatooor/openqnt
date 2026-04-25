@@ -7,6 +7,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   listStrategies,
   runBacktest,
@@ -79,6 +80,7 @@ const Stat = ({ label, value, tone }: { label: string; value: string; tone?: 'go
 );
 
 export default function BacktestPanel() {
+  const navigate = useNavigate();
   const [strategies, setStrategies] = useState<StrategyMeta[]>([]);
   const [symbol, setSymbol] = useState('SPY');
   const [start, setStart] = useState('2020-01-01');
@@ -212,6 +214,28 @@ export default function BacktestPanel() {
         </div>
         <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: 12, alignItems: 'center' }}>
           {error && <span style={{ fontSize: 12, color: COLORS.bad }}>{error}</span>}
+          <button
+            onClick={() => {
+              const qs = new URLSearchParams({
+                symbol, start, end, strategy, params: paramsText,
+              }).toString();
+              navigate(`/improvement?${qs}`);
+            }}
+            disabled={running}
+            title="Run the Phase-I self-improvement loop seeded with this spec"
+            style={{
+              background: 'transparent',
+              color: COLORS.accent,
+              border: `1px solid ${COLORS.border}`,
+              padding: '8px 14px',
+              borderRadius: 6,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Improve →
+          </button>
           <button
             onClick={onRun}
             disabled={running}

@@ -1,0 +1,15 @@
+{
+  "agent_id": "hook_test",
+  "run_id": "run_670d13a469",
+  "task": "t",
+  "symbols": [],
+  "model": null,
+  "status": "success",
+  "started_at": "2026-04-24T23:56:47.986070+00:00",
+  "ended_at": "2026-04-24T23:56:47.986756+00:00",
+  "tokens": 0,
+  "signal": null,
+  "confidence": null,
+  "conclusion": "ok",
+  "error": null
+}

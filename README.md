@@ -1,431 +1,323 @@
-# Project Prometheus (PPM) — StrategyFlow
+# openqwnt
 
-**Project Prometheus** is an advanced AI-powered algorithmic trading platform that lets users build, backtest, and autonomously execute trading strategies through a visual node-and-edge builder. Inspired by **n8n**'s workflow automation and **OpenClaw**'s heartbeat daemon, the platform is evolving into a 24/7 autonomous financial AI agent.
+A hierarchical multi-agent quant research & execution platform — a
+visual strategy builder, a canonical backtest engine, agents that can
+write their own tools, a paper/live execution path with a kill
+switch, and a self-improvement loop that mutates strategy params and
+keeps what wins.
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Frontend](https://img.shields.io/badge/frontend-React%20%7C%20ReactFlow%20%7C%20TypeScript-61DAFB)
-![Orchestrator](https://img.shields.io/badge/orchestrator-Bun%20%7C%20BullMQ-f472b6)
-![Compute](https://img.shields.io/badge/compute-Python%20%7C%20FastAPI-3776AB)
-![AI](https://img.shields.io/badge/AI-Google%20ADK%20%7C%20Gemini-4285F4)
-
----
-
-## 🚀 Key Features
-
-- **🎨 Visual Strategy Builder** — ReactFlow-based node-and-edge canvas. 10 node categories: Indicators, Conditions, Actions, Environment, Control, Math, Risk, Variables, Trade Info, LLM.
-- **🤖 AI Strategy Generation** — Describe strategies in plain English. Gemini/DeepSeek generates the complete node graph via RAG.
-- **💬 AI Chat Assistant** — Google ADK agents with 15+ tools for market research, sentiment analysis, and live trading control.
-- **📉 Multi-Engine Backtesting** — backtrader, backtesting.py, NautilusTrader. Full metrics: Sharpe, Sortino, CAGR, Drawdown, Win Rate.
-- **⚡ Live Trading** — IG Markets and Nordnet broker integrations.
-- **⏰ Autonomous Heartbeat Agent** *(upcoming)* — BullMQ-powered background agent that monitors markets 24/7, inspired by OpenClaw.
-- **🔗 Webhook Triggers** *(upcoming)* — Event-driven workflow execution, TradingView alert integration.
-- **📋 Execution History** *(upcoming)* — Visual debugger for past workflow runs, n8n-style per-node data inspection.
+![Frontend](https://img.shields.io/badge/frontend-React%20%2B%20Vite-61DAFB)
+![Backend](https://img.shields.io/badge/backend-FastAPI%20%2B%20Python%203.12-3776AB)
+![Agents](https://img.shields.io/badge/agents-Google%20ADK%20%2B%20Gemini-4285F4)
+![Backtest](https://img.shields.io/badge/backtest-backtesting.py-purple)
+![License](https://img.shields.io/badge/license-MIT-blue)
 
 ---
 
-## 🏗️ Architecture
+## What this is
 
-### System Overview
+The platform sequenced through Phases A–J (see [PLAN.md](PLAN.md))
+and each phase has a `PHASE_<X>_RESULT.md` that documents what
+shipped + the exit criterion. The short version, in dependency order:
 
-```mermaid
-graph TD
-    User["👤 User"] -->|"Visual Builder / Chat"| Frontend["React + ReactFlow\n(Frontend)"]
-    
-    Frontend -->|"HTTP / WebSocket"| NodeJS["Node.js Orchestrator\n(Express + BullMQ)"]
+| Phase | Theme | Surface |
+| --- | --- | --- |
+| **A** | Audit & gap analysis | [AUDIT.md](AUDIT.md) |
+| **B** | Agent runtime — events, artifacts, WebSocket | [`backend/agent_runtime/`](backend/agent_runtime/) · `/api/agent/*` |
+| **C** | Boss orchestration | [`backend/routers/boss.py`](backend/routers/boss.py) · `/boss` |
+| **D** | Canonical backtest engine | [`backend/backtest/`](backend/backtest/) · `/api/backtest/*` · `/backtest` |
+| **E** | RSI mean-reversion strategy template | [`src/features/strategy-flow/templates/`](src/features/strategy-flow/templates/strategyTemplates.ts) |
+| **F** | Bloomberg-style terminal (real data) | [`backend/routers/terminal_data.py`](backend/routers/terminal_data.py) · `/terminal/*` · ⌘K palette |
+| **G** | Sandbox + dynamic tool creation | [`backend/sandbox/`](backend/sandbox/) · [`backend/dynamic_tools/`](backend/dynamic_tools/) · `/tools` |
+| **H** | Paper / live execution path | [`backend/execution/`](backend/execution/) · `/api/execution/*` · `/execution` |
+| **I** | Self-improvement loop | [`backend/improvement/`](backend/improvement/) · `/api/improvement/*` · `/improvement` |
+| **J** | Hardening — CI, E2E, telemetry, docs | `.github/workflows/ci.yml` · `e2e/` · `/api/telemetry/*` · this file |
 
-    subgraph NodeJS_Services["Node.js — Orchestration Layer"]
-        API["REST API\n(Express/Fastify)"]
-        Queue["BullMQ\nJob Queue"]
-        FlowEngine["Flow Compiler\n& Interpreter (TS)"]
-        Webhooks["Webhook Handler"]
-        Notify["Notification\nDispatcher"]
-        Broker["Broker Clients\n(Alpaca · IG · IBKR)"]
-    end
+Pages mounted under `/`:
 
-    NodeJS -->|"REST / gRPC\n(compute requests)"| Python["Python Compute\nService (FastAPI)"]
-
-    subgraph Python_Services["Python — Compute Layer"]
-        Backtest["Backtesting Engines\n(backtrader · backtesting.py\n· NautilusTrader)"]
-        Indicators["Indicator Calculator\n(TA-Lib · pandas · numpy)"]
-        ADK["Google ADK Agents\n(Trading · Research)"]
-        RAG["RAG / Vector Search\n(ChromaDB)"]
-        DataProc["Data Processing\n(pandas · yfinance · FMP)"]
-    end
-
-    subgraph Data["Shared Data Layer"]
-        PG[("PostgreSQL\n(strategies · executions\n· portfolio · users)")]
-        Redis[("Redis\n(BullMQ · cache · pub/sub)")]
-        Chroma[("ChromaDB\n(vector store)")]
-    end
-
-    NodeJS --> Data
-    Python --> Data
+```
+/                  Strategy Flow canvas (visual builder)
+/backtest          BacktestPanel (Phase D engine)
+/improvement       Self-improvement loop (Phase I)
+/tools             Sandbox + dynamic tool registry (Phase G)
+/execution         Live paper/Alpaca execution (Phase H)
+/boss              Boss-run tree
+/terminal/{des,gip,hds,rmap,splc,bmap}   Bloomberg-style screens (Phase F)
+/dashboard         Widget canvas (incl. Telemetry + Agent Activity)
 ```
 
 ---
 
-### Heartbeat Agent Pipeline (OpenClaw-Inspired)
+## Architecture
 
-```mermaid
-sequenceDiagram
-    participant Beat as BullMQ Scheduler
-    participant Orch as Node.js Orchestrator
-    participant PreCheck as Pre-Check Layer (Node.js)
-    participant Python as Python Compute Service
-    participant Broker as Broker API
-    participant User as 📱 User
-
-    Beat->>Orch: Heartbeat fires (every N mins)
-    Orch->>Orch: Load user strategy (from PostgreSQL)
-    Orch->>PreCheck: Run cheap checks (price threshold, volume spike)
-    
-    alt No condition met
-        PreCheck-->>Orch: HEARTBEAT_OK (silent)
-        Note over Orch: Cycle ends. No LLM call. No notification.
-    else Condition threshold met
-        PreCheck->>Python: POST /compute/indicators {priceData, params}
-        Python-->>PreCheck: {rsi: 28, volume_ratio: 2.3}
-        PreCheck->>Python: POST /compute/ai-analyze {context, news}
-        Python-->>PreCheck: {sentiment: 0.82, action: "buy"}
-        Orch->>Orch: Evaluate strategy nodes (topological order)
-        Orch->>Broker: Execute trade (if autonomous mode)
-        Orch->>User: 📬 Alert via Telegram / Slack / SMS
-    end
+```
+                   ┌─────────────────────────┐
+                   │  React + Vite frontend  │
+                   │  /backtest, /execution, │
+                   │  /improvement, /tools,  │
+                   │  /terminal, /boss, ...  │
+                   └────────────┬────────────┘
+                                │ REST + WebSocket
+                                ▼
+        ┌───────────────────────────────────────────────┐
+        │           FastAPI backend (uvicorn)           │
+        │                                               │
+        │  routers/  ── /api/{backtest, execution,      │
+        │                     improvement, tools,       │
+        │                     terminal_data, agent_*,   │
+        │                     boss, telemetry, ...}     │
+        │                                               │
+        │  agent_runtime/   AgentRunContext + EventBus  │
+        │  backtest/        canonical engine            │
+        │  execution/       PaperBroker, RiskGate, ...  │
+        │  improvement/     Objective / Mutator / Tree  │
+        │  sandbox/         subprocess + setrlimit      │
+        │  dynamic_tools/   agent-authored tools        │
+        │  telemetry/       counters + flush            │
+        │  adk_agents/      Google ADK agents + tools   │
+        └───────────────────────┬───────────────────────┘
+                                │
+                                ▼
+              On-disk under  agents/
+                ├── boss/runs/<run_id>/        boss + improvement trees
+                ├── _backtests/<run_id>/       canonical engine artefacts
+                ├── _execution/<session>/      order journal + panic.lock
+                ├── _telemetry/counters.json   J3 telemetry snapshot
+                ├── tools/dynamic/             agent-authored Python tools
+                └── _cache/bars/               yfinance parquet cache
 ```
 
----
+The Node.js orchestrator and TypeScript broker clients (under
+`orchestrator/`) predate Phase B; they're left in place but the agent
+runtime, backtest engine, sandbox, execution, and self-improvement
+loop are all Python and don't depend on them.
 
-### Strategy Execution Pipeline
+### Data flow — a typical user gesture
 
-```mermaid
-flowchart LR
-    A["👤 User\nBuilds Strategy"] --> B["ReactFlow Canvas\n(nodes + edges)"]
-    B --> C["Flow Compiler\n(TypeScript)"]
-    C --> D["Compiled JSON\n+ Topological Order"]
-    D --> E{"Execution\nMode"}
-    
-    E -->|"Backtest"| F["Node.js enqueues\nBullMQ job"]
-    F --> G["Python Compute\n(backtrader / backtesting.py)"]
-    G --> H["Results → PostgreSQL"]
-    H --> I["📊 Equity Curve\n& Metrics UI"]
-
-    E -->|"Live / Heartbeat"| J["Node.js\nFlow Interpreter"]
-    J -->|"Indicator nodes"| K["Python\n/compute/indicators"]
-    J -->|"LLM nodes"| L["Python\n/compute/ai-analyze (ADK)"]
-    K --> J
-    L --> J
-    J -->|"Action node"| M["Broker API\n(Alpaca · IG · IBKR)"]
-    M --> N["📬 Notification\n(Telegram · Slack · SMS)"]
+```
+user clicks "Run backtest" on /backtest
+    → fetch POST /api/backtest/run
+        → backend/routers/backtest.py
+        → backend/backtest/engine.py:run_backtest(spec)
+            → backtesting.py executes the strategy on the bars
+            → backend/backtest/plot.py renders equity+drawdown PNG
+            → result.json + equity.png persisted under
+              agents/_backtests/<run_id>/
+        → response includes inline plot_b64 + metrics + trades
+    → BacktestPanel renders the chart from the data URL
 ```
 
----
-
-### n8n-Style Execution History
-
-```mermaid
-flowchart TD
-    Run["ExecutionRun\n(BullMQ job completes)"] --> Log["Node.js logs\nper-node JSON snapshots\n→ PostgreSQL"]
-    Log --> Viewer["Frontend\nExecution Viewer"]
-    
-    Viewer --> Green["🟢 Green node\n= executed OK"]
-    Viewer --> Red["🔴 Red node\n= errored"]
-    Viewer --> Gray["⚫ Gray node\n= skipped (condition false)"]
-    Viewer --> Blue["🔵 Blue node\n= delegated to Python"]
-    Viewer --> Hover["Hover → inspect\nJSON in / JSON out"]
-```
+Same code path serves the agent tool — `run_backtest_tool()` in
+[`adk_agents/tools/backtest_tools.py`](backend/adk_agents/tools/backtest_tools.py)
+calls the same `run_backtest()` with the same `BacktestSpec`, so an
+agent reports byte-for-byte identical numbers.
 
 ---
 
-### AI Strategy Generation Pipeline
-
-```mermaid
-flowchart LR
-    A["User Prompt\n'RSI oversold + SMA cross'"] --> B["Node.js API\n(POST /generate)"]
-    B --> C{"RAG Lookup\n(ChromaDB)"}
-    C --> D["Relevant node\ndefinitions retrieved"]
-    D --> E["LLM\n(Gemini / DeepSeek)"]
-    E --> F["Generated\nNodes + Edges JSON"]
-    F --> G{"Validator\n(TypeScript)"}
-    G -->|"Invalid"| H["Auto-Fix\nPipeline"]
-    H --> G
-    G -->|"Valid"| I["ReactFlow Canvas\nloads strategy"]
-```
-
----
-
-## 🛠️ Technology Stack
-
-| Layer | Technology | Role |
-|---|---|---|
-| **Frontend** | React 18 + Vite + TypeScript | Visual strategy builder UI |
-| **UI Components** | Shadcn UI + Tailwind CSS | Design system |
-| **Canvas** | ReactFlow (`@xyflow/react`) | Node-and-edge graph editor |
-| **State** | Zustand | Client state management |
-| **Orchestrator** | Bun + Express | API server, workflow orchestration |
-| **Job Queue** | BullMQ + Redis | Heartbeat scheduling, async jobs |
-| **Compute Service** | Python + FastAPI | Backtesting, indicators, AI agents |
-| **Backtesting** | backtrader, backtesting.py, NautilusTrader | Strategy backtesting engines |
-| **AI Orchestration** | Google ADK + Gemini | Autonomous trading agents |
-| **LLM Providers** | Google Gemini + DeepSeek | Strategy generation + analysis |
-| **RAG** | ChromaDB + vector_rag | Block retrieval for AI generation |
-| **Data** | pandas, numpy, TA-Lib, yfinance, FMP | Market data processing |
-| **Database** | PostgreSQL (prod) / SQLite (dev) | Primary data store |
-| **Cache / Events** | Redis | BullMQ broker, pub/sub, caching |
-
----
-
-## 📦 Installation & Setup
-
-### Prerequisites
-
-- Git
-- [Bun](https://bun.sh/) v1.0+
-- [Conda](https://docs.conda.io/en/latest/miniconda.html) (Miniconda or Anaconda) with Python 3.12
-- [Docker](https://www.docker.com/) & Docker Compose (for Docker method)
-- Redis (for local method)
-- PostgreSQL 16 (for local method)
-
-### Clone the Repository
+## Quick start
 
 ```bash
-git clone git@github.com:sinatooor/project-prometheus.git
-cd project-prometheus
-```
-
-### Environment Variables
-
-```bash
-cp .env.example .env
-# Edit .env and fill in your API keys:
-#   DEEPSEEK_API_KEY   — https://platform.deepseek.com/
-#   GEMINI_API_KEY     — https://aistudio.google.com/
-#   IG_API_KEY/USER/PW — https://labs.ig.com/ (optional, for live trading)
-
-cp backend/.env.example backend/.env
-# Add the same LLM keys + any broker keys
-```
-
----
-
-### Method 1: Docker (Recommended)
-
-Docker Compose starts all five services (backend, orchestrator, frontend, PostgreSQL, Redis) in one command.
-
-#### 1. Build and start
-
-```bash
-# Core services (backend + orchestrator + postgres + redis)
-docker-compose up --build
-
-# Include the frontend dev server
-docker-compose --profile frontend up --build
-
-# Run in detached mode
-docker-compose up -d --build
-```
-
-#### 2. Verify services are healthy
-
-```bash
-docker-compose ps
-
-# Test health endpoints
-curl http://localhost:8000/health   # Backend (FastAPI)
-curl http://localhost:3000/health   # Orchestrator (Bun/Express)
-```
-
-#### 3. Stop
-
-```bash
-docker-compose down
-
-# Stop and remove volumes (full reset)
-docker-compose down -v
-```
-
-#### Docker services overview
-
-| Container | Service | Port | Description |
-|-----------|---------|------|-------------|
-| `openqwnt-backend` | backend | 8000 | Python FastAPI — AI agents, backtesting, indicators |
-| `openqwnt-orchestrator` | orchestrator | 3000 | Bun/Express — API server, BullMQ workflows |
-| `openqwnt-frontend` | frontend | 5173 | React/Vite dev server (profile: `frontend`) |
-| `openqwnt-postgres` | postgres | 5432 | PostgreSQL 16 — primary database |
-| `openqwnt-redis` | redis | 6379 | Redis 7 — BullMQ broker, caching |
-
----
-
-### Method 2: Local Development (Conda)
-
-Run each service individually for faster iteration and debugging.
-
-#### 1. Backend — Python Compute Service (Conda)
-
-```bash
-# Create the conda environment (one-time setup)
-conda create -n openqwnt python=3.12 -c conda-forge -y
-conda activate openqwnt
-
-# Install dependencies
+# Backend (Python 3.12)
 cd backend
 pip install -r requirements.txt
+uvicorn main:app --port 8000
 
-# Copy and configure environment
-cp .env.example .env
-# Edit .env — add GEMINI_API_KEY, DEEPSEEK_API_KEY, etc.
+# Frontend
+npm install
+npm run dev      # http://localhost:5173
+
+# Run the test suites
+cd backend && pytest tests/ -q
+npm test         # vitest, frontend unit tests
+npm run e2e      # Playwright (needs backend on :8000 + chromium)
 ```
 
-> **Note:** TA-Lib requires the C library. Install it first:
-> - macOS: `brew install ta-lib`
-> - Ubuntu/Debian: `sudo apt-get install libta-lib-dev`
-> - Or build from source: https://github.com/TA-Lib/ta-lib/releases
+The `agents/` directory and its subfolders are **gitignored**
+intentionally — they're per-user state (run history, broker journal,
+backtest artefacts, dynamic tools). They're created on demand.
 
-#### 2. Orchestrator — Node.js/Bun
+### Environment variables
+
+| Var | Used for | Default |
+| --- | --- | --- |
+| `GEMINI_API_KEY` | Boss + synthesis + LLM mutator (optional) | unset → heuristic fallback |
+| `ALPACA_API_KEY` / `ALPACA_API_SECRET` | Live broker (Phase H) | unset → PaperBroker |
+| `PAPER_CASH` | Paper-broker starting cash + risk gate's `initial_equity` | 100 000 |
+| `RISK_MAX_ORDER_QTY` | Hard order-size cap | 1 000 |
+| `RISK_MAX_POSITION_NOTIONAL` | Per-symbol notional cap | 50 000 |
+| `RISK_MAX_DRAWDOWN_PCT` | Halt threshold vs peak equity | 20 |
+| `RISK_MAX_DAILY_LOSS_PCT` | Halt threshold vs day-open equity | 5 |
+| `FMP_API_KEY` | RMAP peers + DES fundamentals | optional |
+| `VITE_BACKEND_URL` | Frontend base URL | `http://localhost:8000` |
+
+---
+
+## How to add an agent
+
+A new agent is a class that subclasses
+[`BaseAnalysisAgent`](backend/adk_agents/base_agent.py), wraps a
+Gemini model with a system prompt + the tools it should have access
+to, and returns a structured `AgentOutput`.
+
+```python
+# backend/adk_agents/my_new_agent.py
+from .base_agent import BaseAnalysisAgent, AgentOutput
+from .tools.market_data_tools import get_market_quote
+from .tools.backtest_tools import run_backtest_tool
+
+class MyNewAgent(BaseAnalysisAgent):
+    name = "my_new"
+    description = "What this agent does, in one sentence."
+    tools = [get_market_quote, run_backtest_tool]
+    system_prompt = """You are a …. Use the tools to ….
+                      Return your conclusion as JSON matching AgentOutput."""
+
+    async def analyze(self, context, ctx):
+        # `ctx` is an AgentRunContext (Phase B).
+        # Anything you do with it shows up live on the agent stream:
+        ctx.status("Pulling market data…")
+        with ctx.tool_call("market_data.quote", {"symbol": context.symbol}) as h:
+            quote = get_market_quote(context.symbol)
+            h.result(f"price={quote['price']}")
+        ctx.thought("Quote looks normal; running a quick backtest.")
+        # …
+        return AgentOutput(...)
+```
+
+Telemetry (`agent_runs`, `tool_calls`) is wired automatically because
+Phase J3 monkey-patches `AgentRunContext` at backend startup —
+`backend/main.py` calls `telemetry.hook_into_context()` once.
+
+To dispatch the new agent from the Boss, add it to the registry the
+boss reads when planning subtasks; see
+[`backend/routers/boss.py`](backend/routers/boss.py).
+
+## How to add a node to the visual builder
+
+A node has three pieces: catalogue metadata, a renderer, and (if it
+needs to compute something at backtest time) a hook into the
+canonical engine.
+
+1. **Catalogue entry** — add the node type to
+   [`src/features/strategy-flow/catalog/nodeCatalog.ts`](src/features/strategy-flow/catalog/nodeCatalog.ts)
+   so it appears in the palette and the validator knows its inputs +
+   outputs.
+2. **Backend mirror** — add the same shape to
+   [`backend/strategy_flow/node_catalog_cache.json`](backend/strategy_flow/node_catalog_cache.json)
+   so the Python validator (`strategy_flow/validator.py`) and the
+   template tests (Phase E) can reason about it.
+3. **Renderer** (if it needs custom UI) — add a React component under
+   [`src/features/strategy-flow/components/nodes/`](src/features/strategy-flow/components/nodes/)
+   and wire it into the renderer map.
+4. **Backtest behaviour** — for indicators / conditions / actions,
+   add the implementation to
+   [`backend/backtest/builtins.py`](backend/backtest/builtins.py) (or
+   reference an existing `backtesting.py` helper). Templates that
+   want to route through the canonical engine ship a `backtestSpec`
+   (see Phase E doc) instead of hitting the legacy code-gen path.
+
+If you're adding a *strategy* not a node, the simpler path is:
+register it in `STRATEGIES` in `backend/backtest/builtins.py`, then
+either add a template that points to it via `backtestSpec.strategy`,
+or pass `strategy: "<your_name>"` in any `POST /api/backtest/run`.
+
+---
+
+## Hardening (Phase J)
+
+- **CI** — [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs
+  lint + typecheck + vitest + pytest (incl. the canonical-backtest
+  reference test) on every PR.
+- **E2E** — [`e2e/phase-e-rsi-template.spec.ts`](e2e/phase-e-rsi-template.spec.ts)
+  walks the Phase E flow in a real browser (Playwright + Chromium):
+  open `/backtest`, pick the RSI strategy, run it, assert the inline
+  PNG and metric tiles appear.
+- **Telemetry** — every `AgentRunContext` start/finish + every
+  `tool_call/tool_result` increments counters in
+  [`backend/telemetry/`](backend/telemetry/) which flush to
+  `agents/_telemetry/counters.json`. The dashboard's **Telemetry**
+  widget polls `/api/telemetry/summary` every 5 s.
+- **Reference test** —
+  [`backend/tests/test_backtest_reference.py`](backend/tests/test_backtest_reference.py)
+  pins SMA(50/200) on SPY 2010-2023; if the engine drifts, CI fails.
+
+---
+
+## Phase test suites at a glance
 
 ```bash
-cd orchestrator
-bun install
-
-# Configure environment
-cp .env.example .env
-# Edit .env — set DATABASE_URL, REDIS_HOST, etc.
-
-# Generate Prisma client and run migrations
-bunx prisma generate
-bunx prisma migrate dev
+# All in backend/, run with the project's Python env (pytest).
+tests/test_backtest_reference.py      # Phase D · canonical engine
+tests/test_rsi_template.py            # Phase E · template + validator
+tests/test_dynamic_tools.py           # Phase G · sandbox + tool authoring
+tests/test_execution.py               # Phase H · paper broker + risk gate
+tests/test_improvement.py             # Phase I · self-improvement loop
+tests/test_telemetry.py               # Phase J · counters + AgentRunContext hook
 ```
-
-#### 3. Frontend — React/Vite
 
 ```bash
-# From the project root
-bun install
-```
-
-#### 4. Infrastructure — PostgreSQL & Redis
-
-```bash
-# Option A: Use Docker for just the databases
-docker run -d --name openqwnt-postgres -p 5432:5432 \
-  -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=strategyflow \
-  postgres:16-alpine
-
-docker run -d --name openqwnt-redis -p 6379:6379 redis:7-alpine
-
-# Option B: Install and run natively
-# macOS:
-brew install postgresql@16 redis
-brew services start postgresql@16
-brew services start redis
-
-# Ubuntu:
-sudo apt-get install postgresql redis-server
-sudo systemctl start postgresql redis
-```
-
-#### 5. Start all services (4 terminals)
-
-```bash
-# Terminal 1 — Redis (skip if using Docker or brew services)
-redis-server
-
-# Terminal 2 — Python Backend
-cd backend && conda activate openqwnt && uvicorn main:app --reload --port 8000
-
-# Terminal 3 — Node.js Orchestrator
-cd orchestrator && bun run dev
-
-# Terminal 4 — React Frontend
-bun run dev
-```
-
-#### Service URLs
-
-| Service | URL | Description |
-|---------|-----|-------------|
-| Frontend | http://localhost:5173 | React UI |
-| Orchestrator | http://localhost:3000 | Bun API + WebSocket server |
-| Backend API | http://localhost:8000/docs | FastAPI Swagger (compute layer) |
-| PostgreSQL | localhost:5432 | Database (user: `postgres`, pass: `postgres`) |
-| Redis | localhost:6379 | BullMQ broker & cache |
-
----
-
-## 🤖 ADK Trading Agent Tools
-
-| Category | Tools |
-|---|---|
-| **Market Research** | `search_market_news`, `search_sentiment`, `search_economic_calendar`, `get_market_news` |
-| **Web Research** | `scrape_url_text` |
-| **Custom Indicators** | `create_custom_indicator`, `update`, `delete`, `list`, `get` |
-| **Broker** | `execute_trade`, `get_positions`, `close_position`, `get_account_info`, `get_market_price` |
-| **RAG** | `find_similar_blocks`, `get_block_info`, `list_block_categories` |
-| **Risk & Strategy** | `run_monte_carlo_simulation`, `calculate_position_sizing`, `calculate_risk_metrics`, `calculate_correlation_matrix` |
-| **Analysis** | `scan_candlestick_patterns`, `classify_market_regime` |
-| **Memory** | `save_note`, `read_note`, `list_notes`, `append_to_note` |
-| **Control** | `update_strategy_risk_settings`, `adjust_trade_size`, `emergency_stop_strategy` |
-
----
-
-## 🧪 Testing Suite
-
-| Test Suite | Command | Description |
-|---|---|---|
-| **E2E Test** | `python tests/e2e_test.py` | Full flow: AI Gen → Nodes → Backtest → Result |
-| **Stress Test** | `python tests/stress_test.py` | 20 distinct scenarios for stability |
-| **Benchmark** | `python tests/benchmark_test.py` | Validates against ground truth data |
-
----
-
-## 📁 Project Structure
-
-```
-openqwnt/
-├── src/                          # React Frontend
-│   └── features/strategy-flow/  # ReactFlow strategy builder
-│       ├── catalog/              # Node definitions by category
-│       ├── components/           # Node visual components, panels
-│       ├── generators/           # Python code generators
-│       ├── store/                # Zustand state (strategyFlowStore.ts)
-│       └── types.ts              # TypeScript node/edge types
-├── backend/                      # Python Compute Service (FastAPI)
-│   ├── adk_agents/               # Google ADK agents + tools
-│   ├── flow/                     # Flow compiler + runtime
-│   ├── strategy_flow/            # Strategy API router, backtrader engine
-│   ├── routers/                  # FastAPI route sets
-│   └── main.py                   # FastAPI entry point
-├── prd/                          # Product Requirements Documents
-│   └── StrategyFlow_PRD_v3.md    # Current PRD (Node.js + Python arch)
-├── docker-compose.yml            # Full stack Docker setup
-└── CHANGELOG.md                  # Version history
+# Frontend
+npm test                              # vitest (unit)
+npm run e2e                           # Playwright (E2E)
 ```
 
 ---
 
-## 📄 License
+## Repository layout
 
-Distributed under the MIT License.
+```
+backend/
+  main.py                  # FastAPI app, mounts every router
+  agent_runtime/           # Phase B: AgentRunContext, EventBus, storage
+  backtest/                # Phase D: canonical engine, builtins, plot
+  execution/               # Phase H: PaperBroker, AlpacaBroker, RiskGate
+  improvement/             # Phase I: Objective, Mutator, Tree, Runner
+  sandbox/                 # Phase G: subprocess + setrlimit runner
+  dynamic_tools/           # Phase G: agent-authored tool registry
+  telemetry/               # Phase J3: counters + AgentRunContext hook
+  adk_agents/              # Google-ADK agents + their Python tools
+  routers/                 # FastAPI routers per concern
+  tests/                   # pytest, one file per phase
+  strategy_flow/           # node catalogue + validator (mirrors frontend)
+
+src/
+  pages/                   # React Router pages
+  features/
+    backtest/              # /backtest panel
+    execution-viewer/      # /execution panel + LiveExecutionPanel
+    improvement/           # /improvement panel
+    tools/                 # /tools sandbox + dynamic-tool UI
+    strategy-flow/         # / canvas (templates, BacktestModal, ...)
+    terminal/              # Bloomberg-style screens + ⌘K palette
+    dashboard/             # widget grid + AgentActivity + Telemetry
+    boss/                  # boss-run tree
+  stores/                  # Zustand state (auth, terminal symbol, ...)
+
+orchestrator/              # legacy Node.js orchestrator (pre-Phase-B)
+e2e/                       # Playwright E2E specs (Phase J2)
+docs/templates/            # template docs (Phase E onward)
+```
 
 ---
 
-## 🤝 Contributing
+## Phase result docs
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+Each phase shipped with a result document — what was built, the exit
+criterion proof, and how to run it.
 
+- [PHASE_B_RESULT.md](PHASE_B_RESULT.md)
+- [PHASE_D_RESULT.md](PHASE_D_RESULT.md)
+- [PHASE_F_RESULT.md](PHASE_F_RESULT.md)
+- [PHASE_G_RESULT.md](PHASE_G_RESULT.md)
+- [PHASE_H_RESULT.md](PHASE_H_RESULT.md)
+- [PHASE_I_RESULT.md](PHASE_I_RESULT.md)
+- [PHASE_J_RESULT.md](PHASE_J_RESULT.md)
 
-good prompot " check folder /prd and then check if everything is build for the app, if not continue building    
-   till it is done, it does not matter how much it takes or how many api calls, You can now begin   
-   implementation.                                                                                  
-   Follow the task tree.                                                                            
-   After completing each module, summarize:                                                         
-   - What you built                                                                                 
-   - Tests run                                                                                      
-                                                                                                    
-   use commit and new branches when needed  "
+(Phases A, C, E shipped without dedicated docs; their work is
+captured in [PLAN.md](PLAN.md) and the relevant code paths.)
 
-   test@example.com
-   test@example.com
+---
+
+## License
+
+MIT.
