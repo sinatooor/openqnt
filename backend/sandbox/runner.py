@@ -35,6 +35,30 @@ INLINE_FILE_LIMIT_BYTES = 2 * 1024 * 1024  # 2 MB inlined as base64; bigger → 
 
 _PYTHON = sys.executable  # use the same interpreter the backend runs in
 
+# Pre-warm matplotlib's font cache against a stable repo-local
+# MPLCONFIGDIR so sandbox children don't try to rebuild it from an
+# empty HOME. macOS's system_profiler returns a shape font_manager
+# doesn't always understand; this side-steps the problem entirely
+# because the cache file is built by the parent (which has the user's
+# fonts) and reused by every child.
+_MPL_CACHE = (Path(__file__).resolve().parents[2]
+              / "agents" / "_cache" / "mpl")
+
+
+def _warm_mpl_cache_once() -> None:
+    try:
+        _MPL_CACHE.mkdir(parents=True, exist_ok=True)
+        os.environ.setdefault("MPLCONFIGDIR", str(_MPL_CACHE))
+        os.environ.setdefault("MPLBACKEND", "Agg")
+        import matplotlib  # noqa: F401
+        from matplotlib import font_manager  # noqa: F401
+    except Exception:
+        # Telemetry-style: never break a request because of cache prep.
+        pass
+
+
+_warm_mpl_cache_once()
+
 
 def _preexec_setrlimit(cpu_seconds: int, mem_mb: int, file_size_mb: int):
     """Returned closure runs in the child after fork, before exec.
@@ -123,7 +147,8 @@ def execute_python(req: ExecuteRequest) -> ExecuteResult:
             "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
             "HOME": str(workdir),
             "TMPDIR": str(workdir),
-            "MPLBACKEND": "Agg",  # matplotlib without a display
+            "MPLBACKEND": "Agg",        # matplotlib without a display
+            "MPLCONFIGDIR": str(_MPL_CACHE),
             "PYTHONUNBUFFERED": "1",
             "PYTHONHASHSEED": "0",
         }

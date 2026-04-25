@@ -8,6 +8,7 @@ import TopMoversWidget from '../widgets/TopMoversWidget';
 import IndicesWidget from '../widgets/IndicesWidget';
 import SectorHeatmapWidget from '../widgets/SectorHeatmapWidget';
 import AgentActivityWidget from '../widgets/AgentActivityWidget';
+import TelemetryWidget from '../widgets/TelemetryWidget';
 
 export interface WidgetDefinition {
   name: string;
@@ -60,6 +61,11 @@ export const widgetRegistry: Record<string, WidgetDefinition> = {
     name: 'Agent Activity',
     description: 'Live feed of recent Boss runs — task, status, signal, confidence',
     Component: AgentActivityWidget,
+  },
+  'telemetry': {
+    name: 'Telemetry',
+    description: 'Counters: agent runs, tool calls, errors. Polls /api/telemetry/summary.',
+    Component: TelemetryWidget,
   },
 };
 

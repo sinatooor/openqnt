@@ -28,6 +28,7 @@ import Boss from "./pages/Boss";
 import Backtest from "./pages/Backtest";
 import Tools from "./pages/Tools";
 import Execution from "./pages/Execution";
+import Improvement from "./pages/Improvement";
 import SymbolPalette from "./features/terminal/SymbolPalette";
 import NotFound from "./pages/NotFound";
 import Onboarding from "./pages/Onboarding";
@@ -138,6 +139,7 @@ const AppRoutes = () => {
         <Route path="/backtest" element={<Backtest />} />
         <Route path="/tools" element={<Tools />} />
         <Route path="/execution" element={<Execution />} />
+        <Route path="/improvement" element={<Improvement />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/portfolio" element={<Portfolio />} />
       </Route>
