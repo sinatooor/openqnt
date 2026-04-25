@@ -1,51 +1,60 @@
 # =============================================================================
-# Fyer Backend - Docker Ignore
+# Backend build context. The Dockerfile COPY's "." in the prod target, so
+# this list controls what ends up in the image. The dev target uses
+# bind-mounts so this only matters for `docker compose -f *.prod.yml`.
 # =============================================================================
 
+# Version control
+.git
+.gitignore
+
 # Python
-__pycache__/
+__pycache__
 *.py[cod]
 *$py.class
 *.so
 .Python
-venv/
-.venv/
-env/
-*.egg-info/
-.pytest_cache/
-.mypy_cache/
+venv
+.venv
+env
+*.egg-info
+.pytest_cache
+.mypy_cache
+.ruff_cache
 
-# IDE
-.idea/
-.vscode/
+# IDE / OS
+.idea
+.vscode
+.DS_Store
 *.swp
 *.swo
 
-# Environment
+# Environment files (use compose env vars instead)
 .env
 .env.local
+.env.*.local
 
-# Database (use volumes)
+# State that lives in the volume, not the image. Critical to exclude:
+# `agents/` can balloon to GBs once dynamic tools + backtest artifacts
+# accumulate.
+agents
+chroma_db
+chroma_db_v2
+
+# DBs and logs
 *.db
 *.sqlite3
-fyer.db
-
-# ChromaDB (use volumes)
-chroma_db/
-chroma_db_v2/
-
-# Logs
 *.log
-logs/
+logs
 
-# Test files (optional)
-test_*.py
-tests/
+# Tests stay in (so we can run pytest in CI containers); legacy code
+# already pruned in Phase B-J — no need to filter here.
 
-# Temporary
+# Temp
 *.tmp
 *.temp
 
-# Build
-*.egg
-*.whl
+# The huge legacy/reference trees never need to land in the backend image.
+../openclaw-reference
+../n8n-reference
+../orchestrator

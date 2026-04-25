@@ -23,6 +23,7 @@ import pytest
 
 from execution import (
     ExecutionRunner,
+    IBKRBroker,
     OrderSide,
     OrderStatus,
     OrderType,
@@ -167,6 +168,19 @@ def test_journal_writes_every_attempt():
 
 
 # ── End-to-end exit criterion ───────────────────────────────
+
+
+def test_ibkr_broker_constructs_without_tws_running():
+    """Importing + instantiating IBKRBroker must not require TWS.
+    Connection is lazy and the *first* call would raise — but
+    construction alone has to be safe so the router can keep PaperBroker
+    as a fallback when EXECUTION_BROKER=ibkr is set but TWS is offline.
+    """
+    b = IBKRBroker(host="127.0.0.1", port=7497, client_id=99)
+    assert b.name == "ibkr"
+    assert b.port == 7497
+    # quote() must return None instead of raising when TWS isn't there.
+    assert b.quote("AAPL") is None
 
 
 def test_exit_criterion_template_signal_to_paper_fill():
