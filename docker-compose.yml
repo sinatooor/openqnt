@@ -1,228 +1,117 @@
 # =============================================================================
-# OpenQwnt Trading Platform - Docker Compose
-# Complete development and production environment
+# openqwnt — production-shaped compose file.
+#
+# Two services match what `scripts/start-all.sh` runs locally:
+#   - backend  : FastAPI (Phase B-J), port 8000
+#   - frontend : Vite dev server, port 5173
+#
+# Run with `docker compose up`. The default targets the dev stages so you
+# get hot reload + source mounts. For a closer-to-prod build, override the
+# targets:  `docker compose -f docker-compose.yml -f docker-compose.prod.yml up`.
+#
+# Broker selection follows EXECUTION_BROKER (paper / ibkr / alpaca). For
+# `ibkr` mode TWS / IB Gateway must be running ON THE HOST — the backend
+# reaches it via `host.docker.internal:7497` (auto-mapped on Docker
+# Desktop, explicit `extra_hosts` entry below for Linux).
+#
+# Removed from the previous version:
+#   - Postgres        : Phase B-J persists to disk under `agents/`, no DB.
+#   - Redis           : we don't queue jobs.
+#   - orchestrator    : legacy Node service, not on the Phase B-J path.
+#   - chromadb        : RAG isn't part of any shipped phase.
+#   - nginx (top-lvl) : the prod frontend stage already serves through nginx.
 # =============================================================================
-# Usage:
-#   Development: docker-compose up
-#   Production:  docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
-#   Build:       docker-compose build
-# =============================================================================
+
+x-backend-base: &backend-base
+  build:
+    context: ./backend
+    dockerfile: Dockerfile
+    target: dev
+  image: openqwnt-backend:dev
+  environment:
+    # ── broker selection (Phase H) ─────────────────────────────────────
+    EXECUTION_BROKER: ${EXECUTION_BROKER:-paper}
+    # IBKR (TWS / IB Gateway lives on the host)
+    IB_HOST: ${IB_HOST:-host.docker.internal}
+    IB_PORT: ${IB_PORT:-7497}
+    IB_CLIENT_ID: ${IB_CLIENT_ID:-42}
+    # Alpaca (only used when EXECUTION_BROKER=alpaca)
+    ALPACA_API_KEY: ${ALPACA_API_KEY:-}
+    ALPACA_API_SECRET: ${ALPACA_API_SECRET:-}
+    # ── risk gate caps ─────────────────────────────────────────────────
+    PAPER_CASH: ${PAPER_CASH:-100000}
+    RISK_MAX_ORDER_QTY: ${RISK_MAX_ORDER_QTY:-1000}
+    RISK_MAX_POSITION_NOTIONAL: ${RISK_MAX_POSITION_NOTIONAL:-50000}
+    RISK_MAX_DRAWDOWN_PCT: ${RISK_MAX_DRAWDOWN_PCT:-20}
+    RISK_MAX_DAILY_LOSS_PCT: ${RISK_MAX_DAILY_LOSS_PCT:-5}
+    # ── optional LLM (boss + improvement mutator) ──────────────────────
+    GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    # ── optional terminal data sources (Phase F) ───────────────────────
+    FMP_API_KEY: ${FMP_API_KEY:-}
+  ports:
+    - "8000:8000"
+  # Linux: extra_hosts gives `host.docker.internal` access to the host
+  # network for IBKR. Docker Desktop (mac/win) maps it automatically.
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  volumes:
+    # Source mount: code changes propagate without rebuilding the image.
+    - ./backend:/app
+    # Persist EVERYTHING the platform writes between restarts:
+    #   _backtests, _execution (panic.lock, orders.jsonl), _telemetry,
+    #   _cache (yfinance parquet + matplotlib font cache), tools/dynamic,
+    #   boss/runs (incl. improvement_tree).
+    - openqwnt-agents:/app/agents
+  healthcheck:
+    test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+    interval: 30s
+    timeout: 5s
+    retries: 3
+    start_period: 15s
+  restart: unless-stopped
 
 services:
-  # ===========================================================================
-  # Backend API - FastAPI with AI Agents
-  # ===========================================================================
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      target: development # Change to 'production' for prod builds
+    <<: *backend-base
     container_name: openqwnt-backend
-    ports:
-      - "8000:8000"
-    environment:
-      # LLM API Keys (override via .env file)
-      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-      # Broker API Keys
-      - IG_API_KEY=${IG_API_KEY:-}
-      - IG_USERNAME=${IG_USERNAME:-}
-      - IG_PASSWORD=${IG_PASSWORD:-}
-      - IG_ACCOUNT_TYPE=${IG_ACCOUNT_TYPE:-DEMO}
-      # Database
-      - DATABASE_URL=sqlite:///./openqwnt.db
-      - CHROMA_PERSIST_DIRECTORY=/app/chroma_db_v2
-      # Environment
-      - ENVIRONMENT=development
-      - LOG_LEVEL=INFO
-    volumes:
-      # Mount source code for hot reloading in development
-      - ./backend:/app
-      # Persist ChromaDB data
-      - openqwnt-chroma-data:/app/chroma_db_v2
-      # Persist SQLite database
-      - openqwnt-db-data:/app/data
-      # Persist logs
-      - openqwnt-logs:/app/logs
-    networks:
-      - openqwnt-network
-    depends_on:
-      - redis
-    restart: unless-stopped
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
-  # ===========================================================================
-  # Frontend - React/Vite (Development)
-  # ===========================================================================
   frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+      target: dev
       args:
-        VITE_MAPBOX_TOKEN: ${VITE_MAPBOX_TOKEN:-}
+        VITE_BACKEND_URL: http://localhost:8000
+    image: openqwnt-frontend:dev
     container_name: openqwnt-frontend
+    environment:
+      # In the browser, the backend URL must be reachable from the host.
+      VITE_BACKEND_URL: http://localhost:8000
     ports:
       - "5173:5173"
-    environment:
-      - VITE_BACKEND_URL=http://backend:8000
-      - VITE_MAPBOX_TOKEN=${VITE_MAPBOX_TOKEN:-}
     volumes:
-      # Mount source for hot reloading
       - ./src:/app/src
       - ./public:/app/public
-      # Exclude node_modules
-      - /app/node_modules
-    networks:
-      - openqwnt-network
+      - ./index.html:/app/index.html
+      - ./vite.config.ts:/app/vite.config.ts
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./tsconfig.app.json:/app/tsconfig.app.json
+      - ./tsconfig.node.json:/app/tsconfig.node.json
+      - ./tailwind.config.ts:/app/tailwind.config.ts
+      - ./postcss.config.js:/app/postcss.config.js
+      # Keep the container's own node_modules — never let the host
+      # version (potentially built for darwin) shadow what `npm ci`
+      # produced inside the image.
+      - openqwnt-frontend-node_modules:/app/node_modules
     depends_on:
-      - backend
-
-  # ===========================================================================
-  # Node.js Orchestrator - Primary API + Workflow Engine
-  # ===========================================================================
-  orchestrator:
-    build:
-      context: ./orchestrator
-      dockerfile: Dockerfile
-      target: development
-    container_name: openqwnt-orchestrator
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=development
-      - PORT=3000
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/strategyflow
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - COMPUTE_SERVICE_URL=http://backend:8000
-      - FRONTEND_URL=http://localhost:5173
-      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret-change-in-production}
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-dev-refresh-secret-change-in-production}
-      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-dev-encryption-key-32-chars-long!}
-      - LOG_LEVEL=info
-    volumes:
-      - ./orchestrator/src:/app/src
-      - ./orchestrator/prisma:/app/prisma
-      - /app/node_modules
-    networks:
-      - openqwnt-network
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      backend:
+        condition: service_started
     restart: unless-stopped
-    healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
 
-  # ===========================================================================
-  # PostgreSQL - Primary Database
-  # ===========================================================================
-  postgres:
-    image: postgres:16-alpine
-    container_name: openqwnt-postgres
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=strategyflow
-    volumes:
-      - openqwnt-postgres-data:/var/lib/postgresql/data
-    networks:
-      - openqwnt-network
-    restart: unless-stopped
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # ===========================================================================
-  # Redis - BullMQ broker, caching, pub/sub
-  # ===========================================================================
-  redis:
-    image: redis:7-alpine
-    container_name: openqwnt-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - openqwnt-redis-data:/data
-    networks:
-      - openqwnt-network
-    restart: unless-stopped
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # ===========================================================================
-  # ChromaDB - Vector database for RAG (Optional standalone)
-  # ===========================================================================
-  # chromadb:
-  #   image: chromadb/chroma:latest
-  #   container_name: openqwnt-chromadb
-  #   ports:
-  #     - "8001:8000"
-  #   volumes:
-  #     - openqwnt-chroma-data:/chroma/chroma
-  #   networks:
-  #     - openqwnt-network
-  #   environment:
-  #     - ANONYMIZED_TELEMETRY=False
-  #   profiles:
-  #     - chromadb
-
-  # ===========================================================================
-  # Nginx - Reverse proxy (Production)
-  # ===========================================================================
-  nginx:
-    image: nginx:alpine
-    container_name: openqwnt-nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-    networks:
-      - openqwnt-network
-    depends_on:
-      - backend
-      - orchestrator
-    profiles:
-      - production
-
-# =============================================================================
-# Networks
-# =============================================================================
-networks:
-  openqwnt-network:
-    driver: bridge
-
-# =============================================================================
-# Volumes - Persistent data storage
-# =============================================================================
 volumes:
-  openqwnt-chroma-data:
+  openqwnt-agents:
     driver: local
-  openqwnt-db-data:
+    name: openqwnt-agents
+  openqwnt-frontend-node_modules:
     driver: local
-  openqwnt-postgres-data:
-    driver: local
-  openqwnt-redis-data:
-    driver: local
-  openqwnt-logs:
-    driver: local
+    name: openqwnt-frontend-node_modules

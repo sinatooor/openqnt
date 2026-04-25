@@ -32,6 +32,7 @@ from .schema import (
 from .panic import PanicService
 from .paper_broker import PaperBroker
 from .alpaca_broker import AlpacaBroker
+from .ibkr_broker import IBKRBroker
 from .risk_gate import RiskConfig, RiskDecision, RiskGate
 from .runner import ExecutionRunner
 
@@ -40,6 +41,7 @@ __all__ = [
     "AlpacaBroker",
     "ExecutionRunner",
     "Fill",
+    "IBKRBroker",
     "Order",
     "OrderSide",
     "OrderStatus",

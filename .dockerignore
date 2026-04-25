@@ -1,76 +1,49 @@
 # =============================================================================
-# Fyer Trading Platform - Docker Ignore
+# Frontend build context. Keep this lean — anything that lands in the
+# build context is uploaded to the daemon on every `docker build`.
 # =============================================================================
 
-# Git
+# Version control
 .git
 .gitignore
+.github
 
 # Node
 node_modules
-npm-debug.log
+npm-debug.log*
 yarn-error.log
-package-lock.json
-yarn.lock
+pnpm-debug.log
 
-# Python
-__pycache__
-*.py[cod]
-*$py.class
-*.so
-.Python
-venv/
-.venv/
-env/
-.env.local
-*.egg-info/
-dist/
-build/
-.pytest_cache/
-.mypy_cache/
+# Build outputs
+dist
+dist-ssr
+build
+.vite
 
-# IDE
-.idea/
-.vscode/
+# IDE / OS
+.idea
+.vscode
+.DS_Store
 *.swp
 *.swo
-.DS_Store
 
-# Testing
-coverage/
-htmlcov/
-.coverage
-
-# Build artifacts
-dist/
-*.log
-
-# Environment files (use docker-compose env vars instead)
-backend/.env
+# Environment
+.env
 .env.local
 .env.*.local
 
-# Database files (will be in volumes)
-*.db
-*.sqlite3
+# Reference dirs (legacy, large)
+openclaw-reference
+n8n-reference
+orchestrator
 
-# ChromaDB (will be in volumes)
-chroma_db/
-chroma_db_v2/
+# Backend tree (the frontend image doesn't need it)
+backend
+agents
+docs
+e2e
 
-# Temporary files
-*.tmp
-*.temp
-
-# Documentation
-*.md
-!README.md
-
-# Tests (optional - comment out if you want to run tests in container)
-tests/
-backend/tests/
-**/test_*.py
-
-# Legacy files
-*_LEGACY*
-old_*
+# Phase result docs / planning
+PLAN.md
+PHASE_*.md
+AUDIT.md

@@ -116,6 +116,10 @@ agent reports byte-for-byte identical numbers.
 
 ## Quick start
 
+Three flavours — pick the one that matches your environment.
+
+### A. Local (no Docker)
+
 ```bash
 # Backend (Python 3.12)
 cd backend
@@ -132,23 +136,73 @@ npm test         # vitest, frontend unit tests
 npm run e2e      # Playwright (needs backend on :8000 + chromium)
 ```
 
-The `agents/` directory and its subfolders are **gitignored**
-intentionally — they're per-user state (run history, broker journal,
-backtest artefacts, dynamic tools). They're created on demand.
+Or use the bundled launcher (uses the `fyer` conda env at
+`/opt/miniconda3/envs/fyer/bin/python` — override with `FYER_PY=...`):
+
+```bash
+scripts/start-all.sh paper        # PaperBroker (no creds needed)
+scripts/start-all.sh ibkr         # routes orders to TWS on 127.0.0.1:7497
+scripts/start-all.sh alpaca       # needs ALPACA_API_{KEY,SECRET}
+```
+
+### B. Docker
+
+Minimal two-service stack — `backend` (FastAPI) + `frontend` (Vite dev
+server). Persists state to a named volume so dynamic tools, order
+journals, telemetry counters, and backtest artefacts survive
+restarts.
+
+```bash
+make docker-up                    # build + start, hot-reload mounted
+make docker-logs                  # tail both services
+make docker-down                  # stop (volumes preserved)
+make docker-test                  # run pytest inside the backend container
+
+# closer-to-prod (frontend on :80, source COPY'd not mounted):
+make docker-prod-up
+```
+
+Behind the scenes: [`docker-compose.yml`](docker-compose.yml) +
+[`docker-compose.prod.yml`](docker-compose.prod.yml). The Postgres /
+Redis / orchestrator / NautilusTrader / TA-Lib / torch baggage from
+the pre-Phase-B compose is gone — Phase B-J persists everything to
+disk under `agents/`.
+
+**IBKR from inside the container.** TWS / IB Gateway runs on the
+*host*, the backend in the *container*. Compose maps
+`host.docker.internal:7497` (auto on Docker Desktop, explicit
+`extra_hosts: host-gateway` for Linux). Set `EXECUTION_BROKER=ibkr` in
+`.env` and the broker selector picks it up:
+
+```bash
+echo 'EXECUTION_BROKER=ibkr' >> .env
+make docker-up
+curl localhost:8000/api/execution/broker/probe   # → {"broker":"ibkr",...}
+```
+
+### State that persists across restarts
+
+The `agents/` directory and its subfolders are **gitignored** —
+they're per-user state. In Docker mode they live in the
+`openqwnt-agents` named volume, in local mode they sit in the repo
+under `agents/`. Created on demand. Wiped only by `make
+docker-clean` (which prompts).
 
 ### Environment variables
 
 | Var | Used for | Default |
 | --- | --- | --- |
-| `GEMINI_API_KEY` | Boss + synthesis + LLM mutator (optional) | unset → heuristic fallback |
+| `EXECUTION_BROKER` | Force a specific broker (`paper` / `ibkr` / `alpaca`) | infer from creds → `paper` |
+| `IB_HOST` / `IB_PORT` / `IB_CLIENT_ID` | TWS connection (Phase H IBKR) | `127.0.0.1` / `7497` / `42` |
 | `ALPACA_API_KEY` / `ALPACA_API_SECRET` | Live broker (Phase H) | unset → PaperBroker |
+| `GEMINI_API_KEY` | Boss + synthesis + LLM mutator (optional) | unset → heuristic fallback |
 | `PAPER_CASH` | Paper-broker starting cash + risk gate's `initial_equity` | 100 000 |
 | `RISK_MAX_ORDER_QTY` | Hard order-size cap | 1 000 |
 | `RISK_MAX_POSITION_NOTIONAL` | Per-symbol notional cap | 50 000 |
 | `RISK_MAX_DRAWDOWN_PCT` | Halt threshold vs peak equity | 20 |
 | `RISK_MAX_DAILY_LOSS_PCT` | Halt threshold vs day-open equity | 5 |
 | `FMP_API_KEY` | RMAP peers + DES fundamentals | optional |
-| `VITE_BACKEND_URL` | Frontend base URL | `http://localhost:8000` |
+| `VITE_BACKEND_URL` | Frontend base URL (compiled into the bundle) | `http://localhost:8000` |
 
 ---
 

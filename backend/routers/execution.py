@@ -27,6 +27,7 @@ from pydantic import BaseModel, Field
 from execution import (
     AlpacaBroker,
     ExecutionRunner,
+    IBKRBroker,
     OrderSide,
     OrderType,
     PanicService,
@@ -35,6 +36,7 @@ from execution import (
     RiskGate,
 )
 from execution.alpaca_broker import alpaca_creds_present
+from execution.ibkr_broker import ibkr_creds_present
 
 router = APIRouter(prefix="/api/execution", tags=["execution"])
 
@@ -43,12 +45,33 @@ router = APIRouter(prefix="/api/execution", tags=["execution"])
 
 
 def _build_runner() -> ExecutionRunner:
-    if alpaca_creds_present():
+    """Broker selection priority:
+        EXECUTION_BROKER=paper          → PaperBroker (forces offline even
+                                          if Alpaca/IB env is set)
+        EXECUTION_BROKER=ibkr           → IBKRBroker (TWS / IB Gateway)
+        EXECUTION_BROKER=alpaca + creds → AlpacaBroker
+        ALPACA_API_KEY/SECRET set       → AlpacaBroker
+        otherwise                       → PaperBroker (offline default)
+    Any failure falls back to PaperBroker so a missing TWS / wrong key
+    doesn't take the whole execution surface down.
+    """
+    explicit = os.getenv("EXECUTION_BROKER", "").lower()
+    broker = None
+    if explicit != "paper":
         try:
-            broker = AlpacaBroker()
-        except Exception:
-            broker = PaperBroker(initial_cash=float(os.getenv("PAPER_CASH", "100000")))
-    else:
+            if explicit == "ibkr" or ibkr_creds_present():
+                broker = IBKRBroker()
+                broker.connect()
+            elif explicit == "alpaca" or alpaca_creds_present():
+                broker = AlpacaBroker()
+        except Exception as e:
+            # Connection failed at startup — log and fall through to paper.
+            import logging
+            logging.getLogger(__name__).warning(
+                "broker init failed (%s) — falling back to PaperBroker", e,
+            )
+            broker = None
+    if broker is None:
         broker = PaperBroker(initial_cash=float(os.getenv("PAPER_CASH", "100000")))
     gate = RiskGate(RiskConfig(
         max_order_qty=float(os.getenv("RISK_MAX_ORDER_QTY", "1000")),
@@ -82,6 +105,29 @@ async def get_account() -> dict[str, Any]:
         "halt_reason": runner().gate.halt_reason(),
         "panic": PanicService.status(),
         **snap.to_dict(),
+    }
+
+
+@router.get("/broker/probe")
+async def broker_probe() -> dict[str, Any]:
+    """Cheap connectivity check — useful for an "IBKR connected" pill in
+    the UI. Pulls a trivial AAPL quote; returns latency + whatever
+    broker is currently active."""
+    import time
+    b = runner().broker
+    t0 = time.time()
+    px: float | None = None
+    error: str | None = None
+    try:
+        px = b.quote("AAPL")
+    except Exception as e:
+        error = f"{type(e).__name__}: {e}"
+    return {
+        "broker": b.name,
+        "ok": px is not None and px > 0,
+        "quote_aapl": px,
+        "latency_ms": int((time.time() - t0) * 1000),
+        "error": error,
     }
 
 
