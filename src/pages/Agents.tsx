@@ -15,6 +15,7 @@
  */
 
 import { useEffect, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -48,7 +49,7 @@ const Agents = () => {
   const navigate = useNavigate();
   const { id: urlId } = useParams<{ id: string }>();
 
-  const agents = useAgentMonitorStore(selectAgents);
+  const agents = useAgentMonitorStore(useShallow(selectAgents));
   const selectedAgentId = useAgentMonitorStore((s) => s.selectedAgentId);
   const selectAgent = useAgentMonitorStore((s) => s.selectAgent);
 

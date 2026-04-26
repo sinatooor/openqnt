@@ -6,6 +6,7 @@
  */
 
 import { memo, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { Link } from 'react-router-dom';
 import { Loader2, Play, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -26,7 +27,7 @@ interface AgentListProps {
 }
 
 export const AgentList = memo(({ selectedId, onSelect, onRun }: AgentListProps) => {
-  const agents = useAgentMonitorStore(selectAgents);
+  const agents = useAgentMonitorStore(useShallow(selectAgents));
 
   // Group by source so canvas agents sit above legacy ones.
   const grouped = useMemo(() => {
@@ -137,10 +138,18 @@ const AgentRow = memo(({ id, selected, onSelect, onRun }: AgentRowProps) => {
   const running = activeRun?.status === 'running' || isAgentRunning(id);
 
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onSelect(id)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect(id);
+        }
+      }}
       className={cn(
-        'group w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors border',
+        'group w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors border cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-white/20',
         selected
           ? 'bg-white/[0.06] border-white/10'
           : 'bg-transparent border-transparent hover:bg-white/[0.03] hover:border-white/5'
@@ -187,7 +196,7 @@ const AgentRow = memo(({ id, selected, onSelect, onRun }: AgentRowProps) => {
       >
         {running ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
       </button>
-    </button>
+    </div>
   );
 });
 

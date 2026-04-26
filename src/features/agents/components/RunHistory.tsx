@@ -4,6 +4,7 @@
  */
 
 import { memo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
@@ -21,7 +22,7 @@ interface RunHistoryProps {
 }
 
 export const RunHistory = memo(({ agentId, activeRunId, onSelectRun }: RunHistoryProps) => {
-  const runs = useAgentMonitorStore(selectAgentRuns(agentId));
+  const runs = useAgentMonitorStore(useShallow(selectAgentRuns(agentId)));
 
   if (runs.length === 0) {
     return (
