@@ -87,6 +87,7 @@ services:
     environment:
       # In the browser, the backend URL must be reachable from the host.
       VITE_BACKEND_URL: http://localhost:8000
+      VITE_MAPBOX_TOKEN: ${VITE_MAPBOX_TOKEN}
     ports:
       - "5173:5173"
     volumes:

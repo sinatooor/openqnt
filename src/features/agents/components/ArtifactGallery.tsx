@@ -4,6 +4,7 @@
  */
 
 import { memo, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import {
   Image as ImageIcon,
   FileText,
@@ -21,7 +22,7 @@ interface ArtifactGalleryProps {
 }
 
 export const ArtifactGallery = memo(({ agentId }: ArtifactGalleryProps) => {
-  const artifacts = useAgentMonitorStore(selectAgentArtifacts(agentId));
+  const artifacts = useAgentMonitorStore(useShallow(selectAgentArtifacts(agentId)));
   const [focused, setFocused] = useState<Artifact | null>(null);
 
   if (artifacts.length === 0) {
