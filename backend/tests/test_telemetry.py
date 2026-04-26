@@ -23,7 +23,17 @@ from telemetry.counters import SNAPSHOT_FILE, TELEMETRY_DIR
 
 
 @pytest.fixture(autouse=True)
-def _clean_telemetry():
+def _clean_telemetry(tmp_path, monkeypatch):
+    """Reset telemetry counters and route any AgentRunContext storage
+    that the hook tests create into the test's tmpdir, so we don't drop
+    `agents/quants/<test_id>/` directories into the working tree.
+    """
+    # Redirect agent-runtime storage to a tmpdir for the duration of
+    # the test. AGENTS_ROOT is module-level in agent_runtime.storage.
+    from agent_runtime import storage as ag_storage
+    monkeypatch.setattr(ag_storage, "AGENTS_ROOT", tmp_path / "agents")
+    monkeypatch.setattr(ag_storage, "QUANTS_DIR", tmp_path / "agents" / "quants")
+
     if TELEMETRY_DIR.exists():
         shutil.rmtree(TELEMETRY_DIR)
     reset()

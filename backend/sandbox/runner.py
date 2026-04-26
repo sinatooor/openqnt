@@ -46,12 +46,38 @@ _MPL_CACHE = (Path(__file__).resolve().parents[2]
 
 
 def _warm_mpl_cache_once() -> None:
+    """Build matplotlib's font cache at our target path, in a clean
+    subprocess.
+
+    Why a subprocess: matplotlib reads `MPLCONFIGDIR` from the env on
+    its first import and caches that value forever. If anything in the
+    parent (e.g. `backtest/plot.py`) imported matplotlib before we got
+    a chance to set the env var, the parent's `font_manager.FontManager()`
+    builds the cache in the *wrong* directory and our setdefault is a
+    silent no-op.
+
+    Spawning a fresh `python -c` with a clean env avoids the ordering
+    problem entirely. The result is a `fontlist-vXXX.json` at our path
+    that every sandbox child inherits. Pure side-effect, no return.
+    """
     try:
         _MPL_CACHE.mkdir(parents=True, exist_ok=True)
-        os.environ.setdefault("MPLCONFIGDIR", str(_MPL_CACHE))
-        os.environ.setdefault("MPLBACKEND", "Agg")
-        import matplotlib  # noqa: F401
-        from matplotlib import font_manager  # noqa: F401
+        if any(_MPL_CACHE.glob("fontlist-*.json")):
+            return  # already warm
+        env = {
+            "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+            "HOME": os.environ.get("HOME", "/tmp"),  # macOS font scan needs the user's home
+            "MPLCONFIGDIR": str(_MPL_CACHE),
+            "MPLBACKEND": "Agg",
+        }
+        subprocess.run(
+            [_PYTHON, "-c",
+             "from matplotlib import font_manager; font_manager.FontManager()"],
+            env=env,
+            check=False,
+            timeout=30,
+            capture_output=True,
+        )
     except Exception:
         # Telemetry-style: never break a request because of cache prep.
         pass

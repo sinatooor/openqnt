@@ -135,7 +135,7 @@ class ApiClient {
     // Convenience methods for common endpoints
 
     async healthCheck() {
-        return this.get<{ status: string }>("/api/health");
+        return this.get<{ status: string }>("/health");
     }
 
     async runBacktest(params: any) {
@@ -343,15 +343,28 @@ class ApiClient {
         onEvent?: (event: AiChatEvent) => void,
         signal?: AbortSignal,
     ): { cancel: () => void } {
-        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+        const baseUrl = this.baseUrl;
         const controller = new AbortController();
         const combinedSignal = signal || controller.signal;
 
+        const authHeaders: Record<string, string> = {};
+        try {
+            const authState = JSON.parse(localStorage.getItem('strategyflow-auth') || '{}');
+            if (authState?.state?.accessToken) {
+                authHeaders['Authorization'] = `Bearer ${authState.state.accessToken}`;
+            }
+        } catch {
+            // no-op
+        }
+
         (async () => {
             try {
-                const response = await fetch(`${backendUrl}/api/ai-assistant/chat/stream`, {
+                const response = await fetch(`${baseUrl}/api/ai-assistant/chat/stream`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...authHeaders,
+                    },
                     body: JSON.stringify({ message, history, context }),
                     signal: combinedSignal,
                 });

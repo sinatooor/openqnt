@@ -72,6 +72,24 @@ docker-prod-up:	## bring up the prod-shaped stack (frontend on :80, no source mo
 docker-prod-down:	## stop the prod-shaped stack
 	docker compose -f docker-compose.yml -f docker-compose.prod.yml down
 
+# ── docker (full stack: frontend + backend + orchestrator + redis + postgres) ──
+.PHONY: docker-full-up
+docker-full-up:	## bring up full stack incl. orchestrator + redis + postgres
+	docker compose -f docker-compose.yml -f docker-compose.full.yml up --build -d
+	@echo
+	@echo "  frontend      → http://localhost:5173"
+	@echo "  backend       → http://localhost:8000   (docs at /docs)"
+	@echo "  orchestrator  → http://localhost:3000   (health at /health)"
+	@echo "  logs          : make docker-full-logs"
+
+.PHONY: docker-full-down
+docker-full-down:	## stop full stack (volumes preserved)
+	docker compose -f docker-compose.yml -f docker-compose.full.yml down
+
+.PHONY: docker-full-logs
+docker-full-logs:	## tail logs from full stack services
+	docker compose -f docker-compose.yml -f docker-compose.full.yml logs -f --tail=120
+
 # ── safe nukes ────────────────────────────────────────────────────────
 .PHONY: docker-clean
 docker-clean:	## drop containers + named volumes (state under agents/ is LOST)

@@ -1,3 +1,0 @@
-{"id": "evt_565244bd06", "agentId": "emit_test", "runId": "run_37870cdc63", "kind": "tool_call", "ts": 1777075007989, "toolName": "dummy.tool", "toolInput": {"x": 1}, "toolStatus": "pending"}
-{"id": "evt_924c615503", "agentId": "emit_test", "runId": "run_37870cdc63", "kind": "tool_result", "ts": 1777075007989, "parentEventId": "evt_565244bd06", "toolName": "dummy.tool", "toolStatus": "success", "toolOutput": "done"}
-{"id": "evt_3b30941c6b", "agentId": "emit_test", "runId": "run_37870cdc63", "kind": "status", "ts": 1777075007990, "text": "ok", "runStatus": "success"}

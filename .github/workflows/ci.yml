@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs on the same branch (saves CI minutes on noisy PRs).
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Frontend: lint + typecheck + vitest ─────────────────────────────────
+  frontend:
+    name: Frontend (lint · typecheck · vitest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Lint
+        run: npm run lint
+
+      # Full typecheck — every legacy error from before Phase B-J was
+      # cleaned up at the end of Phase J, so this now gates on zero
+      # errors across the whole tree.
+      - name: Typecheck
+        run: npx tsc --noEmit -p tsconfig.app.json
+
+      - name: Unit tests (vitest)
+        # Vitest runs whatever .test.ts(x) lives under src/. If there are
+        # zero tests it still exits 0; we accept that as "no regressions".
+        run: npm test -- --run --reporter=verbose
+
+  # ── Backend: pytest including Phase D canonical reference ──────────────
+  backend:
+    name: Backend (pytest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
+
+      - name: System deps for TA-Lib
+        # backtesting.py + numpy + matplotlib don't need anything; TA-Lib
+        # used by some indicators wants the C library. Use the prebuilt
+        # binary from Conda's mirror to skip a 5-minute compile.
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y --no-install-recommends \
+            wget build-essential
+          wget -q https://github.com/ta-lib/ta-lib/releases/download/v0.6.4/ta-lib_0.6.4_amd64.deb
+          sudo dpkg -i ta-lib_0.6.4_amd64.deb || sudo apt-get install -fy
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Install only what the Phase B-I tests need so CI stays fast.
+          pip install \
+            fastapi uvicorn[standard] httpx pydantic python-dotenv \
+            pandas numpy matplotlib pyarrow \
+            backtesting yfinance pytest pytest-asyncio
+
+      - name: Show interpreter info
+        run: python -c "import sys, platform; print(sys.version); print(platform.platform())"
+
+      # Phase D canonical reference — pinned SMA(50/200) on SPY 2010-2023.
+      # Catches any backtest-engine regression before anything else runs.
+      - name: Phase D · canonical backtest reference
+        run: pytest tests/test_backtest_reference.py -q
+
+      - name: Phase E · RSI template (validate + canonical engine)
+        run: pytest tests/test_rsi_template.py -q
+
+      - name: Phase G · sandbox + dynamic tools
+        run: pytest tests/test_dynamic_tools.py -q
+
+      - name: Phase H · execution path
+        run: pytest tests/test_execution.py -q
+
+      - name: Phase I · self-improvement loop
+        run: pytest tests/test_improvement.py -q

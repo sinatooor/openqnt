@@ -82,6 +82,7 @@ export type ActionType =
   | 'notification'   // Send alert
   | 'options_order'  // Options trading order
   | 'portfolio_rebalance' // Rebalance portfolio
+  | 'phoneCall'      // Outbound phone call (e.g. urgent risk alert)
   | 'log';           // Log to console
 
 export type OrderDirection = 'long' | 'short';
@@ -193,6 +194,15 @@ export interface ActionNodeData extends BaseNodeData {
   // Notification specific
   message?: string;
   channel?: 'email' | 'sms' | 'telegram' | 'discord';
+  // Phone-call specific (Twilio Voice action)
+  phoneNumber?: string;
+  voiceType?: 'alice' | 'man' | 'woman' | 'Polly.Joanna';
+  urgencyLevel?: 'low' | 'medium' | 'high';
+  // Stop/TP distance modes
+  stopDistance?: 'percent' | 'atr_multiple';
+  stopPercent?: number;
+  profitDistance?: 'percent' | 'atr_multiple';
+  profitPercent?: number;
 }
 
 // Environment Node Data
