@@ -69,7 +69,12 @@ export const PortfolioNode = memo(({ id, data, selected }: NodeProps) => {
   return (
     <StrategyBaseNode
       id={id}
-      data={nodeData}
+      // The local `PortfolioNodeData` interface above is intentionally
+      // looser than the shared union in types.ts (legacy node — uses
+      // optional fields + an open index signature). Cast at the
+      // boundary to avoid the union-narrowing error against the strict
+      // `StrategyNodeData` shape.
+      data={nodeData as any}
       selected={selected}
       nodeType="portfolio"
       subType={nodeData.portfolioAction}

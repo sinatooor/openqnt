@@ -536,7 +536,12 @@ export const STRATEGY_TEMPLATES: StrategyTemplate[] = [
         id: 'buy-put',
         type: 'action',
         position: { x: 600, y: 180 },
-        data: { label: 'Buy Put', actionType: 'options_order', optionType: 'put', direction: 'buy', strike: 'OTM', size: 1 },
+        // `direction: 'buy'` reads naturally for an options template
+        // ("buy a put") but the shared `OrderDirection` union only
+        // accepts 'long' | 'short'. Cast keeps the template literal
+        // readable without forcing a vocab change on every options
+        // template.
+        data: { label: 'Buy Put', actionType: 'options_order', optionType: 'put', direction: 'buy', strike: 'OTM', size: 1 } as any,
       },
     ],
     edges: [
@@ -563,13 +568,13 @@ export const STRATEGY_TEMPLATES: StrategyTemplate[] = [
         id: 'buy-put',
         type: 'action',
         position: { x: 350, y: 80 },
-        data: { label: 'Buy Protective Put', actionType: 'options_order', optionType: 'put', direction: 'buy', strike: 'OTM', size: 1 },
+        data: { label: 'Buy Protective Put', actionType: 'options_order', optionType: 'put', direction: 'buy', strike: 'OTM', size: 1 } as any,
       },
       {
         id: 'sell-call',
         type: 'action',
         position: { x: 350, y: 220 },
-        data: { label: 'Sell Covered Call', actionType: 'options_order', optionType: 'call', direction: 'sell', strike: 'OTM', size: 1 },
+        data: { label: 'Sell Covered Call', actionType: 'options_order', optionType: 'call', direction: 'sell', strike: 'OTM', size: 1 } as any,
       },
     ],
     edges: [

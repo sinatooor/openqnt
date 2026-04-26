@@ -147,26 +147,28 @@ scripts/start-all.sh alpaca       # needs ALPACA_API_{KEY,SECRET}
 
 ### B. Docker
 
-Minimal two-service stack — `backend` (FastAPI) + `frontend` (Vite dev
-server). Persists state to a named volume so dynamic tools, order
-journals, telemetry counters, and backtest artefacts survive
-restarts.
+Three compose stacks for three needs:
+
+| Goal | Command | Services up |
+| --- | --- | --- |
+| Just the agents + backtest engine + dashboards | `make docker-up` | `backend` (8000) + `frontend` (5173) |
+| Same + the visual builder's compile/execute path | `make docker-full-up` | adds `orchestrator` (3000) + `postgres` (5432) + `redis` (6379) |
+| Closer-to-prod build (frontend on :80, no source mounts) | `make docker-prod-up` | `backend` + `frontend` (nginx) |
 
 ```bash
-make docker-up                    # build + start, hot-reload mounted
-make docker-logs                  # tail both services
-make docker-down                  # stop (volumes preserved)
-make docker-test                  # run pytest inside the backend container
-
-# closer-to-prod (frontend on :80, source COPY'd not mounted):
-make docker-prod-up
+make docker-up           # minimal — most users want this
+make docker-full-up      # everything (the original n8n-style stack + agents)
+make docker-logs         # tail (full stack: docker-full-logs)
+make docker-down         # stop (volumes preserved; full stack: docker-full-down)
+make docker-test         # run pytest inside the backend container
 ```
 
-Behind the scenes: [`docker-compose.yml`](docker-compose.yml) +
-[`docker-compose.prod.yml`](docker-compose.prod.yml). The Postgres /
-Redis / orchestrator / NautilusTrader / TA-Lib / torch baggage from
-the pre-Phase-B compose is gone — Phase B-J persists everything to
-disk under `agents/`.
+Behind the scenes:
+- [`docker-compose.yml`](docker-compose.yml) — the slim default (backend + frontend, persists `agents/`).
+- [`docker-compose.full.yml`](docker-compose.full.yml) — overlay that adds the orchestrator + Postgres + Redis. The orchestrator is the Node.js workflow engine that powers the strategy-flow canvas's compile + execute path and the legacy broker connectors. The Phase B-J Python backend doesn't need it; the visual-builder UI does.
+- [`docker-compose.prod.yml`](docker-compose.prod.yml) — overlay flipping both targets to `prod` (no source mounts, frontend served by nginx on :80).
+
+Persistence: every state path lives under the `openqwnt-agents` named volume so dynamic tools, order journals, telemetry counters, and backtest artefacts survive `docker compose down`. Postgres + Redis have their own named volumes (`openqwnt-postgres-data`, `openqwnt-redis-data`).
 
 **IBKR from inside the container.** TWS / IB Gateway runs on the
 *host*, the backend in the *container*. Compose maps

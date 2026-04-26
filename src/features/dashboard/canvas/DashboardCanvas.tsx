@@ -3,6 +3,7 @@ import {
   ResponsiveGridLayout,
   useContainerWidth,
   type Layout,
+  type LayoutItem,
   type ResponsiveLayouts,
 } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
@@ -26,6 +27,10 @@ export default function DashboardCanvas() {
 
   const { width, containerRef, mounted } = useContainerWidth({ initialWidth: 1200 });
 
+  // `Layout` from react-grid-layout is `readonly LayoutItem[]` (an array
+  // of grid cells). Each cell is a `LayoutItem` with `i`, `x`, `y`, `w`,
+  // `h`, etc. Older code here used `Layout` as if it were a single cell
+  // — fixed by importing `LayoutItem` for the cell-level operations.
   const handleLayoutChange = useCallback(
     (currentLayout: Layout, _allLayouts: ResponsiveLayouts) => {
       updateLayout(currentLayout);
@@ -36,9 +41,9 @@ export default function DashboardCanvas() {
   const layouts = useMemo<ResponsiveLayouts>(
     () => ({
       lg: layout,
-      md: layout.map((l) => ({ ...l, w: Math.min(l.w, 10) })),
-      sm: layout.map((l) => ({ ...l, w: 6, x: 0 })),
-      xs: layout.map((l) => ({ ...l, w: 4, x: 0 })),
+      md: layout.map((l: LayoutItem) => ({ ...l, w: Math.min(l.w, 10) })),
+      sm: layout.map((l: LayoutItem) => ({ ...l, w: 6, x: 0 })),
+      xs: layout.map((l: LayoutItem) => ({ ...l, w: 4, x: 0 })),
     }),
     [layout],
   );

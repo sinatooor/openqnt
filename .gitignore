@@ -1,50 +1,96 @@
+# =============================================================================
 # Logs
-logs
+# =============================================================================
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-.env
 
-node_modules
-dist
-dist-ssr
+# =============================================================================
+# Environment files (never commit secrets)
+# =============================================================================
+.env
+.env.local
+.env.*.local
+backend/.env
+
+# =============================================================================
+# Node
+# =============================================================================
+node_modules/
+dist/
+dist-ssr/
+.vite/
 *.local
 
-# Editor directories and files
-.agent/*
-.bmad/*
-.claude/*
-.cursor/*
-.github/*
+# =============================================================================
+# Python
+# =============================================================================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+*.so
+.Python
+venv/
+.venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+backend/venv/
+
+# =============================================================================
+# Per-user state — written by the platform, never committed
+# (was accidentally tracked before; cleaned up via `git rm --cached`)
+# =============================================================================
+agents/
+
+# =============================================================================
+# Databases
+# =============================================================================
+*.db
+*.sqlite
+*.sqlite3
+
+# =============================================================================
+# Editor / IDE
+# =============================================================================
+.idea/
 .vscode/*
-docs/*
 !.vscode/extensions.json
-.idea
+.agent/
+.bmad/
+.claude/
+.cursor/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-prompts.docsbackend/.env
-backend/.env
-backend/venv/
-__pycache__/
-*.pyc
-*.db
-*.sqlite
 
-Backend/twsapi_ib
-
-
+# =============================================================================
+# Reference / vendored trees (large, not part of the build)
+# =============================================================================
 n8n-reference/
 openclaw-reference/
+backend/twsapi_ib/
 
-# Generated test artifacts
+# =============================================================================
+# One-off generated artifacts
+# =============================================================================
 test_nautilus_chart.html
-.env
-.env
-.env
+test-results/
+playwright-report/
+
+# =============================================================================
+# Things we DO want tracked but the old gitignore was hiding:
+#   - .github/   (CI workflows)
+#   - docs/      (architecture.md, template docs)
+# Make sure no stray rules above re-exclude them.
+# =============================================================================

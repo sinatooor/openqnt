@@ -17,7 +17,10 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Map, {
+// Aliased to `MapboxMap` because the default name `Map` shadows the
+// global `Map` constructor — `new Map<K, V>()` below would otherwise
+// resolve to the React component and fail to compile.
+import MapboxMap, {
   Source,
   Layer,
   Popup,
@@ -25,7 +28,7 @@ import Map, {
   ScaleControl,
   type MapRef,
   type ViewStateChangeEvent,
-  type MapLayerMouseEvent,
+  type MapMouseEvent as MapLayerMouseEvent,
 } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './bmap.css';
@@ -731,7 +734,7 @@ export default function BmapView() {
       />
 
       <div className="bmap-mapwrap">
-        <Map
+        <MapboxMap
           ref={mapRef}
           {...viewState}
           onMove={(e: ViewStateChangeEvent) => setViewState(e.viewState)}
@@ -1157,7 +1160,7 @@ export default function BmapView() {
               <div dangerouslySetInnerHTML={{ __html: popupInfo.html }} />
             </Popup>
           )}
-        </Map>
+        </MapboxMap>
 
         {/* Top overlay - summary ticker */}
         <div className="bmap-overlay-top">

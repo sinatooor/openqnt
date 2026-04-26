@@ -36,7 +36,10 @@ export * from './sheet';
 export * from './sidebar';
 export * from './skeleton';
 export * from './slider';
-export * from './sonner';
+// `sonner` and the radix-based `toast` / `toaster` both export a `Toaster`
+// (and `sonner` exports `toast`). Disambiguate by re-exporting the sonner
+// symbols under aliases — most consumers want the radix Toaster.
+export { Toaster as SonnerToaster, toast as sonnerToast } from './sonner';
 export * from './switch';
 export * from './table';
 export * from './tabs';

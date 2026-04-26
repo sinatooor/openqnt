@@ -9,7 +9,7 @@
 ARG NODE_VERSION=20
 
 # ── deps (separate so npm install caches well) ──────────────────────────
-FROM node:${NODE_VERSION}-alpine AS deps
+FROM node:${NODE_VERSION}-bookworm-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
 # `npm ci` if a lockfile is present, otherwise `npm install`.
@@ -17,10 +17,20 @@ RUN if [ -f package-lock.json ]; then \
       npm ci --no-audit --no-fund; \
     else \
       npm install --no-audit --no-fund; \
-    fi
+    fi \
+    && arch="$(dpkg --print-architecture)" \
+    && case "$arch" in \
+      arm64) npm install --no-audit --no-fund --no-save \
+        @rollup/rollup-linux-arm64-gnu \
+        @swc/core-linux-arm64-gnu ;; \
+      amd64) npm install --no-audit --no-fund --no-save \
+        @rollup/rollup-linux-x64-gnu \
+        @swc/core-linux-x64-gnu ;; \
+      *) echo "Skipping native package preinstall for unsupported architecture: $arch" ;; \
+    esac
 
 # ── dev target ──────────────────────────────────────────────────────────
-FROM node:${NODE_VERSION}-alpine AS dev
+FROM node:${NODE_VERSION}-bookworm-slim AS dev
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -30,12 +40,12 @@ EXPOSE 5173
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173", "--strictPort"]
 
 # ── builder ─────────────────────────────────────────────────────────────
-FROM node:${NODE_VERSION}-alpine AS builder
+FROM node:${NODE_VERSION}-bookworm-slim AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ARG VITE_BACKEND_URL=http://localhost:8000
-ARG VITE_MAPBOX_TOKEN=
+ARG VITE_MAPBOX_TOKEN=***REMOVED***
 ENV VITE_BACKEND_URL=$VITE_BACKEND_URL \
     VITE_MAPBOX_TOKEN=$VITE_MAPBOX_TOKEN
 RUN npm run build

@@ -28,6 +28,11 @@ const categoryColors: Record<NodeCategory, string> = {
   risk: 'bg-red-500/20 border-red-500/50 text-red-400',
   tradeInfo: 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400',
   llm: 'bg-purple-500/20 border-purple-500/50 text-purple-400',
+  triggers: 'bg-orange-500/20 border-orange-500/50 text-orange-400',
+  integrations: 'bg-fuchsia-500/20 border-fuchsia-500/50 text-fuchsia-400',
+  pineScript: 'bg-blue-600/20 border-blue-600/50 text-blue-300',
+  portfolio: 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400',
+  agents: 'bg-purple-600/20 border-purple-600/50 text-purple-300',
 };
 
 const categoryLabels: Record<NodeCategory, string> = {
@@ -41,6 +46,11 @@ const categoryLabels: Record<NodeCategory, string> = {
   risk: '🛡️ Risk',
   tradeInfo: '📈 Trade Info',
   llm: '✨ LLM',
+  triggers: '⏰ Triggers',
+  integrations: '🔌 Integrations',
+  pineScript: '📜 Pine Script',
+  portfolio: '💼 Portfolio',
+  agents: '🤖 Agents',
 };
 
 export const NodePalette = memo(({ isOpen, onClose }: NodePaletteProps) => {
@@ -82,6 +92,11 @@ export const NodePalette = memo(({ isOpen, onClose }: NodePaletteProps) => {
       risk: [],
       tradeInfo: [],
       llm: [],
+      triggers: [],
+      integrations: [],
+      pineScript: [],
+      portfolio: [],
+      agents: [],
     };
     filteredNodes.forEach((n) => groups[n.category].push(n));
     return groups;

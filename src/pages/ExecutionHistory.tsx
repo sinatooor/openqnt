@@ -10,8 +10,6 @@ import {
     ArrowRight,
     AlertTriangle,
     Zap,
-    DashboardOutlined,
-    CodeOutlined,
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';

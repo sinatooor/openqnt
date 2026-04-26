@@ -1,17 +1,21 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Layout } from 'react-grid-layout';
+// `Layout` from react-grid-layout is the *array* type (`readonly
+// LayoutItem[]`). Each grid cell is a `LayoutItem` (`{ i, x, y, w, h, ... }`).
+// Older code in this file imported `Layout` and used `Layout[]` — that
+// resolved to `(readonly LayoutItem[])[]`, hence the type errors.
+import type { LayoutItem } from 'react-grid-layout';
 
 export interface DashboardState {
-  layout: Layout[];
+  layout: LayoutItem[];
   widgetTypes: Record<string, string>; // maps layout item "i" → widget type id
   addWidget: (type: string) => void;
   removeWidget: (id: string) => void;
-  updateLayout: (layout: Layout[]) => void;
+  updateLayout: (layout: readonly LayoutItem[]) => void;
   resetToDefault: () => void;
 }
 
-const defaultLayout: Layout[] = [
+const defaultLayout: LayoutItem[] = [
   // Row 1: indices + heatmap + top movers
   { i: '1', x: 0, y: 0, w: 3, h: 5, minW: 3, minH: 3 },
   { i: '2', x: 3, y: 0, w: 6, h: 5, minW: 4, minH: 3 },
@@ -60,7 +64,7 @@ export const useDashboardStore = create<DashboardState>()(
             widgetTypes: rest,
           };
         }),
-      updateLayout: (layout) => set({ layout }),
+      updateLayout: (layout) => set({ layout: [...layout] }),
       resetToDefault: () =>
         set({ layout: defaultLayout, widgetTypes: defaultWidgetTypes }),
     }),

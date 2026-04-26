@@ -17,6 +17,7 @@ import credentialsRouter from './api/routes/credentials.js';
 import notificationsRouter from './api/routes/notifications.js';
 import portfolioRouter from './api/routes/portfolio.js';
 import aiRouter from './api/routes/ai.js';
+import aiAssistantRouter from './api/routes/aiAssistant.js';
 import webhooksRouter from './api/routes/webhooks.js';
 import researchRouter from './api/routes/research.js';
 import dataSourcesRouter from './api/routes/dataSources.js';
@@ -79,6 +80,7 @@ export function createApp() {
     app.use('/api/notifications', notificationsRouter);
     app.use('/api/portfolio', portfolioRouter);
     app.use('/api/ai', aiRouter);
+    app.use('/api/ai-assistant', aiAssistantRouter);
     app.use('/api/webhooks', webhooksRouter);
     app.use('/api/research', researchRouter);
     app.use('/api/data-sources', dataSourcesRouter);

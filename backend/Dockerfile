@@ -49,7 +49,9 @@ RUN pip install \
     httpx==0.27.* \
     python-dotenv==1.* \
     python-multipart==0.0.* \
-    websockets==12.* \
+    websockets==14.* \
+    sqlalchemy==2.* \
+    aiosqlite==0.20.* \
     # data + charts
     pandas==2.* \
     numpy==1.* \

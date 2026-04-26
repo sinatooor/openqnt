@@ -29,6 +29,15 @@ const categoryColors: Record<NodeCategory, string> = {
   environment: 'border-l-blue-500',
   variables: 'border-l-pink-500',
   control: 'border-l-slate-500',
+  math: 'border-l-teal-500',
+  risk: 'border-l-red-500',
+  tradeInfo: 'border-l-cyan-500',
+  llm: 'border-l-purple-500',
+  triggers: 'border-l-orange-500',
+  integrations: 'border-l-fuchsia-500',
+  pineScript: 'border-l-blue-600',
+  portfolio: 'border-l-yellow-500',
+  agents: 'border-l-purple-600',
 };
 
 export const PropertyPanel = memo(({ node, onClose }: PropertyPanelProps) => {
