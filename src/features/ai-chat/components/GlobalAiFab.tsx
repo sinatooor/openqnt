@@ -201,11 +201,17 @@ export function GlobalAiFab() {
                     transition={{ type: 'spring', stiffness: 320, damping: 22 }}
                     onClick={() => toggle()}
                     aria-label="AI quant"
-                    className="group fixed bottom-5 right-5 z-[450] w-12 h-12 rounded-full overflow-hidden ring-1 ring-foreground/10 shadow-lg shadow-black/20 hover:shadow-black/30 transition-shadow flex items-center justify-center"
+                    className="group fixed bottom-5 right-5 z-[450] w-12 h-12 rounded-full ring-1 ring-foreground/10 shadow-lg shadow-black/20 hover:shadow-black/30 transition-shadow flex items-center justify-center"
                 >
-                    {/* Halftone canvas — masks the OpenQnt glyph as dots that
-                       expand toward the cursor with an eased falloff. */}
-                    <HalftoneCanvas bg={bg} fg={fg} />
+                    {/* Round-clip wrapper for the canvas — kept on the inner
+                       element so the tooltip can escape the button bounds
+                       without being cropped. */}
+                    <span className="absolute inset-0 rounded-full overflow-hidden">
+                        {/* Halftone canvas — masks the OpenQnt glyph as dots
+                           that expand toward the cursor with an eased
+                           falloff. */}
+                        <HalftoneCanvas bg={bg} fg={fg} />
+                    </span>
 
                     {/* Inset ring keeps the round mask reading as a button */}
                     <span
@@ -214,10 +220,10 @@ export function GlobalAiFab() {
                     />
 
                     {/* Online dot */}
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-background" />
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-background z-10" />
 
-                    {/* Tooltip */}
-                    <span className="pointer-events-none absolute right-full mr-3 px-2 py-1 rounded-md bg-popover text-popover-foreground text-[11px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity shadow-md border border-border/60">
+                    {/* Tooltip — sits outside the round-clipped area */}
+                    <span className="pointer-events-none absolute right-full top-1/2 -translate-y-1/2 mr-3 px-2 py-1 rounded-md bg-popover text-popover-foreground text-[11px] font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity shadow-md border border-border/60 z-10">
                         AI quant
                     </span>
                 </motion.button>
