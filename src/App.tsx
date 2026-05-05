@@ -38,6 +38,11 @@ import Tools from "./pages/Tools";
 import Execution from "./pages/Execution";
 import Improvement from "./pages/Improvement";
 import SymbolPalette from "./features/terminal/SymbolPalette";
+import {
+  GlobalAiFab,
+  GlobalAiBackdrop,
+  GlobalAiPanel,
+} from "./features/ai-chat";
 import NotFound from "./pages/NotFound";
 import Onboarding from "./pages/Onboarding";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -174,8 +179,27 @@ const AppRoutes = () => {
   );
 };
 
-// Always-mounted overlays that need router context (cmd+k symbol palette).
-const GlobalOverlays = () => <SymbolPalette />;
+// Always-mounted overlays that need router context (cmd+k symbol palette,
+// global AI chat panel + FAB). The AI surfaces only render once the user is
+// authenticated and onboarded, so they don't show on /login or /onboarding.
+const GlobalOverlays = () => {
+  const { isAuthenticated } = useAuthStore();
+  const { hasCompletedOnboarding } = useOnboardingStore();
+  const showAi = isAuthenticated && hasCompletedOnboarding;
+
+  return (
+    <>
+      <SymbolPalette />
+      {showAi && (
+        <>
+          <GlobalAiBackdrop />
+          <GlobalAiPanel />
+          <GlobalAiFab />
+        </>
+      )}
+    </>
+  );
+};
 
 const App = () => (
   <Theme appearance="dark" accentColor="purple" grayColor="slate" radius="small" scaling="90%">

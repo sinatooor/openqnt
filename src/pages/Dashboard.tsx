@@ -10,6 +10,7 @@ import { useAuthStore } from '../stores/authStore';
 import { api } from '../services/api';
 import { useAppModeStore } from '../stores/appModeStore';
 import { motion, AnimatePresence } from 'framer-motion';
+import { usePageContext } from '@/features/ai-chat';
 
 // shadcn
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -58,6 +59,8 @@ import {
 const Dashboard = () => {
   const { user, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
+
+  usePageContext({ page: 'dashboard' });
   const { mode, setMode } = useAppModeStore();
   const [stats, setStats] = useState<any>(null);
   const [strategies, setStrategies] = useState<any[]>([]);

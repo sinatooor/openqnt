@@ -17,6 +17,7 @@ import {
     Loader2,
 } from 'lucide-react';
 import { PAGE_CONTENT_CLASS } from '@/components/PageHeader';
+import { usePageContext, AskAi } from '@/features/ai-chat';
 
 interface NewsArticle {
     id: string;
@@ -67,6 +68,14 @@ export default function News() {
     const [activeLabel, setActiveLabel] = useState('Global Markets');
 
     const [filterQuery, setFilterQuery] = useState('');
+
+    usePageContext({
+      page: 'news',
+      visibleData: {
+        kind: 'news_feed',
+        snapshot: { category, preset: activePreset, label: activeLabel, count: news.length },
+      },
+    });
     const [sentimentFilter, setSentimentFilter] = useState<'all' | NewsArticle['sentiment']>('all');
     const [tickerFilter, setTickerFilter] = useState('all');
 
@@ -530,15 +539,28 @@ export default function News() {
                                                 </button>
                                             ))}
                                         </div>
-                                        <a
-                                            href={article.url}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors"
-                                        >
-                                            Open story
-                                            <ChevronRight className="w-4 h-4" />
-                                        </a>
+                                        <div className="flex items-center gap-2">
+                                            <AskAi
+                                                target={{
+                                                    type: 'symbol',
+                                                    id: article.tickers[0] ?? article.id,
+                                                    label: article.tickers[0] ?? article.headline.slice(0, 40),
+                                                }}
+                                                prompt={`Analyze this news for me:\n\n**${article.headline}**\n\n${article.summary}\n\nWhat are the implications?`}
+                                                variant="pill"
+                                            >
+                                                Ask AI
+                                            </AskAi>
+                                            <a
+                                                href={article.url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors"
+                                            >
+                                                Open story
+                                                <ChevronRight className="w-4 h-4" />
+                                            </a>
+                                        </div>
                                     </div>
                                 </article>
                             ))}

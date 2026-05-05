@@ -15,7 +15,6 @@ import {
   Layers,
   LineChart,
   Code2,
-  Sparkles,
   ZoomIn,
   ZoomOut,
   Maximize2,
@@ -84,7 +83,6 @@ interface FloatingToolbarProps {
   onOpenBacktest: () => void;
   onOpenChart: () => void;
   onOpenCode: () => void;
-  onOpenAI: () => void;
   onOpenJournal: () => void;
   onOpenScreener: () => void;
   onOpenLiveTrading: () => void;
@@ -92,7 +90,6 @@ interface FloatingToolbarProps {
   onZoomOut: () => void;
   onFitView: () => void;
   showCode?: boolean;
-  showAI?: boolean;
   onStartExecution?: () => void;
   onStopExecution?: () => void;
   onResetExecution?: () => void;
@@ -203,7 +200,6 @@ export const FloatingToolbar = memo(
     onOpenBacktest,
     onOpenChart,
     onOpenCode,
-    onOpenAI,
     onOpenJournal,
     onOpenScreener,
     onOpenLiveTrading,
@@ -211,7 +207,6 @@ export const FloatingToolbar = memo(
     onZoomOut,
     onFitView,
     showCode,
-    showAI,
     onStartExecution,
     onStopExecution,
     onResetExecution,
@@ -590,21 +585,6 @@ export const FloatingToolbar = memo(
           </Tooltip>
 
           <Toolbar.Separator className="w-px h-5 bg-border/50 mx-1" />
-
-          {/* ── AI Builder ─────────────────────────────────────────────── */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Toolbar.Button
-                onClick={onOpenAI}
-                className={cn(showAI ? activeIconButtonClass : iconButtonClass, 'ai-panel-trigger')}
-              >
-                <Sparkles className="w-4 h-4" />
-              </Toolbar.Button>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs">
-              AI Strategy Builder <kbd className="ml-1 px-1 py-0.5 bg-muted rounded text-[10px]">I</kbd>
-            </TooltipContent>
-          </Tooltip>
 
           {/* ── Templates ──────────────────────────────────────────────── */}
           <Tooltip>
