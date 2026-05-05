@@ -61,6 +61,10 @@ export const PropertyPanel = memo(({ node, onClose }: PropertyPanelProps) => {
     });
   };
 
+  const handleTopLevelChange = (key: string, value: unknown) => {
+    updateNodeData(node.id, { [key]: value });
+  };
+
   const handleLabelChange = (label: string) => {
     updateNodeData(node.id, { label });
   };
@@ -78,9 +82,8 @@ export const PropertyPanel = memo(({ node, onClose }: PropertyPanelProps) => {
     const nodeData = node.data as Record<string, unknown>;
     const params = (nodeData.params as Record<string, unknown>) || {};
     const currentValue = params[key] ?? value;
-    const label = key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    const label = humanizeKey(key);
 
-    // Determine input type based on value type
     if (typeof value === 'number' || typeof currentValue === 'number') {
       return (
         <div key={key} className="space-y-1.5">
@@ -107,7 +110,6 @@ export const PropertyPanel = memo(({ node, onClose }: PropertyPanelProps) => {
       );
     }
 
-    // Default to string input
     return (
       <div key={key} className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">{label}</Label>
@@ -116,6 +118,87 @@ export const PropertyPanel = memo(({ node, onClose }: PropertyPanelProps) => {
           onChange={(e) => handleParamChange(key, e.target.value)}
           className="h-8 text-sm bg-background/50"
         />
+      </div>
+    );
+  };
+
+  const renderTopLevelInput = (key: string, defaultValue: unknown) => {
+    const nodeData = node.data as Record<string, unknown>;
+    const currentValue = nodeData[key] ?? defaultValue;
+    const label = humanizeKey(key);
+    const isLong =
+      typeof currentValue === 'string' && (key === 'prompt' || key === 'code' || currentValue.length > 60);
+
+    if (typeof defaultValue === 'number' || typeof currentValue === 'number') {
+      return (
+        <div key={key} className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">{label}</Label>
+          <Input
+            type="number"
+            value={(currentValue as number) ?? ''}
+            onChange={(e) => handleTopLevelChange(key, parseFloat(e.target.value) || 0)}
+            className="h-8 text-sm bg-background/50"
+          />
+        </div>
+      );
+    }
+    if (typeof defaultValue === 'boolean' || typeof currentValue === 'boolean') {
+      return (
+        <div key={key} className="flex items-center justify-between py-1">
+          <Label className="text-xs text-muted-foreground">{label}</Label>
+          <Switch
+            checked={!!currentValue}
+            onCheckedChange={(v) => handleTopLevelChange(key, v)}
+          />
+        </div>
+      );
+    }
+    if (isLong) {
+      return (
+        <div key={key} className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">{label}</Label>
+          <textarea
+            value={String(currentValue ?? '')}
+            onChange={(e) => handleTopLevelChange(key, e.target.value)}
+            rows={key === 'code' ? 8 : 3}
+            className="w-full rounded-md border border-input bg-background/50 px-2 py-1 text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
+      );
+    }
+    return (
+      <div key={key} className="space-y-1.5">
+        <Label className="text-xs text-muted-foreground">{label}</Label>
+        <Input
+          value={String(currentValue ?? '')}
+          onChange={(e) => handleTopLevelChange(key, e.target.value)}
+          className="h-8 text-sm bg-background/50"
+        />
+      </div>
+    );
+  };
+
+  const renderJsonField = (key: string, defaultValue: unknown) => {
+    const nodeData = node.data as Record<string, unknown>;
+    const currentValue = nodeData[key] ?? defaultValue;
+    return (
+      <div key={key} className="space-y-1.5">
+        <Label className="text-xs text-muted-foreground">{humanizeKey(key)}</Label>
+        <textarea
+          defaultValue={safeStringify(currentValue)}
+          onBlur={(e) => {
+            try {
+              handleTopLevelChange(key, JSON.parse(e.target.value));
+            } catch {
+              // ignore invalid JSON; user keeps editing
+            }
+          }}
+          rows={3}
+          className="w-full rounded-md border border-input bg-background/50 px-2 py-1 font-mono text-[11px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+        />
+        <p className="text-[10px] text-muted-foreground">
+          JSON. Saved on blur.
+        </p>
       </div>
     );
   };
@@ -170,6 +253,32 @@ export const PropertyPanel = memo(({ node, onClose }: PropertyPanelProps) => {
           )}
 
           <Separator className="bg-border/30" />
+
+          {/* Top-level config fields (provider, symbol, prompt, model, etc.).
+              defaultData fields outside `params` are typically the node's
+              real configuration — without rendering them here, only the
+              label was editable for data-source / LLM / integration nodes. */}
+          {(() => {
+            const topLevel = catalogEntry.defaultData
+              ? Object.entries(catalogEntry.defaultData).filter(
+                  ([k]) => !TOP_LEVEL_HIDDEN_KEYS.has(k),
+                )
+              : [];
+            if (topLevel.length === 0) return null;
+            return (
+              <div className="space-y-3">
+                <h4 className="text-xs font-semibold text-foreground/80 uppercase tracking-wider">
+                  Configuration
+                </h4>
+                {topLevel.map(([key, defaultValue]) => {
+                  if (defaultValue && typeof defaultValue === 'object' && !Array.isArray(defaultValue)) {
+                    return renderJsonField(key, defaultValue);
+                  }
+                  return renderTopLevelInput(key, defaultValue);
+                })}
+              </div>
+            );
+          })()}
 
           {/* Parameters from defaultData.params */}
           {catalogEntry.defaultData?.params && Object.keys(catalogEntry.defaultData.params).length > 0 && (
@@ -235,3 +344,42 @@ export const PropertyPanel = memo(({ node, onClose }: PropertyPanelProps) => {
 });
 
 PropertyPanel.displayName = 'PropertyPanel';
+
+const TOP_LEVEL_HIDDEN_KEYS = new Set<string>([
+  // Identity / display fields are rendered separately above.
+  'label',
+  'params',
+  // Type discriminators that the catalog already pins; editing them
+  // would un-link the node from its catalog entry.
+  'nodeType',
+  'indicatorType',
+  'conditionType',
+  'actionType',
+  'environmentType',
+  'mathType',
+  'controlType',
+  'variableType',
+  'riskType',
+  'tradeInfoType',
+  'llmType',
+  'triggerType',
+  'integrationType',
+  'agentType',
+  'portfolioType',
+]);
+
+function humanizeKey(key: string): string {
+  return key
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .trim();
+}
+
+function safeStringify(value: unknown): string {
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return '';
+  }
+}

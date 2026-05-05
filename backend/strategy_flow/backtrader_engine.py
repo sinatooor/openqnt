@@ -843,62 +843,86 @@ def _fetch_data_avanza(
     symbol: str, start_date: str, end_date: str, timeframe: str,
 ) -> Optional[pd.DataFrame]:
     """
-    Resolve a ticker (or ISIN) to an Avanza orderbookId, then call the
-    public `/_api/price-chart` endpoint. The endpoint is anonymous so
-    backtests don't require an active Avanza connection.
+    Resolve a ticker (or ISIN) to an Avanza orderbookId via the anonymous
+    search endpoint, then pull `/_api/price-chart`. Both calls hit
+    avanza.se directly with httpx.Client so this stays callable from any
+    thread regardless of whether an asyncio loop is already running.
     """
+    import httpx
+
     try:
-        import asyncio
-        import sys
-        from pathlib import Path
-
-        # Backtrader engine lives one level under backend/, but the
-        # integrations package is at backend/integrations/. Make sure it's
-        # importable regardless of how this module is invoked.
-        backend_root = Path(__file__).resolve().parent.parent
-        if str(backend_root) not in sys.path:
-            sys.path.insert(0, str(backend_root))
-        from integrations.avanza.manager import get_manager
-        from integrations.avanza.instrument_resolver import InstrumentResolver
-
-        loop = asyncio.new_event_loop()
+        # Avanza time period bucket — pick the smallest that covers the
+        # requested window so the response stays bounded.
+        tp = 'one_year'
         try:
-            client = loop.run_until_complete(get_manager().anon_client())
-            resolver = InstrumentResolver(client)
-            info = loop.run_until_complete(resolver.resolve(symbol, instrument_type='stock'))
-            if not info or not info.get('orderbookId'):
+            from datetime import datetime as _dt
+            d0 = _dt.fromisoformat(start_date)
+            d1 = _dt.fromisoformat(end_date)
+            days = (d1 - d0).days
+            if days <= 7: tp = 'one_week'
+            elif days <= 31: tp = 'one_month'
+            elif days <= 95: tp = 'three_months'
+            elif days <= 370: tp = 'one_year'
+            elif days <= 1100: tp = 'three_years'
+            elif days <= 1900: tp = 'five_years'
+            else: tp = 'infinity'
+        except Exception:
+            pass
+
+        res_map = {
+            '1m': 'minute', '5m': 'minute', '15m': 'thirty_minutes',
+            '30m': 'thirty_minutes', '1h': 'hour', '4h': 'hour',
+            '1d': 'day', '1w': 'week', '1mo': 'month',
+        }
+        resolution = res_map.get(timeframe, 'day')
+
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (compatible; OpenQwnt/1.0)',
+            'Accept': 'application/json',
+        }
+        with httpx.Client(base_url='https://www.avanza.se', timeout=15.0, headers=headers) as client:
+            # Resolve the orderbookId. Numeric input passes straight through.
+            normalized = symbol.strip().upper()
+            orderbook_id: Optional[str] = None
+            if normalized.isdigit():
+                orderbook_id = normalized
+            else:
+                try:
+                    sresp = client.post(
+                        '/_api/search/filtered-search',
+                        json={
+                            'query': normalized,
+                            'searchFilter': {'types': ['STOCK']},
+                            'pagination': {'from': 0, 'size': 5},
+                        },
+                    )
+                    sresp.raise_for_status()
+                    sdata = sresp.json()
+                    hits = sdata.get('hits') or []
+                    if not hits and 'resultGroups' in sdata:
+                        for grp in sdata.get('resultGroups', []):
+                            hits.extend(grp.get('hits', []) or [])
+                    chosen = (
+                        next((h for h in hits if (h.get('tickerSymbol') or '').upper() == normalized), None)
+                        or next((h for h in hits if (h.get('isin') or '').upper() == normalized), None)
+                        or (hits[0] if hits else None)
+                    )
+                    if chosen:
+                        orderbook_id = str(chosen.get('orderbookId') or chosen.get('id') or '')
+                except Exception as e:
+                    print(f"Avanza search({symbol}) failed: {e}")
+                    return None
+
+            if not orderbook_id:
                 return None
 
-            # Avanza time periods: today | one_week | one_month | three_months
-            # | this_year | one_year | three_years | five_years | infinity
-            tp = 'one_year'
-            try:
-                from datetime import datetime as _dt
-                d0 = _dt.fromisoformat(start_date)
-                d1 = _dt.fromisoformat(end_date)
-                days = (d1 - d0).days
-                if days <= 7: tp = 'one_week'
-                elif days <= 31: tp = 'one_month'
-                elif days <= 95: tp = 'three_months'
-                elif days <= 370: tp = 'one_year'
-                elif days <= 1100: tp = 'three_years'
-                elif days <= 1900: tp = 'five_years'
-                else: tp = 'infinity'
-            except Exception:
-                pass
-
-            res_map = {
-                '1m': 'minute', '5m': 'minute', '15m': 'thirty_minutes',
-                '30m': 'thirty_minutes', '1h': 'hour', '4h': 'hour',
-                '1d': 'day', '1w': 'week', '1mo': 'month',
-            }
-            chart = loop.run_until_complete(client.price_chart(
-                info['orderbookId'],
-                time_period=tp,
-                resolution=res_map.get(timeframe, 'day'),
-            ))
-        finally:
-            loop.close()
+            # Pull the OHLC chart.
+            cresp = client.get(
+                f'/_api/price-chart/stock/{orderbook_id}',
+                params={'timePeriod': tp, 'resolution': resolution},
+            )
+            cresp.raise_for_status()
+            chart = cresp.json()
 
         ohlc = chart.get('ohlc') or []
         if not ohlc:
@@ -917,8 +941,6 @@ def _fetch_data_avanza(
                 'volume': r.get('totalVolumeTraded') or 0,
             })
         df = pd.DataFrame(rows).dropna(subset=['close']).set_index('date').sort_index()
-
-        # Trim to requested window
         try:
             df = df.loc[start_date:end_date]
         except Exception:
@@ -960,54 +982,3 @@ def _fetch_data_fmp(
         return None
 
 
-def _fetch_data_legacy(
-    symbol: str,
-    start_date: str,
-    end_date: str,
-    timeframe: str
-) -> Optional[pd.DataFrame]:
-    """Legacy entry kept for backwards-compat in case other callers import it."""
-    try:
-        import yfinance as yf
-
-        # Map timeframe to yfinance interval
-        interval_map = {
-            '1m': '1m',
-            '5m': '5m',
-            '15m': '15m',
-            '1h': '1h',
-            '4h': '4h',
-            '1d': '1d',
-            '1w': '1wk'
-        }
-        interval = interval_map.get(timeframe, '1d')
-
-        # Map symbol for yfinance
-        yf_symbol = symbol
-        if symbol.endswith('USDT'):
-            yf_symbol = symbol.replace('USDT', '-USD')
-
-        # Fetch data
-        ticker = yf.Ticker(yf_symbol)
-        df = ticker.history(start=start_date, end=end_date, interval=interval)
-
-        if df.empty:
-            return None
-
-        # Rename columns to match backtrader expectations
-        df = df.rename(columns={
-            'Open': 'open',
-            'High': 'high',
-            'Low': 'low',
-            'Close': 'close',
-            'Volume': 'volume'
-        })
-
-        # Keep only OHLCV columns
-        df = df[['open', 'high', 'low', 'close', 'volume']]
-
-        return df
-
-    except Exception as e:
-        print(f"Data fetch error: {e}")
-        return None

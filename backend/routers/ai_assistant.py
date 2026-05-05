@@ -244,7 +244,51 @@ TOOL_DEFINITIONS = [
             },
             "required": ["concept"]
         }
-    }
+    },
+    {
+        "name": "create_custom_node",
+        "description": (
+            "Add a single custom node to the user's strategy flow canvas. Use when the user asks "
+            "for a specific node (e.g. 'add a custom RSI divergence indicator', 'add a Telegram alert', "
+            "'create a custom code block that does X', 'add an Avanza data source for Volvo B'). "
+            "This tool appends one node to the existing canvas — it does NOT replace the whole flow. "
+            "For full strategies, use build_strategy instead."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "node_type": {
+                    "type": "string",
+                    "description": (
+                        "The node category. Must be one of: indicator, condition, action, environment, "
+                        "math, control, variable, risk, tradeInfo, llm, trigger, integration, "
+                        "dataSource, portfolio, agent."
+                    ),
+                },
+                "subtype": {
+                    "type": "string",
+                    "description": (
+                        "The subtype identifier within the category, e.g. 'rsi' for indicator, "
+                        "'avanzaData' for dataSource, 'customCode' for llm, 'telegram' for integration."
+                    ),
+                },
+                "label": {
+                    "type": "string",
+                    "description": "Human-friendly display label, e.g. 'RSI Divergence'.",
+                },
+                "config": {
+                    "type": "object",
+                    "description": (
+                        "Node configuration as a JSON object. Goes into the node's `data` block. "
+                        "For indicators put params under {params: {period: 14}}. For dataSource: "
+                        "{provider, symbol, timeframe}. For llm/customCode: {prompt, model, code}. "
+                        "For integration: {channel, message}. The frontend persists this verbatim."
+                    ),
+                },
+            },
+            "required": ["node_type", "subtype"],
+        },
+    },
 ]
 
 # ============================================================
@@ -255,12 +299,22 @@ SYSTEM_PROMPT = """You are the AI assistant for Fyer, a professional trading str
 
 **Your Capabilities:**
 1. **Build Strategies** - You can generate visual trading strategies using flow nodes. When a user asks you to build a strategy, use the `build_strategy` tool. The strategy will appear as nodes on the visual canvas.
-2. **Run Backtests** - Test strategies on historical data to see how they would have performed.
-3. **Monte Carlo Analysis** - Run statistical tests to validate strategy robustness.
-4. **Portfolio Management** - View and analyze portfolio holdings and performance.
-5. **Market Research** - Access market news, data events, and analysis tools.
-6. **Navigation** - Guide users to the right part of the app for their task.
-7. **Education** - Explain trading concepts, indicators, risk management, etc.
+2. **Add Custom Nodes** - When the user asks for a single node (e.g. "add a Telegram alert", "add a custom RSI divergence indicator", "add an Avanza data source for VOLV-B.ST", "add a custom code block that does X"), use the `create_custom_node` tool. Pick the right `node_type` and `subtype`, fill `config` with everything the node needs (params, prompt, code, provider, symbol, etc.). The node is appended to the canvas without disturbing what's already there.
+3. **Run Backtests** - Test strategies on historical data to see how they would have performed.
+4. **Monte Carlo Analysis** - Run statistical tests to validate strategy robustness.
+5. **Portfolio Management** - View and analyze portfolio holdings and performance.
+6. **Market Research** - Access market news, data events, and analysis tools.
+7. **Navigation** - Guide users to the right part of the app for their task.
+8. **Education** - Explain trading concepts, indicators, risk management, etc.
+
+**Custom-node cheat sheet (for `create_custom_node`):**
+- Indicators: subtype = sma | ema | rsi | macd | bb | atr | stochastic | adx | …; config = {params: {period: 14, priceType: "close"}, timeframe: "60"}.
+- Conditions: subtype = compare | crossover | crossunder | threshold | range | and | or | not.
+- Actions: subtype = order | closePosition | stopLoss | takeProfit | trailingStop | notification.
+- Data sources: subtype = yfinanceData | avanzaData | fmpData | avanzaPositions | avanzaWatchlist | fredMacro; config = {provider, symbol, timeframe}.
+- LLM / Custom code: subtype = customCode | llmDecision | sentimentAnalysis; config = {prompt, model: "gpt-4o-mini", code, language: "python"}.
+- Integrations: subtype = telegram | slack | email | sms | discord | webhook; config = {channel, message}.
+- Triggers: subtype = heartbeat | webhook | priceAlert | news | cron; config = {interval, condition}.
 
 **How you work:**
 - When building strategies, you call tools and the user sees the strategy being built incrementally on the canvas — like a stream of nodes appearing.
@@ -420,6 +474,63 @@ async def execute_tool(tool_name: str, args: Dict[str, Any]) -> Dict[str, Any]:
                 "message": f"Analysis requested for '{args.get('strategy_name')}'."
             }
 
+        elif tool_name == "create_custom_node":
+            node_type = (args.get("node_type") or "").strip()
+            subtype = (args.get("subtype") or "").strip()
+            label = args.get("label") or subtype or node_type or "Custom Node"
+            config = args.get("config") or {}
+
+            valid_types = {
+                "indicator", "condition", "action", "environment", "math",
+                "control", "variable", "risk", "tradeInfo", "llm", "trigger",
+                "integration", "dataSource", "portfolio", "agent", "pineScript",
+            }
+            if node_type not in valid_types:
+                return {
+                    "success": False,
+                    "error": f"node_type must be one of {sorted(valid_types)}",
+                }
+            if not subtype:
+                return {"success": False, "error": "subtype required"}
+
+            # Build a node payload the canvas can consume directly. The
+            # discriminator field name varies by category — match it so the
+            # PropertyPanel and compiler can resolve the correct subtype.
+            disc_key = {
+                "indicator": "indicatorType",
+                "condition": "conditionType",
+                "action": "actionType",
+                "environment": "environmentType",
+                "math": "mathType",
+                "control": "controlType",
+                "variable": "variableType",
+                "risk": "riskType",
+                "tradeInfo": "tradeInfoType",
+                "llm": "llmType",
+                "trigger": "triggerType",
+                "integration": "integrationType",
+                "agent": "agentType",
+                "portfolio": "portfolioType",
+                "dataSource": "kind",
+                "pineScript": "pineScriptType",
+            }[node_type]
+
+            data: Dict[str, Any] = {"label": label, disc_key: subtype, **config}
+            node_id = f"node_{int(datetime.utcnow().timestamp() * 1000) % 10_000_000}"
+            node = {
+                "id": node_id,
+                "type": node_type,
+                "position": {"x": 320, "y": 200},
+                "data": data,
+            }
+            return {
+                "success": True,
+                "nodes": [node],
+                "edges": [],
+                "node_count": 1,
+                "message": f"Added custom {node_type} node ({subtype}) to your canvas.",
+            }
+
         elif tool_name == "explain_trading_concept":
             # Let Gemini handle this from its own knowledge - just pass back context
             return {
@@ -552,15 +663,21 @@ async def chat_stream(req: AssistantChatRequest):
                             # Send tool result to frontend
                             yield f"data: {json.dumps({'type': 'tool_result', 'tool': tool_name, 'result': result})}\n\n"
 
-                            # If strategy nodes were generated, send them separately
-                            if tool_name == "build_strategy" and result.get("success") and result.get("nodes"):
-                                # Stream nodes one by one for incremental building effect
+                            # If strategy nodes were generated, stream them so the
+                            # canvas can render them incrementally. Both build_strategy
+                            # (full strategy) and create_custom_node (single node) use
+                            # the same downstream event so the AiChat canvas hook
+                            # doesn't need to special-case them.
+                            if (
+                                tool_name in ("build_strategy", "create_custom_node")
+                                and result.get("success")
+                                and result.get("nodes")
+                            ):
                                 nodes = result["nodes"]
                                 edges = result.get("edges", [])
                                 for i, node in enumerate(nodes):
                                     yield f"data: {json.dumps({'type': 'strategy_node', 'node': node, 'index': i, 'total': len(nodes)})}\n\n"
-                                    await asyncio.sleep(0.15)  # Delay for visual effect
-                                # Send all edges at once after nodes
+                                    await asyncio.sleep(0.05 if tool_name == "create_custom_node" else 0.15)
                                 if edges:
                                     yield f"data: {json.dumps({'type': 'strategy_edges', 'edges': edges})}\n\n"
 
