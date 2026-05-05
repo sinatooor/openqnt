@@ -49,9 +49,9 @@ const ExecutionHistory = () => {
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-2">
                             <Activity className="w-5 h-5 text-primary" />
-                            <h1 className="text-white font-medium text-sm tracking-tight">Execution History</h1>
-                            <div className="h-4 w-px bg-white/10" />
-                            <span className="text-white/40 text-xs">{pagination.total} total runs</span>
+                            <h1 className="text-foreground font-medium text-sm tracking-tight">Execution History</h1>
+                            <div className="h-4 w-px bg-muted/60" />
+                            <span className="text-muted-foreground text-xs">{pagination.total} total runs</span>
                         </div>
                     </div>
                     <motion.div
@@ -65,7 +65,7 @@ const ExecutionHistory = () => {
                                 onClick={() => setStatusFilter(status)}
                                 className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap border ${statusFilter === status
                                     ? 'bg-primary/20 border-primary/40 text-primary'
-                                    : 'bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10 hover:text-foreground'
+                                    : 'bg-muted/40 border-border/60 text-muted-foreground hover:bg-muted/60 hover:text-foreground'
                                     }`}
                             >
                                 {status ? status.charAt(0).toUpperCase() + status.slice(1) : 'All Runs'}
@@ -79,7 +79,7 @@ const ExecutionHistory = () => {
                         transition={{ delay: 0.1 }}
                     >
                         <Card className="bg-card/60 backdrop-blur-sm border-border/30 shadow-trading-lg rounded-xl overflow-hidden">
-                            <CardHeader className="flex flex-row items-center justify-between pb-2 bg-white/5 border-b border-white/5">
+                            <CardHeader className="flex flex-row items-center justify-between pb-2 bg-muted/40 border-b border-border/60">
                                 <CardTitle className="flex items-center gap-2 text-foreground text-sm font-medium">
                                     <Clock className="w-4 h-4 text-muted-foreground" />
                                     Execution Log
@@ -101,7 +101,7 @@ const ExecutionHistory = () => {
                                 ) : (
                                     <div className="flex flex-col divide-y divide-white/5">
                                         {/* Table Header */}
-                                        <div className="hidden sm:flex items-center px-6 py-3 bg-black/20 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                        <div className="hidden sm:flex items-center px-6 py-3 bg-muted/30 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                                             <div className="flex-[2]">Strategy</div>
                                             <div className="flex-1">Trigger</div>
                                             <div className="flex-1">Status</div>
@@ -118,7 +118,7 @@ const ExecutionHistory = () => {
                                                     animate={{ opacity: 1, x: 0 }}
                                                     transition={{ delay: Math.min(i * 0.03, 0.3) }}
                                                     onClick={() => navigate(`/execution/${run.id}`)}
-                                                    className="flex flex-col sm:flex-row sm:items-center px-6 py-4 hover:bg-white/[0.03] transition-colors cursor-pointer group gap-4 sm:gap-0"
+                                                    className="flex flex-col sm:flex-row sm:items-center px-6 py-4 hover:bg-muted/30 transition-colors cursor-pointer group gap-4 sm:gap-0"
                                                 >
                                                     {/* Strategy Name */}
                                                     <div className="flex-[2] flex items-center gap-3">
@@ -186,7 +186,7 @@ const ExecutionHistory = () => {
                                     onClick={() => fetchRuns({ page: i + 1, status: statusFilter || undefined })}
                                     className={`w-8 h-8 rounded-md flex items-center justify-center text-sm transition-colors ${pagination.page === i + 1
                                         ? 'bg-primary text-primary-foreground'
-                                        : 'bg-card border border-border/50 text-muted-foreground hover:bg-white/10 hover:text-foreground'
+                                        : 'bg-card border border-border/50 text-muted-foreground hover:bg-muted/60 hover:text-foreground'
                                         }`}
                                 >
                                     {i + 1}

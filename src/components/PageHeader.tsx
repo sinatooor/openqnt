@@ -14,7 +14,7 @@ interface PageHeaderProps {
 
 const CONTAINER_CLASS = 'max-w-7xl mx-auto px-6';
 
-export const PAGE_HEADER_CLASSES = 'flex items-center justify-between py-3 bg-[#252526]/90 backdrop-blur-sm border-b border-white/10';
+export const PAGE_HEADER_CLASSES = 'flex items-center justify-between py-3 bg-[#252526]/90 backdrop-blur-sm border-b border-border/60';
 
 export const PageHeader = ({ icon, title, subtitle, actions }: PageHeaderProps) => {
     return (
@@ -23,14 +23,14 @@ export const PageHeader = ({ icon, title, subtitle, actions }: PageHeaderProps) 
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
                         {icon}
-                        <h1 className="text-white font-medium text-sm tracking-tight">
+                        <h1 className="text-foreground font-medium text-sm tracking-tight">
                             {title}
                         </h1>
                     </div>
                     {subtitle != null && (
                         <>
-                            <div className="h-4 w-px bg-white/10" />
-                            <span className="text-white/40 text-xs flex items-center">
+                            <div className="h-4 w-px bg-muted/60" />
+                            <span className="text-muted-foreground text-xs flex items-center">
                                 {subtitle}
                             </span>
                         </>

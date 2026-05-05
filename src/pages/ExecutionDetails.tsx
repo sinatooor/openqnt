@@ -144,9 +144,9 @@ const ExecutionDetails = () => {
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-2">
               <Activity className="w-5 h-5 text-primary" />
-              <h1 className="text-white font-medium text-sm tracking-tight">Execution Details</h1>
-              <div className="h-4 w-px bg-white/10" />
-              <span className="text-white/40 text-xs flex items-center gap-2">
+              <h1 className="text-foreground font-medium text-sm tracking-tight">Execution Details</h1>
+              <div className="h-4 w-px bg-muted/60" />
+              <span className="text-muted-foreground text-xs flex items-center gap-2">
                 Run #{executionId.slice(0, 8)}
                 {isLive && (
                   <Badge variant="default" className="bg-green-600/20 text-green-400 border border-green-500/30 animate-pulse text-[10px] px-2 py-0">
@@ -175,7 +175,7 @@ const ExecutionDetails = () => {
                 className="grid gap-6 md:grid-cols-2"
               >
                 <Card className="bg-card/60 backdrop-blur-sm border-border/30 shadow-trading-lg rounded-xl">
-                  <CardHeader className="border-b border-white/5 pb-4">
+                  <CardHeader className="border-b border-border/60 pb-4">
                     <CardTitle className="flex items-center justify-between text-base">
                       <span className="flex items-center gap-2">
                         <Activity className="w-4 h-4 text-primary" />
@@ -215,7 +215,7 @@ const ExecutionDetails = () => {
                 </Card>
 
                 <Card className="bg-card/60 backdrop-blur-sm border-border/30 shadow-trading-lg rounded-xl">
-                  <CardHeader className="border-b border-white/5 pb-4">
+                  <CardHeader className="border-b border-border/60 pb-4">
                     <CardTitle className="flex items-center gap-2 text-base">
                       <BarChart2 className="w-4 h-4 text-green-400" />
                       Node Summary
@@ -224,19 +224,19 @@ const ExecutionDetails = () => {
                   </CardHeader>
                   <CardContent className="pt-4">
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="text-center p-3 bg-black/20 border border-white/5 rounded-xl">
+                      <div className="text-center p-3 bg-muted/30 border border-border/60 rounded-xl">
                         <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wider">Executed</p>
                         <p className="text-2xl font-bold font-mono text-green-400">{execution.nodesExecuted ?? 0}</p>
                       </div>
-                      <div className="text-center p-3 bg-black/20 border border-white/5 rounded-xl">
+                      <div className="text-center p-3 bg-muted/30 border border-border/60 rounded-xl">
                         <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wider">Errored</p>
                         <p className="text-2xl font-bold font-mono text-red-400">{execution.nodesErrored ?? 0}</p>
                       </div>
-                      <div className="text-center p-3 bg-black/20 border border-white/5 rounded-xl">
+                      <div className="text-center p-3 bg-muted/30 border border-border/60 rounded-xl">
                         <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wider">Skipped</p>
                         <p className="text-2xl font-bold font-mono text-slate-400">{execution.nodesSkipped ?? 0}</p>
                       </div>
-                      <div className="text-center p-3 bg-black/20 border border-white/5 rounded-xl">
+                      <div className="text-center p-3 bg-muted/30 border border-border/60 rounded-xl">
                         <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wider">Python Calls</p>
                         <p className="text-2xl font-bold font-mono text-blue-400">{execution.pythonDelegations ?? 0}</p>
                       </div>
@@ -248,7 +248,7 @@ const ExecutionDetails = () => {
               {/* Node Execution Log */}
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
                 <Card className="bg-card/60 backdrop-blur-sm border-border/30 shadow-trading-lg rounded-xl">
-                  <CardHeader className="border-b border-white/5 pb-4">
+                  <CardHeader className="border-b border-border/60 pb-4">
                     <CardTitle className="flex items-center gap-2 text-base">
                       <Layers className="w-4 h-4 text-primary" />
                       Node Execution Log
@@ -267,7 +267,7 @@ const ExecutionDetails = () => {
                     ) : (
                       <div className="divide-y divide-white/5">
                         {/* Table Header */}
-                        <div className="hidden sm:flex items-center px-6 py-3 bg-black/20 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        <div className="hidden sm:flex items-center px-6 py-3 bg-muted/30 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                           <div className="w-8"></div>
                           <div className="flex-1">Node</div>
                           <div className="w-24">Type</div>
@@ -287,7 +287,7 @@ const ExecutionDetails = () => {
                             <div key={log.nodeId + '-' + i}>
                               <div
                                 onClick={() => toggleNodeExpand(log.nodeId)}
-                                className="flex items-center px-6 py-3 hover:bg-white/[0.03] transition-colors cursor-pointer group"
+                                className="flex items-center px-6 py-3 hover:bg-muted/30 transition-colors cursor-pointer group"
                               >
                                 <div className="w-8 text-xs text-muted-foreground font-mono">
                                   {log.executionOrder + 1}
@@ -297,7 +297,7 @@ const ExecutionDetails = () => {
                                   <span className="text-sm font-medium text-foreground">{log.nodeId}</span>
                                 </div>
                                 <div className="w-24">
-                                  <span className="text-xs text-muted-foreground bg-white/5 px-2 py-0.5 rounded">
+                                  <span className="text-xs text-muted-foreground bg-muted/40 px-2 py-0.5 rounded">
                                     {log.nodeType}
                                   </span>
                                 </div>
@@ -325,7 +325,7 @@ const ExecutionDetails = () => {
                                 <motion.div
                                   initial={{ opacity: 0, height: 0 }}
                                   animate={{ opacity: 1, height: 'auto' }}
-                                  className="px-6 pb-4 bg-black/20 border-t border-white/5"
+                                  className="px-6 pb-4 bg-muted/30 border-t border-border/60"
                                 >
                                   <div className="grid md:grid-cols-2 gap-4 pt-3">
                                     {log.errorMessage && (
@@ -336,13 +336,13 @@ const ExecutionDetails = () => {
                                     )}
                                     <div>
                                       <p className="text-xs text-muted-foreground font-medium mb-2">Output Data</p>
-                                      <pre className="text-xs font-mono text-foreground/80 bg-black/30 rounded-lg p-3 overflow-auto max-h-48 border border-white/5">
+                                      <pre className="text-xs font-mono text-foreground/80 bg-muted/50 rounded-lg p-3 overflow-auto max-h-48 border border-border/60">
                                         {JSON.stringify(log.outputData, null, 2)}
                                       </pre>
                                     </div>
                                     <div>
                                       <p className="text-xs text-muted-foreground font-medium mb-2">Input Connections</p>
-                                      <pre className="text-xs font-mono text-foreground/80 bg-black/30 rounded-lg p-3 overflow-auto max-h-48 border border-white/5">
+                                      <pre className="text-xs font-mono text-foreground/80 bg-muted/50 rounded-lg p-3 overflow-auto max-h-48 border border-border/60">
                                         {JSON.stringify(log.inputData, null, 2)}
                                       </pre>
                                     </div>
@@ -361,7 +361,7 @@ const ExecutionDetails = () => {
               {/* Live Trade Feed */}
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
                 <Card className="bg-card/60 backdrop-blur-sm border-border/30 shadow-trading-lg rounded-xl">
-                  <CardHeader className="border-b border-white/5 pb-4">
+                  <CardHeader className="border-b border-border/60 pb-4">
                     <CardTitle className="flex items-center gap-2 text-base">
                       Live Trade Feed
                       {isLive && <Badge variant="outline" className="text-green-500 border-green-500/30 bg-green-500/10">Connected</Badge>}
@@ -376,13 +376,13 @@ const ExecutionDetails = () => {
               {/* Trade Log Table */}
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
                 <Card className="bg-card/60 backdrop-blur-sm border-border/30 shadow-trading-lg rounded-xl">
-                  <CardHeader className="border-b border-white/5 pb-4">
+                  <CardHeader className="border-b border-border/60 pb-4">
                     <CardTitle className="text-base">Trade Log</CardTitle>
                   </CardHeader>
                   <CardContent className="p-0">
                     <Table>
-                      <TableHeader className="bg-black/20">
-                        <TableRow className="border-white/5 hover:bg-transparent">
+                      <TableHeader className="bg-muted/30">
+                        <TableRow className="border-border/60 hover:bg-transparent">
                           <TableHead className="text-xs text-muted-foreground uppercase">Time</TableHead>
                           <TableHead className="text-xs text-muted-foreground uppercase">Direction</TableHead>
                           <TableHead className="text-right text-xs text-muted-foreground uppercase">Price</TableHead>
@@ -393,14 +393,14 @@ const ExecutionDetails = () => {
                       </TableHeader>
                       <TableBody>
                         {allTrades.length === 0 ? (
-                          <TableRow className="border-white/5 hover:bg-white/[0.02]">
+                          <TableRow className="border-border/60 hover:bg-muted/30">
                             <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                               No trades recorded
                             </TableCell>
                           </TableRow>
                         ) : (
                           allTrades.map((trade) => (
-                            <TableRow key={trade.id} className="border-white/5 hover:bg-white/[0.02]">
+                            <TableRow key={trade.id} className="border-border/60 hover:bg-muted/30">
                               <TableCell className="font-mono text-xs text-muted-foreground">{new Date(trade.entry_time).toLocaleTimeString()}</TableCell>
                               <TableCell className={trade.direction === 'BUY' ? 'text-green-400 font-medium' : 'text-red-400 font-medium'}>{trade.direction}</TableCell>
                               <TableCell className="text-right font-mono text-xs">{trade.entry_price.toFixed(5)}</TableCell>
@@ -410,7 +410,7 @@ const ExecutionDetails = () => {
                               </TableCell>
                               <TableCell>
                                 <Badge variant="outline" className={`text-[10px] ${trade.status === 'FILLED' ? 'border-green-500/30 text-green-400 bg-green-500/10' :
-                                    'border-white/10 text-muted-foreground bg-white/5'
+                                    'border-border/60 text-muted-foreground bg-muted/40'
                                   }`}>
                                   {trade.status}
                                 </Badge>

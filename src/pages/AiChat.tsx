@@ -64,14 +64,14 @@ const AiChat = ({ defaultMode, defaultFilter }: Props = {}) => {
 
         <main className="flex-1 flex flex-col min-w-0">
           {/* Header bar */}
-          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-white/[0.06]">
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/60">
             <SkillChip />
             <PageContextChip />
             <div className="ml-auto flex items-center gap-2">
               {activeSession && (
                 <>
                   <ContextRing tokens={tokens} />
-                  <span className="text-[11px] text-white/40 font-medium truncate max-w-[260px]">
+                  <span className="text-[11px] text-muted-foreground font-medium truncate max-w-[260px]">
                     {activeSession.title}
                   </span>
                 </>
@@ -80,7 +80,7 @@ const AiChat = ({ defaultMode, defaultFilter }: Props = {}) => {
                 variant="ghost"
                 size="sm"
                 onClick={() => popoutToPanel()}
-                className="h-7 text-[11px] text-white/60 hover:text-white"
+                className="h-7 text-[11px] text-foreground/70 hover:text-foreground"
                 title="Open in slide-in panel"
               >
                 <ExternalLink className="w-3 h-3 mr-1" />

@@ -95,13 +95,13 @@ const AgentConfig = () => {
                     <div className="flex items-center justify-between gap-4 flex-wrap">
                         <div className="flex items-center gap-2">
                             <Settings className="w-5 h-5 text-primary" />
-                            <h1 className="text-white font-medium text-sm tracking-tight">Agent Configuration</h1>
-                            <div className="h-4 w-px bg-white/10" />
-                            <span className="text-white/40 text-xs">Control AI behavior</span>
+                            <h1 className="text-foreground font-medium text-sm tracking-tight">Agent Configuration</h1>
+                            <div className="h-4 w-px bg-muted/60" />
+                            <span className="text-muted-foreground text-xs">Control AI behavior</span>
                         </div>
                         <button
                             onClick={() => navigate('/')}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm bg-muted/40 text-foreground/80 hover:bg-muted/60 hover:text-foreground transition-colors"
                         >
                             <ArrowRight className="w-3.5 h-3.5 rotate-180" />
                             Dashboard
@@ -109,8 +109,8 @@ const AgentConfig = () => {
                     </div>
                     {/* Operational Mode */}
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-                        <Card className="bg-card/60 backdrop-blur-sm border-white/5 shadow-trading rounded-xl">
-                            <CardHeader className="pb-4 border-b border-white/5">
+                        <Card className="bg-card/60 backdrop-blur-sm border-border/60 shadow-trading rounded-xl">
+                            <CardHeader className="pb-4 border-b border-border/60">
                                 <CardTitle className="text-base flex items-center gap-2">
                                     <Bot className="w-4 h-4 text-primary" />
                                     Operational Mode
@@ -126,7 +126,7 @@ const AgentConfig = () => {
                                         return (
                                             <div
                                                 key={mode.value}
-                                                className={`p-5 rounded-xl border-2 cursor-pointer flex gap-4 items-center transition-all ${isActive ? mode.borderClass + ' ' + mode.bgClass : 'border-white/5 bg-black/20 hover:border-white/10'
+                                                className={`p-5 rounded-xl border-2 cursor-pointer flex gap-4 items-center transition-all ${isActive ? mode.borderClass + ' ' + mode.bgClass : 'border-border/60 bg-muted/30 hover:border-border/60'
                                                     }`}
                                                 onClick={() => setConfig({ ...config, operationalMode: mode.value })}
                                             >
@@ -151,8 +151,8 @@ const AgentConfig = () => {
 
                     {/* Trading Guardrails */}
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-                        <Card className="bg-card/60 backdrop-blur-sm border-white/5 shadow-trading rounded-xl">
-                            <CardHeader className="pb-4 border-b border-white/5">
+                        <Card className="bg-card/60 backdrop-blur-sm border-border/60 shadow-trading rounded-xl">
+                            <CardHeader className="pb-4 border-b border-border/60">
                                 <CardTitle className="text-base flex items-center gap-2">
                                     <ShieldAlert className="w-4 h-4 text-amber-500" />
                                     Trading Guardrails
@@ -166,7 +166,7 @@ const AgentConfig = () => {
                                     <div className="space-y-2">
                                         <label className="text-xs font-medium text-muted-foreground">Max Single Trade Value ($)</label>
                                         <input
-                                            className="w-full h-10 rounded-md border border-white/10 bg-black/20 px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                                            className="w-full h-10 rounded-md border border-border/60 bg-muted/30 px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
                                             type="number"
                                             value={config?.maxSingleTradeValue ?? ''}
                                             onChange={(e) => setConfig({ ...config, maxSingleTradeValue: Number(e.target.value) || null })}
@@ -176,7 +176,7 @@ const AgentConfig = () => {
                                     <div className="space-y-2">
                                         <label className="text-xs font-medium text-muted-foreground">Max Daily Spend ($)</label>
                                         <input
-                                            className="w-full h-10 rounded-md border border-white/10 bg-black/20 px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                                            className="w-full h-10 rounded-md border border-border/60 bg-muted/30 px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
                                             type="number"
                                             value={config?.maxDailySpend ?? ''}
                                             onChange={(e) => setConfig({ ...config, maxDailySpend: Number(e.target.value) || null })}
@@ -186,7 +186,7 @@ const AgentConfig = () => {
                                     <div className="space-y-2">
                                         <label className="text-xs font-medium text-muted-foreground">Max Position Concentration (%)</label>
                                         <input
-                                            className="w-full h-10 rounded-md border border-white/10 bg-black/20 px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                                            className="w-full h-10 rounded-md border border-border/60 bg-muted/30 px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
                                             type="number"
                                             value={config?.maxPositionConcentrationPct ?? ''}
                                             onChange={(e) => setConfig({ ...config, maxPositionConcentrationPct: Number(e.target.value) || null })}
@@ -196,7 +196,7 @@ const AgentConfig = () => {
                                     <div className="space-y-2">
                                         <label className="text-xs font-medium text-muted-foreground">Heartbeat Interval (seconds)</label>
                                         <input
-                                            className="w-full h-10 rounded-md border border-white/10 bg-black/20 px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                                            className="w-full h-10 rounded-md border border-border/60 bg-muted/30 px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
                                             type="number"
                                             value={config?.heartbeatIntervalSeconds ?? 300}
                                             onChange={(e) => setConfig({ ...config, heartbeatIntervalSeconds: Number(e.target.value) })}

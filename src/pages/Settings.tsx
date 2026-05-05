@@ -91,9 +91,9 @@ const THEME_OPTIONS: ThemeOption[] = [
     {
         id: 'light',
         label: 'Light',
-        description: 'Clean daylight reading.',
+        description: 'Architectural Clarity — editorial fintech in white.',
         icon: Sun,
-        swatch: { bg: 'hsl(0 0% 100%)', card: 'hsl(220 14% 96%)', primary: 'hsl(217 91% 50%)' },
+        swatch: { bg: 'hsl(210 33% 98%)', card: 'hsl(0 0% 100%)', primary: 'hsl(221 100% 39%)' },
     },
     {
         id: 'hicontrast',
@@ -105,9 +105,9 @@ const THEME_OPTIONS: ThemeOption[] = [
     {
         id: 'bloomberg',
         label: 'Bloomberg',
-        description: 'Terminal amber on near-black.',
+        description: 'Night Style — deep charcoal with electric orange.',
         icon: TerminalIcon,
-        swatch: { bg: 'hsl(40 100% 2%)', card: 'hsl(40 60% 4%)', primary: 'hsl(36 100% 55%)' },
+        swatch: { bg: 'hsl(204 9% 11%)', card: 'hsl(204 6% 15%)', primary: 'hsl(21 100% 53%)' },
     },
     {
         id: 'system',
