@@ -23,33 +23,11 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-// MUI
-import LinearProgress from '@mui/material/LinearProgress';
-import Chip from '@mui/material/Chip';
-import CircularProgress from '@mui/material/CircularProgress';
-
-// MUI Icons
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import RefreshIcon from '@mui/icons-material/Refresh';
-
-// Ant Design
+// Ant Design — kept for the dark theme `ConfigProvider` and `Empty` component.
 import { Tag, Empty, ConfigProvider, theme as antTheme } from 'antd';
-import {
-  ThunderboltOutlined,
-  RocketOutlined,
-  SafetyCertificateOutlined,
-  DashboardOutlined,
-  SettingOutlined,
-  KeyOutlined,
-  CodeOutlined,
-  LineChartOutlined,
-  RobotOutlined,
-} from '@ant-design/icons';
 
-// Lucide icons (same as strategy builder)
+// Lucide is the canonical icon library for this app. Everything below
+// replaces the previous MUI/AntDesign icon imports for visual consistency.
 import {
   Activity,
   Zap,
@@ -63,7 +41,20 @@ import {
   ShieldCheck,
   Check,
   X,
+  Loader2,
+  RefreshCw,
+  Play,
+  CheckCircle2,
+  AlertCircle,
+  LayoutDashboard,
+  Settings as SettingsIcon,
+  Key,
+  Code,
+  LineChart,
+  Bot,
+  Rocket,
 } from 'lucide-react';
+
 const Dashboard = () => {
   const { user, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
@@ -131,10 +122,7 @@ const Dashboard = () => {
           animate={{ opacity: 1, scale: 1 }}
           className="flex flex-col items-center gap-4"
         >
-          <CircularProgress
-            size={48}
-            sx={{ color: 'hsl(217, 91%, 60%)' }}
-          />
+          <Loader2 className="w-12 h-12 animate-spin text-primary" />
           <span className="text-muted-foreground text-sm">Loading dashboard...</span>
         </motion.div>
       </div>
@@ -165,15 +153,9 @@ const Dashboard = () => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                <LinearProgress
-                  sx={{
-                    height: 2,
-                    backgroundColor: 'transparent',
-                    '& .MuiLinearProgress-bar': {
-                      backgroundColor: 'hsl(217, 91%, 60%)',
-                    },
-                  }}
-                />
+                <div className="h-0.5 w-full overflow-hidden bg-transparent">
+                  <div className="h-full w-1/3 animate-pulse bg-primary" />
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -182,7 +164,7 @@ const Dashboard = () => {
           <div className="w-full max-w-none space-y-6 p-4 md:p-6">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="flex items-center gap-2">
-                <DashboardOutlined className="text-primary text-lg" />
+                <LayoutDashboard className="text-primary w-4 h-4" />
                 <h1 className="text-white font-medium text-sm tracking-tight">Dashboard</h1>
                 <div className="h-4 w-px bg-white/10" />
                 <span className="text-white/40 text-xs">Welcome back, {user?.name ?? 'Trader'}</span>
@@ -218,9 +200,8 @@ const Dashboard = () => {
                       onClick={() => loadDashboard(true)}
                       className="p-1.5 rounded hover:bg-white/10 transition-colors text-white/60 hover:text-white"
                     >
-                      <RefreshIcon
-                        sx={{ fontSize: 18 }}
-                        className={refreshing ? 'animate-spin' : ''}
+                      <RefreshCw
+                        className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`}
                       />
                     </button>
                   </TooltipTrigger>
@@ -293,7 +274,7 @@ const Dashboard = () => {
                       onClick={() => navigate('/')}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
                     >
-                      <CodeOutlined />
+                      <Code className="w-3.5 h-3.5" />
                       New Strategy
                     </button>
                   </CardHeader>
@@ -311,7 +292,7 @@ const Dashboard = () => {
                           onClick={() => navigate('/')}
                           className="flex items-center gap-2 mx-auto px-4 py-2 rounded-lg text-sm bg-primary/15 text-primary hover:bg-primary/25 transition-colors"
                         >
-                          <RocketOutlined />
+                          <Rocket className="w-3.5 h-3.5" />
                           Create your first strategy
                           <ArrowRight className="w-3.5 h-3.5" />
                         </button>
@@ -376,37 +357,37 @@ const Dashboard = () => {
                 <Card className="bg-card/60 backdrop-blur-sm border-border/30 shadow-trading">
                   <CardHeader className="pb-2">
                     <CardTitle className="flex items-center gap-2 text-foreground">
-                      <ThunderboltOutlined className="text-amber-400" />
+                      <Zap className="w-4 h-4 text-amber-400" />
                       Quick Actions
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="grid grid-cols-2 gap-2">
                     <QuickActionButton
-                      icon={<CodeOutlined />}
+                      icon={<Code className="w-3.5 h-3.5" />}
                       label="Strategy Builder"
                       onClick={() => navigate('/')}
                       color="purple"
                     />
                     <QuickActionButton
-                      icon={<KeyOutlined />}
+                      icon={<Key className="w-3.5 h-3.5" />}
                       label="Credentials"
                       onClick={() => navigate('/credentials')}
                       color="amber"
                     />
                     <QuickActionButton
-                      icon={<SettingOutlined />}
+                      icon={<SettingsIcon className="w-3.5 h-3.5" />}
                       label="Agent Config"
                       onClick={() => navigate('/agent')}
                       color="blue"
                     />
                     <QuickActionButton
-                      icon={<RobotOutlined />}
+                      icon={<Bot className="w-3.5 h-3.5" />}
                       label="Agents"
                       onClick={() => navigate('/agents')}
                       color="rose"
                     />
                     <QuickActionButton
-                      icon={<SafetyCertificateOutlined />}
+                      icon={<ShieldCheck className="w-3.5 h-3.5" />}
                       label="Settings"
                       onClick={() => navigate('/settings')}
                       color="green"
@@ -445,7 +426,7 @@ const Dashboard = () => {
                 <Card className="bg-card/60 backdrop-blur-sm border-border/30 shadow-trading">
                   <CardHeader className="pb-2">
                     <CardTitle className="flex items-center gap-2 text-foreground">
-                      <LineChartOutlined className="text-emerald-400" />
+                      <LineChart className="w-4 h-4 text-emerald-400" />
                       Portfolio Snapshot
                     </CardTitle>
                   </CardHeader>
@@ -669,20 +650,11 @@ const Dashboard = () => {
                                   {run.strategy?.name ?? 'Unknown'}
                                 </span>
                                 <div className="flex items-center gap-3 mt-0.5">
-                                  <Chip
-                                    label={run.triggerType ?? 'manual'}
-                                    size="small"
-                                    variant="outlined"
-                                    sx={{
-                                      height: 18,
-                                      fontSize: '10px',
-                                      color: '#94a3b8',
-                                      borderColor: 'rgba(148,163,184,0.2)',
-                                      '& .MuiChip-label': { px: 1 },
-                                    }}
-                                  />
+                                  <Badge variant="outline" className="h-[18px] px-1.5 text-[10px] text-slate-400 border-slate-400/20">
+                                    {run.triggerType ?? 'manual'}
+                                  </Badge>
                                   <span className="text-muted-foreground text-[11px] flex items-center gap-1">
-                                    <ScheduleIcon sx={{ fontSize: 11 }} />
+                                    <Clock className="w-2.5 h-2.5" />
                                     {run.durationMs ? `${run.durationMs}ms` : '-'}
                                   </span>
                                 </div>
@@ -853,25 +825,25 @@ const StatusIcon = ({ status }: { status: string }) => {
     case 'success':
       return (
         <div className="p-1.5 rounded-lg bg-green-500/10">
-          <CheckCircleOutlineIcon sx={{ fontSize: 16, color: '#22c55e' }} />
+          <CheckCircle2 className="w-4 h-4 text-green-500" />
         </div>
       );
     case 'error':
       return (
         <div className="p-1.5 rounded-lg bg-red-500/10">
-          <ErrorOutlineIcon sx={{ fontSize: 16, color: '#ef4444' }} />
+          <AlertCircle className="w-4 h-4 text-red-500" />
         </div>
       );
     case 'running':
       return (
         <div className="p-1.5 rounded-lg bg-blue-500/10">
-          <PlayArrowIcon sx={{ fontSize: 16, color: '#3b82f6' }} />
+          <Play className="w-4 h-4 text-blue-500" />
         </div>
       );
     default:
       return (
         <div className="p-1.5 rounded-lg bg-white/5">
-          <ScheduleIcon sx={{ fontSize: 16, color: '#94a3b8' }} />
+          <Clock className="w-4 h-4 text-slate-400" />
         </div>
       );
   }

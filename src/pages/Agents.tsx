@@ -94,8 +94,8 @@ const Agents = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background text-foreground pt-16 pb-0">
-      <div className="w-full max-w-none px-4 md:px-6 flex flex-col h-[calc(100vh-4rem)]">
+    <div className="min-h-screen bg-background text-foreground pt-14 pb-0">
+      <div className="w-full max-w-none px-4 md:px-6 flex flex-col h-[calc(100vh-3.5rem)]">
         {/* ─── Header bar ─────────────────────────────────────── */}
         <header className="flex items-center justify-between gap-3 py-3">
           <div className="flex items-center gap-2 min-w-0">

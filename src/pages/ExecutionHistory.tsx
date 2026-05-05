@@ -10,15 +10,14 @@ import {
     ArrowRight,
     AlertTriangle,
     Zap,
+    Loader2,
+    Timer,
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PAGE_CONTENT_CLASS } from '@/components/PageHeader';
 import { ConfigProvider, theme as antTheme, Empty, Tag } from 'antd';
-import CircularProgress from '@mui/material/CircularProgress';
-import Chip from '@mui/material/Chip';
-import ScheduleIcon from '@mui/icons-material/Schedule';
 
 const ExecutionHistory = () => {
     const { isAuthenticated } = useAuthStore();
@@ -89,7 +88,7 @@ const ExecutionHistory = () => {
                             <CardContent className="p-0">
                                 {isLoading ? (
                                     <div className="flex flex-col items-center justify-center h-64 gap-3 text-muted-foreground">
-                                        <CircularProgress size={32} sx={{ color: 'hsl(217, 91%, 60%)' }} />
+                                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
                                         <span className="text-sm">Loading runs...</span>
                                     </div>
                                 ) : runs.length === 0 ? (
@@ -135,17 +134,9 @@ const ExecutionHistory = () => {
 
                                                     {/* Trigger */}
                                                     <div className="flex-1">
-                                                        <Chip
-                                                            label={run.triggerType ?? 'manual'}
-                                                            size="small"
-                                                            variant="outlined"
-                                                            sx={{
-                                                                height: 20,
-                                                                fontSize: '11px',
-                                                                color: '#94a3b8',
-                                                                borderColor: 'rgba(148,163,184,0.2)',
-                                                            }}
-                                                        />
+                                                        <Badge variant="outline" className="text-[11px] h-5 px-2 text-slate-400 border-slate-400/20">
+                                                            {run.triggerType ?? 'manual'}
+                                                        </Badge>
                                                     </div>
 
                                                     {/* Status */}
@@ -166,7 +157,7 @@ const ExecutionHistory = () => {
 
                                                     {/* Duration */}
                                                     <div className="flex-1 text-sm text-muted-foreground flex items-center gap-1.5">
-                                                        <ScheduleIcon sx={{ fontSize: 14 }} />
+                                                        <Timer className="w-3.5 h-3.5" />
                                                         {run.durationMs ? `${run.durationMs}ms` : '—'}
                                                     </div>
 

@@ -11,6 +11,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip,
   AreaChart, Area, XAxis, YAxis, CartesianGrid, BarChart, Bar, Legend,
@@ -297,8 +298,11 @@ const Portfolio = () => {
       // Response might return {"AAPL": {"price": 180.5, "previousClose": 178.2}} directly or wrapped
       store.updatePrices(response.prices || response);
       store.takeSnapshot();
+      toast.success(`Updated prices for ${symbols.length} holdings`);
     } catch (error) {
       console.error('Failed to fetch portfolio prices:', error);
+      const message = error instanceof Error ? error.message : 'Price refresh failed';
+      toast.error(`Could not fetch prices: ${message}`);
     } finally {
       setLoadingPrices(false);
     }

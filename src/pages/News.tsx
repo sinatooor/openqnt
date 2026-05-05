@@ -202,7 +202,7 @@ export default function News() {
     };
 
     return (
-        <div className="min-h-screen bg-background pt-20">
+        <div className="min-h-screen bg-background pt-14">
             <main className={`p-6 ${PAGE_CONTENT_CLASS} space-y-6`}>
                 {/* Header */}
                 <div className="flex flex-wrap items-center justify-between gap-4">

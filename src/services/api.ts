@@ -358,6 +358,8 @@ class ApiClient {
         }
 
         (async () => {
+            let sawDone = false;
+            let aborted = false;
             try {
                 const response = await fetch(`${baseUrl}/api/ai-assistant/chat/stream`, {
                     method: 'POST',
@@ -371,11 +373,16 @@ class ApiClient {
 
                 if (!response.ok) {
                     onEvent?.({ type: 'error', message: `HTTP ${response.status}` });
+                    sawDone = true;
                     return;
                 }
 
                 const reader = response.body?.getReader();
-                if (!reader) return;
+                if (!reader) {
+                    onEvent?.({ type: 'error', message: 'No response body' });
+                    sawDone = true;
+                    return;
+                }
 
                 const decoder = new TextDecoder();
                 let buffer = '';
@@ -392,14 +399,29 @@ class ApiClient {
                         if (line.startsWith('data: ')) {
                             try {
                                 const event = JSON.parse(line.slice(6)) as AiChatEvent;
+                                if (event.type === 'done' || event.type === 'error') sawDone = true;
                                 onEvent?.(event);
                             } catch { /* skip malformed events */ }
                         }
                     }
                 }
             } catch (err: any) {
-                if (err.name !== 'AbortError') {
+                if (err.name === 'AbortError') {
+                    aborted = true;
+                } else {
                     onEvent?.({ type: 'error', message: err.message || 'Stream failed' });
+                    sawDone = true;
+                }
+            } finally {
+                // Synthesise a terminal event so the consumer never gets
+                // stuck in "streaming" state when the connection drops
+                // before the server sends `done` (e.g. flaky network,
+                // backend crash mid-token).
+                if (!sawDone && !aborted) {
+                    onEvent?.({ type: 'error', message: 'Stream ended unexpectedly' });
+                }
+                if (!aborted) {
+                    onEvent?.({ type: 'done' });
                 }
             }
         })();
