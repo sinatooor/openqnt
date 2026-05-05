@@ -10,11 +10,14 @@ All colors MUST be HSL.
   /* ────────────────────────────────────────────────────────────────────────
      DEFAULT THEME — Webull-inspired dark.
      :root carries the dark theme so the app works without an explicit attr.
-     [data-theme="dark"] mirrors :root so swapping between themes is symmetric.
+     Other themes set [data-theme] on :root and override these tokens.
+     We deliberately do NOT include `.dark` in this selector group: that
+     class is also applied by Radix UI to its wrapping `<div class="radix-
+     themes dark">` element, which would re-override the variables and
+     break theme switching for descendants.
      ──────────────────────────────────────────────────────────────────────── */
   :root,
-  :root[data-theme="dark"],
-  .dark {
+  :root[data-theme="dark"] {
     --background: 0 0% 4%;
     --foreground: 0 0% 98%;
 
@@ -62,6 +65,9 @@ All colors MUST be HSL.
     --block-ta-foreground: 0 0% 100%;
 
     --grid-color: 220 13% 15%;
+    /* Strategy-flow canvas dot grid (n8n-style). Visible on dark bg
+       without dominating; themes override below. */
+    --canvas-dot: 220 9% 28%;
 
     --sidebar-background: 0 0% 5%;
     --sidebar-foreground: 0 0% 90%;
@@ -127,6 +133,7 @@ All colors MUST be HSL.
     --block-ta-foreground: 0 0% 100%;
 
     --grid-color: 220 13% 91%;
+    --canvas-dot: 220 13% 78%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5% 26%;
@@ -191,6 +198,7 @@ All colors MUST be HSL.
     --block-ta-foreground: 0 0% 0%;
 
     --grid-color: 0 0% 25%;
+    --canvas-dot: 0 0% 50%;
 
     --sidebar-background: 0 0% 0%;
     --sidebar-foreground: 0 0% 100%;
@@ -261,6 +269,7 @@ All colors MUST be HSL.
     --block-ta-foreground: 0 0% 100%;
 
     --grid-color: 36 100% 8%;
+    --canvas-dot: 36 100% 18%;
 
     --sidebar-background: 40 100% 2%;
     --sidebar-foreground: 36 100% 60%;
@@ -641,6 +650,12 @@ All colors MUST be HSL.
   to {
     stroke-dashoffset: -10;
   }
+}
+
+/* Canvas dot grid — drives fill from the active theme so the pattern
+   re-paints on theme switch instead of being snapshotted at mount. */
+.pipeline-canvas .react-flow__background-pattern {
+  fill: hsl(var(--canvas-dot, 220 9% 28%));
 }
 
 /* Handle hover effect.

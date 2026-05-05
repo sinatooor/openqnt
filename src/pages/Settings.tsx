@@ -39,6 +39,13 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { BrokerConnectionModal } from '@/features/strategy-flow/components/modals/BrokerConnectionModal';
 import { PAGE_CONTENT_CLASS } from '@/components/PageHeader';
 import { AvanzaConnectModal } from '@/integrations/avanza/AvanzaConnectModal';
@@ -378,44 +385,55 @@ const Settings = () => {
                                     Pick a theme for the entire app — affects every page, panel, and modal.
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent className="pt-6">
-                                <RadioGroup
-                                    value={theme}
-                                    onValueChange={(v) => setTheme(v as Theme)}
-                                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3"
-                                >
-                                    {THEME_OPTIONS.map((opt) => {
-                                        const active = theme === opt.id;
-                                        const Icon = opt.icon;
+                            <CardContent className="pt-6 space-y-4">
+                                <div className="flex items-start gap-4 flex-wrap">
+                                    <div className="flex-1 min-w-[240px] space-y-1.5">
+                                        <Label className="text-xs text-muted-foreground">Theme</Label>
+                                        <Select value={theme} onValueChange={(v) => setTheme(v as Theme)}>
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {THEME_OPTIONS.map((opt) => {
+                                                    const Icon = opt.icon;
+                                                    return (
+                                                        <SelectItem key={opt.id} value={opt.id}>
+                                                            <div className="flex items-center gap-2">
+                                                                <Icon className="w-3.5 h-3.5 text-muted-foreground" />
+                                                                <span>{opt.label}</span>
+                                                            </div>
+                                                        </SelectItem>
+                                                    );
+                                                })}
+                                            </SelectContent>
+                                        </Select>
+                                        {(() => {
+                                            const active = THEME_OPTIONS.find((o) => o.id === theme);
+                                            return active ? (
+                                                <p className="text-[11px] text-muted-foreground leading-snug pt-1">
+                                                    {active.description}
+                                                </p>
+                                            ) : null;
+                                        })()}
+                                    </div>
+                                    {(() => {
+                                        const active = THEME_OPTIONS.find((o) => o.id === theme);
+                                        if (!active) return null;
                                         return (
-                                            <label
-                                                key={opt.id}
-                                                className={`flex flex-col gap-2 rounded-lg border p-3 cursor-pointer transition-colors ${
-                                                    active
-                                                        ? 'border-primary/60 bg-primary/5'
-                                                        : 'border-white/5 bg-black/20 hover:bg-black/30'
-                                                }`}
-                                            >
-                                                <div className="flex items-center gap-2">
-                                                    <RadioGroupItem value={opt.id} className="mt-0" />
-                                                    <Icon className="w-3.5 h-3.5 text-muted-foreground" />
-                                                    <span className="text-sm font-medium">{opt.label}</span>
-                                                </div>
+                                            <div className="flex flex-col gap-1.5 shrink-0">
+                                                <Label className="text-xs text-muted-foreground">Preview</Label>
                                                 <div
-                                                    className="h-12 rounded-md border border-border/40 overflow-hidden flex"
+                                                    className="w-32 h-10 rounded-md border border-border/40 overflow-hidden flex"
                                                     aria-hidden
                                                 >
-                                                    <div className="flex-1" style={{ background: opt.swatch.bg }} />
-                                                    <div className="flex-1" style={{ background: opt.swatch.card }} />
-                                                    <div className="flex-1" style={{ background: opt.swatch.primary }} />
+                                                    <div className="flex-1" style={{ background: active.swatch.bg }} />
+                                                    <div className="flex-1" style={{ background: active.swatch.card }} />
+                                                    <div className="flex-1" style={{ background: active.swatch.primary }} />
                                                 </div>
-                                                <p className="text-[11px] text-muted-foreground leading-snug">
-                                                    {opt.description}
-                                                </p>
-                                            </label>
+                                            </div>
                                         );
-                                    })}
-                                </RadioGroup>
+                                    })()}
+                                </div>
                             </CardContent>
                         </Card>
                     </motion.div>
