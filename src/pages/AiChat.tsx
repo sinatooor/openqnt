@@ -571,7 +571,7 @@ const AiChat = () => {
   const isEmpty = messages.length === 0;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center pt-20 pb-4 px-4">
+    <div className="min-h-screen bg-background flex flex-col items-center pt-14 pb-4 px-4">
       <div className="w-full max-w-3xl flex flex-col flex-1 min-h-0">
         {/* ── Empty State ─────────────────────────────────── */}
         {isEmpty && (

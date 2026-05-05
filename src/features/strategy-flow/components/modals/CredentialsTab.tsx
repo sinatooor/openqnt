@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/services/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Key, Plus, X, Trash2, Lock, Clock } from 'lucide-react';
+import { Key, Plus, X, Trash2, Lock, Clock, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import CircularProgress from '@mui/material/CircularProgress';
 
 export const CredentialsTab = () => {
     const [credentials, setCredentials] = useState<any[]>([]);
@@ -144,7 +143,7 @@ export const CredentialsTab = () => {
             {/* Credentials List */}
             {loading ? (
                 <div className="flex flex-col items-center justify-center h-48 gap-3 text-muted-foreground">
-                    <CircularProgress size={24} sx={{ color: 'hsl(45, 93%, 47%)' }} />
+                    <Loader2 className="w-6 h-6 animate-spin text-amber-400" />
                 </div>
             ) : credentials.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-border rounded-xl">

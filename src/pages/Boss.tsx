@@ -56,8 +56,8 @@ const Boss = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground pt-16 pb-0">
-      <div className="w-full max-w-5xl mx-auto px-4 md:px-6 flex flex-col h-[calc(100vh-4rem)]">
+    <div className="min-h-screen bg-background text-foreground pt-14 pb-0">
+      <div className="w-full max-w-5xl mx-auto px-4 md:px-6 flex flex-col h-[calc(100vh-3.5rem)]">
         <header className="flex items-center gap-2 py-3">
           <Brain className="w-5 h-5 text-purple-400" />
           <h1 className="text-white font-medium text-sm tracking-tight">Boss</h1>

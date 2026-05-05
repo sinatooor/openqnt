@@ -396,9 +396,9 @@ export const selectAgentRuns = (agentId: string) => (s: Store) =>
     .filter((r) => r.agentId === agentId)
     .sort((a, b) => b.startedAt - a.startedAt);
 
-const EMPTY_EVENTS: readonly never[] = Object.freeze([]);
-export const selectRunEvents = (runId: string) => (s: Store) =>
-  s.eventsByRun[runId] ?? (EMPTY_EVENTS as never[]);
+const EMPTY_EVENTS: readonly StreamEvent[] = Object.freeze([]) as readonly StreamEvent[];
+export const selectRunEvents = (runId: string) => (s: Store): readonly StreamEvent[] =>
+  s.eventsByRun[runId] ?? EMPTY_EVENTS;
 
 export const selectAgentArtifacts = (agentId: string) => (s: Store) =>
   Object.values(s.artifacts)
