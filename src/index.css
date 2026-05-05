@@ -85,45 +85,59 @@ All colors MUST be HSL.
   }
 
   /* ────────────────────────────────────────────────────────────────────────
-     LIGHT THEME — clean, daylight reading.
+     LIGHT THEME — "Architectural Clarity" (per design system spec).
 
-     Tuned so cards visually separate from the page: the page itself is a
-     very faint cool gray (`--background`) and cards are pure white
-     (`--card`), with a slightly darker border to keep edges legible.
+     Editorial fintech feel: tonal layering instead of borders, electric
+     blue action pulse, deep charcoal text. Cards lift off the off-white
+     canvas via a 2-point hex delta — borders are present but "felt, not
+     seen" (low opacity).
+
+     Surface map:
+       Level 0  surface              #f7f9fb  →  --background
+       Level 1  surface-container-   #ffffff  →  --card / --popover
+                lowest
+       Level 2  surface-container-   #e6e8ea  →  --secondary / --muted
+                high
+     Action:
+       primary  electric blue        #003ec7
+       on-surface                    #191c1e
      ──────────────────────────────────────────────────────────────────────── */
   :root[data-theme="light"] {
-    --background: 220 20% 97%;
-    --foreground: 222 47% 11%;
+    --background: 210 33% 98%;
+    --foreground: 204 9% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 204 9% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 204 9% 11%;
 
-    --primary: 217 91% 50%;
+    --primary: 221 100% 39%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 94%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 210 7% 91%;
+    --secondary-foreground: 204 9% 11%;
 
-    --muted: 220 14% 94%;
-    --muted-foreground: 215 16% 40%;
+    --muted: 210 7% 91%;
+    --muted-foreground: 210 6% 35%;
 
-    --accent: 220 14% 94%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 210 7% 91%;
+    --accent-foreground: 204 9% 11%;
 
-    --profit: 142 71% 38%;
+    --profit: 142 71% 36%;
     --profit-foreground: 0 0% 100%;
-    --loss: 0 76% 50%;
+    --loss: 0 76% 48%;
     --loss-foreground: 0 0% 100%;
 
-    --destructive: 0 76% 50%;
+    --destructive: 0 76% 48%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 82%;
-    --input: 220 13% 88%;
-    --ring: 217 91% 50%;
+    /* "Ghost border" — felt, not seen. We keep a token here so components
+       that strictly need a 1px line for a11y still have somewhere to point;
+       large sections should rely on tonal shifts instead. */
+    --border: 210 10% 90%;
+    --input: 210 7% 91%;
+    --ring: 221 100% 39%;
 
     --block-environment: 142 71% 38%;
     --block-environment-foreground: 0 0% 100%;
@@ -136,17 +150,17 @@ All colors MUST be HSL.
     --block-ta: 0 76% 50%;
     --block-ta-foreground: 0 0% 100%;
 
-    --grid-color: 220 13% 91%;
-    --canvas-dot: 220 13% 78%;
+    --grid-color: 210 10% 91%;
+    --canvas-dot: 210 8% 78%;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5% 26%;
-    --sidebar-primary: 240 6% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 5% 96%;
-    --sidebar-accent-foreground: 240 6% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 204 9% 11%;
+    --sidebar-primary: 221 100% 39%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 7% 91%;
+    --sidebar-accent-foreground: 204 9% 11%;
+    --sidebar-border: 210 10% 90%;
+    --sidebar-ring: 221 100% 39%;
 
     --surface-overlay: 0 0% 0% / 0.04;
     --surface-subtle: 0 0% 0% / 0.02;
@@ -225,74 +239,84 @@ All colors MUST be HSL.
   }
 
   /* ────────────────────────────────────────────────────────────────────────
-     BLOOMBERG THEME — terminal amber on near-black.
+     BLOOMBERG THEME — "Architectural Clarity / Night Style".
+
+     Inverted surface hierarchy from the light theme. Avoid pure black
+     (`#000`) — ground in deep charcoal. Cards lift via a 4-point hex
+     delta (`#191c1e` → `#242729`), no decorative borders. Action pulse
+     becomes electric orange (`#FF630F`) to maintain vibrancy without
+     gradients.
+
+     Surface map:
+       Level 0  on-surface canvas    #191c1e  →  --background
+       Level 1  card                 #242729  →  --card
+       Level 2  popover / inset      ~#2c2f31 →  --popover / --secondary
+     Action:
+       primary  electric orange      #FF630F
      ──────────────────────────────────────────────────────────────────────── */
   :root[data-theme="bloomberg"] {
-    --background: 40 100% 2%;
-    --foreground: 36 100% 60%;
+    --background: 204 9% 11%;
+    --foreground: 0 0% 96%;
 
-    --card: 40 60% 4%;
-    --card-foreground: 36 100% 60%;
+    --card: 204 6% 15%;
+    --card-foreground: 0 0% 96%;
 
-    --popover: 40 60% 5%;
-    --popover-foreground: 36 100% 60%;
+    --popover: 204 6% 17%;
+    --popover-foreground: 0 0% 96%;
 
-    --primary: 36 100% 55%;
-    --primary-foreground: 40 100% 2%;
+    --primary: 21 100% 53%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 40 50% 7%;
-    --secondary-foreground: 36 100% 60%;
+    --secondary: 204 6% 18%;
+    --secondary-foreground: 0 0% 96%;
 
-    --muted: 40 30% 9%;
-    --muted-foreground: 36 50% 55%;
+    --muted: 204 5% 19%;
+    --muted-foreground: 210 6% 65%;
 
-    --accent: 36 100% 55%;
-    --accent-foreground: 40 100% 2%;
+    --accent: 21 100% 53%;
+    --accent-foreground: 0 0% 100%;
 
-    --profit: 120 100% 50%;
-    --profit-foreground: 40 100% 2%;
-    --loss: 0 100% 55%;
+    --profit: 142 71% 45%;
+    --profit-foreground: 0 0% 100%;
+    --loss: 0 84% 60%;
     --loss-foreground: 0 0% 100%;
 
-    --destructive: 0 100% 55%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 36 100% 12%;
-    --input: 40 50% 7%;
-    --ring: 36 100% 55%;
+    /* Ghost border — felt, not seen. Boundaries come from background
+       tonal shifts; this token is just for elements that legitimately
+       need a 1px line (focused inputs, separators in dense lists). */
+    --border: 204 6% 22%;
+    --input: 204 5% 19%;
+    --ring: 21 100% 53%;
 
-    --block-environment: 120 100% 50%;
-    --block-environment-foreground: 40 100% 2%;
-    --block-operator: 36 100% 55%;
-    --block-operator-foreground: 40 100% 2%;
-    --block-control: 25 100% 55%;
-    --block-control-foreground: 40 100% 2%;
-    --block-trade: 190 100% 55%;
-    --block-trade-foreground: 40 100% 2%;
-    --block-ta: 0 100% 55%;
+    --block-environment: 142 71% 45%;
+    --block-environment-foreground: 0 0% 100%;
+    --block-operator: 21 100% 53%;
+    --block-operator-foreground: 0 0% 100%;
+    --block-control: 30 95% 53%;
+    --block-control-foreground: 0 0% 100%;
+    --block-trade: 190 94% 50%;
+    --block-trade-foreground: 0 0% 100%;
+    --block-ta: 0 84% 60%;
     --block-ta-foreground: 0 0% 100%;
 
-    --grid-color: 36 100% 8%;
-    --canvas-dot: 36 100% 18%;
+    --grid-color: 204 6% 18%;
+    --canvas-dot: 204 6% 28%;
 
-    --sidebar-background: 40 100% 2%;
-    --sidebar-foreground: 36 100% 60%;
-    --sidebar-primary: 36 100% 55%;
-    --sidebar-primary-foreground: 40 100% 2%;
-    --sidebar-accent: 40 50% 7%;
-    --sidebar-accent-foreground: 36 100% 60%;
-    --sidebar-border: 36 100% 12%;
-    --sidebar-ring: 36 100% 55%;
+    --sidebar-background: 204 9% 11%;
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-primary: 21 100% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 204 6% 18%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 204 6% 22%;
+    --sidebar-ring: 21 100% 53%;
 
-    --surface-overlay: 36 100% 50% / 0.04;
-    --surface-subtle: 36 100% 50% / 0.02;
-    --surface-strong: 36 100% 50% / 0.08;
-  }
-
-  /* Bloomberg theme: terminal-style font for body text */
-  :root[data-theme="bloomberg"] body {
-    font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
-    letter-spacing: 0;
+    --surface-overlay: 0 0% 100% / 0.04;
+    --surface-subtle: 0 0% 100% / 0.02;
+    --surface-strong: 0 0% 100% / 0.08;
   }
 }
 

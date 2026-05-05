@@ -342,14 +342,14 @@ const Portfolio = () => {
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="flex items-center gap-2">
                 <Briefcase className="w-4 h-4 text-primary" />
-                <h1 className="text-white font-medium text-sm tracking-tight">Portfolio</h1>
-                <div className="h-4 w-px bg-white/10" />
+                <h1 className="text-foreground font-medium text-sm tracking-tight">Portfolio</h1>
+                <div className="h-4 w-px bg-muted/60" />
                 {isDemo && !hasHoldings && (
                   <Badge variant="outline" className="text-amber-400 border-amber-500/30 text-[10px]">
                     Demo Data
                   </Badge>
                 )}
-                <span className="text-white/40 text-xs">
+                <span className="text-muted-foreground text-xs">
                   {displayHoldings.length} holding{displayHoldings.length !== 1 ? 's' : ''}
                 </span>
               </div>
@@ -359,7 +359,7 @@ const Portfolio = () => {
                     <button
                       onClick={handleRefreshPrices}
                       disabled={loadingPrices}
-                      className={`p-1.5 rounded hover:bg-white/10 transition-colors text-white/60 hover:text-white ${loadingPrices ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`p-1.5 rounded hover:bg-muted/60 transition-colors text-foreground/70 hover:text-foreground ${loadingPrices ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       <RefreshCw className={`w-4 h-4 ${loadingPrices ? 'animate-spin' : ''}`} />
                     </button>
@@ -422,7 +422,7 @@ const Portfolio = () => {
 
             {/* ─── Tabs ─── */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-              <TabsList className="bg-white/5 border border-white/10">
+              <TabsList className="bg-muted/40 border border-border/60">
                 <TabsTrigger value="overview" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary text-xs">
                   Overview
                 </TabsTrigger>
@@ -607,7 +607,7 @@ const Portfolio = () => {
                         <div className="overflow-x-auto">
                           <table className="w-full text-xs">
                             <thead>
-                              <tr className="text-muted-foreground border-b border-white/5">
+                              <tr className="text-muted-foreground border-b border-border/60">
                                 <th className="text-left py-2 px-2 font-medium">Asset</th>
                                 <th className="text-right py-2 px-2 font-medium">Quantity</th>
                                 <th className="text-right py-2 px-2 font-medium">Avg Cost</th>
@@ -633,7 +633,7 @@ const Portfolio = () => {
                                     initial={{ opacity: 0, x: -10 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: idx * 0.03 }}
-                                    className="border-b border-white/[0.03] hover:bg-white/5 transition-colors"
+                                    className="border-b border-border/60 hover:bg-muted/40 transition-colors"
                                   >
                                     <td className="py-2.5 px-2">
                                       <div className="flex items-center gap-2">
@@ -679,7 +679,7 @@ const Portfolio = () => {
                                         {hasHoldings && (
                                           <button
                                             onClick={() => store.removeHolding(h.id)}
-                                            className="p-1 rounded hover:bg-red-500/10 text-white/30 hover:text-red-400 transition-colors"
+                                            className="p-1 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition-colors"
                                           >
                                             <Trash2 className="w-3.5 h-3.5" />
                                           </button>
@@ -716,7 +716,7 @@ const Portfolio = () => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: idx * 0.05 }}
                       >
-                        <Card className="bg-card/60 backdrop-blur-sm border-border/30 shadow-trading hover:border-white/20 transition-colors">
+                        <Card className="bg-card/60 backdrop-blur-sm border-border/30 shadow-trading hover:border-border transition-colors">
                           <CardHeader className="pb-2">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
@@ -783,7 +783,7 @@ const Portfolio = () => {
                               </div>
                             </div>
 
-                            <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                            <div className="flex items-center justify-between pt-2 border-t border-border/60">
                               <span className="text-xs text-muted-foreground">P&L</span>
                               <div className={`flex items-center gap-1 text-xs font-medium ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
                                 {isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
@@ -960,7 +960,7 @@ const Portfolio = () => {
                           .map((h, i) => {
                             const isPositive = h.pnlPercent >= 0;
                             return (
-                              <div key={h.id} className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-white/5 transition-colors">
+                              <div key={h.id} className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/40 transition-colors">
                                 <div className="flex items-center gap-2">
                                   <span className="text-muted-foreground text-[10px] w-4">#{i + 1}</span>
                                   <span className="text-foreground text-xs font-medium">{h.symbol}</span>
@@ -991,7 +991,7 @@ const Portfolio = () => {
                         <MetricRow label="Total Cost Basis" value={formatCurrency(totalCost)} />
                         <MetricRow label="Unrealized P&L" value={formatCurrency(totalPnL)} valueColor={totalPnL >= 0 ? 'text-green-400' : 'text-red-400'} />
                         <MetricRow label="Return %" value={formatPercent(totalPnLPercent)} valueColor={totalPnLPercent >= 0 ? 'text-green-400' : 'text-red-400'} />
-                        <div className="border-t border-white/5 pt-3" />
+                        <div className="border-t border-border/60 pt-3" />
                         <MetricRow label="Largest Position" value={allocations[0]?.symbol ?? '-'} />
                         <MetricRow label="Largest Weight" value={allocations[0] ? `${allocations[0].weight.toFixed(1)}%` : '-'} />
                         <MetricRow label="Number of Holdings" value={displayHoldings.length.toString()} />
@@ -1055,7 +1055,7 @@ const AddHoldingDialog = ({ onAdd, onClose }: AddHoldingDialogProps) => {
   };
 
   return (
-    <DialogContent className="bg-[#1e1e2e] border-white/10 text-foreground max-w-md">
+    <DialogContent className="bg-[#1e1e2e] border-border/60 text-foreground max-w-md">
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
           <Plus className="w-4 h-4 text-primary" />
@@ -1077,7 +1077,7 @@ const AddHoldingDialog = ({ onAdd, onClose }: AddHoldingDialogProps) => {
                 onClick={() => setAssetType(type)}
                 className={`flex flex-col items-center gap-1 p-2 rounded-lg text-[10px] transition-all ${assetType === type
                     ? 'bg-primary/20 text-primary border border-primary/30'
-                    : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'
+                    : 'bg-muted/40 text-muted-foreground hover:bg-muted/60 border border-transparent'
                   }`}
               >
                 <span style={{ color: assetType === type ? undefined : ASSET_COLORS[type] }}>
@@ -1097,7 +1097,7 @@ const AddHoldingDialog = ({ onAdd, onClose }: AddHoldingDialogProps) => {
               value={symbol}
               onChange={(e) => setSymbol(e.target.value)}
               placeholder="e.g. AAPL, BTC, XAU"
-              className="bg-white/5 border-white/10 text-sm"
+              className="bg-muted/40 border-border/60 text-sm"
             />
           </div>
           <div className="space-y-1.5">
@@ -1106,7 +1106,7 @@ const AddHoldingDialog = ({ onAdd, onClose }: AddHoldingDialogProps) => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Apple Inc."
-              className="bg-white/5 border-white/10 text-sm"
+              className="bg-muted/40 border-border/60 text-sm"
             />
           </div>
         </div>
@@ -1119,7 +1119,7 @@ const AddHoldingDialog = ({ onAdd, onClose }: AddHoldingDialogProps) => {
               onClick={() => setInputMode('quantity')}
               className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${inputMode === 'quantity'
                   ? 'bg-primary/20 text-primary border border-primary/30'
-                  : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'
+                  : 'bg-muted/40 text-muted-foreground hover:bg-muted/60 border border-transparent'
                 }`}
             >
               By Quantity
@@ -1128,7 +1128,7 @@ const AddHoldingDialog = ({ onAdd, onClose }: AddHoldingDialogProps) => {
               onClick={() => setInputMode('percentage')}
               className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${inputMode === 'percentage'
                   ? 'bg-primary/20 text-primary border border-primary/30'
-                  : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'
+                  : 'bg-muted/40 text-muted-foreground hover:bg-muted/60 border border-transparent'
                 }`}
             >
               By Percentage
@@ -1145,7 +1145,7 @@ const AddHoldingDialog = ({ onAdd, onClose }: AddHoldingDialogProps) => {
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               placeholder="e.g. 50, 0.5, 10"
-              className="bg-white/5 border-white/10 text-sm"
+              className="bg-muted/40 border-border/60 text-sm"
               min="0"
               step="any"
             />
@@ -1158,7 +1158,7 @@ const AddHoldingDialog = ({ onAdd, onClose }: AddHoldingDialogProps) => {
               value={targetPercentage}
               onChange={(e) => setTargetPercentage(e.target.value)}
               placeholder="e.g. 25"
-              className="bg-white/5 border-white/10 text-sm"
+              className="bg-muted/40 border-border/60 text-sm"
               min="0"
               max="100"
               step="0.1"
@@ -1175,7 +1175,7 @@ const AddHoldingDialog = ({ onAdd, onClose }: AddHoldingDialogProps) => {
               value={avgCost}
               onChange={(e) => setAvgCost(e.target.value)}
               placeholder="e.g. 178.50"
-              className="bg-white/5 border-white/10 text-sm"
+              className="bg-muted/40 border-border/60 text-sm"
               min="0"
               step="any"
             />
@@ -1183,10 +1183,10 @@ const AddHoldingDialog = ({ onAdd, onClose }: AddHoldingDialogProps) => {
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Currency</Label>
             <Select value={currency} onValueChange={setCurrency}>
-              <SelectTrigger className="bg-white/5 border-white/10 text-sm">
+              <SelectTrigger className="bg-muted/40 border-border/60 text-sm">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-[#1e1e2e] border-white/10">
+              <SelectContent className="bg-[#1e1e2e] border-border/60">
                 <SelectItem value="USD">USD</SelectItem>
                 <SelectItem value="EUR">EUR</SelectItem>
                 <SelectItem value="GBP">GBP</SelectItem>
@@ -1201,7 +1201,7 @@ const AddHoldingDialog = ({ onAdd, onClose }: AddHoldingDialogProps) => {
       <DialogFooter>
         <button
           onClick={onClose}
-          className="px-4 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+          className="px-4 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
         >
           Cancel
         </button>

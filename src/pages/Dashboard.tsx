@@ -168,19 +168,19 @@ const Dashboard = () => {
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="flex items-center gap-2">
                 <LayoutDashboard className="text-primary w-4 h-4" />
-                <h1 className="text-white font-medium text-sm tracking-tight">Dashboard</h1>
-                <div className="h-4 w-px bg-white/10" />
-                <span className="text-white/40 text-xs">Welcome back, {user?.name ?? 'Trader'}</span>
+                <h1 className="text-foreground font-medium text-sm tracking-tight">Dashboard</h1>
+                <div className="h-4 w-px bg-muted/60" />
+                <span className="text-muted-foreground text-xs">Welcome back, {user?.name ?? 'Trader'}</span>
               </div>
               <div className="flex items-center gap-2">
                 {/* ─── Demo / Real Mode Toggle ─── */}
-                <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-lg px-1 py-0.5">
+                <div className="flex items-center gap-1.5 bg-muted/40 border border-border/60 rounded-lg px-1 py-0.5">
                   <button
                     onClick={() => setMode('demo')}
                     className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
                       mode === 'demo'
                         ? 'bg-amber-500/20 text-amber-400 shadow-sm border border-amber-500/30'
-                        : 'text-white/40 hover:text-white/60'
+                        : 'text-muted-foreground hover:text-foreground/70'
                     }`}
                   >
                     Demo
@@ -190,18 +190,18 @@ const Dashboard = () => {
                     className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
                       mode === 'real'
                         ? 'bg-green-500/20 text-green-400 shadow-sm border border-green-500/30'
-                        : 'text-white/40 hover:text-white/60'
+                        : 'text-muted-foreground hover:text-foreground/70'
                     }`}
                   >
                     Real
                   </button>
                 </div>
-                <div className="h-5 w-px bg-white/10" />
+                <div className="h-5 w-px bg-muted/60" />
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => loadDashboard(true)}
-                      className="p-1.5 rounded hover:bg-white/10 transition-colors text-white/60 hover:text-white"
+                      className="p-1.5 rounded hover:bg-muted/60 transition-colors text-foreground/70 hover:text-foreground"
                     >
                       <RefreshCw
                         className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`}
@@ -309,18 +309,18 @@ const Dashboard = () => {
                               initial={{ opacity: 0, x: -10 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ delay: i * 0.03 }}
-                              className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group"
+                              className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-muted/40 transition-colors cursor-pointer group"
                               onClick={() => navigate('/builder')}
                             >
                               <div className="flex items-center gap-3">
                                 <div
                                   className={`w-2 h-2 rounded-full ${s.status === 'active'
                                       ? 'bg-green-400 shadow-[0_0_6px_rgba(34,197,94,0.5)]'
-                                      : 'bg-white/20'
+                                      : 'bg-muted'
                                     }`}
                                 />
                                 <div>
-                                  <span className="text-foreground text-sm font-medium group-hover:text-white transition-colors">
+                                  <span className="text-foreground text-sm font-medium group-hover:text-foreground transition-colors">
                                     {s.name}
                                   </span>
                                   <div className="flex items-center gap-2 mt-0.5">
@@ -338,7 +338,7 @@ const Dashboard = () => {
                                 >
                                   {s.status}
                                 </Tag>
-                                <ArrowRight className="w-3.5 h-3.5 text-white/0 group-hover:text-white/40 transition-colors" />
+                                <ArrowRight className="w-3.5 h-3.5 text-transparent group-hover:text-muted-foreground transition-colors" />
                               </div>
                             </motion.div>
                           ))}
@@ -447,7 +447,7 @@ const Dashboard = () => {
                           {portfolios.slice(0, 3).map((p: any) => (
                             <div
                               key={p.id}
-                              className="flex items-center justify-between px-2 py-1.5 rounded-md bg-white/5"
+                              className="flex items-center justify-between px-2 py-1.5 rounded-md bg-muted/40"
                             >
                               <div>
                                 <div className="text-foreground text-xs font-medium">
@@ -490,11 +490,11 @@ const Dashboard = () => {
                               initial={{ opacity: 0, x: -5 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ delay: i * 0.03 }}
-                              className="px-2 py-2 rounded-md bg-white/[0.03] hover:bg-white/[0.06] transition-colors cursor-pointer group"
+                              className="px-2 py-2 rounded-md bg-muted/30 hover:bg-muted/30 transition-colors cursor-pointer group"
                               onClick={() => ev.url && window.open(ev.url, '_blank')}
                             >
                               <div className="flex items-start justify-between gap-2">
-                                <p className="text-foreground text-xs font-medium leading-snug line-clamp-2 group-hover:text-white transition-colors">
+                                <p className="text-foreground text-xs font-medium leading-snug line-clamp-2 group-hover:text-foreground transition-colors">
                                   {ev.headline}
                                 </p>
                                 {ev.symbol && (
@@ -643,13 +643,13 @@ const Dashboard = () => {
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: i * 0.03 }}
-                            className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group"
+                            className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-muted/40 transition-colors cursor-pointer group"
                             onClick={() => navigate(`/execution/${run.id}`)}
                           >
                             <div className="flex items-center gap-3">
                               <StatusIcon status={run.status} />
                               <div>
-                                <span className="text-foreground text-sm font-medium group-hover:text-white transition-colors">
+                                <span className="text-foreground text-sm font-medium group-hover:text-foreground transition-colors">
                                   {run.strategy?.name ?? 'Unknown'}
                                 </span>
                                 <div className="flex items-center gap-3 mt-0.5">
@@ -671,7 +671,7 @@ const Dashboard = () => {
                                 })}
                               </span>
                               <RunStatusBadge status={run.status} />
-                              <ArrowRight className="w-3.5 h-3.5 text-white/0 group-hover:text-white/40 transition-colors" />
+                              <ArrowRight className="w-3.5 h-3.5 text-transparent group-hover:text-muted-foreground transition-colors" />
                             </div>
                           </motion.div>
                         ))}
@@ -789,7 +789,7 @@ const QuickActionButton = ({
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border border-white/5 bg-white/[0.02] ${colorMap[color]} transition-all cursor-pointer hover-lift`}
+      className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border border-border/60 bg-muted/30 ${colorMap[color]} transition-all cursor-pointer hover-lift`}
     >
       <span className="text-lg">{icon}</span>
       <span className="text-[11px] text-muted-foreground">{label}</span>
@@ -808,7 +808,7 @@ const HealthIndicator = ({
     operational: { color: 'bg-green-400', text: 'text-green-400', label: 'Operational' },
     warning: { color: 'bg-amber-400', text: 'text-amber-400', label: 'Warning' },
     degraded: { color: 'bg-red-400', text: 'text-red-400', label: 'Degraded' },
-    idle: { color: 'bg-white/30', text: 'text-white/40', label: 'Idle' },
+    idle: { color: 'bg-muted', text: 'text-muted-foreground', label: 'Idle' },
   };
   const c = config[status];
 
@@ -845,7 +845,7 @@ const StatusIcon = ({ status }: { status: string }) => {
       );
     default:
       return (
-        <div className="p-1.5 rounded-lg bg-white/5">
+        <div className="p-1.5 rounded-lg bg-muted/40">
           <Clock className="w-4 h-4 text-slate-400" />
         </div>
       );
