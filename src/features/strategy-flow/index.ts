@@ -14,7 +14,7 @@ export { BottomToolbar } from './components/BottomToolbar';
 export { ContextMenu } from './components/ContextMenu';
 export { CodeViewPanel } from './components/CodeViewPanel';
 export { DevLogPanel, logStore } from './components/DevLogPanel';
-export { AIChatPanel } from './components/AIChatPanel';
+// AIChatPanel removed — chat is now global at src/features/ai-chat (GlobalAiPanel)
 
 // Node Components
 export { nodeTypes } from './components/nodes';

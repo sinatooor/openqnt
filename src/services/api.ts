@@ -361,13 +361,29 @@ class ApiClient {
             let sawDone = false;
             let aborted = false;
             try {
+                // Lift skill system_prompt and page_context out of `context` to
+                // top-level fields so the backend can consume them explicitly.
+                // Falls back gracefully on backends that don't yet recognize them.
+                const ctx = { ...(context || {}) };
+                const system_prompt = ctx.system_prompt;
+                const page_context = ctx.page_context;
+                delete ctx.system_prompt;
+                delete ctx.page_context;
+                const body = {
+                    message,
+                    history,
+                    context: ctx,
+                    ...(system_prompt ? { system_prompt } : {}),
+                    ...(page_context ? { page_context } : {}),
+                };
+
                 const response = await fetch(`${baseUrl}/api/ai-assistant/chat/stream`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         ...authHeaders,
                     },
-                    body: JSON.stringify({ message, history, context }),
+                    body: JSON.stringify(body),
                     signal: combinedSignal,
                 });
 

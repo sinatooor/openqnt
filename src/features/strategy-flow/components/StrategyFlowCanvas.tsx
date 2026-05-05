@@ -34,8 +34,8 @@ import { LeftSidebar } from './LeftSidebar';
 import { RightPropertyPanel } from './RightPropertyPanel';
 import { ContextMenu } from './ContextMenu';
 import { CodeViewPanel } from './CodeViewPanel';
-import { AIChatPanel } from './AIChatPanel';
 import { ExecutionHistoryPanel } from './ExecutionHistoryPanel';
+import { usePanelStore } from '@/features/ai-chat';
 import {
   BacktestModal,
   TemplatesDialog,
@@ -291,7 +291,6 @@ const StrategyFlowCanvasInner = () => {
 
   // Panel visibility states
   const [showCodePanel, setShowCodePanel] = useState(false);
-  const [showAIPanel, setShowAIPanel] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(() => useStrategyFlowStore.getState().viewport.zoom);
   const hasRestoredViewport = useRef(false);
 
@@ -432,10 +431,10 @@ const StrategyFlowCanvasInner = () => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); setShowSearch(true); }
       if (e.key === '/' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); setShowSearch(true); }
 
-      // AI Panel
+      // AI Panel — opens the global AI panel pre-set to Strategy mode
       if (e.key === 'i' || e.key === 'I') {
         e.preventDefault();
-        setShowAIPanel(prev => !prev);
+        usePanelStore.getState().toggle('strategy');
       }
 
       // Toggle sidebar
@@ -528,7 +527,6 @@ const StrategyFlowCanvasInner = () => {
             onOpenBacktest={() => setShowBacktest(true)}
             onOpenChart={() => setShowChart(true)}
             onOpenCode={() => setShowCodePanel(!showCodePanel)}
-            onOpenAI={() => setShowAIPanel(!showAIPanel)}
             onOpenJournal={() => setShowJournal(true)}
             onOpenScreener={() => setShowScreener(true)}
             onOpenLiveTrading={() => setShowLiveTrading(true)}
@@ -536,7 +534,6 @@ const StrategyFlowCanvasInner = () => {
             onZoomOut={() => zoomOut()}
             onFitView={() => fitView({ padding: 0.2 })}
             showCode={showCodePanel}
-            showAI={showAIPanel}
             onStartExecution={startExecution}
             onStopExecution={stopExecution}
             onResetExecution={resetExecution}
@@ -591,7 +588,7 @@ const StrategyFlowCanvasInner = () => {
       {nodes.length === 0 && (
         <EmptyState
           onOpenSidebar={() => useStrategyFlowStore.getState().setLeftSidebarOpen(true)}
-          onOpenAI={() => setShowAIPanel(true)}
+          onOpenAI={() => usePanelStore.getState().open_('strategy')}
           onOpenBacktest={() => setShowBacktest(true)}
           onOpenTemplates={() => setShowTemplates(true)}
         />
@@ -612,11 +609,6 @@ const StrategyFlowCanvasInner = () => {
         <div className="fixed top-20 right-4 z-40 animate-in slide-in-from-right-2 duration-200">
           <CodeViewPanel open={showCodePanel} onOpenChange={setShowCodePanel} />
         </div>
-      )}
-
-      {/* AI Chat Panel (full-height slider panel) */}
-      {showAIPanel && (
-        <AIChatPanel open={showAIPanel} onOpenChange={setShowAIPanel} />
       )}
 
       {/* Modals */}

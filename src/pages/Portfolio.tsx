@@ -12,6 +12,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { usePageContext, AskAi } from '@/features/ai-chat';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip,
   AreaChart, Area, XAxis, YAxis, CartesianGrid, BarChart, Bar, Legend,
@@ -199,6 +200,18 @@ const Portfolio = () => {
   const isDemo = mode === 'demo';
   const holdings = store.holdings;
   const hasHoldings = holdings.length > 0;
+
+  usePageContext({
+    page: 'portfolio',
+    primaryEntity: { type: 'portfolio', id: 'main', label: 'Portfolio' },
+    visibleData: {
+      kind: 'portfolio_summary',
+      snapshot: {
+        holdingsCount: holdings.length,
+        symbols: holdings.map((h) => h.symbol),
+      },
+    },
+  });
 
   // Simulate price updates for demo
   const simulatedHoldings = useMemo(() => {
@@ -658,14 +671,20 @@ const Portfolio = () => {
                                       </div>
                                     </td>
                                     <td className="py-2.5 px-2 text-right">
-                                      {hasHoldings && (
-                                        <button
-                                          onClick={() => store.removeHolding(h.id)}
-                                          className="p-1 rounded hover:bg-red-500/10 text-white/30 hover:text-red-400 transition-colors"
-                                        >
-                                          <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                      )}
+                                      <div className="flex items-center justify-end gap-1">
+                                        <AskAi
+                                          target={{ type: 'symbol', id: h.symbol, label: h.symbol }}
+                                          prompt={`Tell me about ${h.symbol}: recent price action, news, fundamentals, and what to watch.`}
+                                        />
+                                        {hasHoldings && (
+                                          <button
+                                            onClick={() => store.removeHolding(h.id)}
+                                            className="p-1 rounded hover:bg-red-500/10 text-white/30 hover:text-red-400 transition-colors"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                          </button>
+                                        )}
+                                      </div>
                                     </td>
                                   </motion.tr>
                                 );
