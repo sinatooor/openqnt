@@ -42,6 +42,9 @@ import {
   GlobalAiFab,
   GlobalAiBackdrop,
   GlobalAiPanel,
+  CommandPalette,
+  SelectionPill,
+  ArtifactRail,
 } from "./features/ai-chat";
 import NotFound from "./pages/NotFound";
 import Onboarding from "./pages/Onboarding";
@@ -194,7 +197,10 @@ const GlobalOverlays = () => {
         <>
           <GlobalAiBackdrop />
           <GlobalAiPanel />
+          <ArtifactRail />
           <GlobalAiFab />
+          <CommandPalette />
+          <SelectionPill />
         </>
       )}
     </>
