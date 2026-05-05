@@ -3,12 +3,13 @@
  * General account settings, trading defaults, broker connections, and preferences.
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { motion } from 'framer-motion';
 import { ConfigProvider, theme as antTheme } from 'antd';
+import { toast } from 'sonner';
 import {
     User,
     ArrowRight,
@@ -19,6 +20,9 @@ import {
     Wallet,
     Link2,
     CheckCircle,
+    Database,
+    RefreshCw,
+    Loader2,
     Settings as SettingsIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,8 +31,17 @@ import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { BrokerConnectionModal } from '@/features/strategy-flow/components/modals/BrokerConnectionModal';
 import { PAGE_CONTENT_CLASS } from '@/components/PageHeader';
+import { AvanzaConnectModal } from '@/integrations/avanza/AvanzaConnectModal';
+import { avanzaApi } from '@/integrations/avanza/api';
+import { useIntegrationsStore } from '@/stores/integrationsStore';
+import {
+    MARKET_DATA_SOURCES,
+    useDataSourceStore,
+    type MarketDataSource,
+} from '@/stores/dataSourceStore';
 
 const BROKERS = [
     { id: 'ig', name: 'IG Markets', description: 'CFD Trading', logo: '/logo/logo_ig.png' },
@@ -51,6 +64,29 @@ const Settings = () => {
     const navigate = useNavigate();
     const [brokerConnections, setBrokerConnections] = useState<Record<string, boolean>>({});
     const [selectedBroker, setSelectedBroker] = useState<{ id: string; name: string } | null>(null);
+    const [avanzaModalOpen, setAvanzaModalOpen] = useState(false);
+    const [syncingAvanza, setSyncingAvanza] = useState(false);
+    const avanzaState = useIntegrationsStore((s) => s.integrations.avanza);
+    const setIntegrationStatus = useIntegrationsStore((s) => s.setStatus);
+    const dataSource = useDataSourceStore((s) => s.source);
+    const setDataSource = useDataSourceStore((s) => s.setSource);
+
+    useEffect(() => {
+        let cancelled = false;
+        avanzaApi
+            .status()
+            .then((status) => {
+                if (cancelled) return;
+                setIntegrationStatus('avanza', {
+                    status: status.connected ? 'connected' : 'disconnected',
+                    connectedAt: status.connectedAt ? Date.parse(status.connectedAt) : null,
+                    lastSyncAt: status.lastSyncAt ? Date.parse(status.lastSyncAt) : null,
+                    lastError: status.error,
+                });
+            })
+            .catch(() => {/* leave whatever the bootstrap hook stored */});
+        return () => { cancelled = true; };
+    }, [setIntegrationStatus]);
 
     if (!isAuthenticated) {
         navigate('/login');
@@ -58,9 +94,49 @@ const Settings = () => {
     }
 
     const handleConnectBroker = (brokerId: string) => {
+        if (brokerId === 'avanza') {
+            setAvanzaModalOpen(true);
+            return;
+        }
         const broker = BROKERS.find(b => b.id === brokerId);
         if (broker) {
             setSelectedBroker({ id: broker.id, name: broker.name });
+        }
+    };
+
+    const handleAvanzaSync = async () => {
+        setSyncingAvanza(true);
+        try {
+            const result = await avanzaApi.sync();
+            setIntegrationStatus('avanza', {
+                lastSyncAt: Date.parse(result.syncedAt),
+                lastError: null,
+            });
+            toast.success(
+                `Avanza synced: ${result.positions} positions, ${result.watchlists} watchlists, ${result.transactions} transactions`,
+            );
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : 'Sync failed';
+            setIntegrationStatus('avanza', { lastError: msg });
+            toast.error(msg);
+        } finally {
+            setSyncingAvanza(false);
+        }
+    };
+
+    const handleAvanzaDisconnect = async () => {
+        try {
+            await avanzaApi.disconnect();
+            setIntegrationStatus('avanza', {
+                status: 'disconnected',
+                connectedAt: null,
+                lastSyncAt: null,
+                lastError: null,
+            });
+            toast.success('Avanza disconnected');
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : 'Disconnect failed';
+            toast.error(msg);
         }
     };
 
@@ -180,6 +256,62 @@ const Settings = () => {
                         </motion.div>
                     </div>
 
+                    {/* Market Data Source */}
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
+                        <Card className="bg-card/60 backdrop-blur-sm border-white/5 shadow-trading rounded-xl">
+                            <CardHeader className="pb-4 border-b border-white/5">
+                                <CardTitle className="text-base flex items-center gap-2">
+                                    <Database className="w-4 h-4 text-blue-400" />
+                                    Market Data Source
+                                </CardTitle>
+                                <CardDescription>
+                                    Where the Terminal screens, charts, and screeners read from.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="pt-6">
+                                <RadioGroup
+                                    value={dataSource}
+                                    onValueChange={(v) => setDataSource(v as MarketDataSource)}
+                                    className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+                                >
+                                    {MARKET_DATA_SOURCES.map((src) => {
+                                        const requiresConnection = src.id === 'avanza';
+                                        const disabled = requiresConnection && avanzaState.status !== 'connected';
+                                        return (
+                                            <label
+                                                key={src.id}
+                                                className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                                                    dataSource === src.id
+                                                        ? 'border-blue-500/50 bg-blue-500/5'
+                                                        : 'border-white/5 bg-black/20 hover:bg-black/30'
+                                                } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                            >
+                                                <RadioGroupItem
+                                                    value={src.id}
+                                                    disabled={disabled}
+                                                    className="mt-0.5"
+                                                />
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-medium text-sm">{src.label}</span>
+                                                        {disabled && (
+                                                            <Badge variant="outline" className="text-[10px] uppercase">
+                                                                Connect first
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                                        {src.description}
+                                                    </p>
+                                                </div>
+                                            </label>
+                                        );
+                                    })}
+                                </RadioGroup>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+
                     {/* Brokers & Integrations */}
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
                         <Card className="bg-card/60 backdrop-blur-sm border-white/5 shadow-trading rounded-xl">
@@ -197,38 +329,88 @@ const Settings = () => {
                                         Trading Brokers
                                     </h4>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                        {BROKERS.map((broker) => (
-                                            <div
-                                                key={broker.id}
-                                                className="flex items-center gap-3 p-3 bg-black/20 rounded-lg border border-white/5"
-                                            >
-                                                <img
-                                                    src={broker.logo}
-                                                    alt={broker.name}
-                                                    className="w-10 h-10 rounded object-contain bg-white/5 p-1"
-                                                    onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
-                                                />
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="font-medium text-sm truncate">{broker.name}</div>
-                                                    <div className="text-xs text-muted-foreground">{broker.description}</div>
+                                        {BROKERS.map((broker) => {
+                                            const isAvanza = broker.id === 'avanza';
+                                            const avanzaConnected = avanzaState.status === 'connected';
+                                            const connected = isAvanza
+                                                ? avanzaConnected
+                                                : !!brokerConnections[broker.id];
+                                            const lastSync = isAvanza && avanzaState.lastSyncAt
+                                                ? new Date(avanzaState.lastSyncAt).toLocaleString()
+                                                : null;
+                                            return (
+                                                <div
+                                                    key={broker.id}
+                                                    className="flex flex-col gap-2 p-3 bg-black/20 rounded-lg border border-white/5"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <img
+                                                            src={broker.logo}
+                                                            alt={broker.name}
+                                                            className="w-10 h-10 rounded object-contain bg-white/5 p-1"
+                                                            onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
+                                                        />
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="font-medium text-sm truncate">{broker.name}</div>
+                                                            <div className="text-xs text-muted-foreground">
+                                                                {broker.description}
+                                                            </div>
+                                                        </div>
+                                                        {connected ? (
+                                                            <Badge variant="outline" className="bg-green-500/10 text-green-400 border-green-500/30 shrink-0">
+                                                                <CheckCircle className="w-3 h-3 mr-1" />
+                                                                Connected
+                                                            </Badge>
+                                                        ) : (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={() => handleConnectBroker(broker.id)}
+                                                                className="border-white/10 text-xs shrink-0"
+                                                            >
+                                                                Connect
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                    {isAvanza && avanzaConnected && (
+                                                        <div className="flex flex-wrap items-center gap-2 pl-13 text-[11px] text-muted-foreground">
+                                                            <span>
+                                                                {lastSync ? `Last sync: ${lastSync}` : 'Never synced'}
+                                                            </span>
+                                                            {avanzaState.lastError && (
+                                                                <span className="text-red-400">
+                                                                    · {avanzaState.lastError}
+                                                                </span>
+                                                            )}
+                                                            <span className="ml-auto flex gap-2">
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    className="h-6 text-[11px] border-white/10"
+                                                                    onClick={handleAvanzaSync}
+                                                                    disabled={syncingAvanza}
+                                                                >
+                                                                    {syncingAvanza ? (
+                                                                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                                                    ) : (
+                                                                        <RefreshCw className="w-3 h-3 mr-1" />
+                                                                    )}
+                                                                    Sync now
+                                                                </Button>
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    className="h-6 text-[11px] border-red-500/20 text-red-400 hover:bg-red-500/10"
+                                                                    onClick={handleAvanzaDisconnect}
+                                                                >
+                                                                    Disconnect
+                                                                </Button>
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                {brokerConnections[broker.id] ? (
-                                                    <Badge variant="outline" className="bg-green-500/10 text-green-400 border-green-500/30 shrink-0">
-                                                        <CheckCircle className="w-3 h-3 mr-1" />
-                                                        Connected
-                                                    </Badge>
-                                                ) : (
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={() => handleConnectBroker(broker.id)}
-                                                        className="border-white/10 text-xs shrink-0"
-                                                    >
-                                                        Connect
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </div>
 
@@ -309,6 +491,14 @@ const Settings = () => {
                     }}
                 />
             )}
+
+            <AvanzaConnectModal
+                open={avanzaModalOpen}
+                onOpenChange={setAvanzaModalOpen}
+                onConnected={() => {
+                    void avanzaApi.sync().catch(() => {/* surfaces in toast separately */});
+                }}
+            />
         </ConfigProvider>
     );
 };

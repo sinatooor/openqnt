@@ -288,6 +288,20 @@ _telemetry.hook_into_context()
 from routers import boss as boss_router
 app.include_router(boss_router.router)
 
+# External integrations (Avanza first; Nordnet/IBKR later)
+try:
+    from routers import integrations as integrations_router
+    app.include_router(integrations_router.router)
+except Exception as _e:
+    print(f"Warning: integrations router failed to load: {_e}")
+
+# Realtime / public-API proxies (USGS, NOAA, OpenSky, EIA, OpenAQ, AISStream)
+try:
+    from routers import realtime as realtime_router
+    app.include_router(realtime_router.router)
+except Exception as _e:
+    print(f"Warning: realtime router failed to load: {_e}")
+
 
 # ============================================================
 # Root-level health and custom-blocks endpoints

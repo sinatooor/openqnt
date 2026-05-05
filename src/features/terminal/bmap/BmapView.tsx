@@ -51,6 +51,8 @@ import {
   type IndexSnapshot,
   type WeiData,
 } from './countryIndices';
+import { LIVE_LAYERS } from './layers/registry';
+import { useLiveLayers, type LiveLayerSnapshot } from './layers/useLiveLayers';
 import type { Feature, FeatureCollection, Geometry, Point, LineString, Polygon } from 'geojson';
 
 /* -------------------------------- constants ------------------------------- */
@@ -388,6 +390,7 @@ interface SidePanelProps {
   wei: WeiData;
   isGlobe: boolean;
   onToggleGlobe: () => void;
+  live: LiveLayerSnapshot;
 }
 
 function SidePanel({
@@ -402,6 +405,7 @@ function SidePanel({
   wei,
   isGlobe,
   onToggleGlobe,
+  live,
 }: SidePanelProps) {
   return (
     <aside className="bmap-sidebar">
@@ -490,6 +494,53 @@ function SidePanel({
         </div>
       )}
 
+      <div className="bmap-sidebar-section">
+        <div className="bmap-sidebar-subhead">Live data</div>
+
+        <button
+          onClick={live.toggleVessels}
+          className={`bmap-layer-row ${live.vesselsEnabled ? 'on' : ''}`}
+          title="Live vessel positions from AISStream"
+        >
+          <span className="bmap-swatch" style={{ background: '#22d3ee' }} />
+          <span className="bmap-layer-label">Vessels (AIS)</span>
+          <span className="bmap-layer-count">
+            {live.vessels?.features.length ?? 0}
+          </span>
+          <span className={`bmap-toggle ${live.vesselsEnabled ? 'on' : ''}`} />
+        </button>
+
+        {LIVE_LAYERS.map((layer) => {
+          const status = live.status[layer.id];
+          const dot =
+            status === 'live' ? '●'
+            : status === 'loading' ? '⟳'
+            : status === 'error' ? '!'
+            : '○';
+          const dotColor =
+            status === 'live' ? '#10b981'
+            : status === 'loading' ? '#facc15'
+            : status === 'error' ? '#ef4444'
+            : '#52525b';
+          const count = live.data[layer.id]?.features.length ?? 0;
+          return (
+            <button
+              key={layer.id}
+              onClick={() => live.toggle(layer.id)}
+              className={`bmap-layer-row ${live.enabled[layer.id] ? 'on' : ''}`}
+              title={layer.description}
+            >
+              <span className="bmap-swatch" style={{ background: layer.color }} />
+              <span className="bmap-layer-label">{layer.label}</span>
+              <span className="bmap-layer-count" style={{ color: dotColor }}>
+                {dot} {count}
+              </span>
+              <span className={`bmap-toggle ${live.enabled[layer.id] ? 'on' : ''}`} />
+            </button>
+          );
+        })}
+      </div>
+
       <div className="bmap-sidebar-footer">
         <div className="bmap-footer-row">
           <span>Assets on map</span>
@@ -546,6 +597,7 @@ export default function BmapView() {
   const [worldGeo, setWorldGeo] = useState<WorldGeo | null>(worldGeoCache);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [cursor, setCursor] = useState('grab');
+  const live = useLiveLayers();
 
   const [viewState, setViewState] = useState({
     longitude: 20,
@@ -731,6 +783,7 @@ export default function BmapView() {
         wei={wei}
         isGlobe={isGlobe}
         onToggleGlobe={() => setIsGlobe((g) => !g)}
+        live={live}
       />
 
       <div className="bmap-mapwrap">
@@ -1143,6 +1196,49 @@ export default function BmapView() {
                 />
               </Source>
             </>
+          )}
+
+          {/* ============= LIVE LAYERS ============= */}
+          {LIVE_LAYERS.map((layer) => {
+            if (!live.enabled[layer.id]) return null;
+            const data = live.data[layer.id];
+            if (!data) return null;
+            const sourceId = `bmap-live-${layer.id}`;
+            const layerId = `${sourceId}-${layer.paint}`;
+            const paint = (() => {
+              if (layer.paint === 'circle') {
+                return { 'circle-color': layer.color, ...(layer.paintExtras ?? {}) };
+              }
+              if (layer.paint === 'fill') {
+                return { 'fill-color': layer.color, ...(layer.paintExtras ?? {}) };
+              }
+              if (layer.paint === 'line') {
+                return { 'line-color': layer.color, 'line-width': 1.5, ...(layer.paintExtras ?? {}) };
+              }
+              return {};
+            })();
+            return (
+              <Source key={sourceId} id={sourceId} type="geojson" data={data}>
+                <Layer id={layerId} type={layer.paint as 'circle' | 'fill' | 'line'} paint={paint as any} />
+              </Source>
+            );
+          })}
+
+          {/* AISStream live vessels */}
+          {live.vesselsEnabled && live.vessels && (
+            <Source id="bmap-aisstream-source" type="geojson" data={live.vessels}>
+              <Layer
+                id="bmap-aisstream-circle"
+                type="circle"
+                paint={{
+                  'circle-radius': 3,
+                  'circle-color': '#22d3ee',
+                  'circle-opacity': 0.9,
+                  'circle-stroke-color': '#0a0a00',
+                  'circle-stroke-width': 0.5,
+                }}
+              />
+            </Source>
           )}
 
           {/* ============= POPUP ============= */}

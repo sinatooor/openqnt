@@ -7,6 +7,8 @@
   flex-direction: column;
   gap: 8px;
   min-height: 560px;
+  /* allow the stage to grow with the viewport on tall screens */
+  flex: 1 1 auto;
 }
 
 /* -------------------------------- toolbar --------------------------------- */
@@ -117,7 +119,11 @@
   background: radial-gradient(ellipse at center, rgba(255, 159, 26, 0.08) 0%, transparent 65%), #050505;
   border: 1px solid #332200;
   border-radius: 2px;
-  height: 560px;
+  /* grow with the available viewport instead of locking to 560px so the
+     screen looks correct on 13" and 27" displays alike */
+  min-height: 560px;
+  height: clamp(560px, calc(100vh - 220px), 1200px);
+  flex: 1 1 auto;
   overflow: hidden;
 }
 
@@ -290,9 +296,21 @@
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template-columns: 240px 1fr 240px;
+  /* allow the side columns to shrink before they overflow the stage */
+  grid-template-columns: minmax(180px, 240px) minmax(0, 1fr) minmax(180px, 240px);
   padding: 8px;
   gap: 8px;
+  /* on narrow viewports stack the columns vertically so suppliers,
+     center, and customers don't get clipped */
+  overflow: hidden;
+}
+
+@media (max-width: 880px) {
+  .splc-chart {
+    grid-template-columns: 1fr;
+    grid-auto-rows: minmax(0, 1fr);
+    overflow-y: auto;
+  }
 }
 
 .splc-chart-svg {
@@ -530,7 +548,7 @@
 
 .splc-peers-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
   gap: 6px;
   padding: 8px;
 }
@@ -543,12 +561,18 @@
 
 .splc-footer {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 8px;
   padding: 8px 10px;
   border: 1px solid #332200;
   background: #0a0a00;
   border-radius: 2px;
+}
+
+.splc-footer-cell b,
+.splc-footer-cell em,
+.splc-footer-label {
+  word-break: break-word;
 }
 
 .splc-footer-cell {

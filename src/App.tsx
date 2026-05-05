@@ -22,6 +22,14 @@ import TerminalSplc from "./pages/TerminalSplc";
 import TerminalHds from "./pages/TerminalHds";
 import TerminalGip from "./pages/TerminalGip";
 import TerminalDes from "./pages/TerminalDes";
+import TerminalFa from "./pages/TerminalFa";
+import TerminalDvd from "./pages/TerminalDvd";
+import TerminalN from "./pages/TerminalN";
+import TerminalRv from "./pages/TerminalRv";
+import TerminalWatch from "./pages/TerminalWatch";
+import TerminalMost from "./pages/TerminalMost";
+import TerminalTop from "./pages/TerminalTop";
+import TerminalEqs from "./pages/TerminalEqs";
 import AiChat from "./pages/AiChat";
 import Agents from "./pages/Agents";
 import Boss from "./pages/Boss";
@@ -36,6 +44,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AppNavBar } from "./components/AppNavBar";
 import { useAuthStore } from "./stores/authStore";
 import { useOnboardingStore } from "./stores/onboardingStore";
+import { useAppBootstrap } from "./hooks/useAppBootstrap";
 
 const queryClient = new QueryClient();
 
@@ -87,6 +96,10 @@ const AppRoutes = () => {
     return () => cancelAnimationFrame(id);
   }, []);
 
+  // Reconcile any data the user has configured but not yet fetched this
+  // session (Avanza sync, etc.). Runs in the background, never blocks UI.
+  useAppBootstrap();
+
   if (!hydrated) return <BootSplash />;
 
   return (
@@ -131,6 +144,18 @@ const AppRoutes = () => {
         <Route path="/terminal/gip/:ticker" element={<TerminalGip />} />
         <Route path="/terminal/des" element={<TerminalDes />} />
         <Route path="/terminal/des/:ticker" element={<TerminalDes />} />
+        <Route path="/terminal/fa" element={<TerminalFa />} />
+        <Route path="/terminal/fa/:ticker" element={<TerminalFa />} />
+        <Route path="/terminal/dvd" element={<TerminalDvd />} />
+        <Route path="/terminal/dvd/:ticker" element={<TerminalDvd />} />
+        <Route path="/terminal/n" element={<TerminalN />} />
+        <Route path="/terminal/n/:ticker" element={<TerminalN />} />
+        <Route path="/terminal/rv" element={<TerminalRv />} />
+        <Route path="/terminal/rv/:ticker" element={<TerminalRv />} />
+        <Route path="/terminal/watch" element={<TerminalWatch />} />
+        <Route path="/terminal/most" element={<TerminalMost />} />
+        <Route path="/terminal/top" element={<TerminalTop />} />
+        <Route path="/terminal/eqs" element={<TerminalEqs />} />
         <Route path="/ai-chat" element={<AiChat />} />
         <Route path="/agent" element={<AgentConfig />} />
         <Route path="/agents" element={<Agents />} />
