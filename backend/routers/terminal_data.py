@@ -890,6 +890,269 @@ async def get_key_ratios(
         raise HTTPException(502, f"key-ratios failed: {e}")
 
 
+@router.get("/quotes")
+async def get_quotes(
+    symbols: str = Query(..., description="Comma-separated ticker list"),
+) -> Dict[str, Any]:
+    """
+    Batch quote endpoint used by dashboard widgets that need to render
+    many symbols at once (Watchlist, Portfolio, etc.). One yfinance batch
+    download keeps us inside rate limits.
+    """
+    yf = _yf()
+    if yf is None:
+        raise HTTPException(503, "yfinance unavailable")
+    syms = [s.strip().upper() for s in symbols.split(",") if s.strip()]
+    if not syms:
+        return {"source": "yfinance", "quotes": []}
+
+    def _build() -> List[Dict[str, Any]]:
+        try:
+            df = yf.download(
+                " ".join(syms),
+                period="2d", interval="1d", progress=False,
+                group_by="ticker", auto_adjust=False, threads=True,
+            )
+        except Exception as e:
+            logger.warning("quotes download failed: %s", e)
+            return []
+        out: List[Dict[str, Any]] = []
+        single = len(syms) == 1
+        for sym in syms:
+            try:
+                if single:
+                    sub = df
+                else:
+                    sub = df[sym] if sym in df.columns.get_level_values(0) else None
+                if sub is None or sub.dropna().empty:
+                    out.append({"symbol": sym, "lastPrice": None, "changePct": None, "currency": None})
+                    continue
+                closes = sub["Close"].dropna()
+                if len(closes) < 1:
+                    out.append({"symbol": sym, "lastPrice": None, "changePct": None})
+                    continue
+                last = float(closes.iloc[-1])
+                prev = float(closes.iloc[-2]) if len(closes) >= 2 else last
+                change_pct = ((last - prev) / prev * 100) if prev else 0.0
+                out.append({
+                    "symbol": sym,
+                    "lastPrice": round(last, 4),
+                    "prevClose": round(prev, 4),
+                    "changePct": round(change_pct, 3),
+                    "changeAbs": round(last - prev, 4),
+                })
+            except Exception as e:
+                logger.debug("quotes(%s) parse failed: %s", sym, e)
+                out.append({"symbol": sym, "lastPrice": None, "changePct": None})
+        return out
+
+    try:
+        quotes = await _run(_build)
+        return {"source": "yfinance", "quotes": quotes}
+    except Exception as e:
+        raise HTTPException(502, f"quotes failed: {e}")
+
+
+@router.get("/sectors")
+async def get_sectors() -> Dict[str, Any]:
+    """
+    Sector ETF day changes — replaces the hardcoded DJ30 grid in
+    SectorHeatmapWidget. Each sector is represented by its SPDR sector ETF
+    (XLK / XLF / XLV / etc.) which tracks the GICS sector index.
+    """
+    yf = _yf()
+    if yf is None:
+        raise HTTPException(503, "yfinance unavailable")
+
+    SECTORS = [
+        ("Technology",          "XLK"),
+        ("Financial",           "XLF"),
+        ("Healthcare",          "XLV"),
+        ("Consumer Cyclical",   "XLY"),
+        ("Consumer Defensive",  "XLP"),
+        ("Industrials",         "XLI"),
+        ("Energy",              "XLE"),
+        ("Basic Materials",     "XLB"),
+        ("Utilities",           "XLU"),
+        ("Comm. Services",      "XLC"),
+        ("Real Estate",         "XLRE"),
+    ]
+
+    def _build() -> List[Dict[str, Any]]:
+        symbols = " ".join(s for _, s in SECTORS)
+        try:
+            df = yf.download(symbols, period="5d", interval="1d", progress=False, group_by="ticker", auto_adjust=False, threads=True)
+        except Exception as e:
+            logger.warning("sectors download failed: %s", e)
+            return []
+        out = []
+        for name, sym in SECTORS:
+            try:
+                sub = df[sym] if sym in df.columns.get_level_values(0) else None
+                if sub is None or sub.dropna().empty:
+                    continue
+                closes = sub["Close"].dropna()
+                if len(closes) < 2:
+                    continue
+                last = float(closes.iloc[-1])
+                prev = float(closes.iloc[-2])
+                vol = float(sub["Volume"].dropna().iloc[-1]) if "Volume" in sub else 0
+                out.append({
+                    "name": name,
+                    "etf": sym,
+                    "price": round(last, 2),
+                    "changePct": round(((last - prev) / prev) * 100 if prev else 0.0, 2),
+                    "volume": vol,
+                })
+            except Exception:
+                continue
+        return out
+
+    try:
+        sectors = await _run(_build)
+        return {"source": "yfinance", "sectors": sectors}
+    except Exception as e:
+        raise HTTPException(502, f"sectors fetch failed: {e}")
+
+
+@router.get("/sentiment")
+async def get_sentiment() -> Dict[str, Any]:
+    """
+    Composite market-sentiment score (0-100). Derived from:
+      - VIX level (lower = greedier)
+      - SPY 5-day return (positive = greedier)
+      - Advance/decline ratio of the 11 sector ETFs
+    """
+    yf = _yf()
+    if yf is None:
+        raise HTTPException(503, "yfinance unavailable")
+
+    def _build() -> Dict[str, Any]:
+        try:
+            df = yf.download("^VIX SPY ^GSPC", period="10d", interval="1d", progress=False, group_by="ticker", auto_adjust=False, threads=True)
+        except Exception as e:
+            logger.warning("sentiment ix fetch failed: %s", e)
+            df = None
+
+        vix = None
+        spy_5d = None
+        if df is not None and not df.empty:
+            try:
+                vix_close = df["^VIX"]["Close"].dropna()
+                vix = float(vix_close.iloc[-1])
+            except Exception:
+                pass
+            try:
+                spy_close = df["SPY"]["Close"].dropna()
+                if len(spy_close) >= 6:
+                    spy_5d = ((float(spy_close.iloc[-1]) - float(spy_close.iloc[-6])) / float(spy_close.iloc[-6])) * 100
+            except Exception:
+                pass
+
+        sectors_resp: List[Dict[str, Any]] = []
+        try:
+            sectors_df = yf.download(
+                "XLK XLF XLV XLY XLP XLI XLE XLB XLU XLC XLRE",
+                period="2d", interval="1d", progress=False, group_by="ticker", auto_adjust=False, threads=True,
+            )
+            for sym in ["XLK", "XLF", "XLV", "XLY", "XLP", "XLI", "XLE", "XLB", "XLU", "XLC", "XLRE"]:
+                try:
+                    sub = sectors_df[sym] if sym in sectors_df.columns.get_level_values(0) else None
+                    if sub is None:
+                        continue
+                    closes = sub["Close"].dropna()
+                    if len(closes) >= 2:
+                        last = float(closes.iloc[-1])
+                        prev = float(closes.iloc[-2])
+                        change = ((last - prev) / prev) * 100 if prev else 0
+                        sectors_resp.append({"sym": sym, "changePct": change})
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
+        bullish = sum(1 for s in sectors_resp if s["changePct"] > 0.2)
+        bearish = sum(1 for s in sectors_resp if s["changePct"] < -0.2)
+        neutral = max(0, len(sectors_resp) - bullish - bearish)
+
+        # 0-100 composite. VIX 12-40 maps to 80-20; SPY 5d -5..+5 maps to 30-70.
+        score = 50.0
+        if vix is not None:
+            score += max(-30, min(30, (20 - vix) * 1.5))
+        if spy_5d is not None:
+            score += max(-15, min(15, spy_5d * 3))
+        if sectors_resp:
+            ad_balance = (bullish - bearish) / len(sectors_resp) * 20
+            score += ad_balance
+        score = round(max(0, min(100, score)), 1)
+
+        label = "BULLISH" if score >= 60 else "BEARISH" if score <= 40 else "NEUTRAL"
+
+        return {
+            "source": "yfinance",
+            "score": score,
+            "label": label,
+            "vix": round(vix, 2) if vix is not None else None,
+            "spy5dPct": round(spy_5d, 2) if spy_5d is not None else None,
+            "bullish": bullish,
+            "neutral": neutral,
+            "bearish": bearish,
+        }
+
+    try:
+        return await _run(_build)
+    except Exception as e:
+        raise HTTPException(502, f"sentiment fetch failed: {e}")
+
+
+@router.get("/calendar")
+async def get_calendar() -> Dict[str, Any]:
+    """
+    Today's economic-release calendar from FRED's release dates feed.
+    Falls back gracefully when FRED is unconfigured.
+    """
+    fred_key = os.getenv("FRED_API_KEY")
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    if not fred_key:
+        return {"source": "mock", "asOf": today, "events": []}
+    url = "https://api.stlouisfed.org/fred/releases/dates"
+    params = {
+        "api_key": fred_key,
+        "file_type": "json",
+        "realtime_start": today,
+        "realtime_end": today,
+        "include_release_dates_with_no_data": "true",
+        "limit": "30",
+        "order_by": "release_date",
+        "sort_order": "asc",
+    }
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get(url, params=params)
+            r.raise_for_status()
+            data = r.json()
+    except Exception as e:
+        logger.warning("FRED calendar failed: %s", e)
+        return {"source": "fred-error", "asOf": today, "events": [], "error": str(e)}
+
+    items = data.get("release_dates", []) or []
+    events: List[Dict[str, Any]] = []
+    HIGH_IMPACT_KEYWORDS = ("CPI", "PPI", "Employment", "Payroll", "FOMC", "GDP", "Consumer Price",
+                            "Producer Price", "Unemployment", "Federal Funds")
+    for item in items:
+        name = item.get("release_name") or ""
+        impact = "High" if any(k.lower() in name.lower() for k in HIGH_IMPACT_KEYWORDS) else "Medium"
+        events.append({
+            "id": item.get("release_id"),
+            "time": item.get("date"),
+            "event": name,
+            "impact": impact,
+            "actual": "-",
+            "forecast": "-",
+        })
+    return {"source": "fred", "asOf": today, "events": events}
+
+
 @router.get("/movers")
 async def get_movers(
     region: str = Query("us", description="us|nordic|europe"),

@@ -23,6 +23,7 @@ interface PropertyPanelProps {
 }
 
 const categoryColors: Record<NodeCategory, string> = {
+  dataSources: 'border-l-cyan-600',
   indicators: 'border-l-violet-500',
   conditions: 'border-l-amber-500',
   actions: 'border-l-emerald-500',
