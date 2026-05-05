@@ -38,8 +38,8 @@ interface NavItemDef {
 }
 
 const NAV_ITEMS: NavItemDef[] = [
-    { icon: <LayoutDashboard className="w-4 h-4" />, label: 'Dashboard', path: '/dashboard' },
-    { icon: <Code2 className="w-4 h-4" />, label: 'Builder', path: '/' },
+    { icon: <LayoutDashboard className="w-4 h-4" />, label: 'Dashboard', path: '/' },
+    { icon: <Code2 className="w-4 h-4" />, label: 'Builder', path: '/builder' },
     { icon: <Briefcase className="w-4 h-4" />, label: 'Portfolio', path: '/portfolio' },
     { icon: <LineChart className="w-4 h-4" />, label: 'Executions', path: '/executions' },
     { icon: <FlaskConical className="w-4 h-4" />, label: 'Research', path: '/research' },

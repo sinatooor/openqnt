@@ -24,7 +24,14 @@ import {
     RefreshCw,
     Loader2,
     Settings as SettingsIcon,
+    Palette,
+    Sun,
+    Moon,
+    Eye,
+    Terminal as TerminalIcon,
+    Monitor,
 } from 'lucide-react';
+import { useTheme, type Theme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -58,6 +65,52 @@ const CONNECTORS = [
     { id: 'n8n', name: 'n8n', description: 'Workflow automation', logo: '/logo/logo_n8n.png' },
 ];
 
+interface ThemeOption {
+    id: Theme;
+    label: string;
+    description: string;
+    icon: React.ComponentType<{ className?: string }>;
+    swatch: { bg: string; card: string; primary: string };
+}
+
+const THEME_OPTIONS: ThemeOption[] = [
+    {
+        id: 'dark',
+        label: 'Dark',
+        description: 'Webull-inspired deep dark — the default.',
+        icon: Moon,
+        swatch: { bg: 'hsl(0 0% 4%)', card: 'hsl(0 0% 7%)', primary: 'hsl(217 91% 60%)' },
+    },
+    {
+        id: 'light',
+        label: 'Light',
+        description: 'Clean daylight reading.',
+        icon: Sun,
+        swatch: { bg: 'hsl(0 0% 100%)', card: 'hsl(220 14% 96%)', primary: 'hsl(217 91% 50%)' },
+    },
+    {
+        id: 'hicontrast',
+        label: 'High Contrast',
+        description: 'Pure black & white, AAA-accessible.',
+        icon: Eye,
+        swatch: { bg: 'hsl(0 0% 0%)', card: 'hsl(0 0% 8%)', primary: 'hsl(60 100% 60%)' },
+    },
+    {
+        id: 'bloomberg',
+        label: 'Bloomberg',
+        description: 'Terminal amber on near-black.',
+        icon: TerminalIcon,
+        swatch: { bg: 'hsl(40 100% 2%)', card: 'hsl(40 60% 4%)', primary: 'hsl(36 100% 55%)' },
+    },
+    {
+        id: 'system',
+        label: 'System',
+        description: 'Follow OS preference.',
+        icon: Monitor,
+        swatch: { bg: 'linear-gradient(90deg, hsl(0 0% 4%) 50%, hsl(0 0% 100%) 50%)', card: 'hsl(0 0% 50%)', primary: 'hsl(217 91% 55%)' },
+    },
+];
+
 const Settings = () => {
     const { user, logout, isAuthenticated } = useAuthStore();
     const { settings, updateSettings } = useUserProfile();
@@ -70,6 +123,7 @@ const Settings = () => {
     const setIntegrationStatus = useIntegrationsStore((s) => s.setStatus);
     const dataSource = useDataSourceStore((s) => s.source);
     const setDataSource = useDataSourceStore((s) => s.setSource);
+    const { theme, setTheme } = useTheme();
 
     useEffect(() => {
         let cancelled = false;
@@ -164,7 +218,7 @@ const Settings = () => {
                             <span className="text-white/40 text-xs">Account, Trading & Connections</span>
                         </div>
                         <button
-                            onClick={() => navigate('/dashboard')}
+                            onClick={() => navigate('/')}
                             className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-colors"
                         >
                             <ArrowRight className="w-3.5 h-3.5 rotate-180" />
@@ -304,6 +358,60 @@ const Settings = () => {
                                                         {src.description}
                                                     </p>
                                                 </div>
+                                            </label>
+                                        );
+                                    })}
+                                </RadioGroup>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+
+                    {/* Appearance — theme switcher */}
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.19 }}>
+                        <Card className="bg-card/60 backdrop-blur-sm border-white/5 shadow-trading rounded-xl">
+                            <CardHeader className="pb-4 border-b border-white/5">
+                                <CardTitle className="text-base flex items-center gap-2">
+                                    <Palette className="w-4 h-4 text-primary" />
+                                    Appearance
+                                </CardTitle>
+                                <CardDescription>
+                                    Pick a theme for the entire app — affects every page, panel, and modal.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="pt-6">
+                                <RadioGroup
+                                    value={theme}
+                                    onValueChange={(v) => setTheme(v as Theme)}
+                                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3"
+                                >
+                                    {THEME_OPTIONS.map((opt) => {
+                                        const active = theme === opt.id;
+                                        const Icon = opt.icon;
+                                        return (
+                                            <label
+                                                key={opt.id}
+                                                className={`flex flex-col gap-2 rounded-lg border p-3 cursor-pointer transition-colors ${
+                                                    active
+                                                        ? 'border-primary/60 bg-primary/5'
+                                                        : 'border-white/5 bg-black/20 hover:bg-black/30'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <RadioGroupItem value={opt.id} className="mt-0" />
+                                                    <Icon className="w-3.5 h-3.5 text-muted-foreground" />
+                                                    <span className="text-sm font-medium">{opt.label}</span>
+                                                </div>
+                                                <div
+                                                    className="h-12 rounded-md border border-border/40 overflow-hidden flex"
+                                                    aria-hidden
+                                                >
+                                                    <div className="flex-1" style={{ background: opt.swatch.bg }} />
+                                                    <div className="flex-1" style={{ background: opt.swatch.card }} />
+                                                    <div className="flex-1" style={{ background: opt.swatch.primary }} />
+                                                </div>
+                                                <p className="text-[11px] text-muted-foreground leading-snug">
+                                                    {opt.description}
+                                                </p>
                                             </label>
                                         );
                                     })}

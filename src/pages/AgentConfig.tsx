@@ -100,7 +100,7 @@ const AgentConfig = () => {
                             <span className="text-white/40 text-xs">Control AI behavior</span>
                         </div>
                         <button
-                            onClick={() => navigate('/dashboard')}
+                            onClick={() => navigate('/')}
                             className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-colors"
                         >
                             <ArrowRight className="w-3.5 h-3.5 rotate-180" />

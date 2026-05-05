@@ -274,7 +274,7 @@ const Dashboard = () => {
                       Strategies
                     </CardTitle>
                     <button
-                      onClick={() => navigate('/')}
+                      onClick={() => navigate('/builder')}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
                     >
                       <Code className="w-3.5 h-3.5" />
@@ -292,7 +292,7 @@ const Dashboard = () => {
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
                       >
                         <button
-                          onClick={() => navigate('/')}
+                          onClick={() => navigate('/builder')}
                           className="flex items-center gap-2 mx-auto px-4 py-2 rounded-lg text-sm bg-primary/15 text-primary hover:bg-primary/25 transition-colors"
                         >
                           <Rocket className="w-3.5 h-3.5" />
@@ -310,7 +310,7 @@ const Dashboard = () => {
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ delay: i * 0.03 }}
                               className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group"
-                              onClick={() => navigate('/')}
+                              onClick={() => navigate('/builder')}
                             >
                               <div className="flex items-center gap-3">
                                 <div
@@ -368,7 +368,7 @@ const Dashboard = () => {
                     <QuickActionButton
                       icon={<Code className="w-3.5 h-3.5" />}
                       label="Strategy Builder"
-                      onClick={() => navigate('/')}
+                      onClick={() => navigate('/builder')}
                       color="purple"
                     />
                     <QuickActionButton
