@@ -7,92 +7,279 @@ All colors MUST be HSL.
 */
 
 @layer base {
-  :root {
-    /* Webull-inspired deep dark background */
+  /* ────────────────────────────────────────────────────────────────────────
+     DEFAULT THEME — Webull-inspired dark.
+     :root carries the dark theme so the app works without an explicit attr.
+     [data-theme="dark"] mirrors :root so swapping between themes is symmetric.
+     ──────────────────────────────────────────────────────────────────────── */
+  :root,
+  :root[data-theme="dark"],
+  .dark {
     --background: 0 0% 4%;
     --foreground: 0 0% 98%;
 
-    /* Card with subtle elevation */
     --card: 0 0% 7%;
     --card-foreground: 0 0% 98%;
 
-    /* Popover with glassmorphism */
     --popover: 0 0% 8%;
     --popover-foreground: 0 0% 98%;
 
-    /* Primary blue - Webull blue */
     --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary - slightly lighter than background */
     --secondary: 0 0% 10%;
     --secondary-foreground: 0 0% 98%;
 
-    /* Muted for subtle text */
     --muted: 0 0% 12%;
     --muted-foreground: 0 0% 65%;
 
-    /* Accent - subtle highlight */
     --accent: 0 0% 12%;
     --accent-foreground: 0 0% 98%;
 
-    /* Trading colors - Webull style */
     --profit: 142 71% 45%;
-    /* Green for gains */
     --profit-foreground: 0 0% 100%;
     --loss: 0 84% 60%;
-    /* Red for losses */
     --loss-foreground: 0 0% 100%;
 
-    /* Destructive */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    /* Borders - subtle */
     --border: 0 0% 15%;
     --input: 0 0% 10%;
     --ring: 217 91% 60%;
 
     --radius: 0.5rem;
 
-    /* Trading block colors */
     --block-environment: 142 71% 45%;
     --block-environment-foreground: 0 0% 100%;
-
     --block-operator: 262 83% 58%;
     --block-operator-foreground: 0 0% 100%;
-
     --block-control: 25 95% 53%;
     --block-control-foreground: 0 0% 100%;
-
     --block-trade: 189 94% 43%;
     --block-trade-foreground: 0 0% 100%;
-
     --block-ta: 0 84% 60%;
     --block-ta-foreground: 0 0% 100%;
 
     --grid-color: 220 13% 15%;
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 15%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Surface tones used by panels — exposed so non-dark themes can override */
+    --surface-overlay: 0 0% 0% / 0.4;
+    --surface-subtle: 0 0% 0% / 0.2;
+    --surface-strong: 0 0% 0% / 0.6;
   }
 
-  .dark {
-    --background: 220 13% 10%;
-    --foreground: 210 40% 98%;
+  /* ────────────────────────────────────────────────────────────────────────
+     LIGHT THEME — clean, daylight reading.
+     ──────────────────────────────────────────────────────────────────────── */
+  :root[data-theme="light"] {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 217 91% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 220 14% 96%;
+    --accent-foreground: 222 47% 11%;
+
+    --profit: 142 71% 38%;
+    --profit-foreground: 0 0% 100%;
+    --loss: 0 76% 50%;
+    --loss-foreground: 0 0% 100%;
+
+    --destructive: 0 76% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 88%;
+    --input: 220 13% 91%;
+    --ring: 217 91% 50%;
+
+    --block-environment: 142 71% 38%;
+    --block-environment-foreground: 0 0% 100%;
+    --block-operator: 262 83% 50%;
+    --block-operator-foreground: 0 0% 100%;
+    --block-control: 25 95% 48%;
+    --block-control-foreground: 0 0% 100%;
+    --block-trade: 189 94% 38%;
+    --block-trade-foreground: 0 0% 100%;
+    --block-ta: 0 76% 50%;
+    --block-ta-foreground: 0 0% 100%;
+
+    --grid-color: 220 13% 91%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5% 26%;
+    --sidebar-primary: 240 6% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 5% 96%;
+    --sidebar-accent-foreground: 240 6% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217 91% 60%;
+
+    --surface-overlay: 0 0% 0% / 0.04;
+    --surface-subtle: 0 0% 0% / 0.02;
+    --surface-strong: 0 0% 0% / 0.08;
+  }
+
+  /* ────────────────────────────────────────────────────────────────────────
+     HIGH-CONTRAST THEME — pure black/white for accessibility.
+     ──────────────────────────────────────────────────────────────────────── */
+  :root[data-theme="hicontrast"] {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+
+    --card: 0 0% 0%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 0% 0%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 60 100% 60%;
+    --primary-foreground: 0 0% 0%;
+
+    --secondary: 0 0% 8%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 85%;
+
+    --accent: 60 100% 60%;
+    --accent-foreground: 0 0% 0%;
+
+    --profit: 120 100% 55%;
+    --profit-foreground: 0 0% 0%;
+    --loss: 0 100% 60%;
+    --loss-foreground: 0 0% 0%;
+
+    --destructive: 0 100% 60%;
+    --destructive-foreground: 0 0% 0%;
+
+    --border: 0 0% 100%;
+    --input: 0 0% 12%;
+    --ring: 60 100% 60%;
+
+    --block-environment: 120 100% 55%;
+    --block-environment-foreground: 0 0% 0%;
+    --block-operator: 280 100% 70%;
+    --block-operator-foreground: 0 0% 0%;
+    --block-control: 30 100% 60%;
+    --block-control-foreground: 0 0% 0%;
+    --block-trade: 190 100% 60%;
+    --block-trade-foreground: 0 0% 0%;
+    --block-ta: 0 100% 60%;
+    --block-ta-foreground: 0 0% 0%;
+
+    --grid-color: 0 0% 25%;
+
+    --sidebar-background: 0 0% 0%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 60 100% 60%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 100%;
+    --sidebar-ring: 60 100% 60%;
+
+    --surface-overlay: 0 0% 100% / 0.06;
+    --surface-subtle: 0 0% 100% / 0.03;
+    --surface-strong: 0 0% 100% / 0.12;
+  }
+
+  /* High-contrast: thicker borders for AAA visibility */
+  :root[data-theme="hicontrast"] .border,
+  :root[data-theme="hicontrast"] [class*="border-"] {
+    border-width: 2px;
+  }
+
+  /* ────────────────────────────────────────────────────────────────────────
+     BLOOMBERG THEME — terminal amber on near-black.
+     ──────────────────────────────────────────────────────────────────────── */
+  :root[data-theme="bloomberg"] {
+    --background: 40 100% 2%;
+    --foreground: 36 100% 60%;
+
+    --card: 40 60% 4%;
+    --card-foreground: 36 100% 60%;
+
+    --popover: 40 60% 5%;
+    --popover-foreground: 36 100% 60%;
+
+    --primary: 36 100% 55%;
+    --primary-foreground: 40 100% 2%;
+
+    --secondary: 40 50% 7%;
+    --secondary-foreground: 36 100% 60%;
+
+    --muted: 40 30% 9%;
+    --muted-foreground: 36 50% 55%;
+
+    --accent: 36 100% 55%;
+    --accent-foreground: 40 100% 2%;
+
+    --profit: 120 100% 50%;
+    --profit-foreground: 40 100% 2%;
+    --loss: 0 100% 55%;
+    --loss-foreground: 0 0% 100%;
+
+    --destructive: 0 100% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 36 100% 12%;
+    --input: 40 50% 7%;
+    --ring: 36 100% 55%;
+
+    --block-environment: 120 100% 50%;
+    --block-environment-foreground: 40 100% 2%;
+    --block-operator: 36 100% 55%;
+    --block-operator-foreground: 40 100% 2%;
+    --block-control: 25 100% 55%;
+    --block-control-foreground: 40 100% 2%;
+    --block-trade: 190 100% 55%;
+    --block-trade-foreground: 40 100% 2%;
+    --block-ta: 0 100% 55%;
+    --block-ta-foreground: 0 0% 100%;
+
+    --grid-color: 36 100% 8%;
+
+    --sidebar-background: 40 100% 2%;
+    --sidebar-foreground: 36 100% 60%;
+    --sidebar-primary: 36 100% 55%;
+    --sidebar-primary-foreground: 40 100% 2%;
+    --sidebar-accent: 40 50% 7%;
+    --sidebar-accent-foreground: 36 100% 60%;
+    --sidebar-border: 36 100% 12%;
+    --sidebar-ring: 36 100% 55%;
+
+    --surface-overlay: 36 100% 50% / 0.04;
+    --surface-subtle: 36 100% 50% / 0.02;
+    --surface-strong: 36 100% 50% / 0.08;
+  }
+
+  /* Bloomberg theme: terminal-style font for body text */
+  :root[data-theme="bloomberg"] body {
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+    letter-spacing: 0;
   }
 }
 
@@ -456,17 +643,36 @@ All colors MUST be HSL.
   }
 }
 
-/* Handle hover effect */
+/* Handle hover effect.
+   xyflow centers handles via transform: translate(-50%, -50%) for left
+   handles and translate(50%, -50%) for right. Hover must preserve that
+   centering — overriding transform with bare scale() snaps the handle to
+   its top-left corner ("drifts to the side"). */
 .pipeline-canvas .react-flow__handle {
   width: 10px;
   height: 10px;
   border-width: 2px;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
 .pipeline-canvas .react-flow__handle:hover {
-  transform: scale(1.3);
-  box-shadow: 0 0 8px currentColor;
+  box-shadow: 0 0 10px currentColor;
+}
+
+.pipeline-canvas .react-flow__handle.react-flow__handle-left:hover {
+  transform: translate(-50%, -50%) scale(1.35);
+}
+
+.pipeline-canvas .react-flow__handle.react-flow__handle-right:hover {
+  transform: translate(50%, -50%) scale(1.35);
+}
+
+.pipeline-canvas .react-flow__handle.react-flow__handle-top:hover {
+  transform: translate(-50%, -50%) scale(1.35);
+}
+
+.pipeline-canvas .react-flow__handle.react-flow__handle-bottom:hover {
+  transform: translate(-50%, 50%) scale(1.35);
 }
 
 /* Connection line styles */

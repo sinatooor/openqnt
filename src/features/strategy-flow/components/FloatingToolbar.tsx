@@ -80,6 +80,7 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 
 interface FloatingToolbarProps {
   onOpenTemplates: () => void;
+  onOpenSearch: () => void;
   onOpenBacktest: () => void;
   onOpenChart: () => void;
   onOpenCode: () => void;
@@ -197,6 +198,7 @@ WorkflowLibraryDialog.displayName = 'WorkflowLibraryDialog';
 export const FloatingToolbar = memo(
   ({
     onOpenTemplates,
+    onOpenSearch,
     onOpenBacktest,
     onOpenChart,
     onOpenCode,
@@ -585,6 +587,18 @@ export const FloatingToolbar = memo(
           </Tooltip>
 
           <Toolbar.Separator className="w-px h-5 bg-border/50 mx-1" />
+
+          {/* ── Search Nodes ───────────────────────────────────────────── */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Toolbar.Button onClick={onOpenSearch} className={iconButtonClass}>
+                <Search className="w-4 h-4" />
+              </Toolbar.Button>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs">
+              Search Nodes <span className="ml-1 opacity-60">⌘K</span>
+            </TooltipContent>
+          </Tooltip>
 
           {/* ── Templates ──────────────────────────────────────────────── */}
           <Tooltip>

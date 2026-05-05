@@ -1,23 +1,31 @@
 /**
- * LiveExecutionPanel — Phase H execution viewer.
+ * LiveExecutionPanel — Live trading execution viewer.
  *
- * Three sections:
- *   1. Account header — broker, cash, equity, P&L, KILL SWITCH (H5).
- *   2. Open positions table.
- *   3. Order journal (newest first) with status pill + risk reason.
+ * Sections:
+ *   • Account header — broker, cash, equity, P&L, kill switch.
+ *   • Send signal form — manual + take-template-signal flows.
+ *   • Open positions table.
+ *   • Order journal — paginated, status-filtered.
  *
- * Plus a compact "Send signal" form so the exit criterion can be
- * reproduced from the UI: pick {symbol, side, qty}, hit Send → see the
- * order land in the journal + position update within ~1 s.
- *
- * "Take template signal" calls /api/execution/template-signal which
- * reads the Phase E RSI template's spec and converts today's close +
- * RSI into a {buy/sell/flat} suggestion. The user can then click Send
- * to actually submit it — that's the Phase H exit criterion happy
- * path.
+ * Polls every {POLL_MS}ms. All colors driven by design tokens so the
+ * panel follows the active theme (dark / light / hi-contrast / bloomberg).
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  Activity,
+  AlertCircle,
+  ArrowUpRight,
+  ArrowDownRight,
+  Briefcase,
+  CircleDollarSign,
+  Loader2,
+  Send,
+  Sparkles,
+  ShieldOff,
+  ShieldAlert,
+  Wallet,
+} from 'lucide-react';
 import {
   clearPanic,
   engagePanic,
@@ -29,29 +37,68 @@ import {
   type JournalOrder,
   type TemplateSignal,
 } from './api';
-
-const C = {
-  bg: '#0a0a12',
-  panel: '#171723',
-  border: 'rgba(139,92,246,0.15)',
-  amber: '#ff9f1a',
-  text: '#e2e8f0',
-  muted: '#94a3b8',
-  good: '#10b981',
-  bad: '#ef4444',
-  accent: '#8b5cf6',
-};
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 const POLL_MS = 2000;
 
-function fmt(n: number, digits = 2): string {
+/* -------------------------------------------------------------------------- */
+/*  Formatting helpers                                                        */
+/* -------------------------------------------------------------------------- */
+
+function fmt(n: number | null | undefined, digits = 2): string {
   if (n === null || n === undefined || Number.isNaN(n)) return '—';
-  return n.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  return n.toLocaleString(undefined, {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
 }
+
 function signed(n: number, digits = 2): string {
   const v = fmt(n, digits);
   return n > 0 ? `+${v}` : v;
 }
+
 function relTime(iso?: string | null): string {
   if (!iso) return '—';
   const t = Date.parse(iso);
@@ -65,31 +112,72 @@ function relTime(iso?: string | null): string {
   return `${Math.floor(h / 24)}d`;
 }
 
-function StatusPill({ status }: { status: JournalOrder['status'] }) {
-  const colour = {
-    filled: C.good,
-    rejected: C.bad,
-    pending: C.amber,
-    cancelled: C.muted,
-    partial: C.amber,
-  }[status] || C.muted;
-  return (
-    <span
-      style={{
-        fontSize: 9,
-        fontWeight: 700,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-        color: colour,
-        background: `${colour}1f`,
-        padding: '1px 6px',
-        borderRadius: 3,
-      }}
-    >
-      {status}
-    </span>
-  );
+function absTime(iso?: string | null): string {
+  if (!iso) return '—';
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return '—';
+  return new Date(t).toLocaleString();
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Sub-components                                                            */
+/* -------------------------------------------------------------------------- */
+
+interface KpiProps {
+  label: string;
+  value: ReactNode;
+  hint?: ReactNode;
+  tone?: 'default' | 'profit' | 'loss';
+  icon?: React.ComponentType<{ className?: string }>;
+}
+
+const Kpi = ({ label, value, hint, tone = 'default', icon: Icon }: KpiProps) => {
+  const toneClass =
+    tone === 'profit' ? 'text-profit'
+      : tone === 'loss' ? 'text-loss'
+        : 'text-foreground';
+  return (
+    <div className="flex flex-col gap-0.5">
+      <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+        {Icon && <Icon className="w-3 h-3" />}
+        {label}
+      </div>
+      <div className={cn('text-lg font-semibold tabular-nums leading-tight', toneClass)}>
+        {value}
+      </div>
+      {hint && <div className="text-[10px] text-muted-foreground/80 tabular-nums">{hint}</div>}
+    </div>
+  );
+};
+
+function statusVariant(status: JournalOrder['status']): {
+  badge: 'default' | 'secondary' | 'destructive' | 'outline';
+  className: string;
+} {
+  switch (status) {
+    case 'filled': return { badge: 'outline', className: 'border-profit/40 bg-profit/10 text-profit' };
+    case 'rejected': return { badge: 'outline', className: 'border-loss/40 bg-loss/10 text-loss' };
+    case 'pending': return { badge: 'outline', className: 'border-amber-500/40 bg-amber-500/10 text-amber-500' };
+    case 'partial': return { badge: 'outline', className: 'border-amber-500/40 bg-amber-500/10 text-amber-500' };
+    case 'cancelled': return { badge: 'outline', className: 'border-muted-foreground/30 bg-muted/40 text-muted-foreground' };
+    default: return { badge: 'outline', className: 'border-muted-foreground/30 bg-muted/40 text-muted-foreground' };
+  }
+}
+
+const StatusBadge = ({ status }: { status: JournalOrder['status'] }) => {
+  const v = statusVariant(status);
+  return (
+    <Badge variant={v.badge} className={cn('uppercase font-bold tracking-wider text-[9px] px-1.5 py-0', v.className)}>
+      {status}
+    </Badge>
+  );
+};
+
+/* -------------------------------------------------------------------------- */
+/*  Main panel                                                                */
+/* -------------------------------------------------------------------------- */
+
+type OrderFilter = 'all' | 'filled' | 'pending' | 'rejected';
 
 export default function LiveExecutionPanel() {
   const [account, setAccount] = useState<AccountSnapshot | null>(null);
@@ -101,6 +189,8 @@ export default function LiveExecutionPanel() {
   const [side, setSide] = useState<'buy' | 'sell'>('buy');
   const [qty, setQty] = useState('1');
   const [tplSignal, setTplSignal] = useState<TemplateSignal | null>(null);
+
+  const [orderFilter, setOrderFilter] = useState<OrderFilter>('all');
 
   const refresh = async () => {
     try {
@@ -148,7 +238,6 @@ export default function LiveExecutionPanel() {
   };
 
   const onPanic = async () => {
-    if (!confirm('Engage kill switch? Closes ALL positions and blocks further orders.')) return;
     setBusy(true);
     try {
       await engagePanic('ui-button');
@@ -177,206 +266,359 @@ export default function LiveExecutionPanel() {
     return (account.realised_pnl ?? 0) + (account.unrealised_pnl ?? 0);
   }, [account]);
 
+  const positions = useMemo(
+    () => account?.positions.filter((p) => p.qty !== 0) ?? [],
+    [account],
+  );
+
+  const filteredOrders = useMemo(() => {
+    if (orderFilter === 'all') return orders;
+    return orders.filter((o) => o.status === orderFilter);
+  }, [orders, orderFilter]);
+
+  /* ------------------------------------------------------------------ */
+
   return (
-    <div style={{ padding: 20, background: C.bg, color: C.text, minHeight: '100%', display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <div>
-        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>Live Execution</h2>
-        <p style={{ margin: '4px 0 0', fontSize: 12, color: C.muted }}>
-          Same path agents use: signal → RiskGate → broker → journal. Polls every {POLL_MS / 1000}s.
-        </p>
-      </div>
-
-      {error && (
-        <div style={{ padding: 10, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, fontSize: 12, color: C.bad }}>
-          {error}
-        </div>
-      )}
-
-      {/* Account header */}
-      {account && (
-        <div style={{
-          background: C.panel, border: `1px solid ${C.border}`, borderRadius: 8, padding: 14,
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10,
-        }}>
-          <Stat label="Broker" value={account.broker.toUpperCase()} />
-          <Stat label="Cash" value={`$${fmt(account.cash, 2)}`} />
-          <Stat label="Equity" value={`$${fmt(account.equity, 2)}`} />
-          <Stat label="Realised P&L" value={`$${signed(account.realised_pnl)}`} tone={account.realised_pnl >= 0 ? 'good' : 'bad'} />
-          <Stat label="Unrealised" value={`$${signed(account.unrealised_pnl)}`} tone={account.unrealised_pnl >= 0 ? 'good' : 'bad'} />
-          <Stat label="Total P&L" value={`$${signed(totalPnl)}`} tone={totalPnl >= 0 ? 'good' : 'bad'} />
-          <div style={{
-            display: 'flex', flexDirection: 'column', gap: 4,
-            padding: '6px 0', alignItems: 'flex-start',
-          }}>
-            <span style={{ fontSize: 9, color: C.muted, textTransform: 'uppercase', letterSpacing: 0.5 }}>Kill switch</span>
-            {account.panic.active ? (
-              <button onClick={onClearPanic} disabled={busy}
-                style={{ background: C.amber, color: '#000', border: 'none', padding: '4px 10px', borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-                CLEAR PANIC
-              </button>
-            ) : (
-              <button onClick={onPanic} disabled={busy}
-                style={{ background: C.bad, color: 'white', border: 'none', padding: '4px 10px', borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-                KILL ALL
-              </button>
-            )}
+    <div className="min-h-screen bg-background text-foreground pt-14">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+        {/* Page header */}
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <Activity className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-lg font-semibold tracking-tight">Live Execution</h1>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Same path agents use: signal → RiskGate → broker → journal. Polling every {POLL_MS / 1000}s.
+              </p>
+            </div>
           </div>
-        </div>
-      )}
-
-      {account?.halted && account.halt_reason && (
-        <div style={{ padding: 10, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, fontSize: 12, color: C.bad }}>
-          Trading halted by RiskGate · {account.halt_reason}
-        </div>
-      )}
-
-      {/* Submit signal */}
-      <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 8, padding: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 10 }}>
-          <h3 style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Submit signal</h3>
-          <span style={{ fontSize: 10, color: C.muted, marginLeft: 'auto' }}>
-            POST /api/execution/signal
-          </span>
-        </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <input value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="SYMBOL"
-            style={inputStyle(80)} />
-          <select value={side} onChange={(e) => setSide(e.target.value as 'buy' | 'sell')} style={inputStyle(70)}>
-            <option value="buy">buy</option>
-            <option value="sell">sell</option>
-          </select>
-          <input type="number" min={0} step="0.0001" value={qty} onChange={(e) => setQty(e.target.value)}
-            style={inputStyle(80)} />
-          <button onClick={onSend} disabled={busy}
-            style={{ background: C.accent, color: 'white', border: 'none', padding: '6px 14px', borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: busy ? 'wait' : 'pointer' }}>
-            Send
-          </button>
-          <button onClick={onTemplate} disabled={busy}
-            style={{ background: 'transparent', border: `1px solid ${C.border}`, color: C.amber, padding: '6px 12px', borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: busy ? 'wait' : 'pointer' }}>
-            Take template signal
-          </button>
-          {tplSignal && (
-            <span style={{ fontSize: 11, color: C.muted, marginLeft: 6 }}>
-              RSI {tplSignal.rsi?.toFixed(2)} · last ${tplSignal.last_close?.toFixed(2)} →{' '}
-              <strong style={{ color: tplSignal.signal === 'buy' ? C.good : tplSignal.signal === 'sell' ? C.bad : C.amber }}>
-                {tplSignal.signal.toUpperCase()}
-              </strong>
-            </span>
+          {account && (
+            <Badge variant="outline" className="text-[10px] uppercase tracking-wider gap-1.5">
+              <span className={cn('w-1.5 h-1.5 rounded-full', account.panic.active ? 'bg-loss' : 'bg-profit')} />
+              {account.panic.active ? 'Halted' : 'Live'}
+            </Badge>
           )}
         </div>
-      </div>
 
-      {/* Positions */}
-      <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 8, padding: 14, overflow: 'auto' }}>
-        <h3 style={{ margin: 0, fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Positions</h3>
-        {(!account || account.positions.length === 0) ? (
-          <div style={{ fontSize: 12, color: C.muted, padding: 8 }}>No open positions.</div>
-        ) : (
-          <table style={tableStyle}>
-            <thead>
-              <tr>
-                <th style={th}>Symbol</th>
-                <th style={th}>Qty</th>
-                <th style={thR}>Avg</th>
-                <th style={thR}>Last</th>
-                <th style={thR}>Unreal P&L</th>
-                <th style={thR}>Realised</th>
-              </tr>
-            </thead>
-            <tbody>
-              {account.positions.filter((p) => p.qty !== 0).map((p) => (
-                <tr key={p.symbol} style={trBorder}>
-                  <td style={tdMono}>{p.symbol}</td>
-                  <td style={tdMono}>{fmt(p.qty, 4)}</td>
-                  <td style={tdMonoR}>{fmt(p.avg_price)}</td>
-                  <td style={tdMonoR}>{fmt(p.last_price)}</td>
-                  <td style={{ ...tdMonoR, color: p.unrealised_pnl >= 0 ? C.good : C.bad }}>
-                    {signed(p.unrealised_pnl)}
-                  </td>
-                  <td style={{ ...tdMonoR, color: p.realised_pnl >= 0 ? C.good : C.bad }}>
-                    {signed(p.realised_pnl)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* Error */}
+        {error && (
+          <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive p-3 text-sm">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">{error}</div>
+            <button onClick={() => setError(null)} className="opacity-60 hover:opacity-100" aria-label="Dismiss">
+              ×
+            </button>
+          </div>
         )}
-      </div>
 
-      {/* Order journal */}
-      <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 8, padding: 14, overflow: 'auto' }}>
-        <h3 style={{ margin: 0, fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
-          Orders <span style={{ color: C.muted, fontWeight: 400 }}>· newest first</span>
-        </h3>
-        {orders.length === 0 ? (
-          <div style={{ fontSize: 12, color: C.muted, padding: 8 }}>No orders yet.</div>
-        ) : (
-          <table style={tableStyle}>
-            <thead>
-              <tr>
-                <th style={th}>When</th>
-                <th style={th}>Status</th>
-                <th style={th}>Symbol</th>
-                <th style={th}>Side</th>
-                <th style={thR}>Qty</th>
-                <th style={thR}>Fill</th>
-                <th style={th}>Reason / risk</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((o) => (
-                <tr key={o.id} style={trBorder}>
-                  <td style={td}>{relTime(o.submitted_at)}</td>
-                  <td style={td}><StatusPill status={o.status} /></td>
-                  <td style={tdMono}>{o.symbol}</td>
-                  <td style={{ ...tdMono, color: o.side === 'buy' ? C.good : C.bad }}>{o.side}</td>
-                  <td style={tdMonoR}>{fmt(o.qty, 4)}</td>
-                  <td style={tdMonoR}>{o.fill_price !== null ? `$${fmt(o.fill_price)}` : '—'}</td>
-                  <td style={{ ...td, color: C.muted, fontSize: 10 }}>
-                    {o.rejected_reason ?? o.risk_decision?.warnings?.join(' · ') ?? ''}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {account?.halted && account.halt_reason && (
+          <div className="flex items-center gap-3 rounded-lg border border-loss/30 bg-loss/10 text-loss p-3 text-sm">
+            <ShieldAlert className="w-4 h-4 flex-shrink-0" />
+            <span>Trading halted by RiskGate · {account.halt_reason}</span>
+          </div>
         )}
+
+        {/* Account header card */}
+        <Card className="bg-card/60 border-border/50">
+          <CardContent className="p-5">
+            {!account ? (
+              <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground text-sm">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Connecting to broker…
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-5 items-end">
+                <Kpi
+                  label="Broker"
+                  value={<span className="uppercase tracking-tight">{account.broker}</span>}
+                  icon={Briefcase}
+                />
+                <Kpi label="Cash" value={`$${fmt(account.cash)}`} icon={Wallet} />
+                <Kpi label="Equity" value={`$${fmt(account.equity)}`} icon={CircleDollarSign} />
+                <Kpi
+                  label="Realised"
+                  value={`$${signed(account.realised_pnl)}`}
+                  tone={account.realised_pnl >= 0 ? 'profit' : 'loss'}
+                />
+                <Kpi
+                  label="Unrealised"
+                  value={`$${signed(account.unrealised_pnl)}`}
+                  tone={account.unrealised_pnl >= 0 ? 'profit' : 'loss'}
+                />
+                <Kpi
+                  label="Total P&L"
+                  value={`$${signed(totalPnl)}`}
+                  tone={totalPnl >= 0 ? 'profit' : 'loss'}
+                />
+                <div className="flex items-center justify-end">
+                  {account.panic.active ? (
+                    <Button onClick={onClearPanic} disabled={busy} size="sm" className="gap-1.5">
+                      <ShieldOff className="w-3.5 h-3.5" />
+                      Clear panic
+                    </Button>
+                  ) : (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm" disabled={busy} className="gap-1.5 font-bold tracking-wider uppercase">
+                          <ShieldAlert className="w-3.5 h-3.5" />
+                          Kill all
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Engage kill switch?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will close <strong>all open positions</strong> immediately and block any new orders
+                            until you clear the panic state. Use only in emergencies.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={onPanic}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Engage kill switch
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Two-column: positions + send signal */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {/* Positions */}
+          <Card className="bg-card/60 border-border/50 lg:col-span-2">
+            <CardHeader className="pb-3 border-b border-border/50">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Briefcase className="w-4 h-4 text-primary" />
+                Open Positions
+                <Badge variant="secondary" className="text-[10px] font-normal h-5 ml-auto">
+                  {positions.length}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {positions.length === 0 ? (
+                <div className="text-sm text-muted-foreground text-center py-12">
+                  No open positions.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent border-border/40">
+                        <TableHead className="text-[10px] uppercase tracking-wider">Symbol</TableHead>
+                        <TableHead className="text-[10px] uppercase tracking-wider text-right">Qty</TableHead>
+                        <TableHead className="text-[10px] uppercase tracking-wider text-right">Avg</TableHead>
+                        <TableHead className="text-[10px] uppercase tracking-wider text-right">Last</TableHead>
+                        <TableHead className="text-[10px] uppercase tracking-wider text-right">Unreal P&L</TableHead>
+                        <TableHead className="text-[10px] uppercase tracking-wider text-right">Realised</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {positions.map((p) => (
+                        <TableRow key={p.symbol} className="border-border/40">
+                          <TableCell className="font-mono font-medium">{p.symbol}</TableCell>
+                          <TableCell className="font-mono text-right tabular-nums">{fmt(p.qty, 4)}</TableCell>
+                          <TableCell className="font-mono text-right tabular-nums">{fmt(p.avg_price)}</TableCell>
+                          <TableCell className="font-mono text-right tabular-nums">{fmt(p.last_price)}</TableCell>
+                          <TableCell className={cn('font-mono text-right tabular-nums', p.unrealised_pnl >= 0 ? 'text-profit' : 'text-loss')}>
+                            {signed(p.unrealised_pnl)}
+                          </TableCell>
+                          <TableCell className={cn('font-mono text-right tabular-nums', p.realised_pnl >= 0 ? 'text-profit' : 'text-loss')}>
+                            {signed(p.realised_pnl)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Send signal */}
+          <Card className="bg-card/60 border-border/50">
+            <CardHeader className="pb-3 border-b border-border/50">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Send className="w-4 h-4 text-primary" />
+                Send Signal
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-5 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2 space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Symbol</Label>
+                  <Input
+                    value={symbol}
+                    onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                    placeholder="SPY"
+                    className="font-mono"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Side</Label>
+                  <Select value={side} onValueChange={(v) => setSide(v as 'buy' | 'sell')}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="buy">Buy</SelectItem>
+                      <SelectItem value="sell">Sell</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Quantity</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.0001"
+                    value={qty}
+                    onChange={(e) => setQty(e.target.value)}
+                    className="font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Button onClick={onSend} disabled={busy} className="gap-2 w-full">
+                  {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  Send signal
+                </Button>
+                <Button
+                  onClick={onTemplate}
+                  disabled={busy}
+                  variant="outline"
+                  className="gap-2 w-full"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Take template signal
+                </Button>
+              </div>
+
+              {tplSignal && (
+                <div className="rounded-lg border border-border/40 bg-muted/30 p-3 space-y-1">
+                  <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                    Template suggestion
+                  </div>
+                  <div className="text-sm font-mono tabular-nums flex items-center gap-3 flex-wrap">
+                    <span>RSI {tplSignal.rsi?.toFixed(2)}</span>
+                    <span className="text-muted-foreground/50">•</span>
+                    <span>Last ${tplSignal.last_close?.toFixed(2)}</span>
+                    <span className="text-muted-foreground/50">→</span>
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        'uppercase font-bold tracking-wider text-[10px]',
+                        tplSignal.signal === 'buy' ? 'border-profit/40 bg-profit/10 text-profit'
+                          : tplSignal.signal === 'sell' ? 'border-loss/40 bg-loss/10 text-loss'
+                            : 'border-amber-500/40 bg-amber-500/10 text-amber-500',
+                      )}
+                    >
+                      {tplSignal.signal}
+                    </Badge>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Order journal */}
+        <Card className="bg-card/60 border-border/50">
+          <CardHeader className="pb-3 border-b border-border/50 flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Activity className="w-4 h-4 text-primary" />
+              Order Journal
+              <Badge variant="secondary" className="text-[10px] font-normal h-5">
+                {filteredOrders.length}
+              </Badge>
+              <span className="text-xs text-muted-foreground font-normal ml-1">· newest first</span>
+            </CardTitle>
+            <Tabs value={orderFilter} onValueChange={(v) => setOrderFilter(v as OrderFilter)}>
+              <TabsList className="h-8">
+                <TabsTrigger value="all" className="text-xs h-6 px-2.5">All</TabsTrigger>
+                <TabsTrigger value="filled" className="text-xs h-6 px-2.5">Filled</TabsTrigger>
+                <TabsTrigger value="pending" className="text-xs h-6 px-2.5">Pending</TabsTrigger>
+                <TabsTrigger value="rejected" className="text-xs h-6 px-2.5">Rejected</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </CardHeader>
+          <CardContent className="p-0">
+            {filteredOrders.length === 0 ? (
+              <div className="text-sm text-muted-foreground text-center py-12">
+                No orders match this filter.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent border-border/40">
+                      <TableHead className="text-[10px] uppercase tracking-wider">When</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider">Status</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider">Symbol</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider">Side</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider text-right">Qty</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider text-right">Fill</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider">Reason / risk</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredOrders.map((o) => {
+                      const reason = o.rejected_reason ?? o.risk_decision?.warnings?.join(' · ') ?? '';
+                      return (
+                        <TableRow key={o.id} className="border-border/40">
+                          <TableCell className="font-mono text-xs tabular-nums">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span>{relTime(o.submitted_at)}</span>
+                              </TooltipTrigger>
+                              <TooltipContent side="right" className="text-xs">
+                                {absTime(o.submitted_at)}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TableCell>
+                          <TableCell><StatusBadge status={o.status} /></TableCell>
+                          <TableCell className="font-mono">{o.symbol}</TableCell>
+                          <TableCell className={cn('font-mono uppercase text-xs tracking-wider flex items-center gap-1', o.side === 'buy' ? 'text-profit' : 'text-loss')}>
+                            {o.side === 'buy' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                            {o.side}
+                          </TableCell>
+                          <TableCell className="font-mono text-right tabular-nums">{fmt(o.qty, 4)}</TableCell>
+                          <TableCell className="font-mono text-right tabular-nums">
+                            {o.fill_price !== null ? `$${fmt(o.fill_price)}` : '—'}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground max-w-[280px] truncate">
+                            {reason ? (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span>{reason}</span>
+                                </TooltipTrigger>
+                                <TooltipContent side="left" className="text-xs max-w-sm">
+                                  {reason}
+                                </TooltipContent>
+                              </Tooltip>
+                            ) : '—'}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
 }
-
-// ── tiny helpers ────────────────────────────────────────────
-
-function Stat({ label, value, tone }: { label: string; value: string; tone?: 'good' | 'bad' }) {
-  return (
-    <div>
-      <div style={{ fontSize: 9, color: C.muted, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</div>
-      <div style={{
-        marginTop: 2, fontSize: 16, fontWeight: 600,
-        color: tone === 'good' ? C.good : tone === 'bad' ? C.bad : C.text,
-        fontVariantNumeric: 'tabular-nums',
-      }}>{value}</div>
-    </div>
-  );
-}
-
-function inputStyle(width: number): React.CSSProperties {
-  return {
-    background: '#000',
-    color: C.text,
-    border: `1px solid ${C.border}`,
-    padding: '5px 8px',
-    fontSize: 12,
-    fontFamily: 'ui-monospace, monospace',
-    borderRadius: 4,
-    width,
-  };
-}
-
-const tableStyle: React.CSSProperties = { width: '100%', fontSize: 12, borderCollapse: 'collapse' };
-const th: React.CSSProperties = { padding: '5px 8px', color: C.muted, textAlign: 'left', fontWeight: 500, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5 };
-const thR: React.CSSProperties = { ...th, textAlign: 'right' };
-const td: React.CSSProperties = { padding: '5px 8px' };
-const tdMono: React.CSSProperties = { ...td, fontFamily: 'ui-monospace, monospace' };
-const tdMonoR: React.CSSProperties = { ...td, fontFamily: 'ui-monospace, monospace', textAlign: 'right' };
-const trBorder: React.CSSProperties = { borderTop: `1px solid ${C.border}` };

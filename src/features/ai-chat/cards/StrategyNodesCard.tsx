@@ -85,7 +85,7 @@ export function StrategyNodesCard({ nodes, edges, message }: Props) {
       toast.success(`Added ${laid.length} nodes to canvas`);
     }
     toast('Switch to Builder to see your strategy', {
-      action: { label: 'Go to Builder', onClick: () => navigate('/') },
+      action: { label: 'Go to Builder', onClick: () => navigate('/builder') },
     });
   };
 

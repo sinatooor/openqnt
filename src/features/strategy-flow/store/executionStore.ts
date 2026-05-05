@@ -349,6 +349,9 @@ export const selectNodeExecution = (nodeId: string) =>
 export const selectEdgeExecution = (edgeId: string) =>
   (state: ExecutionState) => state.edgeStates[edgeId] || defaultEdgeState;
 
+export const selectNodeOutput = (nodeId: string) =>
+  (state: ExecutionState) => state.nodeStates[nodeId]?.outputData ?? null;
+
 export const selectExecutionPhase = (state: ExecutionState) => state.phase;
 
 export const useExecutionStoreShallow = <T>(

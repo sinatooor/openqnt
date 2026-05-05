@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Theme } from "@radix-ui/themes";
+import ThemeProvider, { useTheme, type ResolvedTheme } from "./contexts/ThemeContext";
 import StrategyFlow from "./pages/StrategyFlow";
 import ExecutionDetails from "./pages/ExecutionDetails";
 import Login from "./pages/Login";
@@ -60,28 +61,17 @@ const queryClient = new QueryClient();
 /*  Boot splash — shown while Zustand hydrates persisted state from storage   */
 /* -------------------------------------------------------------------------- */
 const BootSplash = () => (
-  <div
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '100vh',
-      background: '#0a0a0f',
-    }}
-  >
-    <div style={{ textAlign: 'center' }}>
+  <div className="flex items-center justify-center min-h-screen bg-background text-muted-foreground">
+    <div className="text-center">
       <div
+        className="w-12 h-12 mx-auto mb-5 rounded-full"
         style={{
-          width: 48,
-          height: 48,
-          margin: '0 auto 20px',
-          border: '3px solid rgba(139,92,246,0.15)',
-          borderTopColor: '#7c3aed',
-          borderRadius: '50%',
+          border: '3px solid hsl(var(--primary) / 0.15)',
+          borderTopColor: 'hsl(var(--primary))',
           animation: 'spin 0.8s linear infinite',
         }}
       />
-      <p style={{ color: '#64748b', fontSize: 13, margin: 0 }}>Loading…</p>
+      <p className="text-[13px] m-0">Loading…</p>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   </div>
@@ -117,7 +107,7 @@ const AppRoutes = () => {
         path="/onboarding"
         element={
           isAuthenticated && hasCompletedOnboarding
-            ? <Navigate to="/dashboard" replace />
+            ? <Navigate to="/" replace />
             : isAuthenticated
               ? <Onboarding />
               : <Navigate to="/login" replace />
@@ -128,14 +118,15 @@ const AppRoutes = () => {
       <Route
         path="/login"
         element={
-          <Navigate to="/dashboard" replace />
+          <Navigate to="/" replace />
         }
       />
 
       {/* All protected routes — AppNavBar only renders after onboarding */}
       <Route element={<><AppNavBar /><ProtectedRoute /></>}>
-        <Route path="/" element={<StrategyFlow />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/builder" element={<StrategyFlow />} />
+        <Route path="/dashboard" element={<Navigate to="/" replace />} />
         <Route path="/executions" element={<ExecutionHistory />} />
         <Route path="/execution/:id" element={<ExecutionDetails />} />
         <Route path="/research" element={<Research />} />
@@ -207,19 +198,47 @@ const GlobalOverlays = () => {
   );
 };
 
+/**
+ * Maps our theme names to Radix UI Theme provider props so Radix-themed
+ * components (popovers, dialogs, toasts) follow the active theme.
+ */
+const radixPropsFor = (
+  resolved: ResolvedTheme,
+): { appearance: 'light' | 'dark'; accentColor: 'purple' | 'orange' | 'yellow' | 'blue' } => {
+  switch (resolved) {
+    case 'light': return { appearance: 'light', accentColor: 'purple' };
+    case 'hicontrast': return { appearance: 'dark', accentColor: 'yellow' };
+    case 'bloomberg': return { appearance: 'dark', accentColor: 'orange' };
+    case 'dark':
+    default: return { appearance: 'dark', accentColor: 'purple' };
+  }
+};
+
+const ThemedShell = ({ children }: { children: React.ReactNode }) => {
+  const { resolvedTheme } = useTheme();
+  const radixProps = radixPropsFor(resolvedTheme);
+  return (
+    <Theme {...radixProps} grayColor="slate" radius="small" scaling="90%">
+      {children}
+    </Theme>
+  );
+};
+
 const App = () => (
-  <Theme appearance="dark" accentColor="purple" grayColor="slate" radius="small" scaling="90%">
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <AppRoutes />
-          <GlobalOverlays />
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </Theme>
+  <ThemeProvider defaultTheme="dark" storageKey="ppm-ui-theme">
+    <ThemedShell>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <AppRoutes />
+            <GlobalOverlays />
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemedShell>
+  </ThemeProvider>
 );
 
 export default App;

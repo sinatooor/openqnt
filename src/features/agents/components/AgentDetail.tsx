@@ -118,7 +118,7 @@ export const AgentDetail = memo(({ agentId }: AgentDetailProps) => {
             </Button>
             {agent.source === 'flow' && (
               <Link
-                to="/"
+                to="/builder"
                 className="inline-flex items-center gap-1 text-[11px] text-white/50 hover:text-white px-2 py-1.5 border border-white/10 rounded-md"
               >
                 <Settings2 className="w-3 h-3" />

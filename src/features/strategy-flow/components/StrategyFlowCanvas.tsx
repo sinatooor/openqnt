@@ -524,6 +524,7 @@ const StrategyFlowCanvasInner = () => {
         <Panel position="bottom-center" className="!m-0 !mb-4">
           <FloatingToolbar
             onOpenTemplates={() => setShowTemplates(true)}
+            onOpenSearch={() => setShowSearch(true)}
             onOpenBacktest={() => setShowBacktest(true)}
             onOpenChart={() => setShowChart(true)}
             onOpenCode={() => setShowCodePanel(!showCodePanel)}

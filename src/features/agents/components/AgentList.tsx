@@ -76,7 +76,7 @@ export const AgentList = memo(({ selectedId, onSelect, onRun }: AgentListProps) 
             <Sparkles className="w-5 h-5 mx-auto mb-2 text-white/20" />
             No agents yet. Drop an agent node into a strategy — it'll appear here.
             <Link
-              to="/"
+              to="/builder"
               className="block mt-2 text-primary hover:underline text-[11px]"
             >
               Open the strategy canvas →

@@ -821,7 +821,7 @@ const Onboarding = () => {
             startIcon={<SkipNextIcon sx={{ fontSize: 16 }} />}
             onClick={() => {
               completeOnboarding();
-              navigate('/dashboard');
+              navigate('/');
             }}
             sx={{ color: 'grey.600', fontSize: 13, '&:hover': { color: 'grey.400' } }}
           >
