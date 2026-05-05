@@ -23,7 +23,8 @@ export type NodeCategory =
   | 'integrations'
   | 'pineScript'
   | 'portfolio'
-  | 'agents';
+  | 'agents'
+  | 'dataSources';
 
 // =============================================================================
 // INDICATOR NODE TYPES
@@ -603,6 +604,7 @@ export type StrategyFlowNodeType =
   | 'pineScript'
   | 'portfolio'
   | 'agent'
+  | 'dataSource'
   | 'comment';
 
 // ReactFlow Node with our data

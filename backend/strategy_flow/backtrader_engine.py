@@ -670,13 +670,17 @@ def run_backtest(
         position_size=position_size,
     )
     
-    # Get data
+    # Get data — let an explicit dataSource node override provider/symbol/timeframe.
+    ds_overrides = _resolve_data_source_node(nodes) or {}
+    eff_symbol = ds_overrides.get('symbol') or symbol
+    eff_timeframe = ds_overrides.get('timeframe') or timeframe
+    eff_provider = ds_overrides.get('provider') or 'yfinance'
     try:
-        data = _fetch_data(symbol, start_date, end_date, timeframe)
+        data = _fetch_data(eff_symbol, start_date, end_date, eff_timeframe, provider=eff_provider)
         if data is None or data.empty:
             return {
                 'success': False,
-                'error': f'No data available for {symbol}'
+                'error': f'No data available for {eff_symbol} via {eff_provider}'
             }
         
         # Convert to backtrader data feed
@@ -753,20 +757,219 @@ def run_backtest(
     }
 
 
+def _resolve_data_source_node(
+    nodes: List[Dict[str, Any]],
+) -> Optional[Dict[str, Any]]:
+    """
+    Scan the flow for the first node with `nodeType: 'dataSource'`. Returns
+    its `data` block (provider, symbol, timeframe overrides) when found.
+    Strategies without an explicit data-source node fall back to the
+    request-level symbol/timeframe.
+    """
+    for n in nodes or []:
+        kind = (n.get('type') or '').lower()
+        node_type = (n.get('nodeType') or n.get('data', {}).get('nodeType') or '').lower()
+        # ReactFlow nodes serialise as { type: 'dataSource', data: { ...defaultData } }
+        if node_type == 'datasource' or kind == 'datasource':
+            return n.get('data') or {}
+        # Some flows attach the node type at the top level
+        if (n.get('data') or {}).get('provider'):
+            return n['data']
+    return None
+
+
 def _fetch_data(
-    symbol: str, 
-    start_date: str, 
-    end_date: str, 
-    timeframe: str
+    symbol: str,
+    start_date: str,
+    end_date: str,
+    timeframe: str,
+    provider: str = 'yfinance',
 ) -> Optional[pd.DataFrame]:
     """
-    Fetch historical data for backtesting.
-    
-    Uses yfinance for stocks/crypto, or falls back to sample data.
+    Fetch historical OHLCV for backtesting. Provider is one of:
+      - 'yfinance' (default)
+      - 'avanza'   (uses our integrations.avanza client, anonymous endpoints)
+      - 'fmp'      (Financial Modeling Prep, requires FMP_API_KEY)
+    Falls through to yfinance if the requested provider isn't usable.
     """
+    provider = (provider or 'yfinance').lower()
+
+    if provider == 'avanza':
+        df = _fetch_data_avanza(symbol, start_date, end_date, timeframe)
+        if df is not None and not df.empty:
+            return df
+        # fall through to yfinance
+
+    if provider == 'fmp':
+        df = _fetch_data_fmp(symbol, start_date, end_date, timeframe)
+        if df is not None and not df.empty:
+            return df
+        # fall through to yfinance
+
+    return _fetch_data_yfinance(symbol, start_date, end_date, timeframe)
+
+
+def _fetch_data_yfinance(
+    symbol: str, start_date: str, end_date: str, timeframe: str,
+) -> Optional[pd.DataFrame]:
     try:
         import yfinance as yf
-        
+
+        interval_map = {
+            '1m': '1m', '5m': '5m', '15m': '15m', '30m': '30m',
+            '1h': '1h', '4h': '4h', '1d': '1d', '1w': '1wk', '1mo': '1mo',
+        }
+        interval = interval_map.get(timeframe, '1d')
+
+        yf_symbol = symbol
+        if symbol.endswith('USDT'):
+            yf_symbol = symbol.replace('USDT', '-USD')
+
+        ticker = yf.Ticker(yf_symbol)
+        df = ticker.history(start=start_date, end=end_date, interval=interval)
+        if df is None or df.empty:
+            return None
+        df = df.rename(columns={
+            'Open': 'open', 'High': 'high', 'Low': 'low',
+            'Close': 'close', 'Volume': 'volume',
+        })
+        return df[['open', 'high', 'low', 'close', 'volume']]
+    except Exception as e:
+        print(f"yfinance fetch error: {e}")
+        return None
+
+
+def _fetch_data_avanza(
+    symbol: str, start_date: str, end_date: str, timeframe: str,
+) -> Optional[pd.DataFrame]:
+    """
+    Resolve a ticker (or ISIN) to an Avanza orderbookId, then call the
+    public `/_api/price-chart` endpoint. The endpoint is anonymous so
+    backtests don't require an active Avanza connection.
+    """
+    try:
+        import asyncio
+        import sys
+        from pathlib import Path
+
+        # Backtrader engine lives one level under backend/, but the
+        # integrations package is at backend/integrations/. Make sure it's
+        # importable regardless of how this module is invoked.
+        backend_root = Path(__file__).resolve().parent.parent
+        if str(backend_root) not in sys.path:
+            sys.path.insert(0, str(backend_root))
+        from integrations.avanza.manager import get_manager
+        from integrations.avanza.instrument_resolver import InstrumentResolver
+
+        loop = asyncio.new_event_loop()
+        try:
+            client = loop.run_until_complete(get_manager().anon_client())
+            resolver = InstrumentResolver(client)
+            info = loop.run_until_complete(resolver.resolve(symbol, instrument_type='stock'))
+            if not info or not info.get('orderbookId'):
+                return None
+
+            # Avanza time periods: today | one_week | one_month | three_months
+            # | this_year | one_year | three_years | five_years | infinity
+            tp = 'one_year'
+            try:
+                from datetime import datetime as _dt
+                d0 = _dt.fromisoformat(start_date)
+                d1 = _dt.fromisoformat(end_date)
+                days = (d1 - d0).days
+                if days <= 7: tp = 'one_week'
+                elif days <= 31: tp = 'one_month'
+                elif days <= 95: tp = 'three_months'
+                elif days <= 370: tp = 'one_year'
+                elif days <= 1100: tp = 'three_years'
+                elif days <= 1900: tp = 'five_years'
+                else: tp = 'infinity'
+            except Exception:
+                pass
+
+            res_map = {
+                '1m': 'minute', '5m': 'minute', '15m': 'thirty_minutes',
+                '30m': 'thirty_minutes', '1h': 'hour', '4h': 'hour',
+                '1d': 'day', '1w': 'week', '1mo': 'month',
+            }
+            chart = loop.run_until_complete(client.price_chart(
+                info['orderbookId'],
+                time_period=tp,
+                resolution=res_map.get(timeframe, 'day'),
+            ))
+        finally:
+            loop.close()
+
+        ohlc = chart.get('ohlc') or []
+        if not ohlc:
+            return None
+        rows = []
+        for r in ohlc:
+            ts = r.get('timestamp')
+            if ts is None:
+                continue
+            rows.append({
+                'date': pd.Timestamp(ts // 1000 if ts > 1e12 else ts, unit='s'),
+                'open': r.get('open'),
+                'high': r.get('high'),
+                'low': r.get('low'),
+                'close': r.get('close'),
+                'volume': r.get('totalVolumeTraded') or 0,
+            })
+        df = pd.DataFrame(rows).dropna(subset=['close']).set_index('date').sort_index()
+
+        # Trim to requested window
+        try:
+            df = df.loc[start_date:end_date]
+        except Exception:
+            pass
+        return df if not df.empty else None
+    except Exception as e:
+        print(f"Avanza fetch error: {e}")
+        return None
+
+
+def _fetch_data_fmp(
+    symbol: str, start_date: str, end_date: str, timeframe: str,
+) -> Optional[pd.DataFrame]:
+    """FMP historical price endpoint. Daily resolution only."""
+    try:
+        import os
+        import requests
+
+        key = os.getenv('FMP_API_KEY')
+        if not key:
+            return None
+        url = f'https://financialmodelingprep.com/api/v3/historical-price-full/{symbol}'
+        r = requests.get(url, params={'from': start_date, 'to': end_date, 'apikey': key}, timeout=15)
+        if r.status_code != 200:
+            return None
+        rows = (r.json() or {}).get('historical') or []
+        if not rows:
+            return None
+        df = pd.DataFrame(rows)
+        df['date'] = pd.to_datetime(df['date'])
+        df = df.set_index('date').sort_index()
+        df = df.rename(columns={
+            'open': 'open', 'high': 'high', 'low': 'low',
+            'close': 'close', 'volume': 'volume',
+        })
+        return df[['open', 'high', 'low', 'close', 'volume']]
+    except Exception as e:
+        print(f"FMP fetch error: {e}")
+        return None
+
+
+def _fetch_data_legacy(
+    symbol: str,
+    start_date: str,
+    end_date: str,
+    timeframe: str
+) -> Optional[pd.DataFrame]:
+    """Legacy entry kept for backwards-compat in case other callers import it."""
+    try:
+        import yfinance as yf
+
         # Map timeframe to yfinance interval
         interval_map = {
             '1m': '1m',
@@ -778,19 +981,19 @@ def _fetch_data(
             '1w': '1wk'
         }
         interval = interval_map.get(timeframe, '1d')
-        
+
         # Map symbol for yfinance
         yf_symbol = symbol
         if symbol.endswith('USDT'):
             yf_symbol = symbol.replace('USDT', '-USD')
-        
+
         # Fetch data
         ticker = yf.Ticker(yf_symbol)
         df = ticker.history(start=start_date, end=end_date, interval=interval)
-        
+
         if df.empty:
             return None
-        
+
         # Rename columns to match backtrader expectations
         df = df.rename(columns={
             'Open': 'open',
@@ -799,12 +1002,12 @@ def _fetch_data(
             'Close': 'close',
             'Volume': 'volume'
         })
-        
+
         # Keep only OHLCV columns
         df = df[['open', 'high', 'low', 'close', 'volume']]
-        
+
         return df
-        
+
     except Exception as e:
         print(f"Data fetch error: {e}")
         return None

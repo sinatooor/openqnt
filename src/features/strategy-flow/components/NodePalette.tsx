@@ -18,6 +18,7 @@ interface NodePaletteProps {
 }
 
 const categoryColors: Record<NodeCategory, string> = {
+  dataSources: 'bg-cyan-600/20 border-cyan-600/50 text-cyan-300',
   indicators: 'bg-violet-500/20 border-violet-500/50 text-violet-400',
   conditions: 'bg-amber-500/20 border-amber-500/50 text-amber-400',
   actions: 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400',
@@ -36,6 +37,7 @@ const categoryColors: Record<NodeCategory, string> = {
 };
 
 const categoryLabels: Record<NodeCategory, string> = {
+  dataSources: '📡 Data Sources',
   indicators: '📊 Indicators',
   conditions: '🔀 Conditions',
   actions: '🎯 Actions',
@@ -56,7 +58,7 @@ const categoryLabels: Record<NodeCategory, string> = {
 export const NodePalette = memo(({ isOpen, onClose }: NodePaletteProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedCategories, setExpandedCategories] = useState<Set<NodeCategory>>(
-    new Set(['indicators', 'conditions', 'actions', 'llm'])
+    new Set(['dataSources', 'indicators', 'conditions', 'actions'])
   );
   const addNode = useStrategyFlowStore((s) => s.addNode);
 
@@ -82,6 +84,7 @@ export const NodePalette = memo(({ isOpen, onClose }: NodePaletteProps) => {
 
   const groupedNodes = useMemo(() => {
     const groups: Record<NodeCategory, NodeCatalogItem[]> = {
+      dataSources: [],
       indicators: [],
       conditions: [],
       actions: [],

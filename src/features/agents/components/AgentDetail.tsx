@@ -17,6 +17,7 @@ import {
   BookText,
   Image as ImageIcon,
   History as HistoryIcon,
+  Microscope,
   Trash2,
   Play,
   Settings2,
@@ -32,6 +33,7 @@ import { StreamPanel } from './StreamPanel';
 import { MemoryView } from './MemoryView';
 import { ArtifactGallery } from './ArtifactGallery';
 import { RunHistory } from './RunHistory';
+import { ObservationView } from './ObservationView';
 
 interface AgentDetailProps {
   agentId: string;
@@ -47,7 +49,7 @@ export const AgentDetail = memo(({ agentId }: AgentDetailProps) => {
   const removeAgent = useAgentMonitorStore((s) => s.removeAgent);
 
   const [viewingRunId, setViewingRunId] = useState<string | null>(null);
-  const [tab, setTab] = useState<'live' | 'memory' | 'artifacts' | 'history'>('live');
+  const [tab, setTab] = useState<'live' | 'observation' | 'memory' | 'artifacts' | 'history'>('live');
 
   if (!agent) {
     return (
@@ -141,6 +143,10 @@ export const AgentDetail = memo(({ agentId }: AgentDetailProps) => {
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
             )}
           </TabsTrigger>
+          <TabsTrigger value="observation" className="text-[11px] gap-1.5 px-3 py-1">
+            <Microscope className="w-3 h-3" />
+            Observation
+          </TabsTrigger>
           <TabsTrigger value="memory" className="text-[11px] gap-1.5 px-3 py-1">
             <BookText className="w-3 h-3" />
             Memory
@@ -157,6 +163,10 @@ export const AgentDetail = memo(({ agentId }: AgentDetailProps) => {
 
         <TabsContent value="live" className="flex-1 mt-2 overflow-hidden data-[state=inactive]:hidden">
           <StreamPanel agentId={agentId} runId={viewingRunId} />
+        </TabsContent>
+
+        <TabsContent value="observation" className="flex-1 mt-2 overflow-hidden data-[state=inactive]:hidden">
+          <ObservationView agentId={agentId} runId={viewingRunId ?? activeRun?.id ?? null} />
         </TabsContent>
 
         <TabsContent value="memory" className="flex-1 mt-2 overflow-hidden data-[state=inactive]:hidden">
