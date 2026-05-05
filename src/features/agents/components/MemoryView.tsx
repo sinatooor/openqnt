@@ -40,10 +40,10 @@ export const MemoryView = memo(({ agentId }: MemoryViewProps) => {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-white/5">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border/60">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[11px] text-white/50">memory.md</span>
-          <span className="text-[10px] text-white/25">
+          <span className="font-mono text-[11px] text-muted-foreground">memory.md</span>
+          <span className="text-[10px] text-muted-foreground">
             {memory.length} chars
           </span>
         </div>
@@ -53,7 +53,7 @@ export const MemoryView = memo(({ agentId }: MemoryViewProps) => {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-6 px-2 text-[10px] gap-1 border-white/10 text-white/60 hover:text-white"
+                className="h-6 px-2 text-[10px] gap-1 border-border/60 text-foreground/70 hover:text-foreground"
                 onClick={cancel}
               >
                 <X className="w-3 h-3" />
@@ -72,7 +72,7 @@ export const MemoryView = memo(({ agentId }: MemoryViewProps) => {
             <Button
               size="sm"
               variant="outline"
-              className="h-6 px-2 text-[10px] gap-1 border-white/10 text-white/60 hover:text-white"
+              className="h-6 px-2 text-[10px] gap-1 border-border/60 text-foreground/70 hover:text-foreground"
               onClick={() => setEditing(true)}
             >
               <Edit3 className="w-3 h-3" />
@@ -89,12 +89,12 @@ export const MemoryView = memo(({ agentId }: MemoryViewProps) => {
             onChange={(e) => setDraft(e.target.value)}
             className={cn(
               'w-full h-full min-h-[400px] rounded-none border-0 resize-none',
-              'font-mono text-[12px] leading-relaxed text-white/85 bg-transparent',
+              'font-mono text-[12px] leading-relaxed text-foreground bg-transparent',
               'focus-visible:ring-0'
             )}
           />
         ) : (
-          <div className="prose-agent px-4 py-3 text-[13px] text-white/85">
+          <div className="prose-agent px-4 py-3 text-[13px] text-foreground">
             <ReactMarkdown>
               {memory || '_Empty notebook — the agent will fill this in as it works._'}
             </ReactMarkdown>

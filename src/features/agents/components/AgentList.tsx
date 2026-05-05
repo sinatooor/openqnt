@@ -72,8 +72,8 @@ export const AgentList = memo(({ selectedId, onSelect, onRun }: AgentListProps) 
         )}
 
         {agents.length === 0 && (
-          <div className="text-[11px] text-white/40 p-6 text-center">
-            <Sparkles className="w-5 h-5 mx-auto mb-2 text-white/20" />
+          <div className="text-[11px] text-muted-foreground p-6 text-center">
+            <Sparkles className="w-5 h-5 mx-auto mb-2 text-muted-foreground" />
             No agents yet. Drop an agent node into a strategy — it'll appear here.
             <Link
               to="/builder"
@@ -104,10 +104,10 @@ interface SectionProps {
 const Section = ({ title, subtitle, agents, selectedId, onSelect, onRun }: SectionProps) => (
   <div>
     <div className="px-2 pb-1.5">
-      <p className="text-[10px] uppercase tracking-wider text-white/40 font-medium">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
         {title}
       </p>
-      <p className="text-[9px] text-white/25">{subtitle}</p>
+      <p className="text-[9px] text-muted-foreground">{subtitle}</p>
     </div>
     <div className="space-y-1">
       {agents.map((a) => (
@@ -151,8 +151,8 @@ const AgentRow = memo(({ id, selected, onSelect, onRun }: AgentRowProps) => {
       className={cn(
         'group w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors border cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-white/20',
         selected
-          ? 'bg-white/[0.06] border-white/10'
-          : 'bg-transparent border-transparent hover:bg-white/[0.03] hover:border-white/5'
+          ? 'bg-muted/30 border-border/60'
+          : 'bg-transparent border-transparent hover:bg-muted/30 hover:border-border/60'
       )}
     >
       <div
@@ -166,15 +166,15 @@ const AgentRow = memo(({ id, selected, onSelect, onRun }: AgentRowProps) => {
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-white/90 truncate">{agent.label}</span>
+          <span className="text-xs text-foreground truncate">{agent.label}</span>
           {running && (
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
           )}
         </div>
-        <p className="text-[10px] text-white/30 truncate font-mono">
+        <p className="text-[10px] text-muted-foreground truncate font-mono">
           {agent.agentType}
           {agent.meta?.symbols && (agent.meta.symbols as string[]).length > 0 && (
-            <span className="ml-1 text-white/40">
+            <span className="ml-1 text-muted-foreground">
               · {(agent.meta.symbols as string[]).join(', ')}
             </span>
           )}
@@ -190,7 +190,7 @@ const AgentRow = memo(({ id, selected, onSelect, onRun }: AgentRowProps) => {
         disabled={running}
         className={cn(
           'opacity-0 group-hover:opacity-100 transition-opacity shrink-0',
-          'p-1 rounded-md border border-white/10 text-white/60 hover:text-white hover:border-white/25 disabled:opacity-40'
+          'p-1 rounded-md border border-border/60 text-foreground/70 hover:text-foreground hover:border-border disabled:opacity-40'
         )}
         aria-label={`Run ${agent.label}`}
       >
