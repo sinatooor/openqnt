@@ -200,7 +200,7 @@ export function GlobalAiFab() {
                     exit={{ opacity: 0, scale: 0.8, y: 10 }}
                     transition={{ type: 'spring', stiffness: 320, damping: 22 }}
                     onClick={() => toggle()}
-                    aria-label="AI Assistant"
+                    aria-label="AI quant"
                     className="group fixed bottom-5 right-5 z-[450] w-12 h-12 rounded-full overflow-hidden ring-1 ring-foreground/10 shadow-lg shadow-black/20 hover:shadow-black/30 transition-shadow flex items-center justify-center"
                 >
                     {/* Halftone canvas — masks the OpenQnt glyph as dots that
@@ -218,7 +218,7 @@ export function GlobalAiFab() {
 
                     {/* Tooltip */}
                     <span className="pointer-events-none absolute right-full mr-3 px-2 py-1 rounded-md bg-popover text-popover-foreground text-[11px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity shadow-md border border-border/60">
-                        AI Assistant
+                        AI quant
                     </span>
                 </motion.button>
             )}
