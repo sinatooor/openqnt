@@ -220,13 +220,13 @@ const Settings = () => {
                     <div className="flex items-center justify-between gap-4 flex-wrap">
                         <div className="flex items-center gap-2">
                             <SettingsIcon className="w-5 h-5 text-primary" />
-                            <h1 className="text-white font-medium text-sm tracking-tight">Settings</h1>
-                            <div className="h-4 w-px bg-white/10" />
-                            <span className="text-white/40 text-xs">Account, Trading & Connections</span>
+                            <h1 className="text-foreground font-medium text-sm tracking-tight">Settings</h1>
+                            <div className="h-4 w-px bg-muted/60" />
+                            <span className="text-muted-foreground text-xs">Account, Trading & Connections</span>
                         </div>
                         <button
                             onClick={() => navigate('/')}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm bg-muted/40 text-foreground/80 hover:bg-muted/60 hover:text-foreground transition-colors"
                         >
                             <ArrowRight className="w-3.5 h-3.5 rotate-180" />
                             Dashboard
@@ -235,8 +235,8 @@ const Settings = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Account Card */}
                         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-                            <Card className="bg-card/60 backdrop-blur-sm border-white/5 shadow-trading rounded-xl h-full">
-                                <CardHeader className="pb-4 border-b border-white/5">
+                            <Card className="bg-card border-border/60 shadow-trading rounded-xl h-full">
+                                <CardHeader className="pb-4 border-b border-border/60">
                                     <CardTitle className="text-base flex items-center gap-2">
                                         <Shield className="w-4 h-4 text-primary" />
                                         Account
@@ -244,13 +244,13 @@ const Settings = () => {
                                     <CardDescription>Your personal details and access level.</CardDescription>
                                 </CardHeader>
                                 <CardContent className="pt-6 space-y-4">
-                                    <div className="flex justify-between items-center pb-3 border-b border-white/5">
+                                    <div className="flex justify-between items-center pb-3 border-b border-border/60">
                                         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                                             <User className="w-3.5 h-3.5" /> Name
                                         </span>
                                         <span className="text-sm font-medium text-foreground">{user?.name ?? '—'}</span>
                                     </div>
-                                    <div className="flex justify-between items-center pb-3 border-b border-white/5">
+                                    <div className="flex justify-between items-center pb-3 border-b border-border/60">
                                         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                                             <Mail className="w-3.5 h-3.5" /> Email
                                         </span>
@@ -270,8 +270,8 @@ const Settings = () => {
 
                         {/* Trading Defaults & Preferences */}
                         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-                            <Card className="bg-card/60 backdrop-blur-sm border-white/5 shadow-trading rounded-xl h-full">
-                                <CardHeader className="pb-4 border-b border-white/5">
+                            <Card className="bg-card border-border/60 shadow-trading rounded-xl h-full">
+                                <CardHeader className="pb-4 border-b border-border/60">
                                     <CardTitle className="text-base flex items-center gap-2">
                                         <SettingsIcon className="w-4 h-4 text-primary" />
                                         Trading Defaults
@@ -286,7 +286,7 @@ const Settings = () => {
                                                 type="text"
                                                 defaultValue={settings?.defaultSymbol || 'EURUSD'}
                                                 onChange={(e) => updateSettings({ defaultSymbol: e.target.value })}
-                                                className="mt-1.5 bg-black/20 border-white/5"
+                                                className="mt-1.5 bg-muted/30 border-border/60"
                                             />
                                         </div>
                                         <div>
@@ -295,11 +295,11 @@ const Settings = () => {
                                                 type="text"
                                                 defaultValue={settings?.defaultTimeframe || '1H'}
                                                 onChange={(e) => updateSettings({ defaultTimeframe: e.target.value })}
-                                                className="mt-1.5 bg-black/20 border-white/5"
+                                                className="mt-1.5 bg-muted/30 border-border/60"
                                             />
                                         </div>
                                     </div>
-                                    <Separator className="bg-white/5" />
+                                    <Separator className="bg-muted/40" />
                                     <div>
                                         <h4 className="text-sm font-medium mb-3">Preferences</h4>
                                         <label className="flex items-center gap-3 cursor-pointer">
@@ -319,8 +319,8 @@ const Settings = () => {
 
                     {/* Market Data Source */}
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
-                        <Card className="bg-card/60 backdrop-blur-sm border-white/5 shadow-trading rounded-xl">
-                            <CardHeader className="pb-4 border-b border-white/5">
+                        <Card className="bg-card border-border/60 shadow-trading rounded-xl">
+                            <CardHeader className="pb-4 border-b border-border/60">
                                 <CardTitle className="text-base flex items-center gap-2">
                                     <Database className="w-4 h-4 text-blue-400" />
                                     Market Data Source
@@ -343,8 +343,8 @@ const Settings = () => {
                                                 key={src.id}
                                                 className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
                                                     dataSource === src.id
-                                                        ? 'border-blue-500/50 bg-blue-500/5'
-                                                        : 'border-white/5 bg-black/20 hover:bg-black/30'
+                                                        ? 'border-primary/60 bg-primary/5 ring-1 ring-primary/20'
+                                                        : 'border-border bg-muted/30 hover:bg-muted/50'
                                                 } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                                             >
                                                 <RadioGroupItem
@@ -375,8 +375,8 @@ const Settings = () => {
 
                     {/* Appearance — theme switcher */}
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.19 }}>
-                        <Card className="bg-card/60 backdrop-blur-sm border-white/5 shadow-trading rounded-xl">
-                            <CardHeader className="pb-4 border-b border-white/5">
+                        <Card className="bg-card border-border/60 shadow-trading rounded-xl">
+                            <CardHeader className="pb-4 border-b border-border/60">
                                 <CardTitle className="text-base flex items-center gap-2">
                                     <Palette className="w-4 h-4 text-primary" />
                                     Appearance
@@ -440,8 +440,8 @@ const Settings = () => {
 
                     {/* Brokers & Integrations */}
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-                        <Card className="bg-card/60 backdrop-blur-sm border-white/5 shadow-trading rounded-xl">
-                            <CardHeader className="pb-4 border-b border-white/5">
+                        <Card className="bg-card border-border/60 shadow-trading rounded-xl">
+                            <CardHeader className="pb-4 border-b border-border/60">
                                 <CardTitle className="text-base flex items-center gap-2">
                                     <Wallet className="w-4 h-4 text-green-400" />
                                     Brokers & Integrations
@@ -467,13 +467,13 @@ const Settings = () => {
                                             return (
                                                 <div
                                                     key={broker.id}
-                                                    className="flex flex-col gap-2 p-3 bg-black/20 rounded-lg border border-white/5"
+                                                    className="flex flex-col gap-2 p-3 bg-muted/30 rounded-lg border border-border/60"
                                                 >
                                                     <div className="flex items-center gap-3">
                                                         <img
                                                             src={broker.logo}
                                                             alt={broker.name}
-                                                            className="w-10 h-10 rounded object-contain bg-white/5 p-1"
+                                                            className="w-10 h-10 rounded object-contain bg-muted/40 p-1"
                                                             onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
                                                         />
                                                         <div className="flex-1 min-w-0">
@@ -492,7 +492,7 @@ const Settings = () => {
                                                                 size="sm"
                                                                 variant="outline"
                                                                 onClick={() => handleConnectBroker(broker.id)}
-                                                                className="border-white/10 text-xs shrink-0"
+                                                                className="border-border text-xs shrink-0"
                                                             >
                                                                 Connect
                                                             </Button>
@@ -512,7 +512,7 @@ const Settings = () => {
                                                                 <Button
                                                                     size="sm"
                                                                     variant="outline"
-                                                                    className="h-6 text-[11px] border-white/10"
+                                                                    className="h-6 text-[11px] border-border"
                                                                     onClick={handleAvanzaSync}
                                                                     disabled={syncingAvanza}
                                                                 >
@@ -540,7 +540,7 @@ const Settings = () => {
                                     </div>
                                 </div>
 
-                                <Separator className="bg-white/5" />
+                                <Separator className="bg-muted/40" />
 
                                 <div>
                                     <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
@@ -551,19 +551,19 @@ const Settings = () => {
                                         {CONNECTORS.map((connector) => (
                                             <div
                                                 key={connector.id}
-                                                className="flex items-center gap-3 p-3 bg-black/20 rounded-lg border border-white/5"
+                                                className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border/60"
                                             >
                                                 <img
                                                     src={connector.logo}
                                                     alt={connector.name}
-                                                    className="w-10 h-10 rounded object-contain bg-white/5 p-1"
+                                                    className="w-10 h-10 rounded object-contain bg-muted/40 p-1"
                                                     onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
                                                 />
                                                 <div className="flex-1 min-w-0">
                                                     <div className="font-medium text-sm truncate">{connector.name}</div>
                                                     <div className="text-xs text-muted-foreground">{connector.description}</div>
                                                 </div>
-                                                <Button size="sm" variant="outline" className="border-white/10 text-xs shrink-0">
+                                                <Button size="sm" variant="outline" className="border-border text-xs shrink-0">
                                                     Setup
                                                 </Button>
                                             </div>
