@@ -208,6 +208,62 @@ Handle IDs by node type:
   "targetHandle": "input-a"
 }
 
+--------------------------------------------------------------------------------
+N. DATA SOURCE NODES
+--------------------------------------------------------------------------------
+Optional first-class data inputs. When present, the backtest engine routes
+the OHLCV fetch through the chosen provider instead of the default yfinance
+path. A flow with a dataSource node automatically uses that node's symbol
+and timeframe (overriding the request-level settings).
+
+Type: "dataSource"
+Subtypes (the discriminator field is `kind` for `provider == 'avanza'`
+positions/watchlist; for OHLCV use `provider`):
+- yfinanceData : free OHLCV (US/global stocks, ETFs, crypto)
+  data: { provider: "yfinance", symbol: "AAPL", timeframe: "1d" }
+- avanzaData   : Nordic broker OHLCV (auto-resolves orderbookId from ticker)
+  data: { provider: "avanza", symbol: "VOLV-B.ST", timeframe: "1d" }
+- fmpData      : Financial Modeling Prep daily OHLCV (needs FMP_API_KEY)
+  data: { provider: "fmp", symbol: "AAPL", timeframe: "1d" }
+- avanzaPositions : live portfolio positions (live-only, not backtestable)
+  data: { provider: "avanza", kind: "positions" }
+- avanzaWatchlist : symbols from the user's saved watchlist (live-only)
+  data: { provider: "avanza", kind: "watchlist", watchlistId: "" }
+- fredMacro    : St. Louis Fed time-series (CPI, unemployment, fed funds)
+  data: { provider: "fred", seriesId: "CPIAUCSL" }
+
+Example:
+{
+  "id": "ds_avanza",
+  "type": "dataSource",
+  "data": { "label": "Avanza Volvo", "provider": "avanza", "symbol": "VOLV-B.ST", "timeframe": "1d" }
+}
+
+--------------------------------------------------------------------------------
+M. CUSTOM CODE NODE
+--------------------------------------------------------------------------------
+Drop a free-form Python or JavaScript snippet into the flow. The user (or
+agent) can describe the logic in natural language and the orchestrator
+fills in the `code` field via /api/ai/generate-code. Custom code is
+backtest-eligible only when language is python.
+
+Type: "llm"
+Subtype: "customCode"
+
+Example:
+{
+  "id": "code_macd_bias",
+  "type": "llm",
+  "data": {
+    "label": "MACD Bias",
+    "llmType": "customCode",
+    "language": "python",
+    "code": "def run(df):\n    return df['close'].ewm(span=12).mean() - df['close'].ewm(span=26).mean()",
+    "inputs": ["ohlcv"],
+    "outputs": ["number"]
+  }
+}
+
 === OUTPUT FORMAT ===
 
 Return ONLY valid JSON with this structure:

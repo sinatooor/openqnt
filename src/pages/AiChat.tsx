@@ -100,6 +100,7 @@ const TOOL_META: Record<string, { label: string; icon: React.ReactNode; color: s
   get_market_news: { label: 'Fetching News', icon: <Newspaper className="w-3.5 h-3.5" />, color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
   analyze_strategy: { label: 'Analyzing Strategy', icon: <FlaskConical className="w-3.5 h-3.5" />, color: 'text-rose-400 bg-rose-500/10 border-rose-500/20' },
   explain_trading_concept: { label: 'Explaining', icon: <Lightbulb className="w-3.5 h-3.5" />, color: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20' },
+  create_custom_node: { label: 'Adding Custom Node', icon: <Wrench className="w-3.5 h-3.5" />, color: 'text-cyan-300 bg-cyan-600/10 border-cyan-600/30' },
 };
 
 // ── Tool Call Card Component ─────────────────────────────────

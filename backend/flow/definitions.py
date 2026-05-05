@@ -4,7 +4,14 @@ from dataclasses import dataclass
 from typing import Dict, List
 
 
-DATA_TYPES = {"number", "boolean", "signal", "any", "time"}
+DATA_TYPES = {
+    "number", "boolean", "signal", "any", "time",
+    # New types introduced with the dataSource / portfolio / agent nodes.
+    # The validator type-compatibility check uses _is_compatible() which
+    # accepts identical types or 'any' on either side, so these new types
+    # play nice with existing connections.
+    "ohlcv", "series", "positions", "symbol_list",
+}
 
 
 @dataclass(frozen=True)
@@ -143,5 +150,47 @@ def get_node_definition(node_type: str, node_data: Dict) -> NodeDefinition:
             inputs=[PortDef("trigger", "signal", required=False)],
             outputs=[PortDef("output", "any")],
         )
+
+    # ── New categories ───────────────────────────────────────────────
+    # The compiler / runtime now formally recognises these instead of
+    # silently dropping them via the empty-fallback at the end. The
+    # output port type drives type-compatibility checks in validator.py.
+
+    if node_type == "dataSource":
+        kind = (node_data.get("kind") or "").lower()
+        provider = (node_data.get("provider") or "").lower()
+        # Provider-determined shape: positions / watchlist are not OHLCV
+        if kind == "positions" or provider == "fred":
+            out_type = "positions" if kind == "positions" else "series"
+            return NodeDefinition(inputs=[], outputs=[PortDef("output", out_type)])
+        if kind == "watchlist":
+            return NodeDefinition(inputs=[], outputs=[PortDef("output", "symbol_list")])
+        # Default: an OHLCV stream feeding indicators
+        return NodeDefinition(inputs=[], outputs=[PortDef("ohlcv", "ohlcv")])
+
+    if node_type == "trigger":
+        return NodeDefinition(inputs=[], outputs=[PortDef("output", "signal")])
+
+    if node_type == "integration":
+        # Integrations consume a signal and (usually) emit one for
+        # downstream chaining (e.g. send-Telegram-then-place-order).
+        return NodeDefinition(
+            inputs=[PortDef("trigger", "signal", required=False)],
+            outputs=[PortDef("output", "signal")],
+        )
+
+    if node_type == "portfolio":
+        return NodeDefinition(inputs=[], outputs=[PortDef("output", "any")])
+
+    if node_type == "agent":
+        return NodeDefinition(
+            inputs=[PortDef("trigger", "signal", required=False)],
+            outputs=[PortDef("output", "any")],
+        )
+
+    if node_type == "pineScript":
+        # Pine Script blocks are typically standalone code; the export
+        # path serialises them but they don't participate in compute graph.
+        return NodeDefinition(inputs=[], outputs=[PortDef("output", "any")])
 
     return NodeDefinition(inputs=[], outputs=[])

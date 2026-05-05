@@ -112,16 +112,42 @@ def validate_flow_strategy(raw_nodes: List[Dict[str, Any]], raw_edges: List[Dict
         errors.append("Strategy has no nodes.")
         return ValidationResult(False, errors, warnings)
 
-    # Required node types
+    # Required node types — `dataSource` now also satisfies the data requirement.
     has_action = any(n.type == "action" for n in nodes)
     has_signal = any(n.type in {"condition", "control"} for n in nodes)
-    has_data = any(n.type in {"indicator", "environment"} for n in nodes)
+    has_data = any(n.type in {"indicator", "environment", "dataSource"} for n in nodes)
     if not has_action:
         errors.append("Strategy must include at least one action node.")
     if not has_data:
-        errors.append("Strategy must include at least one indicator or environment node.")
+        errors.append(
+            "Strategy must include at least one data source, indicator, or environment node."
+        )
     if not has_signal and len(nodes) > 1:
         warnings.append("No condition/control nodes found; strategy may always execute.")
+
+    # Backtest-eligibility: warn loudly when the user mixes live-only nodes
+    # into a flow that's about to be backtested. These node types call out
+    # to live services (LLM APIs, brokers, message bots) which deterministic
+    # backtests can't replay — they'd silently no-op.
+    is_backtest_context = bool((settings or {}).get("backtest"))
+    if is_backtest_context:
+        live_only_types = {"llm", "agent"}
+        for n in nodes:
+            if n.type in live_only_types:
+                warnings.append(
+                    f"Node {n.id} ({n.type}) is live-only and will be skipped during backtest."
+                )
+            # Integration write-actions (Telegram/Slack/Email/SMS/Webhook) are
+            # discriminated by their `integrationType` payload. Treat any
+            # type starting with a known live channel as a no-op in backtest.
+            if n.type == "integration":
+                itype = (n.data or {}).get("integrationType", "") or ""
+                if any(itype.lower().startswith(p) for p in (
+                    "telegram", "slack", "email", "sms", "discord", "webhook", "twilio"
+                )):
+                    warnings.append(
+                        f"Integration node {n.id} ({itype}) is live-only and won't fire in backtest."
+                    )
 
     # Type checking and missing inputs
     incoming_by_target: Dict[str, List[FlowEdge]] = {}
