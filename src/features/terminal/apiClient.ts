@@ -7,9 +7,15 @@
  * gracefully falls back to its deterministic mock generator when the
  * backend is unreachable, rate-limited, or returns an error.
  *
+ * Every request automatically appends the user-selected market-data source
+ * (`?source=auto|yfinance|avanza|fmp`) read from `dataSourceStore`. The
+ * backend honours that hint; when `auto` the existing fallback chain runs.
+ *
  * The frontend never throws to the user because of upstream issues — it
  * surfaces a `source` tag instead so the UI can show "live" vs "mock".
  */
+
+import { getActiveDataSource } from '@/stores/dataSourceStore';
 
 const BACKEND_URL =
   (import.meta.env?.VITE_BACKEND_URL as string | undefined) ||
@@ -19,7 +25,7 @@ const BACKEND_URL =
 const DEFAULT_TIMEOUT_MS = 10_000;
 
 export interface TerminalApiResponse<T> {
-  source: "yfinance" | "yfinance+fmp" | "mock" | "unknown";
+  source: "yfinance" | "yfinance+fmp" | "avanza" | "mock" | "unknown";
   data: T;
   /** Populated only when the frontend falls back; never surfaced to agents. */
   reason?: string;
@@ -35,9 +41,16 @@ export async function terminalApiGet<T>(
   params?: Record<string, string | number | boolean | undefined>,
   signal?: AbortSignal,
 ): Promise<T | null> {
-  const qs = params
+  const merged: Record<string, string | number | boolean | undefined> = {
+    ...(params ?? {}),
+  };
+  if (merged.source === undefined) {
+    const active = getActiveDataSource();
+    if (active && active !== 'auto') merged.source = active;
+  }
+  const qs = Object.keys(merged).length
     ? "?" +
-      Object.entries(params)
+      Object.entries(merged)
         .filter(([, v]) => v !== undefined && v !== null && v !== "")
         .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
         .join("&")

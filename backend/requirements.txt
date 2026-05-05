@@ -38,6 +38,11 @@ curl_cffi
 # News Feeds
 feedparser
 
+# Avanza integration (TOTP login + encrypted credential storage + push WS)
+pyotp
+cryptography
+websockets
+
 # Quantitative Analytics
 quantstats
 statsmodels

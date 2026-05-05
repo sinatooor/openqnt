@@ -14,6 +14,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { TerminalTool } from './agentTools/types';
+import { useDataSourceStore } from '@/stores/dataSourceStore';
 
 export function useTerminalData<TInput, TData>(
   tool: TerminalTool<TInput, TData>,
@@ -23,6 +24,7 @@ export function useTerminalData<TInput, TData>(
   const [data, setData] = useState<TData>(() => fallback());
   const inputKey = safeKey(input);
   const keyRef = useRef(inputKey);
+  const dataSource = useDataSourceStore((s) => s.source);
 
   useEffect(() => {
     keyRef.current = inputKey;
@@ -47,9 +49,10 @@ export function useTerminalData<TInput, TData>(
     return () => {
       cancelled = true;
     };
-    // `input` is stringified into inputKey for stable deps.
+    // `input` is stringified into inputKey for stable deps; `dataSource`
+    // forces a re-fetch when the user flips the provider in Settings.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tool, inputKey]);
+  }, [tool, inputKey, dataSource]);
 
   return data;
 }

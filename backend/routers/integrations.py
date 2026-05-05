@@ -1,0 +1,662 @@
+"""
+Backend REST routes that drive the Settings UI's Avanza connection card,
+the per-user portfolio sync flow, and (gated by AVANZA_TRADING_ENABLED) the
+trading endpoints.
+
+Single-user-friendly: the FastAPI backend doesn't enforce auth itself, so
+we identify accounts by an `X-Account-Key` header, falling back to
+"default" when absent. The orchestrator at port 3000 is expected to set
+the header to the authenticated user-id when proxying.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+import os
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+
+import httpx
+from fastapi import APIRouter, Header, HTTPException, WebSocket, WebSocketDisconnect
+from pydantic import BaseModel, Field
+
+from integrations.avanza.auth import AvanzaAuth, AvanzaAuthError
+from integrations.avanza.client import AvanzaClient, AvanzaTradingDisabled
+from integrations.avanza.manager import get_manager
+from integrations.avanza.normalize import (
+    positions_from_avanza,
+    watchlists_from_avanza,
+)
+from integrations.avanza.storage import get_storage
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/api/integrations", tags=["integrations"])
+
+DEFAULT_ACCOUNT_KEY = "default"
+
+
+def _account_key(x_account_key: Optional[str]) -> str:
+    return (x_account_key or DEFAULT_ACCOUNT_KEY).strip() or DEFAULT_ACCOUNT_KEY
+
+
+def _trading_enabled() -> bool:
+    return os.getenv("AVANZA_TRADING_ENABLED", "false").lower() in {"1", "true", "yes"}
+
+
+# ---------------------------------------------------------------------------
+# Pydantic request/response models
+# ---------------------------------------------------------------------------
+
+class AvanzaConnectRequest(BaseModel):
+    username: str
+    password: str
+    totpSecret: str = Field(..., alias="totpSecret")
+
+    class Config:
+        populate_by_name = True
+
+
+class AvanzaStatusResponse(BaseModel):
+    connected: bool
+    connectedAt: Optional[str] = None
+    lastSyncAt: Optional[str] = None
+    error: Optional[str] = None
+    accounts: List[Dict[str, Any]] = []
+    tradingEnabled: bool = False
+
+
+class AvanzaSyncResponse(BaseModel):
+    positions: int
+    watchlists: int
+    transactions: int
+    syncedAt: str
+
+
+class OrderRequest(BaseModel):
+    accountId: str
+    orderbookId: str
+    side: str  # BUY or SELL
+    price: float
+    volume: float
+    validUntil: Optional[str] = None
+    confirmed: bool = False
+    orderType: Optional[str] = None
+    openVolume: Optional[float] = None
+
+
+class FundOrderRequest(BaseModel):
+    accountId: str
+    orderbookId: str
+    amount: Optional[float] = None
+    sharesPercent: Optional[float] = None
+    confirmed: bool = False
+
+
+class StopLossRequest(BaseModel):
+    payload: Dict[str, Any]
+    confirmed: bool = False
+
+
+class PriceAlertRequest(BaseModel):
+    payload: Dict[str, Any]
+    confirmed: bool = False
+
+
+# ---------------------------------------------------------------------------
+# Connect / status / disconnect
+# ---------------------------------------------------------------------------
+
+@router.post("/avanza/connect", response_model=AvanzaStatusResponse)
+async def connect_avanza(
+    body: AvanzaConnectRequest,
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> AvanzaStatusResponse:
+    account_key = _account_key(x_account_key)
+    storage = get_storage()
+    manager = get_manager()
+
+    # Trial-login first so we surface bad credentials immediately.
+    auth = AvanzaAuth(
+        username=body.username,
+        password=body.password,
+        totp_secret=body.totpSecret,
+    )
+    try:
+        await auth.session()
+    except AvanzaAuthError as e:
+        await auth.aclose()
+        raise HTTPException(401, f"Avanza login failed: {e}")
+    finally:
+        try:
+            await auth.aclose()
+        except Exception:
+            pass
+
+    storage.store_credentials(
+        account_key,
+        {
+            "username": body.username,
+            "password": body.password,
+            "totp_secret": body.totpSecret,
+        },
+    )
+    await manager.reset(account_key)
+    return await _build_status(account_key)
+
+
+@router.post("/avanza/disconnect")
+async def disconnect_avanza(
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> Dict[str, Any]:
+    account_key = _account_key(x_account_key)
+    storage = get_storage()
+    manager = get_manager()
+    storage.delete_credentials(account_key)
+    await manager.reset(account_key)
+    return {"ok": True}
+
+
+@router.get("/avanza/status", response_model=AvanzaStatusResponse)
+async def status_avanza(
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> AvanzaStatusResponse:
+    account_key = _account_key(x_account_key)
+    return await _build_status(account_key)
+
+
+async def _build_status(account_key: str) -> AvanzaStatusResponse:
+    storage = get_storage()
+    row = storage.status_row(account_key)
+    accounts: List[Dict[str, Any]] = []
+    if row:
+        try:
+            client = await get_manager().authed_client(account_key)
+            overview = await client.account_overview()
+            categories = overview.get("categorizedAccounts") or []
+            for cat in categories:
+                for acc in cat.get("accounts") or []:
+                    accounts.append({
+                        "id": str(acc.get("accountId") or acc.get("id") or ""),
+                        "name": acc.get("name"),
+                        "type": acc.get("accountType") or cat.get("accountTypeName"),
+                        "totalValue": acc.get("totalValue"),
+                        "currency": acc.get("currency"),
+                    })
+        except Exception as e:
+            logger.warning("avanza status failed: %s", e)
+    return AvanzaStatusResponse(
+        connected=row is not None,
+        connectedAt=row["connected_at"] if row else None,
+        lastSyncAt=row["last_sync_at"] if row else None,
+        error=row["last_error"] if row else None,
+        accounts=accounts,
+        tradingEnabled=_trading_enabled(),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Sync
+# ---------------------------------------------------------------------------
+
+@router.post("/avanza/sync", response_model=AvanzaSyncResponse)
+async def sync_avanza(
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> AvanzaSyncResponse:
+    account_key = _account_key(x_account_key)
+    storage = get_storage()
+    if not storage.load_credentials(account_key):
+        raise HTTPException(404, "Avanza is not connected for this account")
+    client = await get_manager().authed_client(account_key)
+
+    positions_payload = {}
+    watchlists_payload: Any = {}
+    transactions_payload = {}
+    try:
+        positions_payload, watchlists_payload, transactions_payload = await asyncio.gather(
+            client.positions(),
+            client.watchlists(),
+            client.transactions(max_elements=200),
+            return_exceptions=False,
+        )
+    except AvanzaAuthError as e:
+        storage.mark_sync(account_key, error=str(e))
+        raise HTTPException(401, f"Avanza session invalid: {e}")
+    except Exception as e:
+        storage.mark_sync(account_key, error=str(e))
+        raise HTTPException(502, f"Avanza sync failed: {e}")
+
+    positions = positions_from_avanza(positions_payload)
+    watchlists = watchlists_from_avanza(watchlists_payload)
+    transactions = _normalize_transactions(transactions_payload)
+
+    storage.replace_positions(account_key, positions)
+    storage.replace_watchlists(account_key, watchlists)
+    storage.upsert_transactions(account_key, transactions)
+    storage.mark_sync(account_key, error=None)
+
+    now = datetime.now(timezone.utc).isoformat()
+    return AvanzaSyncResponse(
+        positions=len(positions),
+        watchlists=len(watchlists),
+        transactions=len(transactions),
+        syncedAt=now,
+    )
+
+
+def _normalize_transactions(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
+    items = payload.get("transactions") or payload.get("items") or []
+    out: List[Dict[str, Any]] = []
+    for t in items:
+        if not isinstance(t, dict):
+            continue
+        out.append({
+            "transaction_id": str(t.get("id") or t.get("transactionId") or ""),
+            "account_id": str(t.get("accountId") or ""),
+            "orderbook_id": str(((t.get("orderbook") or {}).get("id")) or t.get("orderbookId") or ""),
+            "type": t.get("type") or t.get("transactionType"),
+            "amount": _num(t.get("totalAmount") or t.get("amount")),
+            "currency": t.get("currency"),
+            "executed_at": t.get("transactionDate") or t.get("verificationDate"),
+            "raw": t,
+        })
+    return [r for r in out if r["transaction_id"]]
+
+
+# ---------------------------------------------------------------------------
+# Read endpoints
+# ---------------------------------------------------------------------------
+
+@router.get("/avanza/positions")
+async def get_positions(
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+    refresh: bool = False,
+) -> Dict[str, Any]:
+    account_key = _account_key(x_account_key)
+    storage = get_storage()
+    if refresh and storage.load_credentials(account_key):
+        try:
+            await sync_avanza(x_account_key)  # type: ignore[arg-type]
+        except HTTPException:
+            pass
+    rows = storage.list_positions(account_key)
+    return {"positions": [_position_view(r) for r in rows]}
+
+
+def _position_view(row: Dict[str, Any]) -> Dict[str, Any]:
+    quantity = row.get("quantity") or 0
+    avg = row.get("average_price")
+    last = row.get("last_price")
+    unrealized = (
+        (last - avg) * quantity if (avg is not None and last is not None and quantity) else None
+    )
+    pct = ((last - avg) / avg * 100) if (avg and last) else None
+    return {
+        "accountId": row.get("account_id"),
+        "orderbookId": row.get("orderbook_id"),
+        "symbol": row.get("symbol"),
+        "name": row.get("name"),
+        "quantity": quantity,
+        "averagePrice": avg,
+        "lastPrice": last,
+        "marketValue": row.get("market_value"),
+        "currency": row.get("currency"),
+        "unrealizedPnl": unrealized,
+        "unrealizedPnlPercent": pct,
+    }
+
+
+@router.get("/avanza/watchlists")
+async def get_watchlists(
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> Dict[str, Any]:
+    account_key = _account_key(x_account_key)
+    return {"watchlists": get_storage().list_watchlists(account_key)}
+
+
+@router.post("/avanza/watchlist/{watchlist_id}/add")
+async def add_to_watchlist(
+    watchlist_id: str,
+    body: Dict[str, Any],
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> Dict[str, Any]:
+    account_key = _account_key(x_account_key)
+    orderbook_id = str(body.get("orderbookId") or "")
+    if not orderbook_id:
+        raise HTTPException(400, "orderbookId required")
+    client = await get_manager().authed_client(account_key)
+    try:
+        result = await client.add_to_watchlist(watchlist_id, orderbook_id)
+    except AvanzaAuthError as e:
+        raise HTTPException(401, str(e))
+    return {"ok": True, "result": result}
+
+
+@router.post("/avanza/watchlist/{watchlist_id}/remove")
+async def remove_from_watchlist(
+    watchlist_id: str,
+    body: Dict[str, Any],
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> Dict[str, Any]:
+    account_key = _account_key(x_account_key)
+    orderbook_id = str(body.get("orderbookId") or "")
+    if not orderbook_id:
+        raise HTTPException(400, "orderbookId required")
+    client = await get_manager().authed_client(account_key)
+    try:
+        result = await client.remove_from_watchlist(watchlist_id, orderbook_id)
+    except AvanzaAuthError as e:
+        raise HTTPException(401, str(e))
+    return {"ok": True, "result": result}
+
+
+@router.get("/avanza/transactions")
+async def get_transactions(
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
+    isin: Optional[str] = None,
+    types: Optional[str] = None,
+    limit: int = 200,
+) -> Dict[str, Any]:
+    account_key = _account_key(x_account_key)
+    client = await get_manager().authed_client(account_key)
+    transaction_types = [t.strip() for t in types.split(",")] if types else None
+    try:
+        payload = await client.transactions(
+            from_date=from_date,
+            to_date=to_date,
+            isin=isin,
+            transaction_types=transaction_types,
+            max_elements=limit,
+        )
+    except AvanzaAuthError as e:
+        raise HTTPException(401, str(e))
+    return payload
+
+
+# ---------------------------------------------------------------------------
+# Trading writes (gated)
+# ---------------------------------------------------------------------------
+
+def _require_confirmed(flag: bool) -> None:
+    if not flag:
+        raise HTTPException(400, "set 'confirmed': true to send a trade write")
+
+
+@router.post("/avanza/orders")
+async def place_order(
+    body: OrderRequest,
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> Dict[str, Any]:
+    _require_confirmed(body.confirmed)
+    account_key = _account_key(x_account_key)
+    storage = get_storage()
+    client = await get_manager().authed_client(account_key)
+
+    payload = {
+        "accountId": body.accountId,
+        "orderbookId": body.orderbookId,
+        "side": body.side.upper(),
+        "price": body.price,
+        "volume": body.volume,
+    }
+    if body.validUntil:
+        payload["validUntil"] = body.validUntil
+    if body.orderType:
+        payload["orderType"] = body.orderType
+    if body.openVolume is not None:
+        payload["openVolume"] = body.openVolume
+
+    try:
+        result = await client.place_order(payload, confirm=True)
+        storage.append_audit(account_key, "place_order", body.orderbookId, payload, result, "ok")
+        return {"ok": True, "result": result}
+    except AvanzaTradingDisabled as e:
+        storage.append_audit(account_key, "place_order", body.orderbookId, payload, None, "disabled")
+        raise HTTPException(409, str(e))
+    except (AvanzaAuthError, httpx.HTTPStatusError) as e:
+        storage.append_audit(account_key, "place_order", body.orderbookId, payload, None, "error")
+        raise HTTPException(502, str(e))
+
+
+@router.patch("/avanza/orders/{order_id}")
+async def edit_order(
+    order_id: str,
+    body: Dict[str, Any],
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> Dict[str, Any]:
+    _require_confirmed(bool(body.get("confirmed")))
+    account_key = _account_key(x_account_key)
+    storage = get_storage()
+    client = await get_manager().authed_client(account_key)
+    payload = {**body, "orderId": order_id}
+    payload.pop("confirmed", None)
+    try:
+        result = await client.edit_order(payload, confirm=True)
+        storage.append_audit(account_key, "edit_order", payload.get("orderbookId"), payload, result, "ok")
+        return {"ok": True, "result": result}
+    except AvanzaTradingDisabled as e:
+        raise HTTPException(409, str(e))
+    except (AvanzaAuthError, httpx.HTTPStatusError) as e:
+        raise HTTPException(502, str(e))
+
+
+@router.delete("/avanza/orders/{order_id}")
+async def cancel_order(
+    order_id: str,
+    accountId: str,
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> Dict[str, Any]:
+    account_key = _account_key(x_account_key)
+    storage = get_storage()
+    client = await get_manager().authed_client(account_key)
+    payload = {"orderId": order_id, "accountId": accountId}
+    try:
+        result = await client.cancel_order(payload, confirm=True)
+        storage.append_audit(account_key, "cancel_order", None, payload, result, "ok")
+        return {"ok": True, "result": result}
+    except AvanzaTradingDisabled as e:
+        raise HTTPException(409, str(e))
+    except (AvanzaAuthError, httpx.HTTPStatusError) as e:
+        raise HTTPException(502, str(e))
+
+
+@router.post("/avanza/funds/buy")
+async def buy_fund(
+    body: FundOrderRequest,
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> Dict[str, Any]:
+    _require_confirmed(body.confirmed)
+    account_key = _account_key(x_account_key)
+    client = await get_manager().authed_client(account_key)
+    payload = {
+        "accountId": body.accountId,
+        "orderbookId": body.orderbookId,
+    }
+    if body.amount is not None:
+        payload["amount"] = body.amount
+    if body.sharesPercent is not None:
+        payload["sharesPercent"] = body.sharesPercent
+    try:
+        return {"ok": True, "result": await client.buy_fund(payload, confirm=True)}
+    except AvanzaTradingDisabled as e:
+        raise HTTPException(409, str(e))
+
+
+@router.post("/avanza/funds/sell")
+async def sell_fund(
+    body: FundOrderRequest,
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> Dict[str, Any]:
+    _require_confirmed(body.confirmed)
+    account_key = _account_key(x_account_key)
+    client = await get_manager().authed_client(account_key)
+    payload = {
+        "accountId": body.accountId,
+        "orderbookId": body.orderbookId,
+    }
+    if body.amount is not None:
+        payload["amount"] = body.amount
+    if body.sharesPercent is not None:
+        payload["sharesPercent"] = body.sharesPercent
+    try:
+        return {"ok": True, "result": await client.sell_fund(payload, confirm=True)}
+    except AvanzaTradingDisabled as e:
+        raise HTTPException(409, str(e))
+
+
+@router.get("/avanza/stoploss")
+async def list_stoploss(
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> Dict[str, Any]:
+    account_key = _account_key(x_account_key)
+    client = await get_manager().authed_client(account_key)
+    return await client.list_stoploss()
+
+
+@router.post("/avanza/stoploss")
+async def place_stoploss(
+    body: StopLossRequest,
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> Dict[str, Any]:
+    _require_confirmed(body.confirmed)
+    account_key = _account_key(x_account_key)
+    client = await get_manager().authed_client(account_key)
+    try:
+        return {"ok": True, "result": await client.place_stoploss(body.payload, confirm=True)}
+    except AvanzaTradingDisabled as e:
+        raise HTTPException(409, str(e))
+
+
+@router.delete("/avanza/stoploss/{account_id}/{stoploss_id}")
+async def cancel_stoploss(
+    account_id: str,
+    stoploss_id: str,
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> Dict[str, Any]:
+    account_key = _account_key(x_account_key)
+    client = await get_manager().authed_client(account_key)
+    try:
+        return {"ok": True, "result": await client.cancel_stoploss(account_id, stoploss_id, confirm=True)}
+    except AvanzaTradingDisabled as e:
+        raise HTTPException(409, str(e))
+
+
+@router.get("/avanza/price-alerts/{orderbook_id}")
+async def get_price_alert(
+    orderbook_id: str,
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> Dict[str, Any]:
+    account_key = _account_key(x_account_key)
+    client = await get_manager().authed_client(account_key)
+    return await client.get_price_alert(orderbook_id)
+
+
+@router.post("/avanza/price-alerts/{orderbook_id}")
+async def set_price_alert(
+    orderbook_id: str,
+    body: PriceAlertRequest,
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> Dict[str, Any]:
+    _require_confirmed(body.confirmed)
+    account_key = _account_key(x_account_key)
+    client = await get_manager().authed_client(account_key)
+    try:
+        return {"ok": True, "result": await client.set_price_alert(orderbook_id, body.payload, confirm=True)}
+    except AvanzaTradingDisabled as e:
+        raise HTTPException(409, str(e))
+
+
+@router.delete("/avanza/price-alerts/{orderbook_id}")
+async def delete_price_alert(
+    orderbook_id: str,
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> Dict[str, Any]:
+    account_key = _account_key(x_account_key)
+    client = await get_manager().authed_client(account_key)
+    try:
+        return {"ok": True, "result": await client.delete_price_alert(orderbook_id, confirm=True)}
+    except AvanzaTradingDisabled as e:
+        raise HTTPException(409, str(e))
+
+
+# ---------------------------------------------------------------------------
+# Push WebSocket — fan out Avanza CometD events to the browser
+# ---------------------------------------------------------------------------
+
+@router.websocket("/avanza/ws/quotes")
+async def quotes_ws(
+    websocket: WebSocket,
+    orderbook_ids: str,
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+):
+    """
+    Forwards live `/quotes/{id}` events from Avanza's push channel to the
+    browser. The orderbook_ids query param is a comma-separated list.
+    """
+    await websocket.accept()
+    account_key = _account_key(x_account_key)
+    storage = get_storage()
+    if not storage.load_credentials(account_key):
+        await websocket.send_json({"error": "Avanza not connected"})
+        await websocket.close()
+        return
+
+    if os.getenv("AVANZA_PUSH_ENABLED", "false").lower() not in {"1", "true", "yes"}:
+        await websocket.send_json({"error": "AVANZA_PUSH_ENABLED is false"})
+        await websocket.close()
+        return
+
+    try:
+        from integrations.avanza.push import AvanzaPushClient
+        from integrations.avanza.auth import AvanzaAuth
+
+        creds = storage.load_credentials(account_key)
+        if not creds:
+            await websocket.send_json({"error": "Avanza credentials missing"})
+            await websocket.close()
+            return
+
+        auth = AvanzaAuth(
+            username=creds["username"],
+            password=creds["password"],
+            totp_secret=creds["totp_secret"],
+        )
+        push = AvanzaPushClient(auth)
+        await push.connect()
+        for ob in [x.strip() for x in orderbook_ids.split(",") if x.strip()]:
+            await push.subscribe(f"/quotes/{ob}")
+
+        async for msg in push.stream():
+            try:
+                await websocket.send_json(msg)
+            except WebSocketDisconnect:
+                break
+            except Exception:
+                continue
+    except Exception as e:
+        logger.warning("avanza push fanout failed: %s", e)
+        try:
+            await websocket.send_json({"error": str(e)})
+        except Exception:
+            pass
+    finally:
+        try:
+            await websocket.close()
+        except Exception:
+            pass
+
+
+# ---------------------------------------------------------------------------
+# helpers
+# ---------------------------------------------------------------------------
+
+def _num(v: Any) -> Optional[float]:
+    if v is None:
+        return None
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None

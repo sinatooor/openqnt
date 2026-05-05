@@ -50,6 +50,122 @@ FMP_API_KEY = os.getenv("FMP_API_KEY")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Data source selection — every endpoint accepts ?source=auto|yfinance|avanza|fmp
+# When `auto` (default), behaviour is unchanged from before this flag existed.
+# Any other value pins the preferred provider; the per-endpoint code consults
+# `_use_avanza()` etc. and still falls back if the provider can't fulfil the
+# request. Phase 4 of the rollout wires Avanza into every endpoint that has
+# a Nordic equivalent; in earlier phases the param is accepted but ignored
+# for providers other than the default.
+# ─────────────────────────────────────────────────────────────────────────────
+
+VALID_SOURCES = {"auto", "yfinance", "avanza", "fmp"}
+
+
+def _parse_source(value: Optional[str]) -> str:
+    if not value:
+        return "auto"
+    s = value.strip().lower()
+    if s not in VALID_SOURCES:
+        raise HTTPException(400, f"source must be one of {sorted(VALID_SOURCES)}")
+    return s
+
+
+def _use_avanza(source: str) -> bool:
+    return source == "avanza"
+
+
+# Lazy imports so the FastAPI app boots even if the Avanza package can't
+# load (e.g. cryptography missing in dev). Each helper returns None on
+# any failure so the calling endpoint falls through to its existing logic.
+async def _avanza_resolve_orderbook(ticker: str, instrument_type: str = "stock") -> Optional[str]:
+    try:
+        from integrations.avanza.manager import get_manager
+        from integrations.avanza.instrument_resolver import InstrumentResolver
+
+        client = await get_manager().anon_client()
+        resolver = InstrumentResolver(client)
+        info = await resolver.resolve(ticker, instrument_type=instrument_type)
+        return info.get("orderbookId") if info else None
+    except Exception as e:  # pragma: no cover - best effort
+        logger.debug("avanza resolve(%s) failed: %s", ticker, e)
+        return None
+
+
+async def _avanza_des(ticker: str) -> Optional[Dict[str, Any]]:
+    try:
+        from integrations.avanza.manager import get_manager
+        from integrations.avanza.normalize import des_from_avanza
+
+        ob = await _avanza_resolve_orderbook(ticker, "stock")
+        if not ob:
+            return None
+        client = await get_manager().anon_client()
+        market_guide = await client.market_guide("stock", ob)
+        try:
+            details = await client.market_guide_details("stock", ob)
+        except Exception:
+            details = None
+        # Key ratios require auth; only try if a connection exists for default.
+        key_ratios = None
+        try:
+            authed = await get_manager().authed_client("default")
+            key_ratios = await authed.key_ratios(ob)
+        except Exception:
+            pass
+        return des_from_avanza(ticker, market_guide, details, key_ratios)
+    except Exception as e:
+        logger.warning("avanza DES(%s) failed: %s", ticker, e)
+        return None
+
+
+async def _avanza_gip(ticker: str, time_period: str = "today", resolution: str = "minute") -> Optional[Dict[str, Any]]:
+    try:
+        from integrations.avanza.manager import get_manager
+        from integrations.avanza.normalize import gip_from_price_chart
+
+        ob = await _avanza_resolve_orderbook(ticker, "stock")
+        if not ob:
+            return None
+        client = await get_manager().anon_client()
+        chart = await client.price_chart(ob, time_period=time_period, resolution=resolution)
+        return gip_from_price_chart(ticker, chart)
+    except Exception as e:
+        logger.warning("avanza GIP(%s) failed: %s", ticker, e)
+        return None
+
+
+async def _avanza_news(ticker: str) -> Optional[Dict[str, Any]]:
+    try:
+        from integrations.avanza.manager import get_manager
+        from integrations.avanza.normalize import news_from_avanza
+
+        ob = await _avanza_resolve_orderbook(ticker, "stock")
+        if not ob:
+            return None
+        client = await get_manager().anon_client()
+        payload = await client.news(ob)
+        return news_from_avanza(ob, payload)
+    except Exception as e:
+        logger.warning("avanza news(%s) failed: %s", ticker, e)
+        return None
+
+
+async def _avanza_key_ratios(ticker: str) -> Optional[Dict[str, Any]]:
+    try:
+        from integrations.avanza.manager import get_manager
+
+        ob = await _avanza_resolve_orderbook(ticker, "stock")
+        if not ob:
+            return None
+        authed = await get_manager().authed_client("default")
+        return await authed.key_ratios(ob)
+    except Exception as e:
+        logger.warning("avanza key-ratios(%s) failed: %s", ticker, e)
+        return None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # yfinance helpers — lazy import so the backend still boots if yfinance is
 # temporarily broken (it's an unofficial scraper, it happens).
 # ─────────────────────────────────────────────────────────────────────────────
@@ -106,10 +222,14 @@ async def _run(fn, *args, **kwargs):
 
 
 @router.get("/quote/{ticker}")
-async def get_quote(ticker: str) -> Dict[str, Any]:
+async def get_quote(
+    ticker: str,
+    source: Optional[str] = Query(None, description="auto|yfinance|avanza|fmp"),
+) -> Dict[str, Any]:
     ticker = ticker.strip().upper()
     if not ticker:
         raise HTTPException(400, "ticker required")
+    _parse_source(source)
 
     t = _yf_ticker(ticker)
     if t is None:
@@ -163,8 +283,18 @@ async def get_quote(ticker: str) -> Dict[str, Any]:
 
 
 @router.get("/des/{ticker}")
-async def get_des(ticker: str) -> Dict[str, Any]:
+async def get_des(
+    ticker: str,
+    source: Optional[str] = Query(None, description="auto|yfinance|avanza|fmp"),
+) -> Dict[str, Any]:
+    src = _parse_source(source)
     ticker = ticker.strip().upper()
+
+    if _use_avanza(src):
+        avanza = await _avanza_des(ticker)
+        if avanza is not None:
+            return avanza
+
     t = _yf_ticker(ticker)
     if t is None:
         raise HTTPException(503, "yfinance unavailable")
@@ -309,8 +439,18 @@ async def get_gip(
     ticker: str,
     interval: str = Query("5m"),
     extended: bool = Query(True, description="Include pre/post market"),
+    source: Optional[str] = Query(None, description="auto|yfinance|avanza|fmp"),
 ) -> Dict[str, Any]:
+    src = _parse_source(source)
     ticker = ticker.strip().upper()
+
+    if _use_avanza(src):
+        # Avanza intraday: today + minute resolution. We re-use the GIP
+        # shape so the existing UI doesn't need to know.
+        avanza = await _avanza_gip(ticker, time_period="today", resolution="minute")
+        if avanza is not None:
+            return avanza
+
     if interval not in _GIP_INTERVALS:
         raise HTTPException(400, f"interval must be one of {sorted(_GIP_INTERVALS)}")
 
@@ -407,7 +547,11 @@ def _classify_session(ts: datetime) -> str:
 
 
 @router.get("/hds/{ticker}")
-async def get_hds(ticker: str) -> Dict[str, Any]:
+async def get_hds(
+    ticker: str,
+    source: Optional[str] = Query(None, description="auto|yfinance|avanza|fmp"),
+) -> Dict[str, Any]:
+    _parse_source(source)
     ticker = ticker.strip().upper()
     t = _yf_ticker(ticker)
     if t is None:
@@ -552,7 +696,11 @@ async def get_hds(ticker: str) -> Dict[str, Any]:
 
 
 @router.get("/splc/{ticker}")
-async def get_splc(ticker: str) -> Dict[str, Any]:
+async def get_splc(
+    ticker: str,
+    source: Optional[str] = Query(None, description="auto|yfinance|avanza|fmp"),
+) -> Dict[str, Any]:
+    _parse_source(source)
     """
     Build a best-effort supply-chain dashboard using:
       - yfinance for the focal company's profile
@@ -688,8 +836,254 @@ _WEI_YF_MAP: Dict[str, str] = {
 }
 
 
+@router.get("/key-ratios/{ticker}")
+async def get_key_ratios(
+    ticker: str,
+    source: Optional[str] = Query(None, description="auto|avanza"),
+) -> Dict[str, Any]:
+    """
+    Multi-year fundamentals (P/E, P/S, P/B, EV/EBIT, EPS, dividends, ...)
+    Powers the new FA terminal function. Avanza is the preferred source for
+    Nordic listings; falls back to a derivative built from yfinance .info
+    for non-Nordic names.
+    """
+    src = _parse_source(source)
+    ticker = ticker.strip().upper()
+
+    if src in ("auto", "avanza"):
+        avanza = await _avanza_key_ratios(ticker)
+        if avanza is not None:
+            return {"source": "avanza", "data": avanza}
+
+    # yfinance fallback — much shallower; just current ratios.
+    t = _yf_ticker(ticker)
+    if t is None:
+        raise HTTPException(503, "key-ratios unavailable")
+
+    def _build() -> Dict[str, Any]:
+        info: Dict[str, Any] = {}
+        try:
+            info = t.get_info() if hasattr(t, "get_info") else (t.info or {})
+        except Exception:
+            pass
+        return {
+            "source": "yfinance",
+            "data": {
+                "ratios": {
+                    "trailingPE": info.get("trailingPE"),
+                    "forwardPE": info.get("forwardPE"),
+                    "priceToBook": info.get("priceToBook"),
+                    "priceToSales": info.get("priceToSalesTrailing12Months"),
+                    "evToEbitda": info.get("enterpriseToEbitda"),
+                    "returnOnEquity": info.get("returnOnEquity"),
+                    "debtToEquity": info.get("debtToEquity"),
+                    "dividendYield": info.get("dividendYield"),
+                    "payoutRatio": info.get("payoutRatio"),
+                    "profitMargins": info.get("profitMargins"),
+                },
+            },
+        }
+
+    try:
+        return await _run(_build)
+    except Exception as e:
+        raise HTTPException(502, f"key-ratios failed: {e}")
+
+
+@router.get("/movers")
+async def get_movers(
+    region: str = Query("us", description="us|nordic|europe"),
+    limit: int = Query(20, ge=1, le=50),
+    source: Optional[str] = Query(None, description="auto|avanza|yfinance"),
+) -> Dict[str, Any]:
+    """
+    Top gainers, losers, and most-active for the requested region.
+    Powers the MOST terminal function. Avanza inspiration lists feed the
+    Nordic region; yfinance screeners feed US/Europe.
+    """
+    src = _parse_source(source)
+
+    if region == "nordic" or src == "avanza":
+        try:
+            from integrations.avanza.manager import get_manager
+
+            client = await get_manager().anon_client()
+            lists = await client.inspiration_lists()
+            available = lists.get("inspirationLists") or lists.get("data") or []
+            picks: List[str] = []
+            for entry in available:
+                if not isinstance(entry, dict):
+                    continue
+                name = (entry.get("name") or "").lower()
+                if any(tok in name for tok in ("most owned", "movers", "active", "winners", "losers")):
+                    list_id = entry.get("id") or entry.get("listId")
+                    if list_id:
+                        picks.append(str(list_id))
+                if len(picks) >= 3:
+                    break
+            buckets: Dict[str, List[Dict[str, Any]]] = {"gainers": [], "losers": [], "active": []}
+            for pid in picks:
+                detail = await client.inspiration_list(pid)
+                items = detail.get("orderbooks") or detail.get("items") or []
+                for item in items[:limit]:
+                    if not isinstance(item, dict):
+                        continue
+                    bucket = "active"
+                    name = (detail.get("name") or "").lower()
+                    if "winner" in name or "gain" in name:
+                        bucket = "gainers"
+                    elif "loser" in name or "drop" in name:
+                        bucket = "losers"
+                    buckets[bucket].append({
+                        "ticker": item.get("tickerSymbol") or item.get("name"),
+                        "orderbookId": str(item.get("orderbookId") or item.get("id") or ""),
+                        "name": item.get("name"),
+                        "lastPrice": item.get("lastPrice"),
+                        "changePct": item.get("changePercent") or item.get("change"),
+                        "currency": item.get("currency"),
+                    })
+            return {"source": "avanza", "region": region, "data": buckets}
+        except Exception as e:
+            logger.warning("avanza movers failed: %s", e)
+
+    # yfinance screeners (US default)
+    try:
+        import yfinance as yf
+
+        def _fetch(scr: str) -> List[Dict[str, Any]]:
+            try:
+                tickers = yf.screen(scr)
+                result = tickers.get("quotes", []) if isinstance(tickers, dict) else tickers
+                rows = []
+                for q in result[:limit]:
+                    rows.append({
+                        "ticker": q.get("symbol"),
+                        "name": q.get("shortName") or q.get("longName"),
+                        "lastPrice": q.get("regularMarketPrice"),
+                        "changePct": q.get("regularMarketChangePercent"),
+                        "currency": q.get("currency"),
+                    })
+                return rows
+            except Exception:
+                return []
+
+        return await _run(
+            lambda: {
+                "source": "yfinance",
+                "region": region,
+                "data": {
+                    "gainers": _fetch("day_gainers"),
+                    "losers": _fetch("day_losers"),
+                    "active": _fetch("most_actives"),
+                },
+            }
+        )
+    except Exception as e:
+        return {"source": "mock", "region": region, "data": {"gainers": [], "losers": [], "active": []}, "error": str(e)}
+
+
+@router.get("/screener")
+async def get_screener(
+    min_market_cap_b: Optional[float] = Query(None),
+    max_pe: Optional[float] = Query(None),
+    min_dividend_yield: Optional[float] = Query(None),
+    sector: Optional[str] = Query(None),
+    country: Optional[str] = Query(None),
+    limit: int = Query(50, ge=1, le=200),
+    source: Optional[str] = Query(None),
+) -> Dict[str, Any]:
+    """
+    Multi-factor screener powering EQS. yfinance-backed; the Avanza
+    inspiration lists give curated screens but not free-form filters.
+    """
+    _parse_source(source)
+    try:
+        import yfinance as yf
+
+        def _build() -> Dict[str, Any]:
+            try:
+                quotes = yf.screen("most_actives")
+                rows = quotes.get("quotes", []) if isinstance(quotes, dict) else quotes
+            except Exception:
+                rows = []
+            filtered: List[Dict[str, Any]] = []
+            for q in rows:
+                mcap = q.get("marketCap")
+                pe = q.get("trailingPE")
+                dy = q.get("trailingAnnualDividendYield")
+                if min_market_cap_b is not None and (mcap is None or mcap / 1e9 < min_market_cap_b):
+                    continue
+                if max_pe is not None and (pe is None or pe > max_pe):
+                    continue
+                if min_dividend_yield is not None and (dy is None or dy < min_dividend_yield):
+                    continue
+                if sector and (q.get("sector") or "").lower() != sector.lower():
+                    continue
+                if country and (q.get("country") or "").lower() != country.lower():
+                    continue
+                filtered.append({
+                    "ticker": q.get("symbol"),
+                    "name": q.get("shortName") or q.get("longName"),
+                    "marketCapB": (mcap / 1e9) if mcap else None,
+                    "pe": pe,
+                    "dividendYield": dy,
+                    "sector": q.get("sector"),
+                    "country": q.get("country"),
+                    "lastPrice": q.get("regularMarketPrice"),
+                })
+                if len(filtered) >= limit:
+                    break
+            return {"source": "yfinance", "data": {"rows": filtered}}
+
+        return await _run(_build)
+    except Exception as e:
+        return {"source": "mock", "data": {"rows": [], "error": str(e)}}
+
+
+@router.get("/news/{ticker}")
+async def get_news(
+    ticker: str,
+    source: Optional[str] = Query(None, description="auto|avanza|yfinance"),
+) -> Dict[str, Any]:
+    src = _parse_source(source)
+    ticker = ticker.strip().upper()
+    if src in ("auto", "avanza"):
+        avanza = await _avanza_news(ticker)
+        if avanza is not None:
+            return avanza
+    # Fall back to yfinance .news
+    t = _yf_ticker(ticker)
+    if t is None:
+        return {"source": "mock", "data": {"items": []}}
+
+    def _build() -> Dict[str, Any]:
+        try:
+            items = list(t.news or [])
+        except Exception:
+            items = []
+        out = []
+        for item in items[:25]:
+            out.append({
+                "id": item.get("uuid"),
+                "headline": item.get("title"),
+                "summary": item.get("summary"),
+                "source": item.get("publisher"),
+                "timestamp": item.get("providerPublishTime"),
+                "url": item.get("link"),
+            })
+        return {"source": "yfinance", "data": {"items": out}}
+
+    try:
+        return await _run(_build)
+    except Exception:
+        return {"source": "mock", "data": {"items": []}}
+
+
 @router.get("/wei")
-async def get_wei() -> Dict[str, Any]:
+async def get_wei(
+    source: Optional[str] = Query(None, description="auto|yfinance|avanza|fmp"),
+) -> Dict[str, Any]:
+    _parse_source(source)
     yf = _yf()
     if yf is None:
         raise HTTPException(503, "yfinance unavailable")
@@ -784,7 +1178,11 @@ def _person_kind(title: str) -> str:
 
 
 @router.get("/rmap/{ticker}")
-async def get_rmap(ticker: str) -> Dict[str, Any]:
+async def get_rmap(
+    ticker: str,
+    source: Optional[str] = Query(None, description="auto|yfinance|avanza|fmp"),
+) -> Dict[str, Any]:
+    _parse_source(source)
     """Single-call relationship-map payload sourced from yfinance.
 
     Output shape mirrors the frontend `RmapData` interface in

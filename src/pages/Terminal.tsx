@@ -69,6 +69,62 @@ const FUNCTIONS: FunctionSpec[] = [
     toPath: (t) => `/terminal/des/${encodeURIComponent(t ?? '')}`.replace(/\/$/, ''),
     requiresTicker: true,
   },
+  {
+    code: 'FA',
+    label: 'Financial Analysis',
+    description: 'Multi-year fundamentals: revenue, EBITDA, margins, EPS, P/E history',
+    toPath: (t) => `/terminal/fa/${encodeURIComponent(t ?? '')}`.replace(/\/$/, ''),
+    requiresTicker: true,
+  },
+  {
+    code: 'DVD',
+    label: 'Dividend',
+    description: 'Dividend history, yield trend, payout ratio, ex-date calendar',
+    toPath: (t) => `/terminal/dvd/${encodeURIComponent(t ?? '')}`.replace(/\/$/, ''),
+    requiresTicker: true,
+  },
+  {
+    code: 'N',
+    label: 'News',
+    description: 'Per-instrument news headlines',
+    toPath: (t) => `/terminal/n/${encodeURIComponent(t ?? '')}`.replace(/\/$/, ''),
+    requiresTicker: true,
+  },
+  {
+    code: 'RV',
+    label: 'Relative Value',
+    description: 'Peer comparison matrix across P/E, P/B, P/S, EV/EBITDA, ROE, dividend yield',
+    toPath: (t) => `/terminal/rv/${encodeURIComponent(t ?? '')}`.replace(/\/$/, ''),
+    requiresTicker: true,
+  },
+  {
+    code: 'WATCH',
+    label: 'Watchlist',
+    description: 'Live-quote table for the user\'s watchlist',
+    toPath: () => '/terminal/watch',
+    requiresTicker: false,
+  },
+  {
+    code: 'MOST',
+    label: 'Movers',
+    description: 'Top gainers, losers, and most-active by region',
+    toPath: () => '/terminal/most',
+    requiresTicker: false,
+  },
+  {
+    code: 'TOP',
+    label: 'Top Stories',
+    description: 'Cross-market editorial newsfeed',
+    toPath: () => '/terminal/top',
+    requiresTicker: false,
+  },
+  {
+    code: 'EQS',
+    label: 'Equity Screener',
+    description: 'Multi-factor screener with savable thresholds',
+    toPath: () => '/terminal/eqs',
+    requiresTicker: false,
+  },
 ];
 
 const FUNCTION_CODES = new Set(FUNCTIONS.map((f) => f.code));
