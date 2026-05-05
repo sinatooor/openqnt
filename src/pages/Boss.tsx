@@ -1,13 +1,13 @@
 /**
  * Boss — legacy /boss route.
  *
- * Now renders the unified AiChat page with `defaultMode='boss'`. Existing
- * deep-links continue to work; the multi-agent dispatch flow runs through
- * the unified BossSubtreeCard rendered inside the conversation.
+ * The Boss tab was merged into the unified AI Chat surface. The route
+ * stays alive for old bookmarks/deep-links and now just redirects to
+ * /ai-chat with `mode=boss` so AiChat sets the right default mode.
  */
 
-import AiChat from './AiChat';
+import { Navigate } from 'react-router-dom';
 
-const Boss = () => <AiChat defaultMode="boss" defaultFilter="boss" />;
+const Boss = () => <Navigate to="/ai-chat?mode=boss" replace />;
 
 export default Boss;

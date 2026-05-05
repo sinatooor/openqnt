@@ -490,13 +490,15 @@ const StrategyFlowCanvasInner = () => {
         proOptions={{ hideAttribution: true }}
         className="pipeline-canvas"
       >
-        {/* Grid Background */}
+        {/* Grid Background — n8n-style dotted pattern.
+           Color comes from a CSS var so themes (dark / light / hi-contrast /
+           bloomberg) recolour the dots without touching the canvas component. */}
         {showGrid && (
           <Background
             variant={BackgroundVariant.Dots}
-            gap={20}
-            size={1}
-            color="rgba(255,255,255,0.03)"
+            gap={22}
+            size={1.4}
+            color="hsl(var(--canvas-dot, 220 13% 35%))"
           />
         )}
 
