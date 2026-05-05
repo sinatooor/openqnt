@@ -419,14 +419,16 @@ export const LeftSidebar = memo(() => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
   /**
-   * True while a click-driven scrollIntoView is in flight. The scroll-spy
-   * fires on every wheel event during the smooth-scroll animation, and
-   * because each section is only ~scroll-mt-2 above its sticky header,
-   * the +100 offset would land in the *next* section on the way to the
-   * target — flipping `activeCategory` to a category below the one the
-   * user clicked. Suppressing the spy until the scroll settles fixes that.
+   * Holds the category id the user explicitly clicked. We let the
+   * scroll-spy run during the smooth scroll so the rail selector
+   * animates through every section as the content sweeps past it
+   * (matching the natural-scroll feel). Once the scroll settles we
+   * force-set `activeCategory` back to this clicked id, which
+   * protects against the spy's last reading landing on a neighbour
+   * (the original "selector ends up below the clicked icon" bug).
    */
-  const programmaticScrollUntil = useRef<number>(0);
+  const clickTargetRef = useRef<string | null>(null);
+  const settleTimerRef = useRef<number | null>(null);
 
   // Select categories based on mode
   const currentCategories = pineScriptMode ? PINE_CATEGORIES : TOOL_CATEGORIES;
@@ -444,10 +446,12 @@ export const LeftSidebar = memo(() => {
     : currentCategories;
 
   // Scroll Spy Logic — picks the section currently in view as the user
-  // scrolls naturally. Skipped while a click-driven scroll is animating.
+  // scrolls (naturally OR via a click-driven smooth scroll). The spy
+  // fires on every intermediate scroll event, so when a click triggers
+  // scrollIntoView the selector walks one section at a time toward the
+  // target instead of jumping.
   const handleScroll = () => {
     if (!scrollContainerRef.current) return;
-    if (Date.now() < programmaticScrollUntil.current) return;
 
     const scrollPosition = scrollContainerRef.current.scrollTop + 100; // Offset for stickiness
 
@@ -477,18 +481,27 @@ export const LeftSidebar = memo(() => {
       setIsCollapsed(false);
     }
 
-    // Set the active category synchronously so the rail selector lands on
-    // the clicked icon immediately (visual feedback). Then scroll the
-    // content into view, suppressing the scroll-spy for the duration of
-    // the smooth-scroll animation so it does not flip the selector to a
-    // neighbouring section.
+    // Kick off a smooth scroll to the target. The scroll-spy runs as
+    // scroll progresses, so the rail selector animates through each
+    // intermediate section. After the scroll settles, force the active
+    // category to the clicked target — guards against the spy's final
+    // reading landing on a neighbour.
     setTimeout(() => {
-      setActiveCategory(id);
-      programmaticScrollUntil.current = Date.now() + 700;
+      clickTargetRef.current = id;
       const element = categoryRefs.current[id];
       if (element) {
         element.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
+      if (settleTimerRef.current !== null) {
+        window.clearTimeout(settleTimerRef.current);
+      }
+      settleTimerRef.current = window.setTimeout(() => {
+        if (clickTargetRef.current === id) {
+          setActiveCategory(id);
+          clickTargetRef.current = null;
+        }
+        settleTimerRef.current = null;
+      }, 650);
     }, wasCollapsed ? 150 : 0);
   };
 
