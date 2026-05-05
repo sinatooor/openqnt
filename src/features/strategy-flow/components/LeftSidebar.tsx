@@ -418,6 +418,15 @@ export const LeftSidebar = memo(() => {
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  /**
+   * True while a click-driven scrollIntoView is in flight. The scroll-spy
+   * fires on every wheel event during the smooth-scroll animation, and
+   * because each section is only ~scroll-mt-2 above its sticky header,
+   * the +100 offset would land in the *next* section on the way to the
+   * target — flipping `activeCategory` to a category below the one the
+   * user clicked. Suppressing the spy until the scroll settles fixes that.
+   */
+  const programmaticScrollUntil = useRef<number>(0);
 
   // Select categories based on mode
   const currentCategories = pineScriptMode ? PINE_CATEGORIES : TOOL_CATEGORIES;
@@ -434,9 +443,11 @@ export const LeftSidebar = memo(() => {
     })).filter(cat => cat.nodes.length > 0)
     : currentCategories;
 
-  // Scroll Spy Logic
+  // Scroll Spy Logic — picks the section currently in view as the user
+  // scrolls naturally. Skipped while a click-driven scroll is animating.
   const handleScroll = () => {
     if (!scrollContainerRef.current) return;
+    if (Date.now() < programmaticScrollUntil.current) return;
 
     const scrollPosition = scrollContainerRef.current.scrollTop + 100; // Offset for stickiness
 
@@ -461,18 +472,24 @@ export const LeftSidebar = memo(() => {
       return;
     }
 
-    if (isCollapsed) {
+    const wasCollapsed = isCollapsed;
+    if (wasCollapsed) {
       setIsCollapsed(false);
     }
 
-    // Slight delay to allow expansion before scrolling
+    // Set the active category synchronously so the rail selector lands on
+    // the clicked icon immediately (visual feedback). Then scroll the
+    // content into view, suppressing the scroll-spy for the duration of
+    // the smooth-scroll animation so it does not flip the selector to a
+    // neighbouring section.
     setTimeout(() => {
       setActiveCategory(id);
+      programmaticScrollUntil.current = Date.now() + 700;
       const element = categoryRefs.current[id];
       if (element) {
         element.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
-    }, isCollapsed ? 150 : 0);
+    }, wasCollapsed ? 150 : 0);
   };
 
   const handleDragStart = (e: DragEvent, item: NodeCatalogItem) => {
