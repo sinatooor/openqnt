@@ -470,12 +470,21 @@ const Settings = () => {
                                                     className="flex flex-col gap-2 p-3 bg-muted/30 rounded-lg border border-border/60"
                                                 >
                                                     <div className="flex items-center gap-3">
-                                                        <img
-                                                            src={broker.logo}
-                                                            alt={broker.name}
-                                                            className="w-10 h-10 rounded object-contain bg-muted/40 p-1"
-                                                            onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
-                                                        />
+                                                        <div className="w-11 h-11 rounded-md bg-white border border-border/60 shrink-0 flex items-center justify-center overflow-hidden">
+                                                            <img
+                                                                src={broker.logo}
+                                                                alt={broker.name}
+                                                                className="max-w-[80%] max-h-[80%] object-contain"
+                                                                onError={(e) => {
+                                                                    const t = e.target as HTMLImageElement;
+                                                                    t.style.display = 'none';
+                                                                    if (t.parentElement) {
+                                                                        t.parentElement.textContent = broker.name.slice(0, 2).toUpperCase();
+                                                                        t.parentElement.classList.add('text-foreground', 'font-bold', 'text-xs');
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </div>
                                                         <div className="flex-1 min-w-0">
                                                             <div className="font-medium text-sm truncate">{broker.name}</div>
                                                             <div className="text-xs text-muted-foreground">
@@ -553,12 +562,21 @@ const Settings = () => {
                                                 key={connector.id}
                                                 className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border/60"
                                             >
-                                                <img
-                                                    src={connector.logo}
-                                                    alt={connector.name}
-                                                    className="w-10 h-10 rounded object-contain bg-muted/40 p-1"
-                                                    onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
-                                                />
+                                                <div className="w-11 h-11 rounded-md bg-white border border-border/60 shrink-0 flex items-center justify-center overflow-hidden">
+                                                    <img
+                                                        src={connector.logo}
+                                                        alt={connector.name}
+                                                        className="max-w-[80%] max-h-[80%] object-contain"
+                                                        onError={(e) => {
+                                                            const t = e.target as HTMLImageElement;
+                                                            t.style.display = 'none';
+                                                            if (t.parentElement) {
+                                                                t.parentElement.textContent = connector.name.slice(0, 2).toUpperCase();
+                                                                t.parentElement.classList.add('text-foreground', 'font-bold', 'text-xs');
+                                                            }
+                                                        }}
+                                                    />
+                                                </div>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="font-medium text-sm truncate">{connector.name}</div>
                                                     <div className="text-xs text-muted-foreground">{connector.description}</div>
