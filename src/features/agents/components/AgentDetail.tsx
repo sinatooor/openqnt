@@ -53,7 +53,7 @@ export const AgentDetail = memo(({ agentId }: AgentDetailProps) => {
 
   if (!agent) {
     return (
-      <div className="h-full flex items-center justify-center text-white/30 text-[13px]">
+      <div className="h-full flex items-center justify-center text-muted-foreground text-[13px]">
         Select an agent on the left.
       </div>
     );
@@ -65,7 +65,7 @@ export const AgentDetail = memo(({ agentId }: AgentDetailProps) => {
   return (
     <div className="h-full flex flex-col">
       {/* ── Header: who is this agent? ──────────────────────── */}
-      <div className="px-4 py-3 border-b border-white/5">
+      <div className="px-4 py-3 border-b border-border/60">
         <div className="flex items-start gap-3">
           <div
             className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
@@ -78,22 +78,22 @@ export const AgentDetail = memo(({ agentId }: AgentDetailProps) => {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h2 className="text-[15px] text-white/95 font-medium truncate">
+              <h2 className="text-[15px] text-foreground font-medium truncate">
                 {agent.label}
               </h2>
               {isRunning && (
-                <Badge className="bg-amber-500/15 text-amber-300 border-none text-[9px] uppercase tracking-wider">
+                <Badge className="bg-amber-500/15 text-amber-500 border-none text-[9px] uppercase tracking-wider">
                   Active
                 </Badge>
               )}
-              <Badge className="bg-white/5 text-white/50 border-none text-[9px] font-mono">
+              <Badge className="bg-muted/40 text-muted-foreground border-none text-[9px] font-mono">
                 {agent.agentType}
               </Badge>
-              <Badge className="bg-white/5 text-white/40 border-none text-[9px] capitalize">
+              <Badge className="bg-muted/40 text-muted-foreground border-none text-[9px] capitalize">
                 {agent.source}
               </Badge>
             </div>
-            <p className="text-[11px] text-white/40 mt-1">
+            <p className="text-[11px] text-muted-foreground mt-1">
               Hired {new Date(agent.createdAt).toLocaleString()}
               {agent.lastActive && (
                 <> · last active {new Date(agent.lastActive).toLocaleString()}</>
@@ -119,7 +119,7 @@ export const AgentDetail = memo(({ agentId }: AgentDetailProps) => {
             {agent.source === 'flow' && (
               <Link
                 to="/builder"
-                className="inline-flex items-center gap-1 text-[11px] text-white/50 hover:text-white px-2 py-1.5 border border-white/10 rounded-md"
+                className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground px-2 py-1.5 border border-border/60 rounded-md"
               >
                 <Settings2 className="w-3 h-3" />
                 Configure
@@ -135,7 +135,7 @@ export const AgentDetail = memo(({ agentId }: AgentDetailProps) => {
         onValueChange={(v) => setTab(v as typeof tab)}
         className="flex-1 flex flex-col overflow-hidden"
       >
-        <TabsList className="mx-3 mt-2 bg-white/[0.03] border border-white/5 p-0.5 h-auto self-start">
+        <TabsList className="mx-3 mt-2 bg-muted/30 border border-border/60 p-0.5 h-auto self-start">
           <TabsTrigger value="live" className="text-[11px] gap-1.5 px-3 py-1">
             <Activity className="w-3 h-3" />
             Live
@@ -178,10 +178,10 @@ export const AgentDetail = memo(({ agentId }: AgentDetailProps) => {
         </TabsContent>
 
         <TabsContent value="history" className="flex-1 mt-2 overflow-auto data-[state=inactive]:hidden">
-          <div className="flex items-center justify-between px-3 py-1.5 text-[10px] text-white/30">
+          <div className="flex items-center justify-between px-3 py-1.5 text-[10px] text-muted-foreground">
             <span>Click any run to replay its stream on the Live tab.</span>
             <button
-              className="inline-flex items-center gap-1 hover:text-red-300"
+              className="inline-flex items-center gap-1 hover:text-red-500"
               onClick={() => {
                 if (confirm(`Clear all run history for ${agent.label}?`)) {
                   clearHistory(agentId);
@@ -205,14 +205,14 @@ export const AgentDetail = memo(({ agentId }: AgentDetailProps) => {
 
       {/* ── Danger zone: remove agent from monitor (flow/canvas stays) ── */}
       {agent.source !== 'flow' && (
-        <div className="px-3 py-2 border-t border-white/5 flex items-center justify-end">
+        <div className="px-3 py-2 border-t border-border/60 flex items-center justify-end">
           <button
             onClick={() => {
               if (confirm(`Retire ${agent.label} from the monitor? Their memory.md will be lost.`)) {
                 removeAgent(agentId);
               }
             }}
-            className="text-[10px] text-white/30 hover:text-red-300 inline-flex items-center gap-1"
+            className="text-[10px] text-muted-foreground hover:text-red-500 inline-flex items-center gap-1"
           >
             <Trash2 className="w-3 h-3" />
             Retire agent
@@ -250,9 +250,9 @@ const MetaChips = ({ agent }: { agent: ReturnType<typeof useAgentMonitorStore.ge
       {chips.map((c) => (
         <span
           key={c.label}
-          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/[0.04] border border-white/5 text-[10px] text-white/60"
+          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-muted/30 border border-border/60 text-[10px] text-foreground/70"
         >
-          <span className="text-white/35">{c.label}</span>
+          <span className="text-muted-foreground">{c.label}</span>
           <span className="font-mono truncate max-w-[220px]">{c.value}</span>
         </span>
       ))}

@@ -100,32 +100,32 @@ const Agents = () => {
         <header className="flex items-center justify-between gap-3 py-3">
           <div className="flex items-center gap-2 min-w-0">
             <Bot className="w-5 h-5 text-primary" />
-            <h1 className="text-white font-medium text-sm tracking-tight">Agents</h1>
-            <div className="h-4 w-px bg-white/10" />
-            <span className="text-white/40 text-xs truncate">
+            <h1 className="text-foreground font-medium text-sm tracking-tight">Agents</h1>
+            <div className="h-4 w-px bg-muted/60" />
+            <span className="text-muted-foreground text-xs truncate">
               Your AI team · memory · live work · past runs
             </span>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
             <motion.div
-              className="flex items-center gap-3 text-[11px] text-white/60 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/5"
+              className="flex items-center gap-3 text-[11px] text-foreground/70 px-3 py-1.5 rounded-full bg-muted/30 border border-border/60"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
               <span className="inline-flex items-center gap-1">
-                <Activity className="w-3 h-3 text-white/40" /> {agents.length} agents
+                <Activity className="w-3 h-3 text-muted-foreground" /> {agents.length} agents
               </span>
               <span className="inline-flex items-center gap-1">
                 {runningCount > 0 ? (
                   <>
-                    <Loader2 className="w-3 h-3 animate-spin text-amber-400" />
-                    <span className="text-amber-300">{runningCount} working</span>
+                    <Loader2 className="w-3 h-3 animate-spin text-amber-500" />
+                    <span className="text-amber-500">{runningCount} working</span>
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                    <span className="text-emerald-300">idle</span>
+                    <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                    <span className="text-emerald-500">idle</span>
                   </>
                 )}
               </span>
@@ -133,7 +133,7 @@ const Agents = () => {
             <Button
               size="sm"
               variant="outline"
-              className="h-7 px-2 text-[11px] gap-1.5 border-white/10 text-white/70 hover:text-white"
+              className="h-7 px-2 text-[11px] gap-1.5 border-border/60 text-foreground/80 hover:text-foreground"
               onClick={runAllIdle}
             >
               <Zap className="w-3 h-3" />
@@ -142,7 +142,7 @@ const Agents = () => {
             <Button
               size="sm"
               variant="outline"
-              className="h-7 px-2 text-[11px] gap-1.5 border-white/10 text-white/60 hover:text-white"
+              className="h-7 px-2 text-[11px] gap-1.5 border-border/60 text-foreground/70 hover:text-foreground"
               onClick={() => window.location.reload()}
               aria-label="Refresh"
             >
@@ -154,12 +154,12 @@ const Agents = () => {
         {/* ─── Main content (two-pane) ─────────────────────────── */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-3 pb-4 overflow-hidden">
           {/* Left — agent roster */}
-          <Card className="bg-card/60 backdrop-blur-sm border-white/5 overflow-hidden flex flex-col">
-            <div className="px-3 py-2 border-b border-white/5 flex items-center justify-between">
-              <span className="text-[10px] uppercase tracking-wider text-white/40">
+          <Card className="bg-card/60 backdrop-blur-sm border-border/60 overflow-hidden flex flex-col">
+            <div className="px-3 py-2 border-b border-border/60 flex items-center justify-between">
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
                 Agents
               </span>
-              <span className="text-[10px] text-white/30">{agents.length}</span>
+              <span className="text-[10px] text-muted-foreground">{agents.length}</span>
             </div>
             <div className="flex-1 min-h-0">
               <AgentList selectedId={resolvedId} onSelect={onSelect} />
@@ -167,7 +167,7 @@ const Agents = () => {
           </Card>
 
           {/* Right — selected agent detail */}
-          <Card className="bg-card/60 backdrop-blur-sm border-white/5 overflow-hidden flex flex-col">
+          <Card className="bg-card/60 backdrop-blur-sm border-border/60 overflow-hidden flex flex-col">
             {resolvedId ? (
               <AgentDetail agentId={resolvedId} />
             ) : (
@@ -184,16 +184,16 @@ const Agents = () => {
 
 const NoAgentsCTA = () => (
   <CardContent className="h-full flex flex-col items-center justify-center text-center py-16 px-6">
-    <Bot className="w-10 h-10 text-white/20 mb-3" />
-    <p className="text-[14px] text-white/70 mb-1">No agents on staff yet</p>
-    <p className="text-[12px] text-white/40 max-w-sm mb-4">
+    <Bot className="w-10 h-10 text-muted-foreground mb-3" />
+    <p className="text-[14px] text-foreground/80 mb-1">No agents on staff yet</p>
+    <p className="text-[12px] text-muted-foreground max-w-sm mb-4">
       Drop an agent node (News, Quant, Research, …) into a strategy on the
       canvas. As soon as you do, they'll show up here with their own log and
       notebook.
     </p>
     <a
       href="/"
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-white text-[11.5px] hover:opacity-90"
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-foreground text-[11.5px] hover:opacity-90"
     >
       <Play className="w-3 h-3" />
       Open the canvas

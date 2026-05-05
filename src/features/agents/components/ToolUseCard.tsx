@@ -35,11 +35,11 @@ export function ToolUseCard({ call, result, artifacts, durationMs, defaultOpen }
   const status = result?.toolStatus ?? (result == null ? 'pending' : 'success');
   const statusIcon =
     status === 'success' ? (
-      <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+      <CheckCircle2 className="h-3 w-3 text-emerald-500" />
     ) : status === 'error' ? (
-      <XCircle className="h-3 w-3 text-red-400" />
+      <XCircle className="h-3 w-3 text-red-500" />
     ) : (
-      <Loader2 className="h-3 w-3 animate-spin text-amber-400" />
+      <Loader2 className="h-3 w-3 animate-spin text-amber-500" />
     );
 
   const borderColor =
@@ -54,28 +54,28 @@ export function ToolUseCard({ call, result, artifacts, durationMs, defaultOpen }
   const output = result?.toolOutput ?? '';
 
   return (
-    <div className={`rounded-md border ${borderColor} bg-white/[0.02] overflow-hidden`}>
+    <div className={`rounded-md border ${borderColor} bg-muted/30 overflow-hidden`}>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-2 px-2 py-1.5 text-left hover:bg-white/[0.03]"
+        className="flex w-full items-center gap-2 px-2 py-1.5 text-left hover:bg-muted/30"
       >
         {open ? (
-          <ChevronDown className="h-3 w-3 text-white/40" />
+          <ChevronDown className="h-3 w-3 text-muted-foreground" />
         ) : (
-          <ChevronRight className="h-3 w-3 text-white/40" />
+          <ChevronRight className="h-3 w-3 text-muted-foreground" />
         )}
-        <Wrench className="h-3 w-3 text-white/50" />
-        <span className="font-mono text-[11px] text-white/85">{toolName}</span>
-        <span className="text-[10px] text-white/40 truncate min-w-0 flex-1">
+        <Wrench className="h-3 w-3 text-muted-foreground" />
+        <span className="font-mono text-[11px] text-foreground">{toolName}</span>
+        <span className="text-[10px] text-muted-foreground truncate min-w-0 flex-1">
           {oneLineArgs(args)}
         </span>
         {durationMs != null && (
-          <span className="font-mono text-[9px] text-white/40">
+          <span className="font-mono text-[9px] text-muted-foreground">
             {durationMs < 1000 ? `${durationMs}ms` : `${(durationMs / 1000).toFixed(1)}s`}
           </span>
         )}
         {artifacts.length > 0 && (
-          <span className="inline-flex items-center gap-0.5 rounded-sm bg-white/5 px-1 text-[9px] text-white/60">
+          <span className="inline-flex items-center gap-0.5 rounded-sm bg-muted/40 px-1 text-[9px] text-foreground/70">
             <ImageIcon className="h-2.5 w-2.5" />
             {artifacts.length}
           </span>
@@ -84,10 +84,10 @@ export function ToolUseCard({ call, result, artifacts, durationMs, defaultOpen }
       </button>
 
       {open && (
-        <div className="border-t border-white/5 bg-black/20 p-2 space-y-2">
+        <div className="border-t border-border/60 bg-muted/30 p-2 space-y-2">
           {Object.keys(args).length > 0 && (
             <Section label="Input">
-              <pre className="m-0 max-h-40 overflow-auto whitespace-pre-wrap break-words font-mono text-[10px] leading-relaxed text-white/75">
+              <pre className="m-0 max-h-40 overflow-auto whitespace-pre-wrap break-words font-mono text-[10px] leading-relaxed text-foreground/80">
                 {safeStringify(args)}
               </pre>
             </Section>
@@ -95,7 +95,7 @@ export function ToolUseCard({ call, result, artifacts, durationMs, defaultOpen }
 
           {output && (
             <Section label="Output">
-              <pre className="m-0 max-h-60 overflow-auto whitespace-pre-wrap break-words font-mono text-[10px] leading-relaxed text-white/75">
+              <pre className="m-0 max-h-60 overflow-auto whitespace-pre-wrap break-words font-mono text-[10px] leading-relaxed text-foreground/80">
                 {output}
               </pre>
             </Section>
@@ -112,10 +112,10 @@ export function ToolUseCard({ call, result, artifacts, durationMs, defaultOpen }
           )}
 
           {status === 'error' && output && (
-            <p className="text-[10px] italic text-red-300/80">Tool returned an error — see Output above.</p>
+            <p className="text-[10px] italic text-red-500/80">Tool returned an error — see Output above.</p>
           )}
           {status === 'pending' && (
-            <p className="text-[10px] italic text-amber-300/80">Awaiting result…</p>
+            <p className="text-[10px] italic text-amber-500/80">Awaiting result…</p>
           )}
         </div>
       )}
@@ -126,7 +126,7 @@ export function ToolUseCard({ call, result, artifacts, durationMs, defaultOpen }
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="mb-0.5 text-[9px] uppercase tracking-wide text-white/35">{label}</div>
+      <div className="mb-0.5 text-[9px] uppercase tracking-wide text-muted-foreground">{label}</div>
       {children}
     </div>
   );
@@ -141,16 +141,16 @@ function ArtifactPreview({ artifact }: { artifact: Artifact }) {
     ? TableIcon
     : FileText;
   return (
-    <div className="rounded-md border border-white/5 bg-black/30 p-2">
+    <div className="rounded-md border border-border/60 bg-muted/50 p-2">
       <div className="mb-1 flex items-center gap-1.5">
-        <Icon className="h-3 w-3 text-white/60" />
-        <span className="text-[10px] font-medium text-white/80">{artifact.title}</span>
-        <span className="ml-auto text-[9px] uppercase text-white/40">{artifact.kind}</span>
+        <Icon className="h-3 w-3 text-foreground/70" />
+        <span className="text-[10px] font-medium text-foreground">{artifact.title}</span>
+        <span className="ml-auto text-[9px] uppercase text-muted-foreground">{artifact.kind}</span>
         {artifact.dataUrl && (
           <a
             href={artifact.dataUrl}
             download={`${artifact.title}.${guessExt(artifact)}`}
-            className="text-white/50 hover:text-white"
+            className="text-muted-foreground hover:text-foreground"
             title="Download"
           >
             <Download className="h-3 w-3" />
@@ -161,24 +161,24 @@ function ArtifactPreview({ artifact }: { artifact: Artifact }) {
         <img
           src={artifact.dataUrl}
           alt={artifact.title}
-          className="max-h-72 w-full rounded-sm border border-white/5 object-contain bg-white/5"
+          className="max-h-72 w-full rounded-sm border border-border/60 object-contain bg-muted/40"
         />
       )}
       {artifact.kind === 'table' && artifact.text && (
-        <pre className="m-0 max-h-60 overflow-auto whitespace-pre-wrap font-mono text-[10px] text-white/75">
+        <pre className="m-0 max-h-60 overflow-auto whitespace-pre-wrap font-mono text-[10px] text-foreground/80">
           {artifact.text}
         </pre>
       )}
       {artifact.kind === 'code' && artifact.text && (
-        <pre className="m-0 max-h-60 overflow-auto whitespace-pre-wrap font-mono text-[10px] text-emerald-200/90">
+        <pre className="m-0 max-h-60 overflow-auto whitespace-pre-wrap font-mono text-[10px] text-emerald-500/90">
           {artifact.text}
         </pre>
       )}
       {artifact.kind === 'file' && (
-        <p className="text-[10px] italic text-white/50">{artifact.caption ?? 'File saved.'}</p>
+        <p className="text-[10px] italic text-muted-foreground">{artifact.caption ?? 'File saved.'}</p>
       )}
       {artifact.caption && artifact.kind !== 'file' && (
-        <p className="mt-1 text-[10px] italic text-white/50">{artifact.caption}</p>
+        <p className="mt-1 text-[10px] italic text-muted-foreground">{artifact.caption}</p>
       )}
     </div>
   );

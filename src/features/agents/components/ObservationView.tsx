@@ -108,7 +108,7 @@ export function ObservationView({ agentId, runId }: Props) {
 
   if (!runId) {
     return (
-      <div className="flex h-full items-center justify-center text-[12px] text-white/30">
+      <div className="flex h-full items-center justify-center text-[12px] text-muted-foreground">
         Pick a run from History to inspect its observations.
       </div>
     );
@@ -143,20 +143,20 @@ export function ObservationView({ agentId, runId }: Props) {
       {/* Conclusion */}
       {message && (
         <section className="mb-3 rounded-md border border-emerald-500/20 bg-emerald-500/5 p-3">
-          <div className="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-emerald-300">
+          <div className="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-emerald-500">
             <Sparkles className="h-3 w-3" />
             Conclusion
           </div>
-          <div className="text-[12px] leading-relaxed text-white/90 whitespace-pre-wrap">
+          <div className="text-[12px] leading-relaxed text-foreground whitespace-pre-wrap">
             {message.text ?? '(empty)'}
           </div>
           {run?.signal && (
             <div className="mt-2 flex items-center gap-2 text-[10px] uppercase tracking-wide">
-              <span className="rounded-sm bg-white/5 px-1.5 py-0.5 text-white/70">
+              <span className="rounded-sm bg-muted/40 px-1.5 py-0.5 text-foreground/80">
                 {run.signal}
               </span>
               {run.confidence != null && (
-                <span className="text-white/50">
+                <span className="text-muted-foreground">
                   confidence {Math.round(run.confidence * 100)}%
                 </span>
               )}
@@ -168,13 +168,13 @@ export function ObservationView({ agentId, runId }: Props) {
       {/* Errors */}
       {errors.length > 0 && (
         <section className="mb-3 rounded-md border border-red-500/30 bg-red-500/5 p-3">
-          <div className="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-red-300">
+          <div className="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-red-500">
             <XCircle className="h-3 w-3" />
             Errors ({errors.length})
           </div>
           <div className="space-y-1">
             {errors.map((e) => (
-              <p key={e.id} className="text-[11px] leading-relaxed text-red-200/90 whitespace-pre-wrap">
+              <p key={e.id} className="text-[11px] leading-relaxed text-red-500/90 whitespace-pre-wrap">
                 {e.text}
               </p>
             ))}
@@ -184,12 +184,12 @@ export function ObservationView({ agentId, runId }: Props) {
 
       {/* Tool-use cards */}
       <section className="mb-4">
-        <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-white/40">
+        <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">
           <Wrench className="h-3 w-3" />
           Tool Use ({totals.toolCalls})
         </div>
         {groups.length === 0 && (
-          <div className="rounded-md border border-white/5 bg-white/[0.02] px-3 py-4 text-center text-[11px] text-white/30">
+          <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-4 text-center text-[11px] text-muted-foreground">
             No tool calls yet.
             {totals.pending > 0 && (
               <Loader2 className="ml-2 inline-block h-3 w-3 animate-spin" />
@@ -212,15 +212,15 @@ export function ObservationView({ agentId, runId }: Props) {
       {/* Reasoning */}
       {thoughts.length > 0 && (
         <section className="mb-4">
-          <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-white/40">
+          <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">
             <Quote className="h-3 w-3" />
             Reasoning ({thoughts.length})
           </div>
-          <div className="space-y-1.5 rounded-md border border-white/5 bg-white/[0.02] p-2">
+          <div className="space-y-1.5 rounded-md border border-border/60 bg-muted/30 p-2">
             {thoughts.map((t) => (
               <div
                 key={t.id}
-                className="border-l-2 border-white/10 pl-2 text-[11px] italic leading-relaxed text-white/70"
+                className="border-l-2 border-border/60 pl-2 text-[11px] italic leading-relaxed text-foreground/80"
               >
                 {t.text}
               </div>
@@ -244,12 +244,12 @@ function Stat({
   tone?: 'success' | 'error';
 }) {
   const color =
-    tone === 'success' ? 'text-emerald-400' : tone === 'error' ? 'text-red-400' : 'text-white/80';
+    tone === 'success' ? 'text-emerald-500' : tone === 'error' ? 'text-red-500' : 'text-foreground';
   return (
-    <div className="flex items-center gap-2 rounded-md border border-white/5 bg-white/[0.02] px-2 py-1.5">
+    <div className="flex items-center gap-2 rounded-md border border-border/60 bg-muted/30 px-2 py-1.5">
       <Icon className={`h-3 w-3 ${color}`} />
       <div className="min-w-0">
-        <div className="truncate text-[9px] uppercase tracking-wide text-white/40">{label}</div>
+        <div className="truncate text-[9px] uppercase tracking-wide text-muted-foreground">{label}</div>
         <div className={`font-mono text-[12px] leading-none ${color}`}>{value}</div>
       </div>
     </div>
