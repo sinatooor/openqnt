@@ -100,6 +100,12 @@ import { MacroPanel } from '@/features/portfolio/MacroPanel';
 import { RebalancePanel } from '@/features/portfolio/RebalancePanel';
 import { AuditLogPanel } from '@/features/portfolio/AuditLogPanel';
 import { EarningsCalendar } from '@/features/portfolio/EarningsCalendar';
+import { PerformancePanel } from '@/features/portfolio/PerformancePanel';
+import { ConcentrationAlerts } from '@/features/portfolio/ConcentrationAlerts';
+import { BondLab } from '@/features/portfolio/BondLab';
+import { OptionsLab } from '@/features/portfolio/OptionsLab';
+import { GoalPlanner } from '@/features/portfolio/GoalPlanner';
+import { EdgarPanel } from '@/features/research/EdgarPanel';
 import { downloadCsv, holdingsSnapshotCsv, realizedGainLossCsv } from '@/features/portfolio/csv';
 
 // ─── Asset Type Icons ───────────────────────────────────────
@@ -987,11 +993,33 @@ const Portfolio = () => {
 
               {/* ═══ ANALYTICS TAB ═══ */}
               <TabsContent value="analytics" className="space-y-6">
+                <PerformancePanel />
                 <RiskPanel
                   liveValuesBySymbol={Object.fromEntries(
                     displayHoldings.map((h) => [h.symbol, h.quantity * (h.currentPrice || h.avgCost)])
                   )}
                   currency={store.baseCurrency}
+                />
+                <ConcentrationAlerts
+                  exposures={(() => {
+                    const totalValue = displayHoldings.reduce(
+                      (s, h) => s + h.quantity * (h.currentPrice || h.avgCost),
+                      0
+                    );
+                    if (totalValue === 0) return {};
+                    const single: Record<string, number> = {};
+                    const assetClass: Record<string, number> = {};
+                    const currency: Record<string, number> = {};
+                    for (const h of displayHoldings) {
+                      const v = h.quantity * (h.currentPrice || h.avgCost);
+                      const w = v / totalValue;
+                      single[h.symbol] = (single[h.symbol] ?? 0) + w;
+                      assetClass[h.assetType] = (assetClass[h.assetType] ?? 0) + w;
+                      currency[h.currency] = (currency[h.currency] ?? 0) + w;
+                    }
+                    return { single_name: single, asset_class: assetClass, currency };
+                  })()}
+                  accountId={activeAccount?.id ?? null}
                 />
                 <MacroPanel />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1012,6 +1040,12 @@ const Portfolio = () => {
                   }))}
                   accountId={activeAccount?.id ?? 'default'}
                 />
+                <GoalPlanner />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <BondLab />
+                  <OptionsLab />
+                </div>
+                <EdgarPanel initialSymbol={displayHoldings[0]?.symbol ?? 'AAPL'} />
                 <AuditLogPanel />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* ─── Asset Type Breakdown Bar Chart ─── */}
