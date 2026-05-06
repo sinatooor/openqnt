@@ -494,6 +494,61 @@ class FlowInterpreter:
                         )
                     )
                     outputs[node_id] = {"output": True}
+                elif action_type == "phoneCall":
+                    # Realtime AI voice call. Fire-and-forget: the runtime is
+                    # synchronous (per-bar) and we don't want to block the bar
+                    # on Twilio's REST round-trip, so we kick this onto the
+                    # current event loop if available, else to a thread.
+                    try:
+                        from services.voice import voice_call as voice_orch
+                        from services import voice_db
+                        import asyncio
+                        import threading
+
+                        user_id = (
+                            data.get("userId")
+                            or self.settings.get("userId")
+                            or ctx.context.get("user_id") if hasattr(ctx, "context") else None
+                        )
+                        # Fall back to a single-tenant default if no user ctx
+                        if not user_id:
+                            import os
+                            user_id = os.getenv("OPENQNT_DEFAULT_USER_ID")
+                        if user_id:
+                            profile = voice_db.get_user_voice_profile(user_id) or {}
+                            phone = data.get("phoneNumber") or profile.get("phone_number")
+                            transport = data.get("transport", "twilio")
+                            allowed = list(["get_positions", "get_account_info", "get_market_price",
+                                            "search_market_news", "calculate_portfolio_beta"])
+                            if "trade" in (data.get("allowedActions") or []):
+                                allowed.extend(["place_order", "close_position"])
+
+                            def _kick():
+                                try:
+                                    voice_orch.initiate_call(
+                                        user_id=user_id,
+                                        user_name=profile.get("name") or "trader",
+                                        user_phone=phone,
+                                        voice_trading_enabled=bool(profile.get("voice_trading_enabled")),
+                                        opening_message=data.get("message", "Strategy alert."),
+                                        transport=transport,
+                                        trigger_source="node",
+                                        allowed_tools=allowed,
+                                        voice=data.get("voice", "Aoede"),
+                                    )
+                                except Exception:
+                                    import logging
+                                    logging.getLogger(__name__).exception("phoneCall node: initiate_call failed")
+
+                            try:
+                                loop = asyncio.get_event_loop()
+                                loop.call_soon_threadsafe(_kick) if loop.is_running() else _kick()
+                            except RuntimeError:
+                                threading.Thread(target=_kick, daemon=True).start()
+                    except Exception:
+                        # Voice subsystem not available — backtests / paper-only setups
+                        pass
+                    outputs[node_id] = {"output": True}
                 else:
                     outputs[node_id] = {"output": True}
                 continue

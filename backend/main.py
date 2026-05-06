@@ -288,6 +288,13 @@ _telemetry.hook_into_context()
 from routers import boss as boss_router
 app.include_router(boss_router.router)
 
+# Voice — Twilio / browser WebRTC / iOS / SIP bridges to Gemini Live
+try:
+    from routers import voice as voice_router
+    app.include_router(voice_router.router)
+except Exception as _e:
+    print(f"Warning: voice router failed to load: {_e}")
+
 # External integrations (Avanza first; Nordnet/IBKR later)
 try:
     from routers import integrations as integrations_router

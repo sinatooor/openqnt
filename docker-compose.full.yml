@@ -86,6 +86,31 @@ services:
       retries: 10
     restart: unless-stopped
 
+  # Voice — TURN server (required for cellular WebRTC NAT traversal)
+  coturn:
+    image: coturn/coturn:4.6
+    container_name: openqwnt-coturn
+    network_mode: host    # TURN needs raw UDP/TCP across a wide port range
+    volumes:
+      - ./infra/coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro
+    restart: unless-stopped
+    profiles: ["voice"]
+
+  # Voice — Asterisk (v3 SIP power-user path; Linphone clients register here)
+  asterisk:
+    image: andrius/asterisk:20-current
+    container_name: openqwnt-asterisk
+    ports:
+      - "5060:5060/udp"     # SIP signaling
+      - "5060:5060/tcp"
+      - "8088:8088"         # ARI HTTP
+      - "10000-10100:10000-10100/udp"   # RTP media
+    volumes:
+      - ./infra/asterisk/etc:/etc/asterisk:ro
+      - openqwnt-asterisk-data:/var/lib/asterisk
+    restart: unless-stopped
+    profiles: ["voice"]
+
 volumes:
   openqwnt-orchestrator-node_modules:
     driver: local
@@ -96,3 +121,6 @@ volumes:
   openqwnt-redis-data:
     driver: local
     name: openqwnt-redis-data
+  openqwnt-asterisk-data:
+    driver: local
+    name: openqwnt-asterisk-data

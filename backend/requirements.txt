@@ -54,6 +54,8 @@ sentence-transformers
 # AI/LLM - Google ADK for agents
 google-adk
 google-generativeai
+# Live API (bidirectional speech-to-speech) — used by services/voice
+google-genai
 
 # AI/LLM - Optional providers
 openai
@@ -69,3 +71,8 @@ pytest-asyncio
 # Utilities
 pytz
 python-multipart
+
+# Voice subsystem
+twilio                # Programmable Voice + SMS (already used by orchestrator)
+aioapns               # APNs HTTP/2 client for VoIP push to the iOS app
+phonenumbers          # E.164 validation for the profile phone field

@@ -14,14 +14,16 @@ def get_db():
 def init_db():
     conn = get_db()
     c = conn.cursor()
-    
-    # Users Table
+
+    # Users Table — phone_number/voice_trading_enabled added by voice_db.init_voice_schema
     c.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id TEXT PRIMARY KEY,
             email TEXT UNIQUE,
             password TEXT,
             name TEXT,
+            phone_number TEXT,
+            voice_trading_enabled INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -51,6 +53,14 @@ def init_db():
     
     conn.commit()
     conn.close()
+
+    # Voice subsystem tables (voice_calls, ios_devices, ios_pairing_tokens) +
+    # ALTER TABLE backfills for phone_number/voice_trading_enabled on legacy DBs.
+    try:
+        from services import voice_db
+        voice_db.init_voice_schema()
+    except Exception as e:
+        print(f"[DB] Voice schema init skipped: {e}")
 
 # --- User Actions ---
 
