@@ -85,9 +85,22 @@ import {
 import { PAGE_CONTENT_CLASS } from '@/components/PageHeader';
 
 // Stores
-import { usePortfolioStore, type AssetType, type HoldingInputMode, type PortfolioHolding, ASSET_COLORS, CHART_COLORS } from '@/stores/portfolioStore';
+import { usePortfolioStore, type AssetType, type HoldingInputMode, type PortfolioHolding, type CostBasisMethod, ASSET_COLORS, CHART_COLORS } from '@/stores/portfolioStore';
 import { useAppModeStore } from '@/stores/appModeStore';
+import { useAccountStore } from '@/stores/accountStore';
 import { api } from '@/services/api';
+
+// Portfolio sub-features
+import { TradeDialog } from '@/features/portfolio/TradeDialog';
+import { ImportDialog } from '@/features/portfolio/ImportDialog';
+import { LotsTable } from '@/features/portfolio/LotsTable';
+import { RiskPanel } from '@/features/portfolio/RiskPanel';
+import { StressPanel } from '@/features/portfolio/StressPanel';
+import { MacroPanel } from '@/features/portfolio/MacroPanel';
+import { RebalancePanel } from '@/features/portfolio/RebalancePanel';
+import { AuditLogPanel } from '@/features/portfolio/AuditLogPanel';
+import { EarningsCalendar } from '@/features/portfolio/EarningsCalendar';
+import { downloadCsv, holdingsSnapshotCsv, realizedGainLossCsv } from '@/features/portfolio/csv';
 
 // ─── Asset Type Icons ───────────────────────────────────────
 
@@ -191,14 +204,63 @@ const Portfolio = () => {
   const store = usePortfolioStore();
   const { mode } = useAppModeStore();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [tradeDialog, setTradeDialog] = useState<{ holdingId: string; side: 'buy' | 'sell' } | null>(null);
+  const [expandedLots, setExpandedLots] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [loadingPrices, setLoadingPrices] = useState(false);
 
+  const toggleLots = useCallback((id: string) => {
+    setExpandedLots((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const tradeHolding = useMemo(
+    () => (tradeDialog ? store.holdings.find((h) => h.id === tradeDialog.holdingId) : null),
+    [tradeDialog, store.holdings]
+  );
+
+  const handleExportTaxCsv = useCallback(() => {
+    if (store.realizedSales.length === 0) {
+      toast.info('No realized sales yet. Sell from a holding to record realized P&L.');
+      return;
+    }
+    const csv = realizedGainLossCsv(store.realizedSales);
+    const yyyy = new Date().getFullYear();
+    downloadCsv(`openqwnt-realized-${yyyy}.csv`, csv);
+    toast.success(`Exported ${store.realizedSales.length} realized sales.`);
+  }, [store.realizedSales]);
+
+  const handleExportHoldings = useCallback(() => {
+    if (store.holdings.length === 0) {
+      toast.info('No holdings to export.');
+      return;
+    }
+    const csv = holdingsSnapshotCsv(store.holdings);
+    downloadCsv(`openqwnt-holdings-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+    toast.success(`Exported ${store.holdings.length} holdings.`);
+  }, [store.holdings]);
+
+  // Active-account scope. null = aggregate (show everything).
+  const activeAccountId = useAccountStore((s) => s.activeAccountId);
+  const activeAccount = useAccountStore((s) => s.getActiveAccount());
+
   // Use demo data when in demo mode and portfolio is empty
   const isDemo = mode === 'demo';
-  const holdings = store.holdings;
+  const allHoldings = store.holdings;
+  const holdings = useMemo(
+    () =>
+      activeAccountId
+        ? allHoldings.filter((h) => (h.accountId ?? 'default') === activeAccountId)
+        : allHoldings,
+    [allHoldings, activeAccountId]
+  );
   const hasHoldings = holdings.length > 0;
 
   usePageContext({
@@ -242,6 +304,20 @@ const Portfolio = () => {
 
   const totalPnL = totalValue - totalCost;
   const totalPnLPercent = totalCost > 0 ? (totalPnL / totalCost) * 100 : 0;
+
+  // Realized P&L (sourced from RealizedSale records — populated when sell() is called).
+  const realizedSales = store.realizedSales;
+  const realizedYtd = useMemo(() => {
+    const yearStart = Date.UTC(new Date().getUTCFullYear(), 0, 1);
+    return realizedSales.reduce(
+      (sum, r) => (r.closedAt >= yearStart ? sum + r.realizedPnL : sum),
+      0
+    );
+  }, [realizedSales]);
+  const realizedLifetime = useMemo(
+    () => realizedSales.reduce((sum, r) => sum + r.realizedPnL, 0),
+    [realizedSales]
+  );
 
   const dayChange = useMemo(() => {
     let change = 0;
@@ -356,6 +432,25 @@ const Portfolio = () => {
               <div className="flex items-center gap-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
+                    <Select
+                      value={store.costBasisMethod}
+                      onValueChange={(v) => store.setCostBasisMethod(v as CostBasisMethod)}
+                    >
+                      <SelectTrigger className="h-7 w-[110px] bg-muted/40 border-border/60 text-[11px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#1e1e2e] border-border/60">
+                        <SelectItem value="FIFO">FIFO</SelectItem>
+                        <SelectItem value="LIFO">LIFO</SelectItem>
+                        <SelectItem value="HIFO">HIFO</SelectItem>
+                        <SelectItem value="AVERAGE">Average</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TooltipTrigger>
+                  <TooltipContent>Cost-basis method for sells</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
                     <button
                       onClick={handleRefreshPrices}
                       disabled={loadingPrices}
@@ -366,6 +461,31 @@ const Portfolio = () => {
                   </TooltipTrigger>
                   <TooltipContent>Refresh prices</TooltipContent>
                 </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setImportDialogOpen(true)}
+                      className="p-1.5 rounded hover:bg-muted/60 transition-colors text-foreground/70 hover:text-foreground"
+                    >
+                      <Upload className="w-4 h-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Import CSV from broker</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={handleExportTaxCsv}
+                      className="p-1.5 rounded hover:bg-muted/60 transition-colors text-foreground/70 hover:text-foreground"
+                    >
+                      <Download className="w-4 h-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Export realized gain/loss CSV (tax)</TooltipContent>
+                </Tooltip>
+                <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+                  <ImportDialog onClose={() => setImportDialogOpen(false)} />
+                </Dialog>
                 <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
                   <DialogTrigger asChild>
                     <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
@@ -389,7 +509,7 @@ const Portfolio = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+              className="grid grid-cols-2 lg:grid-cols-5 gap-4"
             >
               <PortfolioStatCard
                 title="Total Value"
@@ -398,11 +518,18 @@ const Portfolio = () => {
                 color="blue"
               />
               <PortfolioStatCard
-                title="Total P&L"
+                title="Unrealized P&L"
                 value={formatCurrency(totalPnL)}
                 icon={totalPnL >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
                 color={totalPnL >= 0 ? 'green' : 'red'}
                 subtitle={formatPercent(totalPnLPercent)}
+              />
+              <PortfolioStatCard
+                title="Realized (YTD)"
+                value={formatCurrency(realizedYtd)}
+                icon={realizedYtd >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+                color={realizedYtd >= 0 ? 'green' : 'red'}
+                subtitle={`${store.costBasisMethod} · lifetime ${formatCurrency(realizedLifetime)}`}
               />
               <PortfolioStatCard
                 title="Day Change"
@@ -792,14 +919,43 @@ const Portfolio = () => {
                             </div>
 
                             {hasHoldings && (
-                              <div className="flex gap-2 pt-1">
+                              <div className="flex gap-1.5 pt-1">
+                                <button
+                                  onClick={() => setTradeDialog({ holdingId: h.id, side: 'buy' })}
+                                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-[11px] bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+                                >
+                                  <ArrowUpRight className="w-3 h-3" />
+                                  Buy
+                                </button>
+                                <button
+                                  onClick={() => setTradeDialog({ holdingId: h.id, side: 'sell' })}
+                                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-[11px] bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors"
+                                >
+                                  <ArrowDownRight className="w-3 h-3" />
+                                  Sell
+                                </button>
                                 <button
                                   onClick={() => store.removeHolding(h.id)}
-                                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-[11px] bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                                  title="Remove holding"
+                                  className="flex items-center justify-center px-2 py-1.5 rounded-md text-[11px] bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
                                 >
                                   <Trash2 className="w-3 h-3" />
-                                  Remove
                                 </button>
+                              </div>
+                            )}
+                            {hasHoldings && (
+                              <div className="pt-1">
+                                <button
+                                  onClick={() => toggleLots(h.id)}
+                                  className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                                >
+                                  {expandedLots.has(h.id) ? '▾ Hide' : '▸ Show'} tax lots ({h.lots?.length ?? 0})
+                                </button>
+                                {expandedLots.has(h.id) && (
+                                  <div className="mt-2">
+                                    <LotsTable lots={h.lots ?? []} currency={h.currency} />
+                                  </div>
+                                )}
                               </div>
                             )}
                           </CardContent>
@@ -831,6 +987,32 @@ const Portfolio = () => {
 
               {/* ═══ ANALYTICS TAB ═══ */}
               <TabsContent value="analytics" className="space-y-6">
+                <RiskPanel
+                  liveValuesBySymbol={Object.fromEntries(
+                    displayHoldings.map((h) => [h.symbol, h.quantity * (h.currentPrice || h.avgCost)])
+                  )}
+                  currency={store.baseCurrency}
+                />
+                <MacroPanel />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <StressPanel
+                    holdings={displayHoldings.map((h) => ({
+                      symbol: h.symbol,
+                      assetType: h.assetType,
+                      value: h.quantity * (h.currentPrice || h.avgCost),
+                    }))}
+                    currency={store.baseCurrency}
+                  />
+                  <EarningsCalendar />
+                </div>
+                <RebalancePanel
+                  positions={displayHoldings.map((h) => ({
+                    symbol: h.symbol,
+                    value: h.quantity * (h.currentPrice || h.avgCost),
+                  }))}
+                  accountId={activeAccount?.id ?? 'default'}
+                />
+                <AuditLogPanel />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* ─── Asset Type Breakdown Bar Chart ─── */}
                   <Card className="bg-card/60 backdrop-blur-sm border-border/30 shadow-trading">
@@ -1014,6 +1196,16 @@ const Portfolio = () => {
               </TabsContent>
             </Tabs>
           </div>
+          {/* ─── Trade Dialog (shared buy/sell) ─── */}
+          <Dialog open={!!tradeDialog} onOpenChange={(open) => !open && setTradeDialog(null)}>
+            {tradeDialog && tradeHolding && (
+              <TradeDialog
+                holding={tradeHolding}
+                side={tradeDialog.side}
+                onClose={() => setTradeDialog(null)}
+              />
+            )}
+          </Dialog>
         </div>
       </TooltipProvider>
     </ConfigProvider>
