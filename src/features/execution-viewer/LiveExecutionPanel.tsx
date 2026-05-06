@@ -37,6 +37,13 @@ import {
   type JournalOrder,
   type TemplateSignal,
 } from './api';
+import AdvancedOrderEntry from './AdvancedOrderEntry';
+import ApprovalQueue from './ApprovalQueue';
+import BlockTradeDialog from './BlockTradeDialog';
+import TCAPanel from './TCAPanel';
+import { useAuthStore } from '@/stores/authStore';
+import { Dialog, DialogTrigger } from '@/components/ui/dialog';
+import { Layers } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -180,7 +187,9 @@ const StatusBadge = ({ status }: { status: JournalOrder['status'] }) => {
 type OrderFilter = 'all' | 'filled' | 'pending' | 'rejected';
 
 export default function LiveExecutionPanel() {
+  const reviewer = useAuthStore((s) => s.user?.email ?? 'user');
   const [account, setAccount] = useState<AccountSnapshot | null>(null);
+  const [blockOpen, setBlockOpen] = useState(false);
   const [orders, setOrders] = useState<JournalOrder[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -529,8 +538,34 @@ export default function LiveExecutionPanel() {
                   </div>
                 </div>
               )}
+              <div className="pt-3 border-t border-border/40">
+                <AdvancedOrderEntry defaultSymbol={symbol} onSubmitted={refresh} />
+              </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Approval queue (pending agent / strategy / rebalance orders) */}
+        <ApprovalQueue reviewer={reviewer} />
+
+        {/* TCA — recent fills' transaction-cost analysis */}
+        <TCAPanel orders={orders} />
+
+        {/* Block trade — institutional multi-account allocation */}
+        <div className="flex justify-end">
+          <button
+            onClick={() => setBlockOpen(true)}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-md bg-primary/10 hover:bg-primary/20 text-primary text-xs"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            Open block trade…
+          </button>
+          <Dialog open={blockOpen} onOpenChange={setBlockOpen}>
+            <BlockTradeDialog
+              aumByAccount={{}}
+              onClose={() => setBlockOpen(false)}
+            />
+          </Dialog>
         </div>
 
         {/* Order journal */}
