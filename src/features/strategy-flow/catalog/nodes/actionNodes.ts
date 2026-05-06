@@ -149,13 +149,22 @@ export const ACTION_NODES: NodeCatalogItem[] = [
         nodeType: 'action',
         label: 'Phone Call',
         description: 'Call user with alert',
-        tooltip: 'Place an automated phone call to notify you of urgent opportunities or risks. Uses Twilio Voice API. Reads a text-to-speech message with the alert details.',
+        tooltip: 'AI realtime voice call (Gemini Live) to the user\'s phone, in-browser, or paired iOS app. Speaks the reason aloud and answers follow-up questions live with full tool access.',
         inputs: ['Trigger'],
         outputs: ['Signal'],
         category: 'actions',
         subcategory: 'Alerts',
         icon: 'Phone',
         color: '#ef4444',
-        defaultData: { actionType: 'phoneCall', phoneNumber: '', message: 'Urgent trading alert', voiceType: 'alice', urgencyLevel: 'high' },
+        defaultData: {
+            actionType: 'phoneCall',
+            mode: 'realtime',           // 'realtime' (Gemini Live) | 'tts' (legacy)
+            transport: 'twilio',        // 'twilio' | 'ios_webrtc' | 'browser_webrtc'
+            phoneNumber: '',            // empty = use profile phone_number
+            message: 'Urgent trading alert',
+            voice: 'Aoede',             // Aoede | Charon | Kore | Fenrir | Puck
+            urgencyLevel: 'high',
+            allowedActions: ['read'],   // 'read' | 'trade' (per-call gate, on top of profile.voice_trading_enabled)
+        },
     },
 ];

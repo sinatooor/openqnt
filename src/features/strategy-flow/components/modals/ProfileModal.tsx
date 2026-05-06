@@ -36,8 +36,10 @@ import {
   Key,
   Mail,
   ShieldCheck,
+  Phone,
 } from 'lucide-react';
 import { CredentialsTab } from './CredentialsTab';
+import { VoiceTab } from './VoiceTab';
 import { cn } from '@/lib/utils';
 
 interface ProfileModalProps {
@@ -142,6 +144,10 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
           <TabsTrigger value="credentials" className="flex items-center gap-1.5 text-xs">
             <Key className="w-3.5 h-3.5" />
             Credentials
+          </TabsTrigger>
+          <TabsTrigger value="voice" className="flex items-center gap-1.5 text-xs">
+            <Phone className="w-3.5 h-3.5" />
+            Voice
           </TabsTrigger>
         </TabsList>
 
@@ -346,6 +352,11 @@ export const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
             {/* ─── Credentials tab ─────────────────────────────────── */}
             <TabsContent value="credentials" className="m-0">
               <CredentialsTab />
+            </TabsContent>
+
+            {/* ─── Voice tab ───────────────────────────────────────── */}
+            <TabsContent value="voice" className="m-0">
+              <VoiceTab userId={user?.id ?? null} />
             </TabsContent>
           </div>
         </ScrollArea>

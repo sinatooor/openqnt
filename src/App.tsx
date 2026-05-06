@@ -47,6 +47,7 @@ import {
   SelectionPill,
   ArtifactRail,
 } from "./features/ai-chat";
+import { GlobalVoiceFab } from "./features/voice/GlobalVoiceFab";
 import NotFound from "./pages/NotFound";
 import Onboarding from "./pages/Onboarding";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -190,6 +191,7 @@ const GlobalOverlays = () => {
           <GlobalAiPanel />
           <ArtifactRail />
           <GlobalAiFab />
+          <GlobalVoiceFab />
           <CommandPalette />
           <SelectionPill />
         </>
