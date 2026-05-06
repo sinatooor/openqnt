@@ -37,6 +37,9 @@ import {
   type JournalOrder,
   type TemplateSignal,
 } from './api';
+import AdvancedOrderEntry from './AdvancedOrderEntry';
+import ApprovalQueue from './ApprovalQueue';
+import { useAuthStore } from '@/stores/authStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -180,6 +183,7 @@ const StatusBadge = ({ status }: { status: JournalOrder['status'] }) => {
 type OrderFilter = 'all' | 'filled' | 'pending' | 'rejected';
 
 export default function LiveExecutionPanel() {
+  const reviewer = useAuthStore((s) => s.user?.email ?? 'user');
   const [account, setAccount] = useState<AccountSnapshot | null>(null);
   const [orders, setOrders] = useState<JournalOrder[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -529,9 +533,15 @@ export default function LiveExecutionPanel() {
                   </div>
                 </div>
               )}
+              <div className="pt-3 border-t border-border/40">
+                <AdvancedOrderEntry defaultSymbol={symbol} onSubmitted={refresh} />
+              </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Approval queue (pending agent / strategy / rebalance orders) */}
+        <ApprovalQueue reviewer={reviewer} />
 
         {/* Order journal */}
         <Card className="bg-card/60 border-border/50">
