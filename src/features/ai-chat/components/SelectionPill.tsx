@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
+import { Quote } from 'lucide-react';
 import { usePanelStore } from '../state/panelStore';
 
 interface PillState {
@@ -101,9 +101,9 @@ export function SelectionPill() {
           }}
           onClick={onClick}
           style={{ left: state.x, top: state.y }}
-          className="fixed z-[460] flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-purple-500/95 hover:bg-purple-400 text-white text-[11px] font-medium shadow-lg shadow-purple-900/40 backdrop-blur-sm"
+          className="fixed z-[460] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-popover hover:bg-accent text-foreground text-[12px] font-medium shadow-lg shadow-black/30 ring-1 ring-border/60 backdrop-blur"
         >
-          <Sparkles className="w-3 h-3" />
+          <Quote className="w-3.5 h-3.5" />
           <span>Ask AI</span>
         </motion.button>
       )}

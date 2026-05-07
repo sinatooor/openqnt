@@ -16,7 +16,6 @@ import {
   MessageList,
   Composer,
   EmptyState,
-  SkillChip,
   PageContextChip,
   ContextRing,
   useAiChatStore,
@@ -30,6 +29,11 @@ interface Props {
   defaultFilter?: ChatMode;
 }
 
+// Module-level constant — Zustand's useSyncExternalStore equality check uses
+// Object.is, so any selector returning `?? []` would create a new empty array
+// on every render and trigger an infinite "getSnapshot should be cached" loop.
+const EMPTY_ITEMS: never[] = [];
+
 const AiChat = ({ defaultMode, defaultFilter }: Props = {}) => {
   const [params] = useSearchParams();
   const sessionParam = params.get('session');
@@ -40,7 +44,7 @@ const AiChat = ({ defaultMode, defaultFilter }: Props = {}) => {
   const sessions = useAiChatStore((s) => s.sessions);
   const activeId = useAiChatStore((s) => s.activeSessionId);
   const activeSession = activeId ? sessions.find((s) => s.id === activeId) : null;
-  const items = useAiChatStore((s) => (activeId ? s.items[activeId] ?? [] : []));
+  const items = useAiChatStore((s) => (activeId ? s.items[activeId] ?? EMPTY_ITEMS : EMPTY_ITEMS));
   const tokens = activeSession?.tokenCount ?? 0;
   const popoutToPanel = usePanelStore((s) => s.open_);
 
@@ -63,9 +67,8 @@ const AiChat = ({ defaultMode, defaultFilter }: Props = {}) => {
         <ConversationHistorySidebar />
 
         <main className="flex-1 flex flex-col min-w-0">
-          {/* Header bar */}
+          {/* Header bar — skill chip moved into Composer toolbar */}
           <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/60">
-            <SkillChip />
             <PageContextChip />
             <div className="ml-auto flex items-center gap-2">
               {activeSession && (

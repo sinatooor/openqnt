@@ -1,0 +1,96 @@
+/**
+ * FastAPI backend lifecycle.
+ *
+ * Spawns the bundled CPython 3.12 (or, in dev, the local conda env) running
+ * `uvicorn main:app --host 127.0.0.1 --port <ephemeral>`. OPENQWNT_DATA_DIR
+ * points the backend at the writable userData directory so it doesn't try to
+ * write into the read-only resources tree.
+ */
+
+import { ChildProcess, spawn } from 'node:child_process';
+import path from 'node:path';
+import fs from 'node:fs';
+import { paths, isDev } from '../lib/paths';
+import { attachStream, log } from '../lib/logger';
+import { pollUntilHealthy } from './health';
+import { pickFreePort, sleep } from './ports';
+
+export interface PythonHandle {
+  port: number;
+  baseUrl: string;
+  proc: ChildProcess;
+}
+
+function buildEnv(): NodeJS.ProcessEnv {
+  const p = paths();
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    OPENQWNT_DATA_DIR: p.userDataRoot,
+    OPENQWNT_DESKTOP_MODE: 'true',
+    SENTENCE_TRANSFORMERS_HOME: p.modelsDir,
+    HF_HOME: p.modelsDir,
+    PYTHONDONTWRITEBYTECODE: '1',
+    PYTHONUNBUFFERED: '1',
+  };
+
+  if (!isDev()) {
+    // In packaged builds, prepend our bundled site-packages to PYTHONPATH so the
+    // standalone CPython picks them up before any system-installed packages.
+    env.PYTHONPATH = [p.pythonLibs, env.PYTHONPATH ?? '']
+      .filter(Boolean)
+      .join(path.delimiter);
+  }
+  return env;
+}
+
+export async function startPython(): Promise<PythonHandle> {
+  const p = paths();
+  if (!fs.existsSync(p.pythonBin)) {
+    throw new Error(
+      `Python interpreter not found at ${p.pythonBin}. ` +
+      `Run \`bun run electron:bundle-python\` (packaged) or set up the conda env (dev).`,
+    );
+  }
+
+  const port = await pickFreePort();
+  const env = buildEnv();
+
+  log('backend', `Spawning uvicorn on 127.0.0.1:${port} (cwd=${p.backendDir})`);
+  const proc = spawn(
+    p.pythonBin,
+    [
+      '-m', 'uvicorn',
+      'main:app',
+      '--host', '127.0.0.1',
+      '--port', String(port),
+      '--no-access-log',
+      '--log-level', 'info',
+    ],
+    {
+      cwd: p.backendDir,
+      env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    },
+  );
+
+  attachStream('backend', proc.stdout);
+  attachStream('backend', proc.stderr);
+  proc.on('exit', (code, sig) => log('backend', `exited code=${code} signal=${sig}`));
+
+  // /health responds quickly once the FastAPI startup events have run; the
+  // first `init_db()` + Gemini-config print can take a couple seconds.
+  const baseUrl = `http://127.0.0.1:${port}`;
+  await pollUntilHealthy(`${baseUrl}/health`, { timeoutMs: 60_000, intervalMs: 250 });
+
+  return { port, baseUrl, proc };
+}
+
+export async function stopPython(handle: PythonHandle): Promise<void> {
+  if (handle.proc.exitCode !== null) return;
+  handle.proc.kill('SIGTERM');
+  for (let i = 0; i < 50; i++) {
+    if (handle.proc.exitCode !== null) return;
+    await sleep(100);
+  }
+  handle.proc.kill('SIGKILL');
+}

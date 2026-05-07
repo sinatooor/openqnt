@@ -27,8 +27,10 @@ from typing import Any
 
 from sandbox import ExecuteRequest, execute_python
 
+import os
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DYNAMIC_TOOLS_DIR = REPO_ROOT / "agents" / "tools" / "dynamic"
+_DATA_DIR = Path(os.environ.get("OPENQWNT_DATA_DIR", str(REPO_ROOT)))
+DYNAMIC_TOOLS_DIR = _DATA_DIR / "agents" / "tools" / "dynamic"
 INDEX_FILE = DYNAMIC_TOOLS_DIR / "_index.json"
 
 _NAME_RE = re.compile(r"^[a-z][a-z0-9_]{1,63}$")

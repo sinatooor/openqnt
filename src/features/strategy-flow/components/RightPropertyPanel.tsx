@@ -37,6 +37,7 @@ import { useStrategyFlowStore, selectSelectedNode } from '../store/strategyFlowS
 import { useExecutionStore, selectNodeExecution, type NodeExecutionStatus } from '../store/executionStore';
 import { useWorkflowManagerStore } from '../store/workflowManagerStore';
 import { listTerminalTools } from '@/features/terminal/agentTools/registry';
+import { orchestratorBase } from '@/lib/runtimeConfig';
 import {
   IndicatorNodeData,
   ActionNodeData,
@@ -1221,7 +1222,7 @@ User request: ${aiPrompt}`;
 
         // Call AI service (mocking for now, or using a generic analyze call)
         // In a real app, this would be a dedicated endpoint
-        const response = await fetch(`${import.meta.env.VITE_ORCHESTRATOR_URL || "http://localhost:3000"}/api/ai/generate-code`, {
+        const response = await fetch(`${orchestratorBase()}/api/ai/generate-code`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ prompt: systemPrompt, language: data.language || 'python' })

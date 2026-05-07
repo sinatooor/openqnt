@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { apiBase } from '@/lib/runtimeConfig';
 interface Trade {
   id: string;
   symbol: string;
@@ -68,7 +69,7 @@ interface JournalModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+const API_BASE_URL = apiBase();
 
 async function fetchTrades(): Promise<Trade[]> {
   const response = await fetch(`${API_BASE_URL}/api/trades`);

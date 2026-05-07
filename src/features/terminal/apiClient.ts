@@ -17,9 +17,9 @@
 
 import { getActiveDataSource } from '@/stores/dataSourceStore';
 
+import { apiBase } from '@/lib/runtimeConfig';
 const BACKEND_URL =
-  (import.meta.env?.VITE_BACKEND_URL as string | undefined) ||
-  "http://localhost:8000";
+  apiBase();
 
 /** How long we wait before giving up on a backend call (ms). */
 const DEFAULT_TIMEOUT_MS = 10_000;

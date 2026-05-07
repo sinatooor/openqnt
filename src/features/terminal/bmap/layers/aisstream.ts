@@ -8,6 +8,7 @@
 
 import type { FeatureCollection, Feature, Point } from 'geojson';
 
+import { apiBase } from '@/lib/runtimeConfig';
 interface VesselState {
   mmsi: number;
   lat: number;
@@ -21,7 +22,7 @@ interface VesselState {
 }
 
 const BACKEND_URL =
-  (import.meta.env?.VITE_BACKEND_URL as string | undefined) || 'http://localhost:8000';
+  apiBase();
 
 function wsUrl(path: string): string {
   const u = new URL(BACKEND_URL);

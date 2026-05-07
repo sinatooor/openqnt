@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { api } from '../services/api';
 
+import { orchestratorBase } from '@/lib/runtimeConfig';
 export interface UserProfile {
     id: string;
     name: string;
@@ -45,7 +46,7 @@ const DEFAULT_SETTINGS: UserSettings = {
     autoSave: true,
 };
 
-const BACKEND_URL = import.meta.env.VITE_ORCHESTRATOR_URL || "http://localhost:3000";
+const BACKEND_URL = orchestratorBase();
 
 export const useUserProfile = () => {
     const [user, setUser] = useState<UserProfile | null>(null);

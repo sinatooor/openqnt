@@ -18,6 +18,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { apiBase } from '@/lib/runtimeConfig';
 import {
   Activity,
   AlertCircle,
@@ -32,8 +33,7 @@ import {
 // ── config ────────────────────────────────────────────────────────────
 
 const API_BASE =
-  (import.meta as any).env?.VITE_BACKEND_URL?.replace(/\/$/, '') ??
-  'http://localhost:8000';
+  apiBase();
 
 const wsBase = (http: string) => http.replace(/^http/i, 'ws');
 

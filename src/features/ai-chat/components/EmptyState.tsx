@@ -6,11 +6,11 @@
  */
 
 import { motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
 import { usePanelStore } from '../state/panelStore';
 import { getSkill } from '../skills/registry';
 import { getMode } from '../transports/modeRegistry';
 import { useChatTransport } from '../transports/useChatTransport';
+import { OpenQntMark } from '@/components/OpenQntMark';
 
 const DEFAULT_PROMPTS: Record<string, string[]> = {
   ask: [
@@ -48,21 +48,29 @@ export function EmptyState() {
 
   const prompts = skill?.suggestedPrompts ?? DEFAULT_PROMPTS[mode] ?? DEFAULT_PROMPTS.ask;
 
-  const Icon = skill?.icon ?? Sparkles;
+  const SkillIcon = skill?.icon;
   const label = skill ? `${skill.label} · ${descriptor.label}` : descriptor.label;
   const subtitle = skill?.shortDescription ?? descriptor.description;
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-5 select-none px-4 py-8">
       <div className="relative">
-        <div
-          className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
-            skill?.accentColor ??
-            'bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/20 text-purple-400'
-          }`}
-        >
-          <Icon className="w-7 h-7" />
-        </div>
+        {SkillIcon ? (
+          <div
+            className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
+              skill?.accentColor ??
+              'bg-white/[0.04] border border-white/[0.08] text-foreground/80'
+            }`}
+          >
+            <SkillIcon className="w-7 h-7" />
+          </div>
+        ) : (
+          // No active skill → use the OpenQnt brand mark, monochrome on a
+          // neutral chip so it reads on dark + light themes.
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-white/[0.04] border border-white/[0.08] text-foreground">
+            <OpenQntMark size={32} />
+          </div>
+        )}
       </div>
       <div className="text-center space-y-1">
         <h2 className="text-base font-semibold text-foreground">{label}</h2>

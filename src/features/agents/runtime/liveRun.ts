@@ -16,10 +16,10 @@
 import { useAgentMonitorStore } from '../store/agentMonitorStore';
 import type { ArtifactKind, RunStatus, StreamEventKind } from '../types';
 
+import { apiBase } from '@/lib/runtimeConfig';
 // ── config ────────────────────────────────────────────────────────────
 
-const API_BASE = (import.meta as any).env?.VITE_BACKEND_URL?.replace(/\/$/, '')
-  ?? 'http://localhost:8000';
+const API_BASE = apiBase();
 
 function wsBaseFor(httpBase: string): string {
   return httpBase.replace(/^http/i, 'ws');

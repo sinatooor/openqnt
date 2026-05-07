@@ -89,6 +89,16 @@ test-results/
 playwright-report/
 
 # =============================================================================
+# Electron desktop build outputs
+#   - resources/  : staged tree the .app loads from (Python interp, Postgres,
+#                   Redis, orchestrator binaries, frontend dist) — produced by
+#                   `bun run electron:bundle-*`
+#   - release/    : final .dmg / .zip artifacts written by electron-builder
+# =============================================================================
+resources/
+release/
+
+# =============================================================================
 # Things we DO want tracked but the old gitignore was hiding:
 #   - .github/   (CI workflows)
 #   - docs/      (architecture.md, template docs)

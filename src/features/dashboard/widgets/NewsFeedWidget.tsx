@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { terminalApiGet } from '@/features/terminal/apiClient';
 
+import { orchestratorBase } from '@/lib/runtimeConfig';
 interface NewsItem {
   id: string | number | null;
   title: string;
@@ -30,7 +31,7 @@ interface TerminalNewsResponse {
 }
 
 const ORCHESTRATOR_URL =
-  (import.meta.env?.VITE_ORCHESTRATOR_URL as string | undefined) || 'http://localhost:3000';
+  orchestratorBase();
 
 function classifySentiment(headline: string): 'bullish' | 'bearish' | 'neutral' {
   const h = headline.toLowerCase();

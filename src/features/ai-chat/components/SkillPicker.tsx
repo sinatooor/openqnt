@@ -30,7 +30,9 @@ export function SkillPicker({ onClose }: Props) {
   return (
     <div
       ref={ref}
-      className="absolute top-full right-0 mt-1 z-[510] w-72 rounded-lg bg-[#15151b] border border-white/10 shadow-xl overflow-hidden"
+      // Open upwards because the SkillChip lives in the Composer's bottom
+      // toolbar — a downward menu would land below the viewport.
+      className="absolute bottom-full left-0 mb-2 z-[510] w-72 rounded-lg bg-[#15151b] border border-white/10 shadow-xl overflow-hidden"
     >
       <div className="px-3 py-2 border-b border-white/[0.06] text-[10px] uppercase tracking-wider text-white/40">
         Skills

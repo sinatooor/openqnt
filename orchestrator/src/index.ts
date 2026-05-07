@@ -7,7 +7,69 @@ import './workers/notificationWorker.js';
 import './workers/dataIngestionWorker.js';
 import './workers/agentRunWorker.js';
 import { executeStrategy } from './services/executionService.js';
+import { prisma } from './config/database.js';
 import type { Bar } from './engine/interpreter.js';
+
+/**
+ * Desktop builds bundle a freshly-initialized Postgres with no schema. On the
+ * first launch we materialize the schema by running the creation SQL produced
+ * at bundle time by `prisma migrate diff --from-empty`. Idempotent: a probe
+ * for any one Prisma-managed table short-circuits if the schema is already
+ * there.
+ */
+async function ensureDesktopSchema(): Promise<void> {
+    if (process.env.OPENQWNT_DESKTOP_MODE !== 'true') return;
+    try {
+        // Probe — if the users table exists the schema has already been
+        // applied. Prisma maps `User` model → "users" via @@map.
+        await prisma.$queryRawUnsafe('SELECT 1 FROM "users" LIMIT 1');
+        logger.info('Desktop schema already present; skipping bootstrap.');
+        return;
+    } catch {
+        // continue → apply schema
+    }
+
+    let DESKTOP_SCHEMA_SQL = '';
+    try {
+        const mod = await import('./services/desktopSchema.js');
+        DESKTOP_SCHEMA_SQL = mod.DESKTOP_SCHEMA_SQL;
+    } catch {
+        logger.warn('desktopSchema.js not bundled — DB-backed routes will fail until migrations run');
+        return;
+    }
+
+    if (!DESKTOP_SCHEMA_SQL.trim()) return;
+
+    logger.info('Desktop mode: bootstrapping embedded Postgres schema…');
+    // Postgres prepared statements (which Prisma uses under $executeRawUnsafe)
+    // reject multi-statement strings, so split each DDL statement out and run
+    // it separately. The Prisma-emitted SQL terminates each statement with
+    // `;\n` and never has unquoted `;` mid-statement.
+    const stmts = DESKTOP_SCHEMA_SQL
+        .split(/;[ \t]*\n/)
+        .map((s) => s.trim())
+        // drop pure-comment chunks left over after splitting
+        .filter((s) => s.length > 0 && !/^(--[^\n]*\n*)+$/.test(s));
+    let applied = 0;
+    let skipped = 0;
+    for (const stmt of stmts) {
+        try {
+            await prisma.$executeRawUnsafe(stmt);
+            applied++;
+        } catch (err) {
+            const msg = (err as Error).message || '';
+            // "already exists" is benign on the second pass.
+            if (msg.includes('already exists')) {
+                skipped++;
+            } else {
+                logger.warn({ err: msg, stmt: stmt.slice(0, 120) }, 'DDL statement failed (continuing)');
+            }
+        }
+    }
+    logger.info({ applied, skipped, total: stmts.length }, 'Desktop schema bootstrap complete.');
+}
+
+await ensureDesktopSchema().catch((e) => logger.error({ err: e }, 'desktop schema bootstrap failed'));
 
 const app = createApp();
 

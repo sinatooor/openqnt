@@ -5,23 +5,28 @@
  */
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Loader2, Send, X } from 'lucide-react';
+import { Loader2, Send, X, Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAiChatStore } from '../state/aiChatStore';
 import { usePanelStore } from '../state/panelStore';
+import { useAuthStore } from '@/stores/authStore';
 import { useChatTransport } from '../transports/useChatTransport';
 import { getMode } from '../transports/modeRegistry';
 import { ContextRing } from './ContextRing';
 import { ModeBar } from './ModeBar';
+import { SkillChip } from './SkillChip';
+import { VoicePanel } from '@/features/voice/VoicePanel';
 import { MAX_CONTEXT_TOKENS } from '../state/contextWindow';
 import { toast } from 'sonner';
 
 export function Composer({ autoFocus = true }: { autoFocus?: boolean }) {
   const [input, setInput] = useState('');
+  const [voiceOpen, setVoiceOpen] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const mode = usePanelStore((s) => s.mode);
   const descriptor = getMode(mode);
+  const userId = useAuthStore((s) => s.user?.id ?? null);
 
   const activeSession = useAiChatStore((s) =>
     s.activeSessionId ? s.sessions.find((x) => x.id === s.activeSessionId) ?? null : null,
@@ -132,7 +137,29 @@ export function Composer({ autoFocus = true }: { autoFocus?: boolean }) {
           )}
         </div>
       </form>
-      <ModeBar />
+      {/* Bottom toolbar: skill picker on the left, mode pills, voice mic on
+          the right — replaces the separate Talk-to-AI FAB. */}
+      <div className="flex items-center justify-between gap-2 mt-1.5">
+        <div className="flex items-center gap-1 flex-wrap">
+          <SkillChip />
+          <ModeBar inline />
+        </div>
+        <button
+          type="button"
+          onClick={() => setVoiceOpen(true)}
+          aria-label="Talk to AI"
+          title="Talk to AI"
+          className="h-7 w-7 rounded-full flex items-center justify-center bg-white/[0.04] hover:bg-purple-500/15 border border-white/[0.06] text-white/60 hover:text-purple-300 transition-colors shrink-0"
+        >
+          <Mic className="w-3.5 h-3.5" />
+        </button>
+      </div>
+      <VoicePanel
+        open={voiceOpen}
+        onClose={() => setVoiceOpen(false)}
+        userId={userId}
+        openingMessage="Hi — what would you like to look at?"
+      />
     </div>
   );
 }

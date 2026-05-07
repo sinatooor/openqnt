@@ -6,6 +6,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { API_BASE_URL } from '../services/api';
+import { isDesktop } from '../lib/runtimeConfig';
 
 interface User {
     id: string;
@@ -30,13 +31,42 @@ interface AuthState {
     clearError: () => void;
 }
 
+// Seed an offline "local" user so the app's auth gates unblock immediately
+// in two cases:
+//   - desktop build: only one user, no real login server reachable
+//   - Vite dev mode: orchestrator skips auth and the frontend doesn't have
+//     a working login UI to walk through
+// In the production web build (DEV=false, isDesktop=false) the user MUST
+// sign in through the orchestrator.
+const SHOULD_AUTOLOGIN =
+    isDesktop() ||
+    Boolean((import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV);
+
+const DESKTOP_LOCAL_USER: User = {
+    id: 'local-user',
+    email: 'you@openqnt.local',
+    name: 'You',
+    subscriptionTier: 'pro',
+};
+
+const initialAuth = SHOULD_AUTOLOGIN
+    ? {
+        user: DESKTOP_LOCAL_USER,
+        accessToken: 'desktop-local',
+        refreshToken: null,
+        isAuthenticated: true,
+    }
+    : {
+        user: null as User | null,
+        accessToken: null as string | null,
+        refreshToken: null as string | null,
+        isAuthenticated: false,
+    };
+
 export const useAuthStore = create<AuthState>()(
     persist(
         (set, get) => ({
-            user: null,
-            accessToken: null,
-            refreshToken: null,
-            isAuthenticated: false,
+            ...initialAuth,
             isLoading: false,
             error: null,
 
@@ -157,6 +187,16 @@ export const useAuthStore = create<AuthState>()(
                 refreshToken: state.refreshToken,
                 isAuthenticated: state.isAuthenticated,
             }),
+            // After rehydration: in desktop / dev mode, force the local-user
+            // state even if a stale `isAuthenticated: false` was persisted
+            // from a previous failed login attempt.
+            onRehydrateStorage: () => (state) => {
+                if (state && SHOULD_AUTOLOGIN && !state.isAuthenticated) {
+                    state.user = DESKTOP_LOCAL_USER;
+                    state.accessToken = 'desktop-local';
+                    state.isAuthenticated = true;
+                }
+            },
         }
     )
 );

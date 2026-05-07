@@ -10,8 +10,9 @@ import { Calendar, Briefcase } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { usePortfolioStore } from '@/stores/portfolioStore';
 
+import { apiBase } from '@/lib/runtimeConfig';
 const API_BASE =
-  (import.meta as any).env?.VITE_BACKEND_URL?.replace(/\/$/, '') ?? 'http://localhost:8000';
+  apiBase();
 
 export interface EarningsEvent {
   symbol: string;

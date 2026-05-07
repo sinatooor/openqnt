@@ -17,11 +17,25 @@ from typing import Any, Dict, List, Optional, Tuple
 from functools import lru_cache
 
 
-# Path to the frontend node catalog (relative to backend/)
+import os
+
+# Path to the frontend node catalog (relative to backend/) — read-only.
 CATALOG_DIR = Path(__file__).parent.parent.parent / "src" / "features" / "strategy-flow" / "catalog" / "nodes"
 
-# Fallback: if no TS files found, use a cached JSON export
-CACHED_CATALOG_PATH = Path(__file__).parent / "node_catalog_cache.json"
+# Fallback: if no TS files found, use a cached JSON export. Read first from the
+# read-only bundle (alongside this file); writes go to OPENQWNT_DATA_DIR in
+# desktop builds so the read-only resources tree isn't touched.
+_BUNDLED_CACHE = Path(__file__).parent / "node_catalog_cache.json"
+_DATA_DIR = Path(os.environ.get("OPENQWNT_DATA_DIR", str(Path(__file__).parent)))
+CACHED_CATALOG_PATH = _DATA_DIR / "node_catalog_cache.json"
+if not CACHED_CATALOG_PATH.exists() and _BUNDLED_CACHE.exists():
+    # First-run seed: copy from bundle into writable data dir.
+    try:
+        CACHED_CATALOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        CACHED_CATALOG_PATH.write_bytes(_BUNDLED_CACHE.read_bytes())
+    except Exception:
+        # Fall back to read-only path; writes will fail loudly later, which is fine.
+        CACHED_CATALOG_PATH = _BUNDLED_CACHE
 
 
 # ============================================================

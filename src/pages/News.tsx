@@ -41,6 +41,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { apiBase } from '@/lib/runtimeConfig';
 
 interface NewsArticle {
     id: string;
@@ -134,7 +135,7 @@ export default function News() {
         try {
             setLoading(true);
             setError(null);
-            const backendUrl = import.meta.env.VITE_PYTHON_BACKEND_URL || 'http://localhost:8000';
+            const backendUrl = apiBase();
             const params = new URLSearchParams({ query, category: cat });
             const response = await fetch(`${backendUrl}/api/news/?${params}`);
             if (!response.ok) {

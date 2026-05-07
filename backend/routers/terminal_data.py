@@ -1015,6 +1015,180 @@ async def get_sectors() -> Dict[str, Any]:
         raise HTTPException(502, f"sectors fetch failed: {e}")
 
 
+@router.get("/fear-greed")
+async def get_fear_greed() -> Dict[str, Any]:
+    """
+    CNN-style Fear & Greed index (0-100), computed from real yfinance data.
+
+    The CNN methodology averages 7 equally-weighted components: Momentum,
+    Strength, Breadth, Put/Call, Volatility, Safe-Haven Demand, Junk-Bond
+    Demand. We compute 6 of them — Put/Call is omitted because reliable
+    free-tier put/call ratio data isn't on yfinance — and average to a 0-100
+    score. Each component is clamped & linearly mapped from a fear/greed
+    threshold pair to [0, 100], where 0 = extreme fear, 100 = extreme greed.
+
+    Refresh cadence: caller-controlled. Single yfinance batch download
+    (~6mo daily bars) keeps the call light enough to poll every minute.
+    """
+    yf = _yf()
+    if yf is None:
+        raise HTTPException(503, "yfinance unavailable")
+
+    def _clamp(v: float, lo: float = 0.0, hi: float = 100.0) -> float:
+        return max(lo, min(hi, v))
+
+    def _lerp_to_score(value: float, fear: float, greed: float) -> float:
+        """Map a measurement onto 0..100 where `fear` → 0 and `greed` → 100."""
+        if greed == fear:
+            return 50.0
+        pct = (value - fear) / (greed - fear)
+        return _clamp(pct * 100.0)
+
+    def _build() -> Dict[str, Any]:
+        # Pull ~6 months of daily bars in a single request.
+        try:
+            df = yf.download(
+                "SPY RSP ^VIX TLT HYG LQD",
+                period="6mo",
+                interval="1d",
+                progress=False,
+                group_by="ticker",
+                auto_adjust=False,
+                threads=True,
+            )
+        except Exception as e:
+            logger.warning("fear-greed fetch failed: %s", e)
+            df = None
+
+        def _close(symbol: str):
+            try:
+                return df[symbol]["Close"].dropna() if df is not None else None
+            except Exception:
+                return None
+
+        spy = _close("SPY")
+        rsp = _close("RSP")
+        vix = _close("^VIX")
+        tlt = _close("TLT")
+        hyg = _close("HYG")
+        lqd = _close("LQD")
+
+        components: List[Dict[str, Any]] = []
+
+        # 1. Stock Price Momentum — SPY vs 125-day SMA
+        if spy is not None and len(spy) >= 125:
+            sma125 = float(spy.iloc[-125:].mean())
+            last = float(spy.iloc[-1])
+            dev_pct = (last - sma125) / sma125 * 100.0
+            score = _lerp_to_score(dev_pct, fear=-5.0, greed=5.0)
+            components.append({
+                "id": "momentum",
+                "label": "Stock Price Momentum",
+                "description": "S&P 500 vs its 125-day moving average.",
+                "score": round(score, 1),
+                "raw": {"deviation_pct": round(dev_pct, 2)},
+            })
+
+        # 2. Stock Price Strength — SPY position inside its 52-week range.
+        if spy is not None and len(spy) >= 30:
+            window = spy.iloc[-min(252, len(spy)):]
+            hi, lo = float(window.max()), float(window.min())
+            last = float(spy.iloc[-1])
+            score = _clamp(((last - lo) / (hi - lo) * 100.0)) if hi > lo else 50.0
+            components.append({
+                "id": "strength",
+                "label": "Stock Price Strength",
+                "description": "SPY's position within its 52-week high/low range (proxy for new-highs vs new-lows breadth).",
+                "score": round(score, 1),
+                "raw": {"position_in_range": round((last - lo) / (hi - lo), 3) if hi > lo else None},
+            })
+
+        # 3. Stock Price Breadth — equal-weight RSP vs cap-weight SPY (30d).
+        if spy is not None and rsp is not None and len(spy) >= 30 and len(rsp) >= 30:
+            spy_30 = float(spy.iloc[-1] / spy.iloc[-30] - 1) * 100.0
+            rsp_30 = float(rsp.iloc[-1] / rsp.iloc[-30] - 1) * 100.0
+            spread = rsp_30 - spy_30  # positive = breadth wide (small caps participating)
+            score = _lerp_to_score(spread, fear=-2.0, greed=2.0)
+            components.append({
+                "id": "breadth",
+                "label": "Stock Price Breadth",
+                "description": "Equal-weight RSP vs cap-weight SPY (30-day) — proxy for the McClellan Summation.",
+                "score": round(score, 1),
+                "raw": {"rsp_minus_spy_pct": round(spread, 2)},
+            })
+
+        # 4. Market Volatility — VIX vs its 50-day SMA (inverted: high VIX = fear).
+        if vix is not None and len(vix) >= 50:
+            sma50 = float(vix.iloc[-50:].mean())
+            last = float(vix.iloc[-1])
+            dev_pct = (last - sma50) / sma50 * 100.0
+            # +50% above SMA → fear (0); -50% below → greed (100).
+            score = _lerp_to_score(-dev_pct, fear=-50.0, greed=50.0)
+            components.append({
+                "id": "volatility",
+                "label": "Market Volatility",
+                "description": "CBOE VIX vs its 50-day moving average (high VIX = fear).",
+                "score": round(score, 1),
+                "raw": {"vix": round(last, 2), "vix_sma50_dev_pct": round(dev_pct, 2)},
+            })
+
+        # 5. Safe Haven Demand — SPY 20d return vs TLT 20d return.
+        if spy is not None and tlt is not None and len(spy) >= 20 and len(tlt) >= 20:
+            spy_20 = float(spy.iloc[-1] / spy.iloc[-20] - 1) * 100.0
+            tlt_20 = float(tlt.iloc[-1] / tlt.iloc[-20] - 1) * 100.0
+            spread = spy_20 - tlt_20
+            score = _lerp_to_score(spread, fear=-5.0, greed=5.0)
+            components.append({
+                "id": "safe_haven",
+                "label": "Safe-Haven Demand",
+                "description": "SPY 20-day return minus long-bond TLT 20-day return.",
+                "score": round(score, 1),
+                "raw": {"spy_minus_tlt_pct": round(spread, 2)},
+            })
+
+        # 6. Junk Bond Demand — HYG 20d return vs LQD 20d return (positive = risk-on).
+        if hyg is not None and lqd is not None and len(hyg) >= 20 and len(lqd) >= 20:
+            hyg_20 = float(hyg.iloc[-1] / hyg.iloc[-20] - 1) * 100.0
+            lqd_20 = float(lqd.iloc[-1] / lqd.iloc[-20] - 1) * 100.0
+            spread = hyg_20 - lqd_20
+            score = _lerp_to_score(spread, fear=-1.0, greed=1.0)
+            components.append({
+                "id": "junk_bond",
+                "label": "Junk-Bond Demand",
+                "description": "HYG (high-yield) 20-day return minus LQD (investment grade) — narrow spread = fear.",
+                "score": round(score, 1),
+                "raw": {"hyg_minus_lqd_pct": round(spread, 2)},
+            })
+
+        # Equal-weighted average of computed components.
+        if components:
+            score = sum(c["score"] for c in components) / len(components)
+        else:
+            score = 50.0
+        score = round(score, 1)
+
+        if score < 25:    label = "Extreme Fear"
+        elif score < 50:  label = "Fear"
+        elif score < 75:  label = "Greed"
+        else:             label = "Extreme Greed"
+
+        return {
+            "source": "yfinance",
+            "score": score,
+            "label": label,
+            "components": components,
+            # Caller can show "computed N/7" so the missing Put/Call is honest.
+            "components_computed": len(components),
+            "components_total": 7,
+            "missing": ["put_call"],
+        }
+
+    try:
+        return await _run(_build)
+    except Exception as e:
+        raise HTTPException(502, f"fear-greed failed: {e}")
+
+
 @router.get("/sentiment")
 async def get_sentiment() -> Dict[str, Any]:
     """

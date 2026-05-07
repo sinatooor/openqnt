@@ -10,9 +10,9 @@
 import { useEffect, useState } from 'react';
 import { Activity, AlertCircle, Wrench, RotateCcw } from 'lucide-react';
 
+import { apiBase } from '@/lib/runtimeConfig';
 const API_BASE =
-  (import.meta as any).env?.VITE_BACKEND_URL?.replace(/\/$/, '') ??
-  'http://localhost:8000';
+  apiBase();
 
 interface Summary {
   since: string | null;

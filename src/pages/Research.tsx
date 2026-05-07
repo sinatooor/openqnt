@@ -33,6 +33,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { PAGE_CONTENT_CLASS } from '@/components/PageHeader';
 import { cn } from '@/lib/utils';
 
+import { orchestratorBase } from '@/lib/runtimeConfig';
 /* -------------------------------------------------------------------------- */
 /*  Tool catalog                                                              */
 /* -------------------------------------------------------------------------- */
@@ -84,7 +85,7 @@ const STRATEGY_OPTIONS = [
     { id: 'vix_calc', name: 'VIX Calculator', params: { windowDays: 30 } },
 ];
 
-const backendUrl = import.meta.env.VITE_ORCHESTRATOR_URL || 'http://localhost:3001';
+const backendUrl = orchestratorBase() || 'http://localhost:3001';
 
 async function researchPost(endpoint: string, body: Record<string, any>) {
     const resp = await fetch(`${backendUrl}/api/research/${endpoint}`, {

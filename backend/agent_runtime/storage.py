@@ -29,7 +29,12 @@ from typing import Any, Iterable
 
 # Repo root is two parents up from this file (backend/agent_runtime/storage.py)
 REPO_ROOT = Path(__file__).resolve().parents[2]
-AGENTS_ROOT = REPO_ROOT / "agents"
+
+# In desktop builds OPENQWNT_DATA_DIR points at a writable user-data dir. When
+# unset, write into the repo root so `scripts/start-all.sh` works unchanged.
+_DATA_DIR = Path(os.environ.get("OPENQWNT_DATA_DIR", str(REPO_ROOT)))
+AGENTS_ROOT = _DATA_DIR / "agents"
+AGENTS_ROOT.mkdir(parents=True, exist_ok=True)
 
 BOSS_ID = "boss"
 QUANTS_DIR = "quants"
