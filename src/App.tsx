@@ -47,7 +47,8 @@ import {
   SelectionPill,
   ArtifactRail,
 } from "./features/ai-chat";
-import { GlobalVoiceFab } from "./features/voice/GlobalVoiceFab";
+// GlobalVoiceFab removed — voice mic now lives inside the Composer toolbar
+// next to the send button (see Composer.tsx).
 import NotFound from "./pages/NotFound";
 import Onboarding from "./pages/Onboarding";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -90,9 +91,13 @@ const AppRoutes = () => {
   useEffect(() => {
     // Both stores use zustand/persist — they hydrate synchronously on import,
     // but React may not have the values on the very first render.
-    // A micro-task delay is enough to let the persisted state settle.
-    const id = requestAnimationFrame(() => setHydrated(true));
-    return () => cancelAnimationFrame(id);
+    // We previously used requestAnimationFrame here, but rAF is throttled by
+    // browsers when the tab is hidden (background tab, OS app switch, an
+    // automation host with no visible window). That left the BootSplash
+    // permanently visible on app launch in those contexts. setTimeout(0)
+    // fires regardless of visibility.
+    const id = setTimeout(() => setHydrated(true), 0);
+    return () => clearTimeout(id);
   }, []);
 
   // Reconcile any data the user has configured but not yet fetched this
@@ -191,7 +196,6 @@ const GlobalOverlays = () => {
           <GlobalAiPanel />
           <ArtifactRail />
           <GlobalAiFab />
-          <GlobalVoiceFab />
           <CommandPalette />
           <SelectionPill />
         </>

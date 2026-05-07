@@ -57,12 +57,17 @@ try:
 except Exception as e:
     print(f"DB Init Error: {e}")
 
-# Start Market Data Scheduler (auto-refresh every 5 minutes)
-try:
-    from market_data_scheduler import start_scheduler
-    start_scheduler()
-except Exception as e:
-    print(f"Warning: Market data scheduler failed to start: {e}")
+# Start Market Data Scheduler (auto-refresh every 5 minutes).
+# Skip in desktop mode — many users on residential IPs hammering yfinance every
+# 5 min trips rate limits and isn't useful for a single-user desktop session.
+if os.environ.get("OPENQWNT_DESKTOP_MODE") != "true":
+    try:
+        from market_data_scheduler import start_scheduler
+        start_scheduler()
+    except Exception as e:
+        print(f"Warning: Market data scheduler failed to start: {e}")
+else:
+    print("[desktop] Market data scheduler disabled (OPENQWNT_DESKTOP_MODE=true)")
 
 # ============================================================
 # LLM PROVIDER CONFIGURATION
@@ -390,19 +395,27 @@ async def export_strategy(req: ExportRequest):
 
 # CORS configuration — restricted to orchestrator and internal Docker network
 # Frontend should NEVER call the Python backend directly; always go through the orchestrator.
+# Exception: desktop builds load the renderer from app:// or file:// (Origin: "null")
+# and the backend binds 127.0.0.1, so allow-all is safe there.
 ALLOWED_ORIGINS = [
     os.getenv("ORCHESTRATOR_URL", "http://localhost:3000"),
     "http://openqwnt-orchestrator:3000",   # Docker internal
-    "http://orchestrator:3000",         # Docker service name
-    "http://localhost:5173",            # Allow frontend in dev for backwards compat
+    "http://orchestrator:3000",            # Docker service name
+    "http://localhost:5173",               # Allow frontend in dev for backwards compat
+    "app://localhost",                     # Electron custom protocol
+    "null",                                # file:// renderer
 ]
+
+if os.environ.get("OPENQWNT_DESKTOP_MODE") == "true":
+    _cors_kwargs = dict(allow_origins=["*"], allow_credentials=False)
+else:
+    _cors_kwargs = dict(allow_origins=ALLOWED_ORIGINS, allow_credentials=True)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    **_cors_kwargs,
 )
 
 # Log LLM configuration on startup

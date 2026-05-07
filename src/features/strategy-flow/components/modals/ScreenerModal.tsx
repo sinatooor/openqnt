@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { apiBase } from '@/lib/runtimeConfig';
 interface ScreenerResult {
   symbol: string;
   name: string;
@@ -85,7 +86,7 @@ export const ScreenerModal = ({ open, onOpenChange, onSelectSymbol }: ScreenerMo
   const [isScanning, setIsScanning] = useState(false);
   const [lastScan, setLastScan] = useState<Date | null>(null);
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+  const backendUrl = apiBase();
 
   const runScreener = useCallback(async () => {
     setIsScanning(true);

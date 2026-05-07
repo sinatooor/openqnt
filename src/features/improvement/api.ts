@@ -1,10 +1,10 @@
+import { apiBase } from '@/lib/runtimeConfig';
 /**
  * Thin client for /api/improvement/* — Phase I self-improvement loop.
  */
 
 const API_BASE =
-  (import.meta as any).env?.VITE_BACKEND_URL?.replace(/\/$/, '') ??
-  'http://localhost:8000';
+  apiBase();
 
 export interface ImprovementSeed {
   symbol: string;

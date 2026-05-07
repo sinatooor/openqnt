@@ -1,10 +1,17 @@
+import os
 import sqlite3
 import json
 import uuid
 from datetime import datetime
+from pathlib import Path
 from typing import List, Dict, Optional, Any
 
-DB_NAME = "strategies.db"
+# In desktop builds, OPENQWNT_DATA_DIR points at a writable user-data directory.
+# When unset, fall back to the legacy in-tree location so dev `scripts/start-all.sh`
+# behavior is unchanged.
+_DATA_DIR = Path(os.environ.get("OPENQWNT_DATA_DIR", os.path.dirname(os.path.abspath(__file__))))
+_DATA_DIR.mkdir(parents=True, exist_ok=True)
+DB_NAME = str(_DATA_DIR / "strategies.db")
 
 def get_db():
     conn = sqlite3.connect(DB_NAME)

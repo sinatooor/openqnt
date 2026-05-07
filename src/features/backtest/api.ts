@@ -1,11 +1,11 @@
+import { apiBase } from '@/lib/runtimeConfig';
 /**
  * Thin client for /api/backtest/* — the canonical backtest API exposed
  * by the Python backend. Same shape REST and the agent tool both return.
  */
 
 const API_BASE =
-  (import.meta as any).env?.VITE_BACKEND_URL?.replace(/\/$/, '') ??
-  'http://localhost:8000';
+  apiBase();
 
 export interface StrategyMeta {
   name: string;

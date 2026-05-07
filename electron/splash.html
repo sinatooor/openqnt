@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OpenQnt — Starting…</title>
+  <style>
+    :root { color-scheme: dark; }
+    html, body { margin: 0; padding: 0; height: 100%; }
+    body {
+      font: 13px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+      background: linear-gradient(160deg, #0c0d12 0%, #161a24 100%);
+      color: #e6e8ee;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      -webkit-app-region: drag;
+      user-select: none;
+      overflow: hidden;
+    }
+    .panel { padding: 28px 32px 18px; flex: 1; display: flex; flex-direction: column; }
+    h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; letter-spacing: .2px; }
+    .sub { font-size: 12px; color: #9aa0ac; margin-bottom: 22px; }
+    ul.steps { list-style: none; padding: 0; margin: 0 0 14px; }
+    ul.steps li {
+      display: flex; align-items: center; gap: 10px;
+      padding: 6px 0; font-size: 13px; color: #c2c6cf;
+    }
+    .dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: #2a2f3a; box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
+      flex: 0 0 10px;
+    }
+    .dot.ready { background: #36c08e; box-shadow: 0 0 12px rgba(54,192,142,.5); }
+    .dot.starting { background: #f5b556; animation: pulse 1.2s infinite ease-in-out; }
+    .dot.failed { background: #e35d5d; }
+    .dot.pending { background: #2a2f3a; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+    .row {
+      display: flex; gap: 8px; margin-top: auto; -webkit-app-region: no-drag;
+    }
+    button {
+      background: #1d212c; color: #e6e8ee; border: 1px solid #2c313e;
+      padding: 6px 12px; border-radius: 6px; font: inherit; cursor: pointer;
+    }
+    button:hover { background: #252a37; }
+    .diag {
+      display: none; flex: 1; min-height: 0; margin-top: 12px;
+      background: #07090d; border: 1px solid #1f232c; border-radius: 6px;
+      padding: 8px 10px; font: 11px/1.35 ui-monospace, "SF Mono", Menlo, monospace;
+      overflow: auto; color: #aab1bf; -webkit-app-region: no-drag;
+    }
+    .diag.show { display: block; }
+    .err { color: #ff8a8a; margin-top: 10px; padding: 10px; background: #2a1417; border-radius: 6px; -webkit-app-region: no-drag; display: none; }
+    .err.show { display: block; }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <h1>OpenQnt</h1>
+    <div class="sub" id="subtitle">Booting services…</div>
+    <ul class="steps">
+      <li><span class="dot pending" id="dot-postgres"></span><span>Database</span></li>
+      <li><span class="dot pending" id="dot-redis"></span><span>Job queue</span></li>
+      <li><span class="dot pending" id="dot-backend"></span><span>Trading engine</span></li>
+      <li><span class="dot pending" id="dot-orchestrator"></span><span>Orchestrator</span></li>
+    </ul>
+    <div class="err" id="err"></div>
+    <div class="row">
+      <button id="diag-toggle">Show diagnostics</button>
+      <button id="logs-btn">Reveal logs</button>
+      <button id="quit-btn" style="margin-left:auto;">Quit</button>
+    </div>
+    <pre class="diag" id="diag"></pre>
+  </div>
+  <script>
+    const labelFor = {
+      pending: 'Waiting',
+      starting: 'Starting',
+      ready: 'Ready',
+      failed: 'Failed',
+    };
+    const services = ['postgres', 'redis', 'backend', 'orchestrator'];
+
+    async function refresh() {
+      try {
+        const snap = await window.electronAPI.healthSnapshot();
+        for (const name of services) {
+          const dot = document.getElementById('dot-' + name);
+          dot.className = 'dot ' + snap[name];
+        }
+        const subtitle = document.getElementById('subtitle');
+        const errEl = document.getElementById('err');
+        if (snap.fatal) {
+          errEl.textContent = `${snap.fatal.service}: ${snap.fatal.reason}`;
+          errEl.classList.add('show');
+          subtitle.textContent = 'Startup failed.';
+        } else if (snap.ready) {
+          subtitle.textContent = 'Ready — opening app…';
+          await window.electronAPI.dismissSplash();
+        } else {
+          const next = services.find((s) => snap[s] === 'starting') ?? services.find((s) => snap[s] === 'pending');
+          subtitle.textContent = next ? `${labelFor[snap[next]]} ${next}…` : 'Almost there…';
+        }
+      } catch (e) {
+        // main process not ready yet — try again
+      }
+      setTimeout(refresh, 250);
+    }
+
+    document.getElementById('diag-toggle').addEventListener('click', () => {
+      document.getElementById('diag').classList.toggle('show');
+    });
+    document.getElementById('logs-btn').addEventListener('click', () => {
+      window.electronAPI.revealLogsFolder();
+    });
+    document.getElementById('quit-btn').addEventListener('click', () => {
+      window.electronAPI.quit();
+    });
+
+    const diag = document.getElementById('diag');
+    window.electronAPI.onLogLine((line) => {
+      diag.textContent += line + '\n';
+      // Cap to ~600 lines so we don't blow up memory.
+      if (diag.textContent.length > 60000) {
+        diag.textContent = diag.textContent.slice(-50000);
+      }
+      diag.scrollTop = diag.scrollHeight;
+    });
+
+    refresh();
+  </script>
+</body>
+</html>

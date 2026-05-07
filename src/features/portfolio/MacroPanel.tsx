@@ -9,8 +9,9 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, Globe } from 'lucide-react';
 
+import { apiBase } from '@/lib/runtimeConfig';
 const API_BASE =
-  (import.meta as any).env?.VITE_BACKEND_URL?.replace(/\/$/, '') ?? 'http://localhost:8000';
+  apiBase();
 
 export type MacroSeries =
   | 'fed_funds'

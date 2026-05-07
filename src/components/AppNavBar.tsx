@@ -26,7 +26,7 @@ import {
 import { useAuthStore } from '@/stores/authStore';
 import { useAppModeStore } from '@/stores/appModeStore';
 import { ProfileModal } from '@/features/strategy-flow/components/modals/ProfileModal';
-import { AccountSelector } from '@/components/AccountSelector';
+// AccountSelector is rendered inside Settings now, not in the nav.
 
 export const APP_HEADER_HEIGHT = 56;
 
@@ -89,11 +89,10 @@ export const AppNavBar = () => {
                     );
                 })}
 
+                {/* AccountSelector moved to the Settings page — it was too
+                    dense for the chrome. Account scope still drives the
+                    portfolio store; pick it from Settings → Accounts. */}
                 <div className="h-5 w-px bg-white/10 mx-1" />
-                <div className="hidden md:block">
-                    <AccountSelector />
-                </div>
-                <div className="h-5 w-px bg-white/10 mx-1 hidden md:block" />
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider cursor-default ${

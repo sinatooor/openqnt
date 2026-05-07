@@ -38,6 +38,7 @@ import { useStrategyFlowStore, validateStrategy } from '../../store/strategyFlow
 import { generateBacktestingPyCode } from '../../generators';
 import { NODE_CATALOG } from '../../catalog/nodeCatalog';
 
+import { apiBase } from '@/lib/runtimeConfig';
 interface BacktestModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -145,7 +146,7 @@ export const BacktestModal = memo(({ open, onOpenChange }: BacktestModalProps) =
     leverage: 1,
   });
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+  const backendUrl = apiBase();
 
   const updateConfig = (key: keyof BacktestConfig, value: any) => {
     setConfig(prev => ({ ...prev, [key]: value }));

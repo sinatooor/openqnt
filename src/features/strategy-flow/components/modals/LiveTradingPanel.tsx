@@ -53,6 +53,7 @@ import { toast } from 'sonner';
 import { useStrategyFlowStore, validateStrategy } from '../../store/strategyFlowStore';
 import { generatePythonCode } from '../../generators/pythonGenerator';
 
+import { apiBase } from '@/lib/runtimeConfig';
 interface Position {
   id: string;
   symbol: string;
@@ -103,7 +104,7 @@ export const LiveTradingPanel = ({ open, onOpenChange }: LiveTradingPanelProps) 
 
   const { nodes, edges, strategyName, isRunning, setIsRunning } = useStrategyFlowStore();
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+  const backendUrl = apiBase();
 
   // Poll for status when strategy is running
   useEffect(() => {

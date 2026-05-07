@@ -9,8 +9,9 @@
 
 import type { FeatureCollection } from 'geojson';
 
+import { apiBase } from '@/lib/runtimeConfig';
 const BACKEND_URL =
-  (import.meta.env?.VITE_BACKEND_URL as string | undefined) || 'http://localhost:8000';
+  apiBase();
 
 export type LayerStatus = 'idle' | 'loading' | 'live' | 'error';
 

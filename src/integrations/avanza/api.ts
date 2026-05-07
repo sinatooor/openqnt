@@ -1,3 +1,4 @@
+import { apiBase } from '@/lib/runtimeConfig';
 /**
  * Avanza frontend API client
  * --------------------------
@@ -7,8 +8,7 @@
  */
 
 const BACKEND_URL =
-  (import.meta.env?.VITE_BACKEND_URL as string | undefined) ||
-  'http://localhost:8000';
+  apiBase();
 
 function authHeaders(): Record<string, string> {
   try {

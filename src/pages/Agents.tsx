@@ -37,10 +37,8 @@ import { simulateAgentRun } from '@/features/agents/runtime/simulatedRun';
 import { AgentList } from '@/features/agents/components/AgentList';
 import { AgentDetail } from '@/features/agents/components/AgentDetail';
 
-const PYTHON_BASE =
-  import.meta.env.VITE_PYTHON_BACKEND_URL ||
-  import.meta.env.VITE_BACKEND_URL ||
-  'http://localhost:8000';
+import { apiBase } from '@/lib/runtimeConfig';
+const PYTHON_BASE = apiBase();
 
 const Agents = () => {
   // Keep canvas ↔ monitor in sync.

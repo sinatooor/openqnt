@@ -1,3 +1,4 @@
+import { wsBase } from '@/lib/runtimeConfig';
 /**
  * WebSocket Connection Manager
  * 
@@ -159,7 +160,7 @@ class WebSocketManager {
 
 // Create instance for strategy updates
 // Points to the Node.js orchestrator Socket.io server (not the Python backend)
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3000';
+const WS_URL = wsBase();
 
 export const strategyWS = new WebSocketManager({
     url: `${WS_URL}/strategy`,

@@ -1,6 +1,7 @@
 import { CandlestickData } from 'lightweight-charts';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+import { apiBase } from '@/lib/runtimeConfig';
+const BACKEND_URL = apiBase();
 
 interface MarketDataCache {
   data: CandlestickData[];

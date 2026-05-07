@@ -1,3 +1,4 @@
+import { apiBase } from '@/lib/runtimeConfig';
 /**
  * Voice subsystem API client — talks to FastAPI `/api/voice/*`.
  *
@@ -7,8 +8,7 @@
  */
 
 const API_BASE =
-    (import.meta as any).env?.VITE_BACKEND_URL?.replace(/\/$/, '') ??
-    'http://localhost:8000';
+    apiBase();
 
 export interface VoiceProfile {
     user_id: string;

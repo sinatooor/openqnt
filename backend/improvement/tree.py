@@ -21,8 +21,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
+import os
 REPO_ROOT = Path(__file__).resolve().parents[2]
-RUNS_ROOT = REPO_ROOT / "agents" / "boss" / "runs"
+_DATA_DIR = Path(os.environ.get("OPENQWNT_DATA_DIR", str(REPO_ROOT)))
+RUNS_ROOT = _DATA_DIR / "agents" / "boss" / "runs"
 
 
 def _utc_iso() -> str:

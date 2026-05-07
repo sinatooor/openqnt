@@ -14,8 +14,9 @@
 import type { Transport, SendOptions } from './types';
 import type { UnifiedEvent } from '../types';
 
+import { apiBase } from '@/lib/runtimeConfig';
 const BACKEND_URL =
-  (import.meta as any).env?.VITE_BACKEND_URL?.replace(/\/$/, '') || 'http://localhost:8000';
+  apiBase() || 'http://localhost:8000';
 
 const authHeaders = (): Record<string, string> => {
   try {

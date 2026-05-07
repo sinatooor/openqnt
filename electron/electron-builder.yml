@@ -1,0 +1,78 @@
+appId: dev.openqnt.desktop
+productName: OpenQnt
+copyright: Copyright © 2026 OpenQnt
+
+directories:
+  output: release
+  buildResources: electron/build-resources
+
+# Files included inside the asar archive (the JS that ships in the app).
+# Native binaries CANNOT live inside the asar; they go in extraResources +
+# asarUnpack handles anything that needs to remain on disk.
+files:
+  - electron/dist/**/*
+  - electron/splash.html
+  - "package.json"
+  - "!**/.{git,DS_Store,vscode,idea}"
+  - "!**/{*.md,*.map,*.ts}"
+  - "!**/__pycache__"
+  - "!**/node_modules/**/*"
+
+extraResources:
+  # The whole resources/ tree (python interpreter + libs, postgres, redis,
+  # orchestrator binary, models, frontend, backend) is shipped as-is in
+  # .app/Contents/Resources/.
+  - from: "resources"
+    to: "."
+    filter: ["**/*"]
+
+asar: true
+asarUnpack:
+  # Everything that needs to be exec'd or memory-mapped at runtime must be
+  # outside the asar archive.
+  - "resources/python/**"
+  - "resources/python-libs/**"
+  - "resources/postgres/**"
+  - "resources/redis/**"
+  - "resources/orchestrator-*"
+  - "resources/orchestrator-engines/**"
+  - "resources/models/**"
+  - "resources/backend/**"
+
+mac:
+  category: public.app-category.finance
+  icon: electron/build-resources/icon.icns
+  target:
+    # Apple Silicon only for v1 — bundling Postgres + Redis universal2 doubles
+    # the DMG size and requires running bundle scripts on x64 too. To extend
+    # to Intel later: set BUNDLE_BOTH_ARCH=1 on the bundle scripts and add an
+    # x64 target here.
+    - target: dmg
+      arch: [arm64]
+    - target: zip
+      arch: [arm64]
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  identity: null
+  # Inherit user keychain so spawned children can read entitlements (irrelevant
+  # without signing, but harmless).
+  extendInfo:
+    NSCameraUsageDescription: OpenQnt does not use your camera.
+    NSMicrophoneUsageDescription: OpenQnt may use your microphone for voice trading commands.
+    NSAppleEventsUsageDescription: OpenQnt does not control other applications.
+    LSUIElement: false
+
+dmg:
+  # Use the same logo for the mounted-volume icon shown in Finder.
+  icon: electron/build-resources/icon.icns
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+
+# Auto-update is intentionally disabled in v1. When you add code signing,
+# wire up `publish:` here to point at S3 / GitHub releases.
+publish: null

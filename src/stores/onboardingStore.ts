@@ -5,6 +5,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { isDesktop } from '../lib/runtimeConfig';
 
 export type FinanceRole =
   | 'retail-trader'
@@ -71,6 +72,14 @@ export const useOnboardingStore = create<OnboardingState>()(
         hasCompletedOnboarding: state.hasCompletedOnboarding,
         selectedRole: state.selectedRole,
       }),
+      // Desktop / dev: skip the onboarding wizard. The whole app is for one
+      // local user and there's no benefit to clicking through 4 screens.
+      onRehydrateStorage: () => (state) => {
+        const isDev = Boolean((import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV);
+        if (state && (isDesktop() || isDev) && !state.hasCompletedOnboarding) {
+          state.hasCompletedOnboarding = true;
+        }
+      },
     }
   )
 );

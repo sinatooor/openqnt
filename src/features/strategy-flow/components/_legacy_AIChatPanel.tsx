@@ -38,6 +38,7 @@ import {
 import type { StrategyFlowNode, StrategyFlowEdge } from '../types';
 import { layoutStrategyNodes } from '../utils/layoutNodes';
 
+import { apiBase } from '@/lib/runtimeConfig';
 interface Message {
   role: 'user' | 'assistant';
   content: string;
@@ -99,7 +100,7 @@ export const AIChatPanel = ({ open, onOpenChange }: AIChatPanelProps) => {
   const { nodes, edges, setNodes, setEdges, strategyName, strategyDescription, rightPanelWidth } =
     useStrategyFlowStore();
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+  const backendUrl = apiBase();
 
   // Auto-scroll to bottom
   useEffect(() => {

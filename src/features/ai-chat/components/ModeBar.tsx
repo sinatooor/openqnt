@@ -9,12 +9,17 @@
 import { MODE_LIST } from '../transports/modeRegistry';
 import { usePanelStore } from '../state/panelStore';
 
-export function ModeBar() {
+interface Props {
+  /** Inside the Composer toolbar we already have spacing — drop the top margin. */
+  inline?: boolean;
+}
+
+export function ModeBar({ inline = false }: Props = {}) {
   const mode = usePanelStore((s) => s.mode);
   const setMode = usePanelStore((s) => s.setMode);
 
   return (
-    <div className="flex items-center gap-1 mt-1.5">
+    <div className={`flex items-center gap-1 ${inline ? '' : 'mt-1.5'}`}>
       {MODE_LIST.map((m) => {
         const Icon = m.icon;
         const active = mode === m.id;

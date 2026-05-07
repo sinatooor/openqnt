@@ -79,7 +79,7 @@ function PanelHeader({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/[0.06]">
-      <SkillChip />
+      {/* SkillChip moved into Composer's bottom toolbar */}
       {ctx && <PageContextChip />}
       <div className="ml-auto flex items-center gap-1">
         <button
@@ -113,9 +113,14 @@ function PanelHeader({ onClose }: { onClose: () => void }) {
 
 // ── Body ─────────────────────────────────────────────────────
 
+// Module-level constant — see AiChat.tsx for the rationale (a fresh `[]`
+// inside a Zustand selector breaks useSyncExternalStore equality and
+// triggers an infinite-loop crash).
+const EMPTY_ITEMS: never[] = [];
+
 function PanelBody() {
   const activeId = useAiChatStore((s) => s.activeSessionId);
-  const items = useAiChatStore((s) => (activeId ? s.items[activeId] ?? [] : []));
+  const items = useAiChatStore((s) => (activeId ? s.items[activeId] ?? EMPTY_ITEMS : EMPTY_ITEMS));
 
   return (
     <div className="flex-1 flex flex-col min-h-0 px-2">

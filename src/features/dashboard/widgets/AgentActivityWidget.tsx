@@ -12,9 +12,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Activity, Brain, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 
+import { apiBase } from '@/lib/runtimeConfig';
 const API_BASE =
-  (import.meta as any).env?.VITE_BACKEND_URL?.replace(/\/$/, '') ??
-  'http://localhost:8000';
+  apiBase();
 
 interface BossRunMeta {
   run_id: string;

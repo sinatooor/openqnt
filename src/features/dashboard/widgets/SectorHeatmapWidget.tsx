@@ -1,11 +1,14 @@
 /**
- * SectorHeatmapWidget — GICS-sector ETF day-changes from /api/terminal/sectors.
+ * SectorHeatmapWidget — index/sector heatmap with a switchable universe.
  *
- * Each ETF (XLK / XLF / XLV / etc.) tracks an S&P sector index. Tile size
- * is weighted by the ETF's last close (a rough proxy for relative size);
- * tile color encodes day Δ%. Refreshes every 60 s.
+ * Default ("Sectors"): GICS sector ETFs from /api/terminal/sectors.
+ * Other presets (DJ30, OMX30, Magnificent 7, Crypto Top 10) are constituent
+ * lists fetched as a single batch from /api/terminal/quotes.
+ * Tile size is weighted by liquidity; tile color encodes day Δ%.
+ * Refreshes every 60 s.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { terminalApiGet } from '@/features/terminal/apiClient';
 
 interface SectorRow {
@@ -20,6 +23,96 @@ interface SectorsResponse {
   source: string;
   sectors: SectorRow[];
 }
+
+interface QuoteRow {
+  symbol: string;
+  lastPrice: number | null;
+  changePct: number | null;
+}
+interface QuotesResponse {
+  source: string;
+  quotes: QuoteRow[];
+}
+
+// Index/preset universes. `constituents: null` = use the existing
+// /api/terminal/sectors endpoint (which returns SPDR sector ETFs).
+type Universe = {
+  id: string;
+  label: string;
+  constituents: Array<{ name: string; ticker: string }> | null;
+};
+
+const UNIVERSES: Universe[] = [
+  { id: 'sectors', label: 'GICS Sectors', constituents: null },
+  {
+    id: 'dj30',
+    label: 'DJIA · DJ30',
+    constituents: [
+      { name: 'AAPL', ticker: 'AAPL' }, { name: 'AMGN', ticker: 'AMGN' },
+      { name: 'AMZN', ticker: 'AMZN' }, { name: 'AXP',  ticker: 'AXP'  },
+      { name: 'BA',   ticker: 'BA'   }, { name: 'CAT',  ticker: 'CAT'  },
+      { name: 'CRM',  ticker: 'CRM'  }, { name: 'CSCO', ticker: 'CSCO' },
+      { name: 'CVX',  ticker: 'CVX'  }, { name: 'DIS',  ticker: 'DIS'  },
+      { name: 'GS',   ticker: 'GS'   }, { name: 'HD',   ticker: 'HD'   },
+      { name: 'HON',  ticker: 'HON'  }, { name: 'IBM',  ticker: 'IBM'  },
+      { name: 'JNJ',  ticker: 'JNJ'  }, { name: 'JPM',  ticker: 'JPM'  },
+      { name: 'KO',   ticker: 'KO'   }, { name: 'MCD',  ticker: 'MCD'  },
+      { name: 'MMM',  ticker: 'MMM'  }, { name: 'MRK',  ticker: 'MRK'  },
+      { name: 'MSFT', ticker: 'MSFT' }, { name: 'NKE',  ticker: 'NKE'  },
+      { name: 'NVDA', ticker: 'NVDA' }, { name: 'PG',   ticker: 'PG'   },
+      { name: 'SHW',  ticker: 'SHW'  }, { name: 'TRV',  ticker: 'TRV'  },
+      { name: 'UNH',  ticker: 'UNH'  }, { name: 'V',    ticker: 'V'    },
+      { name: 'VZ',   ticker: 'VZ'   }, { name: 'WMT',  ticker: 'WMT'  },
+    ],
+  },
+  {
+    id: 'omx30',
+    label: 'OMX Stockholm 30',
+    constituents: [
+      { name: 'ABB',    ticker: 'ABB.ST'      }, { name: 'ALFA',   ticker: 'ALFA.ST'    },
+      { name: 'ASSA',   ticker: 'ASSA-B.ST'   }, { name: 'ATCO',   ticker: 'ATCO-A.ST'  },
+      { name: 'AZN',    ticker: 'AZN.ST'      }, { name: 'BOL',    ticker: 'BOL.ST'     },
+      { name: 'ELUX',   ticker: 'ELUX-B.ST'   }, { name: 'ERIC',   ticker: 'ERIC-B.ST'  },
+      { name: 'ESSITY', ticker: 'ESSITY-B.ST' }, { name: 'EVO',    ticker: 'EVO.ST'     },
+      { name: 'GETI',   ticker: 'GETI-B.ST'   }, { name: 'HEXA',   ticker: 'HEXA-B.ST'  },
+      { name: 'HM',     ticker: 'HM-B.ST'     }, { name: 'INVE',   ticker: 'INVE-B.ST'  },
+      { name: 'KINV',   ticker: 'KINV-B.ST'   }, { name: 'NDA',    ticker: 'NDA-SE.ST'  },
+      { name: 'NIBE',   ticker: 'NIBE-B.ST'   }, { name: 'SAND',   ticker: 'SAND.ST'    },
+      { name: 'SBB',    ticker: 'SBB-B.ST'    }, { name: 'SCA',    ticker: 'SCA-B.ST'   },
+      { name: 'SEB',    ticker: 'SEB-A.ST'    }, { name: 'SHB',    ticker: 'SHB-A.ST'   },
+      { name: 'SINCH',  ticker: 'SINCH.ST'    }, { name: 'SKF',    ticker: 'SKF-B.ST'   },
+      { name: 'SWED',   ticker: 'SWED-A.ST'   }, { name: 'TEL2',   ticker: 'TEL2-B.ST'  },
+      { name: 'TELIA',  ticker: 'TELIA.ST'    }, { name: 'VOLV',   ticker: 'VOLV-B.ST'  },
+      { name: 'BILL',   ticker: 'BILL.ST'     }, { name: 'STORA',  ticker: 'STORA-B.ST' },
+    ],
+  },
+  {
+    id: 'mag7',
+    label: 'Magnificent 7',
+    constituents: [
+      { name: 'Apple',     ticker: 'AAPL'  },
+      { name: 'Microsoft', ticker: 'MSFT'  },
+      { name: 'Nvidia',    ticker: 'NVDA'  },
+      { name: 'Alphabet',  ticker: 'GOOGL' },
+      { name: 'Amazon',    ticker: 'AMZN'  },
+      { name: 'Meta',      ticker: 'META'  },
+      { name: 'Tesla',     ticker: 'TSLA'  },
+    ],
+  },
+  {
+    id: 'crypto10',
+    label: 'Crypto · Top 10',
+    constituents: [
+      { name: 'BTC',  ticker: 'BTC-USD'  }, { name: 'ETH',  ticker: 'ETH-USD'  },
+      { name: 'BNB',  ticker: 'BNB-USD'  }, { name: 'SOL',  ticker: 'SOL-USD'  },
+      { name: 'XRP',  ticker: 'XRP-USD'  }, { name: 'ADA',  ticker: 'ADA-USD'  },
+      { name: 'AVAX', ticker: 'AVAX-USD' }, { name: 'DOGE', ticker: 'DOGE-USD' },
+      { name: 'DOT',  ticker: 'DOT-USD'  }, { name: 'LINK', ticker: 'LINK-USD' },
+    ],
+  },
+];
+
+const UNIVERSE_KEY = 'openqnt.heatmap.universe';
 
 interface Rect {
   x: number;
@@ -95,6 +188,19 @@ export default function SectorHeatmapWidget() {
   const [sz, setSz] = useState({ w: 0, h: 0 });
   const [rows, setRows] = useState<SectorRow[]>([]);
   const [status, setStatus] = useState<'loading' | 'live' | 'offline'>('loading');
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [universeId, setUniverseId] = useState<string>(() => {
+    try {
+      return localStorage.getItem(UNIVERSE_KEY) || 'sectors';
+    } catch {
+      return 'sectors';
+    }
+  });
+  const universe = UNIVERSES.find((u) => u.id === universeId) ?? UNIVERSES[0];
+
+  useEffect(() => {
+    try { localStorage.setItem(UNIVERSE_KEY, universeId); } catch { /* */ }
+  }, [universeId]);
 
   useEffect(() => {
     const el = ref.current;
@@ -110,16 +216,59 @@ export default function SectorHeatmapWidget() {
   useEffect(() => {
     let cancelled = false;
     const ctrl = new AbortController();
-    const load = async () => {
-      const resp = await terminalApiGet<SectorsResponse>('/api/terminal/sectors', undefined, ctrl.signal);
+    setStatus('loading');
+
+    const loadSectors = async () => {
+      const resp = await terminalApiGet<SectorsResponse>(
+        '/api/terminal/sectors',
+        undefined,
+        ctrl.signal,
+      );
       if (cancelled) return;
       if (resp?.sectors?.length) {
         setRows(resp.sectors);
         setStatus('live');
       } else {
+        setRows([]);
         setStatus('offline');
       }
     };
+
+    const loadConstituents = async () => {
+      if (!universe.constituents) return;
+      const symbols = universe.constituents.map((c) => c.ticker).join(',');
+      const resp = await terminalApiGet<QuotesResponse>(
+        '/api/terminal/quotes',
+        { symbols },
+        ctrl.signal,
+      );
+      if (cancelled) return;
+      if (resp?.quotes?.length) {
+        // Map back into the SectorRow shape so the existing treemap logic
+        // doesn't change. `volume` is unavailable from /quotes — substitute a
+        // proxy so tile size still differs by price (rough liquidity hint).
+        const bySym = new Map(resp.quotes.map((q) => [q.symbol, q]));
+        const next: SectorRow[] = universe.constituents
+          .map((c) => {
+            const q = bySym.get(c.ticker);
+            return {
+              name: c.name,
+              etf: c.name, // tile shows the short name for non-sector universes
+              price: q?.lastPrice ?? 0,
+              changePct: q?.changePct ?? 0,
+              volume: Math.max(1, (q?.lastPrice ?? 1) * 1_000_000),
+            };
+          })
+          .filter((r) => r.price > 0);
+        setRows(next);
+        setStatus(next.length > 0 ? 'live' : 'offline');
+      } else {
+        setRows([]);
+        setStatus('offline');
+      }
+    };
+
+    const load = universe.constituents ? loadConstituents : loadSectors;
     void load();
     const id = window.setInterval(load, 60_000);
     return () => {
@@ -127,7 +276,7 @@ export default function SectorHeatmapWidget() {
       ctrl.abort();
       window.clearInterval(id);
     };
-  }, []);
+  }, [universe.id]);
 
   const tiled = useMemo<TiledSector[]>(() => {
     if (sz.w === 0 || sz.h === 0 || rows.length === 0) return [];
@@ -144,11 +293,40 @@ export default function SectorHeatmapWidget() {
 
   return (
     <section className="terminal-panel h-full flex flex-col">
-      <div className="terminal-panel-header flex items-center justify-between">
-        <span className="terminal-title">Sector Heatmap</span>
-        <span className="text-[9px] text-zinc-500">
-          {status === 'live' ? 'GICS · LIVE' : status.toUpperCase()}
-        </span>
+      <div className="terminal-panel-header flex items-center justify-between gap-2">
+        <span className="terminal-title">Heatmap</span>
+        <div className="relative flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setPickerOpen((v) => !v)}
+            className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] text-[10px] text-zinc-200"
+            title="Switch universe"
+          >
+            <span>{universe.label}</span>
+            <ChevronDown className="w-3 h-3 opacity-60" />
+          </button>
+          {pickerOpen && (
+            <div
+              className="absolute right-0 top-full mt-1 z-30 w-48 rounded-md bg-[#15151b] border border-white/10 shadow-xl py-1"
+              onMouseLeave={() => setPickerOpen(false)}
+            >
+              {UNIVERSES.map((u) => (
+                <button
+                  key={u.id}
+                  onClick={() => { setUniverseId(u.id); setPickerOpen(false); }}
+                  className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-white/[0.06] transition-colors ${
+                    u.id === universeId ? 'text-emerald-300' : 'text-zinc-200'
+                  }`}
+                >
+                  {u.label}
+                </button>
+              ))}
+            </div>
+          )}
+          <span className="text-[9px] text-zinc-500">
+            {status === 'live' ? 'LIVE' : status.toUpperCase()}
+          </span>
+        </div>
       </div>
 
       <div ref={ref} className="relative flex-1 min-h-0 bg-zinc-950 overflow-hidden">

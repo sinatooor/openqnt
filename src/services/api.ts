@@ -1,10 +1,11 @@
+import { orchestratorBase } from '@/lib/runtimeConfig';
 /**
  * API Client Service
  * 
  * Centralized HTTP client with error handling, retry logic, and auth.
  */
 
-export const API_BASE_URL = import.meta.env.VITE_ORCHESTRATOR_URL || "http://localhost:3000";
+export const API_BASE_URL = orchestratorBase();
 
 interface RequestConfig extends RequestInit {
     retries?: number;
