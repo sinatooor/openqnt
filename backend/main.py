@@ -295,6 +295,13 @@ try:
 except Exception as _e:
     print(f"Warning: voice router failed to load: {_e}")
 
+# iOS standard (non-VoIP) push notifications for trade/risk/strategy alerts
+try:
+    from routers import ios_push as ios_push_router
+    app.include_router(ios_push_router.router)
+except Exception as _e:
+    print(f"Warning: ios_push router failed to load: {_e}")
+
 # External integrations (Avanza first; Nordnet/IBKR later)
 try:
     from routers import integrations as integrations_router
