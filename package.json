@@ -24,7 +24,7 @@
     "electron:bundle-postgres": "bash electron/scripts/bundle-postgres.sh",
     "electron:bundle-redis": "bash electron/scripts/bundle-redis.sh",
     "electron:bundle-frontend": "OPENQWNT_DESKTOP_BUILD=true bun run build && rm -rf resources/frontend && mkdir -p resources/frontend && cp -R dist/. resources/frontend/",
-    "electron:bundle-backend": "rm -rf resources/backend && rsync -a --exclude=__pycache__ --exclude='*.pyc' --exclude=tests --exclude=logs --exclude='*.log' --exclude='_telemetry' --exclude='_cache' --exclude='_backtests' --exclude='_execution' --exclude='chroma_db*' --exclude='strategies.db' --exclude='backend.log' --exclude=adk_workspace --exclude=test_*.py --exclude=quick_test.py --exclude='*_LEGACY*' backend/ resources/backend/",
+    "electron:bundle-backend": "rm -rf resources/backend && rsync -a --exclude=__pycache__ --exclude='*.pyc' --exclude=tests --exclude=logs --exclude='*.log' --exclude='_telemetry' --exclude='_cache' --exclude='_backtests' --exclude='_execution' --exclude='chroma_db*' --exclude='strategies.db' --exclude='backend.log' --exclude=adk_workspace --exclude=test_*.py --exclude=quick_test.py --exclude='*_LEGACY*' --exclude='.env' --exclude='.env.local' --exclude='.env.*.local' backend/ resources/backend/",
     "electron:bundle-all": "bun run electron:bundle-python && bun run electron:bundle-postgres && bun run electron:bundle-redis && bun run electron:bundle-orchestrator && bun run electron:bundle-backend && bun run electron:bundle-frontend",
     "electron:build": "bun run electron:tsc",
     "electron:dist": "bun run electron:bundle-all && bun run electron:build && electron-builder --config electron/electron-builder.yml --mac"
