@@ -8,7 +8,8 @@ export { SettingsModal, getLLMApiKey } from './SettingsModal';
 export { TemplatesDialog } from './TemplatesDialog';
 export { SearchNodesDialog } from './SearchNodesDialog';
 export { ChartModal } from './ChartModal';
-export { ProfileModal } from './ProfileModal';
+// ProfileModal removed — Profile/Voice live in Settings now; CredentialsTab
+// and VoiceTab are imported directly by Settings panels.
 export { JournalModal } from './JournalModal';
 export { ScreenerModal } from './ScreenerModal';
 export { LiveTradingPanel } from './LiveTradingPanel';

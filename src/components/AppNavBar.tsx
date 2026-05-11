@@ -2,7 +2,6 @@
  * AppNavBar - Persistent top header navigation visible on all pages.
  */
 
-import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard,
@@ -25,7 +24,8 @@ import {
 } from '@/components/ui/tooltip';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppModeStore } from '@/stores/appModeStore';
-import { ProfileModal } from '@/features/strategy-flow/components/modals/ProfileModal';
+// Profile/Voice/Credentials now live inside Settings; the standalone
+// ProfileModal was removed. The avatar button below routes to /settings.
 // AccountSelector is rendered inside Settings now, not in the nav.
 
 export const APP_HEADER_HEIGHT = 56;
@@ -54,7 +54,6 @@ export const AppNavBar = () => {
     const { pathname } = useLocation();
     const { user } = useAuthStore();
     const { mode } = useAppModeStore();
-    const [showProfile, setShowProfile] = useState(false);
 
     if (pathname === '/login') return null;
 
@@ -111,8 +110,9 @@ export const AppNavBar = () => {
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <button
-                            onClick={() => setShowProfile(true)}
+                            onClick={() => navigate('/settings#profile')}
                             className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/20 text-primary text-xs font-bold transition-all hover:bg-primary/30"
+                            aria-label="Open profile in Settings"
                         >
                             {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || <User className="w-4 h-4" />}
                         </button>
@@ -122,8 +122,6 @@ export const AppNavBar = () => {
                     </TooltipContent>
                 </Tooltip>
             </nav>
-
-            <ProfileModal open={showProfile} onOpenChange={setShowProfile} />
         </TooltipProvider>
     );
 };
