@@ -14,6 +14,7 @@ import {
   type BacktestResult,
   type StrategyMeta,
 } from './api';
+import { PlotCard } from '@/features/ai-chat/cards/PlotCard';
 
 const COLORS = {
   bg: '#0f0f17',
@@ -269,8 +270,42 @@ export default function BacktestPanel() {
             <Stat label="Buy & hold" value={fmtPct(m.buy_and_hold_pct, 1)} tone="muted" />
           </div>
 
+          {/* Interactive equity-curve PlotCard. Supports the "Keep history"
+              toggle so users can overlay results from successive backtest
+              runs and see how the equity curve shifts as they tune inputs.
+              The backend-rendered PNG (plot_b64) is kept below as a
+              high-resolution reference and for the PDF export path. */}
+          {result.equity_curve && result.equity_curve.length > 0 && (
+            <PlotCard
+              payload={{
+                kind: 'line',
+                title: 'Equity curve',
+                xLabel: 'Bar',
+                yLabel: 'Equity',
+                series: [
+                  {
+                    name: 'Strategy',
+                    points: result.equity_curve.map((p, i) => ({ x: i, y: p.equity })),
+                  },
+                  ...(result.equity_curve.some((p) => p.buy_and_hold != null)
+                    ? [
+                        {
+                          name: 'Buy & hold',
+                          color: '#94a3b8',
+                          points: result.equity_curve.map((p, i) => ({
+                            x: i,
+                            y: p.buy_and_hold ?? p.equity,
+                          })),
+                        },
+                      ]
+                    : []),
+                ],
+              }}
+            />
+          )}
+
           {result.plot_b64 && (
-            <div
+            <details
               style={{
                 background: COLORS.panel,
                 border: `1px solid ${COLORS.border}`,
@@ -278,12 +313,15 @@ export default function BacktestPanel() {
                 padding: 12,
               }}
             >
+              <summary style={{ color: COLORS.muted, fontSize: 12, cursor: 'pointer' }}>
+                High-resolution reference plot (server-rendered)
+              </summary>
               <img
                 src={result.plot_b64}
                 alt="Equity curve"
-                style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 4 }}
+                style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 4, marginTop: 8 }}
               />
-            </div>
+            </details>
           )}
 
           {result.trades.length > 0 && (
