@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/dialog';
 import { useStrategyFlowStore, selectSelectedNode } from '../store/strategyFlowStore';
 import { useExecutionStore, selectNodeExecution, type NodeExecutionStatus } from '../store/executionStore';
+import { PopOutButton } from '@/components/FloatingWindow';
 import { useWorkflowManagerStore } from '../store/workflowManagerStore';
 import { listTerminalTools } from '@/features/terminal/agentTools/registry';
 import { orchestratorBase } from '@/lib/runtimeConfig';
@@ -2158,6 +2159,32 @@ const JsonDataViewer = memo(({ data, maxLines = 12 }: { data: Record<string, unk
 });
 JsonDataViewer.displayName = 'JsonDataViewer';
 
+/**
+ * Reactive view of a node's execution output for use inside a popped-out
+ * FloatingWindow. Re-renders automatically when the node re-runs — the store
+ * subscription happens here, inside the popped-out component itself, so
+ * the window stays in sync without needing to manually re-open on each run.
+ */
+const PoppedExecutionOutput = memo(({ nodeId }: { nodeId: string }) => {
+  const execData = useExecutionStore(selectNodeExecution(nodeId));
+  return (
+    <div className="p-3 space-y-2">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+          Output · {execData.status}
+        </span>
+        <span className="text-[10px] font-mono text-muted-foreground">
+          {execData.durationMs !== null ? `${execData.durationMs}ms` : '—'} · {execData.itemsProcessed} items
+        </span>
+      </div>
+      <pre className="text-[11px] leading-relaxed font-mono text-foreground/80 bg-black/40 rounded-md p-3 overflow-auto whitespace-pre-wrap break-words">
+        {execData.outputData ? JSON.stringify(execData.outputData, null, 2) : 'null'}
+      </pre>
+    </div>
+  );
+});
+PoppedExecutionOutput.displayName = 'PoppedExecutionOutput';
+
 const ExecutionDataPanel = memo(({ nodeId }: { nodeId: string }) => {
   const execData = useExecutionStore(selectNodeExecution(nodeId));
   const { pinNode, unpinNode } = useExecutionStore.getState();
@@ -2254,16 +2281,31 @@ const ExecutionDataPanel = memo(({ nodeId }: { nodeId: string }) => {
         {expandOutput && <JsonDataViewer data={execData.outputData} />}
       </div>
 
-      {/* View full JSON button */}
-      <Button
-        variant="outline"
-        size="sm"
-        className="w-full h-7 text-[10px] gap-1.5 border-white/10 bg-white/5 hover:bg-white/10 text-white/60"
-        onClick={() => setShowJsonModal(true)}
-      >
-        <Code2 className="w-3 h-3" />
-        View Full JSON
-      </Button>
+      {/* View full JSON / Pop-out controls.
+          - "View Full JSON" opens a modal (blocks the page; existing behavior).
+          - "Pop out" opens a non-modal FloatingWindow so the output stays
+            visible while you switch tabs and re-run other nodes. Window
+            auto-refreshes as the node re-runs (PoppedExecutionOutput
+            subscribes to the execution store). */}
+      <div className="grid grid-cols-2 gap-1.5">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 text-[10px] gap-1.5 border-white/10 bg-white/5 hover:bg-white/10 text-white/60"
+          onClick={() => setShowJsonModal(true)}
+        >
+          <Code2 className="w-3 h-3" />
+          View Full JSON
+        </Button>
+        <PopOutButton
+          id={`exec-output-${nodeId}`}
+          title={`Node output · ${nodeId.slice(0, 8)}`}
+          content={() => <PoppedExecutionOutput nodeId={nodeId} />}
+          defaultSize={{ width: 560, height: 420 }}
+          className="h-7 justify-center"
+          label="Pop out"
+        />
+      </div>
 
       {/* Full JSON Modal */}
       <Dialog open={showJsonModal} onOpenChange={setShowJsonModal}>
