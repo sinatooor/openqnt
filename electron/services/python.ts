@@ -14,6 +14,7 @@ import { paths, isDev } from '../lib/paths';
 import { attachStream, log } from '../lib/logger';
 import { pollUntilHealthy } from './health';
 import { pickFreePort, sleep } from './ports';
+import { getSecretsForBackend } from '../lib/secrets';
 
 export interface PythonHandle {
   port: number;
@@ -23,8 +24,17 @@ export interface PythonHandle {
 
 function buildEnv(): NodeJS.ProcessEnv {
   const p = paths();
+  // User-managed API keys (decrypted on demand from the safeStorage-encrypted
+  // secrets store). These OVERRIDE anything inherited via process.env so a
+  // user-entered key always wins over a stale shell var.
+  const userKeys = isDev() ? {} : getSecretsForBackend();
+  const keyCount = Object.keys(userKeys).length;
+  if (keyCount > 0) {
+    log('backend', `Injecting ${keyCount} user-managed API keys into backend env`);
+  }
   const env: NodeJS.ProcessEnv = {
     ...process.env,
+    ...userKeys,
     OPENQWNT_DATA_DIR: p.userDataRoot,
     OPENQWNT_DESKTOP_MODE: 'true',
     SENTENCE_TRANSFORMERS_HOME: p.modelsDir,
