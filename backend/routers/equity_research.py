@@ -24,10 +24,13 @@ fast" use case the Research page needs.
 """
 from __future__ import annotations
 
+import asyncio
+import json
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, AsyncIterator, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 
@@ -280,33 +283,188 @@ class CaseRequest(BaseModel):
     )
 
 
+CASE_SYSTEM_PROMPT = (
+    "You are a senior equity research analyst writing for an institutional "
+    "audience. You read like an experienced PM — concise, opinionated, "
+    "specific with numbers. You do not hedge with disclaimers. You do not "
+    "say 'do your own research' or 'consult a financial advisor'. You "
+    "structure every note the same way: Bull case, Bear case, Base case, "
+    "Catalysts to watch."
+)
+
+
+def _build_case_prompt(
+    ticker: str,
+    f: Dict[str, Any],
+    extra: Optional[str],
+) -> str:
+    name = f.get("name") or ticker
+    val = f.get("valuation", {}) or {}
+    prof = f.get("profitability", {}) or {}
+    growth = f.get("growth", {}) or {}
+    bs = f.get("balance_sheet", {}) or {}
+    cf = f.get("cash_flow", {}) or {}
+    div = f.get("dividend", {}) or {}
+
+    def fmt(v: Any, suffix: str = "") -> str:
+        return f"{v}{suffix}" if v is not None else "n/a"
+
+    body = [
+        f"Write an equity research note for {name} ({ticker.upper()}).",
+        "",
+        "## Snapshot",
+        f"- Sector: {f.get('sector') or 'n/a'} · Industry: {f.get('industry') or 'n/a'}",
+        f"- Price: {fmt(f.get('price'))} · Market cap: {fmt(f.get('market_cap'))}",
+        f"- Enterprise value: {fmt(f.get('enterprise_value'))} · Shares out: {fmt(f.get('shares_outstanding'))}",
+        "",
+        "## Valuation",
+        f"- P/E trailing: {fmt(val.get('pe_trailing'))} · P/E forward: {fmt(val.get('pe_forward'))} · PEG: {fmt(val.get('peg'))}",
+        f"- P/B: {fmt(val.get('price_to_book'))} · P/S (TTM): {fmt(val.get('price_to_sales_ttm'))}",
+        f"- EV/EBITDA: {fmt(val.get('ev_to_ebitda'))} · EV/Revenue: {fmt(val.get('ev_to_revenue'))}",
+        "",
+        "## Profitability",
+        f"- Gross margin: {fmt(prof.get('gross_margin'))} · Operating margin: {fmt(prof.get('operating_margin'))} · Net margin: {fmt(prof.get('profit_margin'))}",
+        f"- ROE: {fmt(prof.get('roe'))} · ROA: {fmt(prof.get('roa'))}",
+        "",
+        "## Growth",
+        f"- Revenue growth: {fmt(growth.get('revenue_growth'))} · Earnings growth: {fmt(growth.get('earnings_growth'))} · Q EPS growth: {fmt(growth.get('earnings_quarterly_growth'))}",
+        "",
+        "## Balance sheet & cash flow",
+        f"- Cash: {fmt(bs.get('total_cash'))} · Debt: {fmt(bs.get('total_debt'))} · D/E: {fmt(bs.get('debt_to_equity'))}",
+        f"- Current ratio: {fmt(bs.get('current_ratio'))} · Quick ratio: {fmt(bs.get('quick_ratio'))} · Book value: {fmt(bs.get('book_value'))}",
+        f"- Operating CF: {fmt(cf.get('operating_cashflow'))} · Free CF: {fmt(cf.get('free_cashflow'))}",
+        f"- Dividend yield: {fmt(div.get('yield'))} · Payout ratio: {fmt(div.get('payout_ratio'))}",
+    ]
+    if extra:
+        body += ["", f"## User focus", extra]
+
+    body += [
+        "",
+        "Now write the note. Use markdown with exactly these four H2 sections in this order:",
+        "## Bull case",
+        "## Bear case",
+        "## Base case",
+        "## Catalysts to watch",
+        "",
+        "Be specific. Reference the numbers above. 2–3 paragraphs per section for bull/bear; "
+        "1–2 for base; 4–6 bullet points for catalysts.",
+    ]
+    return "\n".join(body)
+
+
+async def _generate_case_text(prompt: str) -> str:
+    """Call the configured LLM (PRIMARY_LLM in main.py) for a case note.
+
+    Lazy-imports from main.py to avoid a circular module-load cycle — by the
+    time this function executes, main.py has finished initialising.
+    """
+    # main.py exposes call_gemini / call_deepseek / PRIMARY_LLM.
+    from main import call_gemini, call_deepseek, PRIMARY_LLM  # type: ignore
+
+    messages = [
+        {"role": "system", "content": CASE_SYSTEM_PROMPT},
+        {"role": "user", "content": prompt},
+    ]
+    try:
+        if PRIMARY_LLM == "gemini":
+            return await call_gemini(messages, temperature=0.4)
+        return await call_deepseek(messages, temperature=0.4)
+    except HTTPException as e:
+        # Surface provider config errors verbatim ("ANTHROPIC_API_KEY not
+        # configured", etc.) so the frontend can show actionable copy.
+        raise e
+    except Exception as e:
+        raise HTTPException(502, f"LLM call failed: {e}")
+
+
 @router.post("/case")
 async def case(req: CaseRequest) -> Dict[str, Any]:
     """
-    LLM-written equity research note. v1: returns a stubbed structure with the
-    prompt + fundamentals so the frontend can render. Real LLM wiring (and
-    streaming) is a follow-up.
+    Non-streaming equity research note. Returns the full LLM text in a single
+    response. Use `/case/stream` for SSE-style token-by-token rendering.
     """
     f = await fundamentals(FundamentalsRequest(ticker=req.ticker))
-    name = f.get("name") or req.ticker
-    prompt = (
-        f"Equity research case for {name} ({req.ticker.upper()}).\n"
-        f"Sector: {f.get('sector')} · Industry: {f.get('industry')}.\n"
-        f"Market cap: {f.get('market_cap')}, P/E (trailing): "
-        f"{f.get('valuation', {}).get('pe_trailing')}, "
-        f"Profit margin: {f.get('profitability', {}).get('profit_margin')}.\n"
-        + (f"User focus: {req.extra_prompt}\n" if req.extra_prompt else "")
-    )
-
-    # Stubbed body — frontend renders this verbatim under "Notes" while we
-    # plumb a real LLM call (PRIMARY_LLM is set in main.py).
+    name = f.get("name") or req.ticker.upper()
+    prompt = _build_case_prompt(req.ticker, f, req.extra_prompt)
+    text = await _generate_case_text(prompt)
     return {
         "ticker": req.ticker.upper(),
         "name": name,
-        "summary": (
-            "Stub response — LLM-written bull / bear / base will land in a "
-            "follow-up. The data block below is from yfinance."
-        ),
+        "text": text,
         "prompt": prompt,
         "fundamentals": f,
     }
+
+
+@router.post("/case/stream")
+async def case_stream(req: CaseRequest) -> StreamingResponse:
+    """
+    Server-Sent Events stream of an LLM-written research note.
+
+    Event format (`data: <json>\\n\\n`):
+      - {type: 'meta', ticker, name, fundamentals}  — once, before deltas
+      - {type: 'delta', content: '<text chunk>'}    — repeated
+      - {type: 'done'}                              — once, at the end
+      - {type: 'error', message: '...'}             — on failure
+
+    The chunking is *pseudo*-streaming today: we call the LLM non-streaming,
+    then chunk the result for the typewriter feel. Switching to real
+    token-level streaming requires provider-specific changes
+    (`generate_content_stream` for Gemini, `stream: true` for DeepSeek) and
+    can land in a follow-up without changing this SSE event shape.
+    """
+    # Fetch fundamentals first so the meta event has data even if the LLM
+    # call later fails — the frontend can still show the snapshot table.
+    f = await fundamentals(FundamentalsRequest(ticker=req.ticker))
+    name = f.get("name") or req.ticker.upper()
+    prompt = _build_case_prompt(req.ticker, f, req.extra_prompt)
+
+    async def event_stream() -> AsyncIterator[str]:
+        # Meta first so the client can render the header / fundamentals
+        # table while it waits for the LLM.
+        yield (
+            "data: " + json.dumps({
+                "type": "meta",
+                "ticker": req.ticker.upper(),
+                "name": name,
+                "fundamentals": f,
+                "prompt": prompt,
+            }) + "\n\n"
+        )
+
+        try:
+            text = await _generate_case_text(prompt)
+        except HTTPException as e:
+            yield (
+                "data: " + json.dumps({
+                    "type": "error",
+                    "message": e.detail if isinstance(e.detail, str) else str(e.detail),
+                }) + "\n\n"
+            )
+            return
+        except Exception as e:
+            yield "data: " + json.dumps({"type": "error", "message": str(e)}) + "\n\n"
+            return
+
+        # Pseudo-stream the full text in small chunks for a typewriter feel.
+        # ~16 chars at 20ms ≈ ~50 chars/s, smooth without burning the loop.
+        chunk_size = 16
+        for i in range(0, len(text), chunk_size):
+            yield (
+                "data: "
+                + json.dumps({"type": "delta", "content": text[i : i + chunk_size]})
+                + "\n\n"
+            )
+            await asyncio.sleep(0.02)
+
+        yield "data: " + json.dumps({"type": "done"}) + "\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # disable nginx response buffering
+        },
+    )

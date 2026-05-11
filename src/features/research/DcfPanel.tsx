@@ -104,13 +104,25 @@ interface FundamentalsResponse {
   dividend: Record<string, number | null>;
 }
 
-interface CaseResponse {
+interface CaseMetaEvent {
+  type: 'meta';
   ticker: string;
   name: string;
-  summary: string;
-  prompt: string;
   fundamentals: FundamentalsResponse;
+  prompt: string;
 }
+interface CaseDeltaEvent {
+  type: 'delta';
+  content: string;
+}
+interface CaseDoneEvent {
+  type: 'done';
+}
+interface CaseErrorEvent {
+  type: 'error';
+  message: string;
+}
+type CaseEvent = CaseMetaEvent | CaseDeltaEvent | CaseDoneEvent | CaseErrorEvent;
 
 /* -------------------------------------------------------------------------- */
 /*  Formatting helpers                                                         */
@@ -509,21 +521,86 @@ function FundamentalsTab() {
 function CaseStudiesTab() {
   const [ticker, setTicker] = useState('AAPL');
   const [extra, setExtra] = useState('');
-  const [data, setData] = useState<CaseResponse | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [meta, setMeta] = useState<CaseMetaEvent | null>(null);
+  const [text, setText] = useState('');
+  const [streaming, setStreaming] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // Abort the in-flight stream when the user cancels or restarts.
+  const abortRef = useState<{ ctrl: AbortController | null }>({ ctrl: null })[0];
+
+  const cancel = () => {
+    abortRef.ctrl?.abort();
+    abortRef.ctrl = null;
+    setStreaming(false);
+  };
 
   const run = async () => {
-    setLoading(true);
+    cancel();
     setErr(null);
+    setText('');
+    setMeta(null);
+    setStreaming(true);
+    const ctrl = new AbortController();
+    abortRef.ctrl = ctrl;
+
     try {
-      setData((await post('case', { ticker, extra_prompt: extra || undefined })) as CaseResponse);
+      const resp = await fetch(`${equityBase()}/equity-research/case/stream`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticker, extra_prompt: extra || undefined }),
+        signal: ctrl.signal,
+      });
+      if (!resp.ok || !resp.body) {
+        const detail = await resp.text().catch(() => `HTTP ${resp.status}`);
+        throw new Error(detail || `HTTP ${resp.status}`);
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      // Parse SSE frames: each event ends with a blank line ("\n\n"). The
+      // event body lines start with "data: ". We collect deltas until 'done'.
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const frames = buffer.split('\n\n');
+        buffer = frames.pop() ?? '';
+        for (const frame of frames) {
+          for (const line of frame.split('\n')) {
+            if (!line.startsWith('data:')) continue;
+            const json = line.slice(5).trim();
+            if (!json) continue;
+            let evt: CaseEvent;
+            try {
+              evt = JSON.parse(json) as CaseEvent;
+            } catch {
+              continue;
+            }
+            if (evt.type === 'meta') {
+              setMeta(evt);
+            } else if (evt.type === 'delta') {
+              setText((t) => t + evt.content);
+            } else if (evt.type === 'done') {
+              setStreaming(false);
+            } else if (evt.type === 'error') {
+              setErr(evt.message);
+              setStreaming(false);
+              toast.error(evt.message);
+            }
+          }
+        }
+      }
+      setStreaming(false);
     } catch (e) {
+      if ((e as Error).name === 'AbortError') return;
       const msg = e instanceof Error ? e.message : 'request failed';
       setErr(msg);
+      setStreaming(false);
       toast.error(msg);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -546,9 +623,18 @@ function CaseStudiesTab() {
             />
           </Field>
         </CardContent>
-        <div className="px-5 py-3 border-t border-border/50 bg-muted/30 flex justify-end">
-          <Button onClick={run} disabled={loading}>
-            {loading ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Play className="w-3.5 h-3.5 mr-1.5" />}
+        <div className="px-5 py-3 border-t border-border/50 bg-muted/30 flex justify-end gap-2">
+          {streaming && (
+            <Button variant="outline" onClick={cancel}>
+              Stop
+            </Button>
+          )}
+          <Button onClick={run} disabled={streaming}>
+            {streaming ? (
+              <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+            ) : (
+              <Play className="w-3.5 h-3.5 mr-1.5" />
+            )}
             Generate case
           </Button>
         </div>
@@ -563,33 +649,96 @@ function CaseStudiesTab() {
         </Card>
       )}
 
-      {data && (
+      {(meta || text) && (
         <Card className="bg-card/60 border-border/50">
           <CardContent className="p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold">{data.name}</h3>
-              <Badge variant="outline" className="text-[10px] uppercase tracking-wider">
-                {data.ticker}
-              </Badge>
+            {meta && (
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="text-base font-semibold truncate">{meta.name}</h3>
+                  <p className="text-[11px] text-muted-foreground truncate">
+                    {meta.fundamentals.sector ?? '—'} · {meta.fundamentals.industry ?? '—'}
+                  </p>
+                </div>
+                <Badge variant="outline" className="text-[10px] uppercase tracking-wider shrink-0">
+                  {meta.ticker}
+                </Badge>
+              </div>
+            )}
+
+            <div className="rounded-md border border-border/40 bg-muted/20 p-4 min-h-[120px]">
+              {text ? (
+                <CaseMarkdown text={text} />
+              ) : streaming ? (
+                <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Generating bull / bear / base case…
+                </div>
+              ) : (
+                <p className="text-[12px] text-muted-foreground">Waiting for response…</p>
+              )}
+              {streaming && text && (
+                <span className="inline-block w-1.5 h-3.5 bg-primary/70 ml-0.5 animate-pulse" />
+              )}
             </div>
-            <p className="text-xs text-muted-foreground">{data.summary}</p>
-            <div>
-              <h4 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1 font-medium">
-                Prompt context
-              </h4>
-              <pre className="text-[11px] font-mono whitespace-pre-wrap leading-relaxed text-foreground/80 bg-muted/30 rounded-md p-3 border border-border/40">
-                {data.prompt}
-              </pre>
-            </div>
-            <p className="text-[10.5px] text-muted-foreground">
-              The bull / bear / base-case prose is a follow-up — we have the data, we still need
-              to wire it to the PRIMARY_LLM provider with streaming. The fundamentals block on
-              the previous tab is fully working today.
-            </p>
           </CardContent>
         </Card>
       )}
     </div>
+  );
+}
+
+/**
+ * Minimal markdown-ish renderer for the streaming case text. We only need
+ * H2 headings (## Bull case, etc.) and paragraph breaks — full markdown
+ * would pull in another dep we don't need. Bold (**x**) and bullet lists
+ * (- item) round out the basics the prompt asks the LLM to use.
+ */
+function CaseMarkdown({ text }: { text: string }) {
+  const blocks = text.split(/\n{2,}/);
+  return (
+    <div className="space-y-3 text-[13px] leading-relaxed text-foreground/90">
+      {blocks.map((block, i) => {
+        if (block.startsWith('## ')) {
+          return (
+            <h4
+              key={i}
+              className="text-[11px] uppercase tracking-wider text-primary font-semibold pt-2"
+            >
+              {block.replace(/^##\s+/, '')}
+            </h4>
+          );
+        }
+        if (block.split('\n').every((l) => l.trim().startsWith('-'))) {
+          return (
+            <ul key={i} className="list-disc list-inside space-y-1">
+              {block.split('\n').map((l, j) => (
+                <li key={j}>{renderInline(l.replace(/^\s*-\s*/, ''))}</li>
+              ))}
+            </ul>
+          );
+        }
+        return (
+          <p key={i} className="whitespace-pre-wrap">
+            {renderInline(block)}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Inline-format **bold** spans. */
+function renderInline(s: string): React.ReactNode {
+  const parts = s.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((p, i) =>
+    p.startsWith('**') && p.endsWith('**') ? (
+      <strong key={i} className="font-semibold text-foreground">
+        {p.slice(2, -2)}
+      </strong>
+    ) : (
+      <span key={i}>{p}</span>
+    ),
   );
 }
 
