@@ -8,12 +8,21 @@
  *     title?: string, xLabel?: string, yLabel?: string,
  *     series: [{ name, points: [{x: number, y: number}], color? }],
  *   }
+ *
+ * v2: optional history overlay. When `keepHistory` is enabled (toggle in the
+ * card header), each new `series` value pushes the previous one into a
+ * bounded ring buffer. Past runs render underneath at progressively lower
+ * opacity in a neutral grey, the latest run on top at full opacity in its
+ * original colors. Useful for Monte Carlo / parameter-sweep / repeated-run
+ * scenarios where seeing the envelope of outcomes matters more than any
+ * single curve. Toggle off → buffer clears.
  */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { LineChart, Maximize2 } from 'lucide-react';
+import { LineChart, Maximize2, Layers } from 'lucide-react';
 import { PinButton } from '../components/PinButton';
+import { cn } from '@/lib/utils';
 
 interface Series {
   name: string;
@@ -28,19 +37,53 @@ interface Props {
     yLabel?: string;
     series: Series[];
   };
+  /** Initial state of the "Keep history" toggle. Default false. */
+  keepHistory?: boolean;
+  /** Cap on retained historical runs (the buffer is FIFO). Default 8. */
+  historyMaxRuns?: number;
 }
 
 const DEFAULT_COLORS = ['#a78bfa', '#34d399', '#fbbf24', '#f87171', '#60a5fa'];
 
-export function PlotCard({ payload }: Props) {
+export function PlotCard({
+  payload,
+  keepHistory: initialKeepHistory = false,
+  historyMaxRuns = 8,
+}: Props) {
   const [expanded, setExpanded] = useState(false);
+  const [keepHistory, setKeepHistory] = useState(initialKeepHistory);
+  const [history, setHistory] = useState<Series[][]>([]);
+  const prevSeriesRef = useRef<Series[] | null>(null);
+
   const { title, xLabel, yLabel, series = [] } = payload;
 
-  const { width, height, points, xRange, yRange } = useMemo(() => {
+  // Capture the previous series whenever payload.series changes — but only
+  // while keepHistory is enabled. Toggling off clears the buffer.
+  useEffect(() => {
+    if (!keepHistory) {
+      if (history.length > 0) setHistory([]);
+      prevSeriesRef.current = series;
+      return;
+    }
+    const prev = prevSeriesRef.current;
+    if (prev && prev !== series && prev.length > 0) {
+      setHistory((h) => [...h, prev].slice(-historyMaxRuns));
+    }
+    prevSeriesRef.current = series;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [series, keepHistory, historyMaxRuns]);
+
+  const { width, height, xRange, yRange } = useMemo(() => {
     const w = expanded ? 720 : 420;
     const h = expanded ? 360 : 200;
-    const allPts = series.flatMap((s) => s.points);
-    if (allPts.length === 0) return { width: w, height: h, points: [], xRange: [0, 1], yRange: [0, 1] };
+    // Union of current + history points so old runs don't clip when the
+    // newer run zooms into a smaller range.
+    const allPts = [
+      ...series.flatMap((s) => s.points),
+      ...history.flatMap((run) => run.flatMap((s) => s.points)),
+    ];
+    if (allPts.length === 0)
+      return { width: w, height: h, xRange: [0, 1] as const, yRange: [0, 1] as const };
     const xs = allPts.map((p) => p.x);
     const ys = allPts.map((p) => p.y);
     const xMin = Math.min(...xs);
@@ -52,12 +95,10 @@ export function PlotCard({ payload }: Props) {
     return {
       width: w,
       height: h,
-      points: allPts,
-      xRange: [xMin - xPad, xMax + xPad],
-      yRange: [yMin - yPad, yMax + yPad],
+      xRange: [xMin - xPad, xMax + xPad] as const,
+      yRange: [yMin - yPad, yMax + yPad] as const,
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [series, expanded]);
+  }, [series, history, expanded]);
 
   const padding = { top: 16, right: 16, bottom: 28, left: 36 };
   const innerW = width - padding.left - padding.right;
@@ -68,14 +109,38 @@ export function PlotCard({ payload }: Props) {
   const yScale = (y: number) =>
     padding.top + (1 - (y - yRange[0]) / (yRange[1] - yRange[0])) * innerH;
 
-  const renderSeries = (s: Series, idx: number) => {
-    const color = s.color || DEFAULT_COLORS[idx % DEFAULT_COLORS.length];
-    const path = s.points
+  const pathFor = (s: Series) =>
+    s.points
       .map((p, i) => `${i === 0 ? 'M' : 'L'}${xScale(p.x)},${yScale(p.y)}`)
       .join(' ');
+
+  // Historical runs: single neutral colour, opacity ramps from 0.08 (oldest)
+  // to 0.30 (most recent prior). Latest run on top at full opacity in its
+  // own colours.
+  const renderHistorical = (runSeries: Series[], runIdx: number) => {
+    const t = history.length === 1 ? 1 : runIdx / (history.length - 1);
+    const opacity = 0.08 + t * 0.22;
+    return (
+      <g key={`hist-${runIdx}`} opacity={opacity}>
+        {runSeries.map((s, sIdx) => (
+          <path
+            key={`hist-${runIdx}-${sIdx}`}
+            d={pathFor(s)}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1}
+            className="text-muted-foreground"
+          />
+        ))}
+      </g>
+    );
+  };
+
+  const renderCurrent = (s: Series, idx: number) => {
+    const color = s.color || DEFAULT_COLORS[idx % DEFAULT_COLORS.length];
     return (
       <g key={s.name + idx}>
-        <path d={path} fill="none" stroke={color} strokeWidth={1.5} />
+        <path d={pathFor(s)} fill="none" stroke={color} strokeWidth={1.5} />
       </g>
     );
   };
@@ -90,8 +155,31 @@ export function PlotCard({ payload }: Props) {
         <div className="flex items-center gap-2 text-xs text-purple-300">
           <LineChart className="w-3.5 h-3.5" />
           <span className="font-medium">{title ?? 'Chart'}</span>
+          {keepHistory && history.length > 0 && (
+            <span className="text-[10px] text-muted-foreground font-mono">
+              · {history.length} prior run{history.length === 1 ? '' : 's'}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setKeepHistory((v) => !v)}
+            className={cn(
+              'flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border transition-colors',
+              keepHistory
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                : 'bg-white/[0.02] text-white/40 border-white/10 hover:bg-white/[0.06]',
+            )}
+            title={
+              keepHistory
+                ? 'Stop overlaying past runs (clears buffer)'
+                : 'Overlay past runs on this chart'
+            }
+          >
+            <Layers className="w-3 h-3" />
+            History
+          </button>
           <PinButton cardType="plot" payload={payload} title={title} />
           <button
             onClick={() => setExpanded((v) => !v)}
@@ -119,7 +207,10 @@ export function PlotCard({ payload }: Props) {
             y2={height - padding.bottom}
             stroke="rgba(255,255,255,0.1)"
           />
-          {series.map(renderSeries)}
+          {/* Historical runs underneath */}
+          {history.map(renderHistorical)}
+          {/* Current run on top */}
+          {series.map(renderCurrent)}
         </svg>
       </div>
       {(xLabel || yLabel) && (
