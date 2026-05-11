@@ -98,6 +98,7 @@ import { RiskPanel } from '@/features/portfolio/RiskPanel';
 import { StressPanel } from '@/features/portfolio/StressPanel';
 import { MacroPanel } from '@/features/portfolio/MacroPanel';
 import { RebalancePanel } from '@/features/portfolio/RebalancePanel';
+import { AccountSelector } from '@/features/portfolio/AccountSelector';
 import { AuditLogPanel } from '@/features/portfolio/AuditLogPanel';
 import { EarningsCalendar } from '@/features/portfolio/EarningsCalendar';
 import { PerformancePanel } from '@/features/portfolio/PerformancePanel';
@@ -833,6 +834,12 @@ const Portfolio = () => {
 
               {/* ═══ HOLDINGS TAB ═══ */}
               <TabsContent value="holdings" className="space-y-6">
+                {/* Account scope picker — Avanza-style "Alla konton" dropdown.
+                    Filters the holdings list below by the active account.
+                    When "All accounts" is selected and the user has >1 account,
+                    a strip of per-account balance cards appears underneath. */}
+                <AccountSelector holdings={displayHoldings} />
+
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {displayHoldings.map((h, idx) => {
                     const value = h.quantity * (h.currentPrice || h.avgCost);
