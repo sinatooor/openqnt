@@ -34,8 +34,13 @@ import {
     AlertTriangle,
     ChevronRight,
     KeyRound,
+    Phone,
+    UserCircle,
 } from 'lucide-react';
 import { ApiKeysPanel } from '@/features/settings/ApiKeysPanel';
+import { ProfilePanel } from '@/features/settings/ProfilePanel';
+import { VoicePanel } from '@/features/settings/VoicePanel';
+import { CredentialsPanel } from '@/features/settings/CredentialsPanel';
 import { useTheme, type Theme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -92,6 +97,7 @@ interface SectionDef {
 }
 
 const SECTIONS: SectionDef[] = [
+    { id: 'profile',     label: 'Profile',         icon: UserCircle },
     { id: 'account',     label: 'Account',         icon: Shield },
     { id: 'accounts',    label: 'Accounts',        icon: Briefcase },
     { id: 'api-keys',    label: 'API Keys',        icon: KeyRound },
@@ -100,6 +106,7 @@ const SECTIONS: SectionDef[] = [
     { id: 'appearance',  label: 'Appearance',      icon: Palette },
     { id: 'brokers',     label: 'Brokers',         icon: Wallet },
     { id: 'connectors',  label: 'Connectors',      icon: Link2 },
+    { id: 'voice',       label: 'Voice',           icon: Phone },
     { id: 'danger',      label: 'Danger zone',     icon: AlertTriangle },
 ];
 
@@ -272,6 +279,16 @@ const Settings = () => {
 
                     {/* ── Content column ───────────────────────────────── */}
                     <div className="space-y-10 max-w-3xl">
+                        {/* Profile (moved from former ProfileModal in the nav) */}
+                        <Section
+                            id="profile"
+                            title="Profile"
+                            description="Sign-in identity and your saved-work stats."
+                            innerRef={(el) => (sectionRefs.current.profile = el)}
+                        >
+                            <ProfilePanel />
+                        </Section>
+
                         {/* Account */}
                         <Section
                             id="account"
@@ -568,6 +585,14 @@ const Settings = () => {
                                     );
                                 })}
                             </ul>
+
+                            {/* Server-side encrypted credential vault for live execution
+                                (Alpaca, IG, IBKR, Nordnet). Distinct from API Keys
+                                above which holds LLM / data-feed keys in the OS
+                                keychain on this device. */}
+                            <div className="mt-6 pt-6 border-t border-border/40">
+                                <CredentialsPanel />
+                            </div>
                         </Section>
 
                         {/* Connectors */}
@@ -600,6 +625,16 @@ const Settings = () => {
                                     </li>
                                 ))}
                             </ul>
+                        </Section>
+
+                        {/* Voice (Twilio phone + iOS pairing for voice trading) */}
+                        <Section
+                            id="voice"
+                            title="Voice"
+                            description="Phone number, iOS pairing, and voice-trading toggle."
+                            innerRef={(el) => (sectionRefs.current.voice = el)}
+                        >
+                            <VoicePanel />
                         </Section>
 
                         {/* Danger zone */}
