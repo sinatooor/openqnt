@@ -11,7 +11,7 @@ import { useState, useEffect, useMemo, useCallback, type ReactNode } from 'react
 import {
     Layers, FlaskConical, Play, BarChart2, Loader2, AlertCircle, RefreshCw,
     TrendingDown, GitCompare, SlidersHorizontal, Activity, BarChart3, Beaker,
-    Shield, Lock, History, ArrowRight, type LucideIcon,
+    Shield, Lock, History, ArrowRight, Calculator, type LucideIcon,
 } from 'lucide-react';
 import { api } from '@/services/api';
 import { useStrategyFlowStore } from '@/features/strategy-flow/store/strategyFlowStore';
@@ -32,6 +32,7 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PAGE_CONTENT_CLASS } from '@/components/PageHeader';
 import { PopOutButton } from '@/components/FloatingWindow';
+import { DcfPanel } from '@/features/research/DcfPanel';
 import { cn } from '@/lib/utils';
 
 import { orchestratorBase } from '@/lib/runtimeConfig';
@@ -42,6 +43,7 @@ import { orchestratorBase } from '@/lib/runtimeConfig';
 type ToolId =
     | 'quantstats'
     | 'strategies'
+    | 'dcf'
     | 'mcpt'
     | 'montecarlo'
     | 'hmm'
@@ -61,6 +63,7 @@ interface Tool {
 
 const TOOLS: Tool[] = [
     { id: 'quantstats', label: 'QuantStats', blurb: 'Portfolio analytics — Sharpe, Sortino, drawdown.', icon: BarChart3 },
+    { id: 'dcf', label: 'DCF & Equity Research', blurb: 'Two-stage DCF, fundamentals, case studies.', icon: Calculator },
     { id: 'strategies', label: 'Strategies', blurb: 'Run classic quant strategies on real tickers.', icon: Beaker },
     { id: 'mcpt', label: 'MCPT', blurb: 'Monte Carlo permutation test for overfitting.', icon: BarChart2 },
     { id: 'montecarlo', label: 'Monte Carlo', blurb: 'Randomize trade order, simulate equity outcomes.', icon: Activity },
@@ -633,6 +636,13 @@ const Research = () => {
                                     )}
                                 </ResultsCard>
                             ) : <ResultsEmpty tool={tool} />}
+                        </ToolPanel>
+                    )}
+
+                    {/* DCF & Equity Research ---------------------------------------- */}
+                    {activeTool === 'dcf' && (
+                        <ToolPanel tool={tool}>
+                            <DcfPanel />
                         </ToolPanel>
                     )}
 

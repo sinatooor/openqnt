@@ -307,6 +307,13 @@ try:
 except Exception as _e:
     print(f"Warning: ios_push router failed to load: {_e}")
 
+# Equity research — DCF valuation, fundamentals snapshot, ad-hoc case studies
+try:
+    from routers import equity_research as equity_research_router
+    app.include_router(equity_research_router.router)
+except Exception as _e:
+    print(f"Warning: equity_research router failed to load: {_e}")
+
 # External integrations (Avanza first; Nordnet/IBKR later)
 try:
     from routers import integrations as integrations_router
