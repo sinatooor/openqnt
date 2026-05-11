@@ -31,6 +31,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PAGE_CONTENT_CLASS } from '@/components/PageHeader';
+import { PopOutButton } from '@/components/FloatingWindow';
 import { cn } from '@/lib/utils';
 
 import { orchestratorBase } from '@/lib/runtimeConfig';
@@ -691,7 +692,27 @@ const Research = () => {
 
                             {stratResult ? (
                                 <ResultsCard>
-                                    <SectionTitle icon={Beaker}>{stratResult.strategyName} — Results</SectionTitle>
+                                    <div className="flex items-center justify-between gap-3">
+                                        <SectionTitle icon={Beaker}>{stratResult.strategyName} — Results</SectionTitle>
+                                        {/* Pop out a snapshot of the current plot into a floating
+                                            window — useful for keeping a chart on screen while
+                                            switching to Strategy Flow. Click again after a re-run
+                                            to refresh the snapshot. */}
+                                        {stratResult.plotImage && (
+                                            <PopOutButton
+                                                id="research-strategies-plot"
+                                                title={`${stratResult.strategyName} — Plot`}
+                                                defaultSize={{ width: 640, height: 480 }}
+                                                content={() => (
+                                                    <img
+                                                        src={stratResult.plotImage}
+                                                        alt={stratResult.strategyName}
+                                                        className="w-full h-full object-contain bg-white"
+                                                    />
+                                                )}
+                                            />
+                                        )}
+                                    </div>
                                     <StatGrid cols={4}>
                                         {stratResult.metrics && Object.entries(stratResult.metrics).map(([k, v]) => (
                                             <Stat

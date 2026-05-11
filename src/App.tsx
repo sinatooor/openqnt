@@ -47,6 +47,7 @@ import {
   SelectionPill,
   ArtifactRail,
 } from "./features/ai-chat";
+import { FloatingWindowsRoot } from "./components/FloatingWindow";
 // GlobalVoiceFab removed — voice mic now lives inside the Composer toolbar
 // next to the send button (see Composer.tsx).
 import NotFound from "./pages/NotFound";
@@ -200,6 +201,10 @@ const GlobalOverlays = () => {
           <SelectionPill />
         </>
       )}
+      {/* Non-modal popped-out windows (research charts, strategy-flow node
+          plots). Persist across route changes — driven by
+          useFloatingWindowsStore. */}
+      <FloatingWindowsRoot />
     </>
   );
 };
