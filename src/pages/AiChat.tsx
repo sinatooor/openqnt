@@ -15,7 +15,7 @@ import {
   ConversationHistorySidebar,
   MessageList,
   Composer,
-  EmptyState,
+  EmptyStateLanding,
   PageContextChip,
   ContextRing,
   useAiChatStore,
@@ -94,14 +94,29 @@ const AiChat = ({ defaultMode, defaultFilter }: Props = {}) => {
 
           {/* Conversation */}
           <div className="flex-1 flex flex-col min-h-0 max-w-4xl w-full mx-auto px-4">
-            {items.length === 0 ? <EmptyState /> : <MessageList />}
-            <div className="pb-4">
-              <Composer />
-              <p className="text-center text-[10.5px] text-muted-foreground/50 mt-2">
-                AI can call tools and build strategies. Responses are for informational
-                purposes — not financial advice.
-              </p>
-            </div>
+            {items.length === 0 ? (
+              // Landing state owns its own composer + suggestion buttons.
+              // No bottom-anchored Composer; that gets swapped in once
+              // messages exist.
+              <div className="pb-4 flex-1 flex flex-col min-h-0">
+                <EmptyStateLanding />
+                <p className="text-center text-[10.5px] text-muted-foreground/50">
+                  AI can call tools and build strategies. Responses are for informational
+                  purposes — not financial advice.
+                </p>
+              </div>
+            ) : (
+              <>
+                <MessageList />
+                <div className="pb-4">
+                  <Composer />
+                  <p className="text-center text-[10.5px] text-muted-foreground/50 mt-2">
+                    AI can call tools and build strategies. Responses are for informational
+                    purposes — not financial advice.
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </main>
       </div>
