@@ -20,7 +20,7 @@ import { useAiChatStore } from '../state/aiChatStore';
 import { usePageContextStore } from '../state/pageContextStore';
 import { Composer } from './Composer';
 import { MessageList } from './MessageList';
-import { EmptyState } from './EmptyState';
+import { EmptyStateLanding } from './EmptyStateLanding';
 import { SkillChip } from './SkillChip';
 import { PageContextChip } from './PageContextChip';
 
@@ -124,10 +124,21 @@ function PanelBody() {
 
   return (
     <div className="flex-1 flex flex-col min-h-0 px-2">
-      {items.length === 0 ? <EmptyState /> : <MessageList />}
-      <div className="px-2 pb-3">
-        <Composer />
-      </div>
+      {items.length === 0 ? (
+        // Landing state: greeting + centered composer + suggestions, all in
+        // one component. The bottom-anchored Composer is intentionally not
+        // rendered here — it gets swapped in once messages exist.
+        <div className="px-2 pb-3 flex-1 flex flex-col min-h-0">
+          <EmptyStateLanding />
+        </div>
+      ) : (
+        <>
+          <MessageList />
+          <div className="px-2 pb-3">
+            <Composer />
+          </div>
+        </>
+      )}
     </div>
   );
 }

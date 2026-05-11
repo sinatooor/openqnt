@@ -19,7 +19,19 @@ import { VoicePanel } from '@/features/voice/VoicePanel';
 import { MAX_CONTEXT_TOKENS } from '../state/contextWindow';
 import { toast } from 'sonner';
 
-export function Composer({ autoFocus = true }: { autoFocus?: boolean }) {
+export interface ComposerProps {
+  autoFocus?: boolean;
+  /**
+   * `'docked'` (default) — the slim bottom-anchored composer used while a
+   * conversation is in progress.
+   * `'landing'` — the larger centered composer used on the empty-state
+   * landing screen. Same internals, bigger padding and font.
+   */
+  variant?: 'docked' | 'landing';
+}
+
+export function Composer({ autoFocus = true, variant = 'docked' }: ComposerProps) {
+  const isLanding = variant === 'landing';
   const [input, setInput] = useState('');
   const [voiceOpen, setVoiceOpen] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -100,19 +112,23 @@ export function Composer({ autoFocus = true }: { autoFocus?: boolean }) {
   };
 
   return (
-    <div className="pt-2">
+    <div className={isLanding ? '' : 'pt-2'}>
       <form
         onSubmit={handleSubmit}
-        className="relative flex items-end gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-sm px-4 py-3 focus-within:border-purple-500/40 transition-colors shadow-lg shadow-black/20"
+        className={`relative flex items-end gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-sm focus-within:border-purple-500/40 transition-colors shadow-lg shadow-black/20 ${
+          isLanding ? 'px-5 py-4' : 'px-4 py-3'
+        }`}
       >
         <textarea
           ref={inputRef}
           value={input}
           onChange={handleChange}
           onKeyDown={handleKey}
-          placeholder={descriptor.placeholder}
-          rows={1}
-          className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground resize-none outline-none max-h-40 leading-relaxed"
+          placeholder={isLanding ? 'How can I help you today?' : descriptor.placeholder}
+          rows={isLanding ? 2 : 1}
+          className={`flex-1 bg-transparent text-foreground placeholder:text-muted-foreground resize-none outline-none leading-relaxed ${
+            isLanding ? 'text-base max-h-48 min-h-[3rem]' : 'text-sm max-h-40'
+          }`}
         />
         <div className="flex items-center gap-1.5 shrink-0">
           <ContextRing tokens={tokens} />
