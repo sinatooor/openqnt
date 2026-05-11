@@ -33,7 +33,9 @@ import {
     SlidersHorizontal,
     AlertTriangle,
     ChevronRight,
+    KeyRound,
 } from 'lucide-react';
+import { ApiKeysPanel } from '@/features/settings/ApiKeysPanel';
 import { useTheme, type Theme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -92,6 +94,7 @@ interface SectionDef {
 const SECTIONS: SectionDef[] = [
     { id: 'account',     label: 'Account',         icon: Shield },
     { id: 'accounts',    label: 'Accounts',        icon: Briefcase },
+    { id: 'api-keys',    label: 'API Keys',        icon: KeyRound },
     { id: 'trading',     label: 'Trading',         icon: SlidersHorizontal },
     { id: 'data-source', label: 'Market data',     icon: Database },
     { id: 'appearance',  label: 'Appearance',      icon: Palette },
@@ -344,6 +347,16 @@ const Settings = () => {
                                     </Button>
                                 </div>
                             </div>
+                        </Section>
+
+                        {/* API Keys (encrypted via OS keychain in desktop builds) */}
+                        <Section
+                            id="api-keys"
+                            title="API Keys"
+                            description="LLM, broker, and data-feed credentials. Stored encrypted in your OS keychain."
+                            innerRef={(el) => (sectionRefs.current['api-keys'] = el)}
+                        >
+                            <ApiKeysPanel />
                         </Section>
 
                         {/* Trading defaults */}

@@ -30,6 +30,7 @@ process.on('unhandledRejection', (e) => diag(`unhandledRejection: ${(e as any)?.
 import { paths, isDev } from './lib/paths';
 import { log, snapshot as logSnapshot, subscribe as subscribeLogs, closeAll as closeLogs } from './lib/logger';
 import { supervisor } from './services/supervisor';
+import * as secrets from './lib/secrets';
 diag('imports complete');
 
 let splash: BrowserWindow | null = null;
@@ -166,11 +167,45 @@ function registerIpc(): void {
   ipcMain.handle('health:snapshot', () => supervisor.snapshot());
   ipcMain.handle('logs:reveal', () => shell.openPath(paths().logsDir));
   ipcMain.handle('app:quit', () => app.quit());
+  ipcMain.handle('app:relaunch', () => {
+    log('main', 'app:relaunch requested by renderer');
+    app.relaunch();
+    app.exit(0);
+  });
   ipcMain.handle('splash:dismiss', () => {
     if (mainSpawned) return;
     mainSpawned = true;
     main = createMainWindow();
   });
+
+  // ── Encrypted secret management (Settings → API Keys) ─────────────────
+  ipcMain.handle('keys:pickEnvFile', async () => {
+    const res = await dialog.showOpenDialog({
+      title: 'Choose a .env file to import',
+      filters: [
+        { name: '.env files', extensions: ['env'] },
+        { name: 'All files', extensions: ['*'] },
+      ],
+      properties: ['openFile', 'showHiddenFiles'],
+    });
+    if (res.canceled || res.filePaths.length === 0) return null;
+    return res.filePaths[0];
+  });
+  ipcMain.handle('keys:parseEnvFile', async (_e, filePath: string) => {
+    if (typeof filePath !== 'string' || !filePath) return [];
+    return secrets.parseEnvFile(filePath);
+  });
+  ipcMain.handle('keys:list', () => secrets.listSecrets());
+  ipcMain.handle('keys:save', (_e, args: { key: string; value: string }) => {
+    secrets.saveSecret(args.key, args.value);
+  });
+  ipcMain.handle('keys:saveMany', (_e, entries: Array<{ key: string; value: string }>) => {
+    secrets.saveManySecrets(entries);
+  });
+  ipcMain.handle('keys:delete', (_e, key: string) => {
+    secrets.deleteSecret(key);
+  });
+  ipcMain.handle('keys:reveal', (_e, key: string) => secrets.revealSecret(key));
 
   // Stream new log lines to any open window (splash diagnostics + future
   // in-app log viewer). Wrapped in try/catch — once a renderer is being
