@@ -33,6 +33,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { PAGE_CONTENT_CLASS } from '@/components/PageHeader';
 import { PopOutButton } from '@/components/FloatingWindow';
 import { DcfPanel } from '@/features/research/DcfPanel';
+import { PlotCard } from '@/features/ai-chat/cards/PlotCard';
 import { cn } from '@/lib/utils';
 
 import { orchestratorBase } from '@/lib/runtimeConfig';
@@ -331,9 +332,35 @@ const InputsCard = ({ children, footer }: { children: ReactNode; footer?: ReactN
     </Card>
 );
 
-const ResultsCard = ({ children }: { children: ReactNode }) => (
-    <Card className="bg-card/60 border-border/50">
+interface ResultsCardProps {
+    children: ReactNode;
+    /**
+     * When provided, a "Pop out" button appears in the card's top-right
+     * corner. Clicking it captures the current children as a snapshot and
+     * renders them inside a non-modal floating window so the user can keep
+     * the result visible while switching tabs.
+     *
+     * Snapshot semantics — the popped-out content reflects the result data
+     * at click time. To refresh, re-click after the next run.
+     */
+    popOut?: { id: string; title: string };
+}
+
+const ResultsCard = ({ children, popOut }: ResultsCardProps) => (
+    <Card className="bg-card/60 border-border/50 relative">
         <CardContent className="p-5 space-y-5">{children}</CardContent>
+        {popOut && (
+            <div className="absolute top-3 right-3 z-10">
+                <PopOutButton
+                    id={popOut.id}
+                    title={popOut.title}
+                    defaultSize={{ width: 720, height: 540 }}
+                    content={() => (
+                        <div className="p-5 space-y-5 bg-card">{children}</div>
+                    )}
+                />
+            </div>
+        )}
     </Card>
 );
 
@@ -603,7 +630,7 @@ const Research = () => {
                             </InputsCard>
 
                             {qsResult?.metrics ? (
-                                <ResultsCard>
+                                <ResultsCard popOut={{ id: 'research-quantstats-results', title: 'QuantStats — Key Metrics' }}>
                                     <SectionTitle icon={BarChart3}>Key Metrics</SectionTitle>
                                     <StatGrid cols={5}>
                                         <Stat label="Sharpe" value={qsResult.metrics.sharpe?.toFixed(3)} tone={qsResult.metrics.sharpe > 1 ? 'profit' : qsResult.metrics.sharpe > 0 ? 'warn' : 'loss'} />
@@ -701,28 +728,8 @@ const Research = () => {
                             </InputsCard>
 
                             {stratResult ? (
-                                <ResultsCard>
-                                    <div className="flex items-center justify-between gap-3">
-                                        <SectionTitle icon={Beaker}>{stratResult.strategyName} — Results</SectionTitle>
-                                        {/* Pop out a snapshot of the current plot into a floating
-                                            window — useful for keeping a chart on screen while
-                                            switching to Strategy Flow. Click again after a re-run
-                                            to refresh the snapshot. */}
-                                        {stratResult.plotImage && (
-                                            <PopOutButton
-                                                id="research-strategies-plot"
-                                                title={`${stratResult.strategyName} — Plot`}
-                                                defaultSize={{ width: 640, height: 480 }}
-                                                content={() => (
-                                                    <img
-                                                        src={stratResult.plotImage}
-                                                        alt={stratResult.strategyName}
-                                                        className="w-full h-full object-contain bg-white"
-                                                    />
-                                                )}
-                                            />
-                                        )}
-                                    </div>
+                                <ResultsCard popOut={{ id: 'research-strategies-results', title: `${stratResult.strategyName} — Results` }}>
+                                    <SectionTitle icon={Beaker}>{stratResult.strategyName} — Results</SectionTitle>
                                     <StatGrid cols={4}>
                                         {stratResult.metrics && Object.entries(stratResult.metrics).map(([k, v]) => (
                                             <Stat
@@ -770,7 +777,7 @@ const Research = () => {
                             </InputsCard>
 
                             {mcptResult ? (
-                                <ResultsCard>
+                                <ResultsCard popOut={{ id: 'research-mcpt-results', title: 'MCPT — Permutation Test' }}>
                                     <StatGrid cols={2}>
                                         <Stat label="P-Value" value={mcptResult.pValue?.toFixed(4)} tone={mcptResult.pValue < 0.05 ? 'profit' : 'warn'} />
                                         <Stat label="Real Profit Factor" value={mcptResult.realPf?.toFixed(2)} />
@@ -803,7 +810,7 @@ const Research = () => {
                             </InputsCard>
 
                             {mcResult ? (
-                                <ResultsCard>
+                                <ResultsCard popOut={{ id: 'research-montecarlo-results', title: 'Monte Carlo Distribution' }}>
                                     <SectionTitle icon={Activity}>Equity Outcome Distribution</SectionTitle>
                                     <StatGrid cols={5}>
                                         <Stat label="P5" value={`$${mcResult.percentiles.p5.toFixed(0)}`} tone="loss" />
@@ -812,6 +819,30 @@ const Research = () => {
                                         <Stat label="P75" value={`$${mcResult.percentiles.p75.toFixed(0)}`} />
                                         <Stat label="P95" value={`$${mcResult.percentiles.p95.toFixed(0)}`} tone="profit" />
                                     </StatGrid>
+                                    {/* Percentile curve as a PlotCard so users can keep-history
+                                        across multiple runs and visually compare how the
+                                        distribution shifts when tuning inputs. */}
+                                    <PlotCard
+                                        payload={{
+                                            kind: 'line',
+                                            title: 'Equity vs percentile',
+                                            xLabel: 'Percentile',
+                                            yLabel: 'Final equity ($)',
+                                            series: [
+                                                {
+                                                    name: `Run · ${new Date().toLocaleTimeString()}`,
+                                                    points: [
+                                                        { x: 5, y: mcResult.percentiles.p5 },
+                                                        { x: 25, y: mcResult.percentiles.p25 },
+                                                        { x: 50, y: mcResult.percentiles.p50 },
+                                                        { x: 75, y: mcResult.percentiles.p75 },
+                                                        { x: 95, y: mcResult.percentiles.p95 },
+                                                    ],
+                                                },
+                                            ],
+                                        }}
+                                        keepHistory
+                                    />
                                 </ResultsCard>
                             ) : <ResultsEmpty tool={tool} />}
                         </ToolPanel>
@@ -832,7 +863,7 @@ const Research = () => {
                             </InputsCard>
 
                             {hmmResult ? (
-                                <ResultsCard>
+                                <ResultsCard popOut={{ id: 'research-hmm-results', title: 'HMM Regime Detection' }}>
                                     <StatGrid cols={3}>
                                         <Stat label="Current Regime" value={hmmResult.currentRegime} tone="profit" />
                                         <Stat label="Num States" value={hmmResult.numStates} />
@@ -877,7 +908,7 @@ const Research = () => {
                             </InputsCard>
 
                             {wfResult ? (
-                                <ResultsCard>
+                                <ResultsCard popOut={{ id: 'research-wfo-results', title: 'Walk-Forward Optimisation' }}>
                                     <StatGrid cols={3}>
                                         <Stat label="OOS Sharpe" value={wfResult.overallOOSSharpe} tone={wfResult.overallOOSSharpe > 0.5 ? 'profit' : 'warn'} />
                                         <Stat label="Avg IS Sharpe" value={wfResult.avgISSharpe} />
@@ -930,7 +961,7 @@ const Research = () => {
                             </InputsCard>
 
                             {varResult ? (
-                                <ResultsCard>
+                                <ResultsCard popOut={{ id: 'research-var-results', title: 'VaR / CVaR' }}>
                                     <StatGrid cols={4}>
                                         <Stat label={`VaR (${(varConf * 100).toFixed(0)}%)`} value={`${varResult.var?.toFixed(2)}%`} tone="loss" />
                                         <Stat label="CVaR (ES)" value={`${varResult.cvar?.toFixed(2)}%`} tone="loss" />
@@ -957,7 +988,7 @@ const Research = () => {
                             </InputsCard>
 
                             {cointResult ? (
-                                <ResultsCard>
+                                <ResultsCard popOut={{ id: 'research-coint-results', title: 'Cointegration · Engle-Granger' }}>
                                     <StatGrid cols={4}>
                                         <Stat label="Cointegrated?" value={cointResult.cointegrated ? 'YES' : 'NO'} tone={cointResult.cointegrated ? 'profit' : 'loss'} />
                                         <Stat label="P-Value" value={cointResult.pValue?.toFixed(4)} />
