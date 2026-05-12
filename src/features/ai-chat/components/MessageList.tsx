@@ -67,7 +67,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
-      className={`flex gap-3 py-3 px-2 ${isUser ? 'justify-end' : ''}`}
+      className={`flex gap-3 py-2 px-2 ${isUser ? 'justify-end' : ''}`}
     >
       {!isUser && (
         <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/20 flex items-center justify-center mt-0.5">

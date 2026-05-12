@@ -78,16 +78,16 @@ function PanelHeader({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2.5 border-b border-white/[0.06]">
+    <div className="flex items-center gap-2 px-3 py-2 border-b border-white/[0.06]">
       {/* SkillChip moved into Composer's bottom toolbar */}
       {ctx && <PageContextChip />}
-      <div className="ml-auto flex items-center gap-1">
+      <div className="ml-auto flex items-center gap-0.5">
         <button
           onClick={startNewSession}
           title="New session"
-          className="w-7 h-7 rounded-md hover:bg-white/[0.06] text-white/60 hover:text-white flex items-center justify-center transition-colors"
+          className="w-6 h-6 rounded-md hover:bg-white/[0.06] text-white/60 hover:text-white flex items-center justify-center transition-colors"
         >
-          <Plus className="w-3.5 h-3.5" />
+          <Plus className="w-3 h-3" />
         </button>
         <button
           onClick={() => {
@@ -95,16 +95,16 @@ function PanelHeader({ onClose }: { onClose: () => void }) {
             onClose();
           }}
           title="Open in full page"
-          className="w-7 h-7 rounded-md hover:bg-white/[0.06] text-white/60 hover:text-white flex items-center justify-center transition-colors"
+          className="w-6 h-6 rounded-md hover:bg-white/[0.06] text-white/60 hover:text-white flex items-center justify-center transition-colors"
         >
-          <History className="w-3.5 h-3.5" />
+          <History className="w-3 h-3" />
         </button>
         <button
           onClick={onClose}
           title="Close (Esc)"
-          className="w-7 h-7 rounded-md hover:bg-white/[0.06] text-white/60 hover:text-white flex items-center justify-center transition-colors"
+          className="w-6 h-6 rounded-md hover:bg-white/[0.06] text-white/60 hover:text-white flex items-center justify-center transition-colors"
         >
-          <X className="w-3.5 h-3.5" />
+          <X className="w-3 h-3" />
         </button>
       </div>
     </div>
