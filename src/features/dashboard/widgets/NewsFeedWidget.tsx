@@ -33,8 +33,12 @@ interface TerminalNewsResponse {
 const ORCHESTRATOR_URL =
   orchestratorBase();
 
-function classifySentiment(headline: string): 'bullish' | 'bearish' | 'neutral' {
-  const h = headline.toLowerCase();
+function classifySentiment(headline: string | null | undefined): 'bullish' | 'bearish' | 'neutral' {
+  // Defensive null guard — backend payloads occasionally lack a headline
+  // field; previously this threw `Cannot read properties of null` and broke
+  // the widget render.
+  const h = (headline ?? '').toLowerCase();
+  if (!h) return 'neutral';
   if (/(rally|surge|jump|beat|growth|hit\s+high|all-time high|outperform|raise|upgrade|gain)/.test(h)) return 'bullish';
   if (/(fall|drop|plunge|miss|cut|downgrade|recession|concern|fear|warn|loss|slump|weak)/.test(h)) return 'bearish';
   return 'neutral';
@@ -85,14 +89,18 @@ export default function NewsFeedWidget() {
     const tryTerminalNews = async (): Promise<NewsItem[] | null> => {
       const resp = await terminalApiGet<TerminalNewsResponse>('/api/terminal/news/SPY', undefined, ctrl.signal);
       if (!resp?.data?.items?.length) return null;
-      return resp.data.items.slice(0, 10).map((it, idx) => ({
-        id: it.id ?? idx,
-        title: it.headline,
-        url: it.url ?? null,
-        source: it.source ?? null,
-        publishedAt: it.timestamp ?? null,
-        sentiment: classifySentiment(it.headline),
-      }));
+      // Drop rows with no headline so we don't render empty cards.
+      return resp.data.items
+        .filter((it) => it && it.headline)
+        .slice(0, 10)
+        .map((it, idx) => ({
+          id: it.id ?? idx,
+          title: it.headline,
+          url: it.url ?? null,
+          source: it.source ?? null,
+          publishedAt: it.timestamp ?? null,
+          sentiment: classifySentiment(it.headline),
+        }));
     };
 
     const load = async () => {
