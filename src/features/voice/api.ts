@@ -67,9 +67,27 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
     return (await res.json()) as T;
 }
 
+/**
+ * Fetch a voice profile. The backend returns 404 when no profile row exists
+ * yet (e.g. fresh / unauthenticated users like "local-user") — that's
+ * expected, not an error. Return `null` so the UI can render an empty
+ * "no profile yet — set a phone number" state instead of a toast.
+ */
+async function getProfileSafe(userId: string): Promise<VoiceProfile | null> {
+    const base = apiBase();
+    const res = await fetch(`${base}/api/voice/profile/${encodeURIComponent(userId)}`, {
+        headers: { 'Content-Type': 'application/json' },
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) {
+        const detail = await res.json().catch(() => null);
+        throw new Error(detail?.detail || detail?.message || `voice api ${res.status}`);
+    }
+    return (await res.json()) as VoiceProfile;
+}
+
 export const voiceApi = {
-    getProfile: (userId: string) =>
-        req<VoiceProfile>(`/api/voice/profile/${encodeURIComponent(userId)}`),
+    getProfile: getProfileSafe,
 
     updatePhone: (userId: string, phone: string | null) =>
         req<{ ok: boolean; phone_number: string | null }>(`/api/voice/profile/phone`, {

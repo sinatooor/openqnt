@@ -33,17 +33,24 @@ function fmtNum(n: number, decimals = 2): string {
   });
 }
 
-function fmtUsdB(b: number): string {
+// Format helpers tolerate null/undefined — backend can omit any of these
+// fields (e.g. private placements with no prev close). Previously these
+// crashed the entire DesView with "Cannot read properties of null (reading
+// 'toFixed')".
+function fmtUsdB(b: number | null | undefined): string {
+  if (b === null || b === undefined || !Number.isFinite(b)) return '—';
   if (Math.abs(b) >= 1000) return `$${(b / 1000).toFixed(2)}T`;
   return `$${b.toFixed(2)}B`;
 }
 
-function signedPct(n: number, decimals = 2): string {
+function signedPct(n: number | null | undefined, decimals = 2): string {
+  if (n === null || n === undefined || !Number.isFinite(n)) return '—';
   const v = `${n.toFixed(decimals)}%`;
   return n > 0 ? `+${v}` : v;
 }
 
-function deltaClass(n: number): string {
+function deltaClass(n: number | null | undefined): string {
+  if (n === null || n === undefined || !Number.isFinite(n)) return 'des-flat';
   if (n > 0.0005) return 'des-up';
   if (n < -0.0005) return 'des-down';
   return 'des-flat';
@@ -58,11 +65,19 @@ export default function DesView({ ticker, seedSalt = 0 }: DesViewProps) {
 
   const { center: c, financials: f, valuation: v, segments, executives, highlights, risks, catalysts } = data;
 
-  // 52-week range marker position, clamped 0..100.
-  const rangePos = Math.max(
-    0,
-    Math.min(100, ((v.price - v.w52Low) / Math.max(0.0001, v.w52High - v.w52Low)) * 100),
-  );
+  // 52-week range marker position, clamped 0..100. Any null field collapses
+  // the calc to 0 — the band still renders, just without a marker.
+  const rangePos = (() => {
+    if (
+      v.price === null || v.price === undefined ||
+      v.w52Low === null || v.w52Low === undefined ||
+      v.w52High === null || v.w52High === undefined
+    ) return 0;
+    return Math.max(
+      0,
+      Math.min(100, ((v.price - v.w52Low) / Math.max(0.0001, v.w52High - v.w52Low)) * 100),
+    );
+  })();
 
   return (
     <div className="des-root">
@@ -78,15 +93,17 @@ export default function DesView({ ticker, seedSalt = 0 }: DesViewProps) {
             <span>SECTOR<b>{c.gicsSector}</b></span>
             <span>INDUSTRY<b>{c.gicsIndustry}</b></span>
             <span>HQ<b>{c.hqCity}</b></span>
-            <span>EMPLOYEES<b>{c.employees.toLocaleString()}</b></span>
+            <span>EMPLOYEES<b>{c.employees?.toLocaleString() ?? '—'}</b></span>
             <span>FOUNDED<b>{c.founded}</b></span>
           </div>
         </div>
 
         <div className="des-focal-px">
-          <span className="des-focal-px-main">${v.price.toFixed(2)}</span>
+          <span className="des-focal-px-main">{v.price != null ? `$${v.price.toFixed(2)}` : '—'}</span>
           <span className={`des-focal-px-delta ${deltaClass(v.change)}`}>
-            {v.change >= 0 ? '+' : ''}{v.change.toFixed(2)} ({signedPct(v.changePct, 2)})
+            {v.change != null
+              ? `${v.change >= 0 ? '+' : ''}${v.change.toFixed(2)} (${signedPct(v.changePct, 2)})`
+              : '—'}
           </span>
           <span className="des-focal-px-sub">MKT CAP {fmtUsdB(v.marketCapB)}</span>
         </div>

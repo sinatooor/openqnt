@@ -41,16 +41,22 @@ export const VoiceTab = ({ userId }: VoiceTabProps) => {
         (async () => {
             setLoading(true);
             try {
+                // getProfile returns `null` for the "no profile yet" 404 case —
+                // surface as an empty state, not a toast. Call list is
+                // independent; if profile fetch errored we still try calls so
+                // the UI degrades gracefully.
                 const [p, h] = await Promise.all([
-                    voiceApi.getProfile(userId),
-                    voiceApi.listCalls(userId, 10),
+                    voiceApi.getProfile(userId).catch((e) => {
+                        // True transport error (network down etc.) — surface once.
+                        toast.error(`Voice profile load failed: ${e.message}`);
+                        return null;
+                    }),
+                    voiceApi.listCalls(userId, 10).catch(() => ({ calls: [] })),
                 ]);
                 if (cancelled) return;
                 setProfile(p);
-                setPhoneInput(p.phone_number ?? '');
+                setPhoneInput(p?.phone_number ?? '');
                 setCalls(h.calls);
-            } catch (e: any) {
-                if (!cancelled) toast.error(`Voice profile load failed: ${e.message}`);
             } finally {
                 if (!cancelled) setLoading(false);
             }

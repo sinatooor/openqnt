@@ -70,6 +70,54 @@ async function waitReady(port: number, timeoutMs = 30_000): Promise<void> {
   throw new Error(`Postgres did not become ready on :${port}`);
 }
 
+/**
+ * Postgres refuses to start if `postmaster.pid` exists and looks like another
+ * instance is running. When the app is force-quit / crashes / OS kills it,
+ * the file is left behind even though no postgres process is alive — and
+ * the next launch dies with:
+ *
+ *   FATAL: lock file "postmaster.pid" already exists
+ *
+ * This check reads the PID from the file, probes whether that process is
+ * actually alive (kill -0), and removes the file if it's stale. If a real
+ * postgres process is running on that PID, we leave the file in place so
+ * postgres' own check surfaces the conflict (better than us racing it).
+ */
+function cleanupStaleLockfile(dataDir: string): void {
+  const pidFile = path.join(dataDir, 'postmaster.pid');
+  if (!fs.existsSync(pidFile)) return;
+  let pid: number | null = null;
+  try {
+    const first = fs.readFileSync(pidFile, 'utf8').split('\n', 1)[0].trim();
+    const n = Number(first);
+    pid = Number.isInteger(n) && n > 0 ? n : null;
+  } catch {
+    pid = null;
+  }
+  let alive = false;
+  if (pid !== null) {
+    try {
+      // Signal 0 is a no-op probe — throws ESRCH if the PID is gone, EPERM
+      // if it belongs to another user (alive but not ours; play it safe).
+      process.kill(pid, 0);
+      alive = true;
+    } catch (err: unknown) {
+      const code = (err as NodeJS.ErrnoException)?.code;
+      alive = code === 'EPERM';
+    }
+  }
+  if (alive) {
+    log('postgres', `postmaster.pid claims PID ${pid} is alive — leaving it for postgres to surface.`);
+    return;
+  }
+  log('postgres', `Removing stale postmaster.pid (claimed PID ${pid ?? '?'} is not running).`);
+  try {
+    fs.unlinkSync(pidFile);
+  } catch (err) {
+    log('postgres', `Could not remove ${pidFile}: ${err instanceof Error ? err.message : err}`);
+  }
+}
+
 /** initdb if pgdata doesn't yet have a PG_VERSION file. */
 async function initdbIfNeeded(dataDir: string): Promise<void> {
   if (fs.existsSync(path.join(dataDir, 'PG_VERSION'))) return;
@@ -152,8 +200,14 @@ export async function startPostgres(): Promise<PostgresHandle> {
   const dataDir = paths().pgDataDir;
 
   await initdbIfNeeded(dataDir);
+  // Stale lockfile cleanup must happen BEFORE single-user mode runs (which
+  // is also a `postgres -D` invocation and will hit the same lock check).
+  cleanupStaleLockfile(dataDir);
   writeConfig(dataDir, port);
   await createDatabaseSingleUser(dataDir);
+  // And again before the long-running spawn — paranoid, but
+  // createDatabaseSingleUser exits cleanly so usually a no-op.
+  cleanupStaleLockfile(dataDir);
 
   log('postgres', `Starting on 127.0.0.1:${port}`);
   const env = {
