@@ -34,9 +34,13 @@ rewrite_one() {
   fi
 
   # Rewrite any /opt/homebrew or /usr/local refs to @rpath form. Best-effort.
+  # `|| true` on grep is critical: under `set -euo pipefail`, grep returning 1
+  # (no matches) kills the whole pipeline, which then kills the script before
+  # it even reaches the python-libs walk below. We want a non-match to be a
+  # non-event.
   otool -L "$file" 2>/dev/null \
     | tail -n +2 | awk '{print $1}' \
-    | grep -E "^/(opt|usr/local|Users)/" \
+    | { grep -E "^/(opt|usr/local|Users)/" || true; } \
     | while read -r dep; do
         depbase="$(basename "$dep")"
         install_name_tool -change "$dep" "@rpath/$depbase" "$file" 2>/dev/null || true
