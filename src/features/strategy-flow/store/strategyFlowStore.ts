@@ -51,6 +51,24 @@ export const EDGE_DATA_TYPE_COLORS: Record<string, string> = {
 const generateId = () => Math.random().toString(36).substring(2, 8);
 
 // =============================================================================
+// START NODE — Strategy Context entry point
+// =============================================================================
+
+/** Fixed id for the Strategy Context Start node. Never randomized. */
+export const START_NODE_ID = 'start';
+
+/** Pinned position for the Start node (top-left of the canvas). */
+export const START_NODE_POSITION = { x: 80, y: 80 } as const;
+
+/** True when this catalog item is the Start node. */
+const isStartCatalogItem = (item: { type?: string; defaultData?: Record<string, unknown> }): boolean =>
+  item.type === 'startTrigger' || (item.defaultData?.triggerType as string) === 'startTrigger';
+
+/** True when this is the canvas Start node. */
+const isStartNode = (node: { id?: string; data?: Record<string, unknown> }): boolean =>
+  node.id === START_NODE_ID || (node.data?.triggerType as string) === 'startTrigger';
+
+// =============================================================================
 // CONNECTION VALIDATION
 // =============================================================================
 
@@ -484,23 +502,43 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
       // =========================================================================
 
       onNodesChange: (changes) => {
+        // Reject any change that would remove or reposition the Start node.
+        // ReactFlow emits `remove` changes when the user hits Delete/Backspace,
+        // and `position` changes during drag — we want the Start node fully pinned.
+        const guarded = changes.filter((c) => {
+          if (c.type === 'remove' && c.id === START_NODE_ID) return false;
+          return true;
+        }).map((c) => {
+          if (c.type === 'position' && c.id === START_NODE_ID) {
+            return { ...c, position: { ...START_NODE_POSITION }, positionAbsolute: { ...START_NODE_POSITION } };
+          }
+          return c;
+        });
         set({
-          nodes: applyNodeChanges(changes, get().nodes),
+          nodes: applyNodeChanges(guarded, get().nodes),
           isModified: true,
           lastSavedAt: Date.now(),
         });
       },
 
       addNode: (catalogItem, position) => {
+        const isStart = isStartCatalogItem(catalogItem);
+        // Singleton guard: exactly one Start node per strategy.
+        if (isStart && get().nodes.some(isStartNode)) {
+          console.warn('Start node already exists — selecting the existing one instead.');
+          set({ selectedNodeId: START_NODE_ID, rightPanelOpen: true });
+          return;
+        }
         const newNode: StrategyFlowNode = {
-          id: `${catalogItem.type}-${generateId()}`,
+          id: isStart ? START_NODE_ID : `${catalogItem.type}-${generateId()}`,
           type: catalogItem.nodeType,
-          position,
+          position: isStart ? { ...START_NODE_POSITION } : position,
           data: {
             label: catalogItem.label,
             description: catalogItem.description,
             ...catalogItem.defaultData,
           } as StrategyNodeData,
+          ...(isStart ? { deletable: false, draggable: false } : {}),
         };
 
         get().saveToHistory();
@@ -522,6 +560,11 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
       },
 
       deleteNode: (nodeId) => {
+        // Start node is structurally permanent — silently refuse.
+        if (nodeId === START_NODE_ID) {
+          console.warn('Start node cannot be deleted; edit its properties via the header chip.');
+          return;
+        }
         get().saveToHistory();
         set({
           nodes: get().nodes.filter((node) => node.id !== nodeId),
@@ -535,6 +578,10 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
       },
 
       duplicateNode: (nodeId) => {
+        if (nodeId === START_NODE_ID) {
+          console.warn('Start node cannot be duplicated.');
+          return;
+        }
         const node = get().nodes.find((n) => n.id === nodeId);
         if (!node) return;
 

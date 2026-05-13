@@ -92,6 +92,56 @@ export function useChatTransport() {
   return { send, cancel };
 }
 
+/**
+ * Buckets a single `builder_event` payload into a typed shape keyed by sub-kind
+ * so the card receives one structured snapshot rather than the raw last event.
+ * The card merges with prior snapshots via `upsertCardMerge`, so e.g. the
+ * `start` info persists even when later `validate` / `submit` events arrive.
+ */
+function bucketBuilderEvent(
+  raw: unknown,
+): Record<string, unknown> {
+  if (!raw || typeof raw !== 'object') return {};
+  const e = raw as { kind?: string } & Record<string, unknown>;
+  switch (e.kind) {
+    case 'start':
+      return { start: { provider: e.provider, modelId: e.modelId } };
+    case 'validate':
+      return {
+        latestValidate: {
+          valid: e.valid,
+          errors: e.errors,
+          warnings: e.warnings,
+          failureSignature: e.failureSignature,
+        },
+      };
+    case 'verify':
+      return {
+        latestVerify: {
+          compiles: e.compiles,
+          errors: e.errors,
+          warnings: e.warnings,
+        },
+      };
+    case 'loop_guard':
+      return { loopGuard: { signature: e.signature, count: e.count } };
+    case 'submit':
+      return { submit: { summary: e.summary } };
+    case 'complete':
+      return {
+        complete: {
+          summary: e.summary,
+          validateCount: e.validateCount,
+          blockedByLoopGuard: e.blockedByLoopGuard,
+        },
+      };
+    case 'mutate':
+      return { latestMutate: { op: e.op, detail: e.detail } };
+    default:
+      return {};
+  }
+}
+
 function handleEvent(sessionId: string, assistantId: string, event: UnifiedEvent) {
   const store = useAiChatStore.getState();
 
@@ -126,6 +176,19 @@ function handleEvent(sessionId: string, assistantId: string, event: UnifiedEvent
       if (event.cardType === 'strategy_edges_partial') {
         const p = event.payload as { edges: any[] };
         store.setStrategyEdges(sessionId, assistantId, p.edges);
+        break;
+      }
+      // Builder agent (Phase 4) — merge all builder_event sub-kinds into one
+      // live status card. We keep the latest snapshot of each kind so the card
+      // can render a compact summary (run_start banner + validate pill +
+      // verify pill + final summary line).
+      if (event.cardType === 'builder_status') {
+        store.upsertCardMerge(sessionId, assistantId, {
+          id: event.cardId,
+          cardType: 'builder_status',
+          payload: bucketBuilderEvent(event.payload),
+          createdAt: Date.now(),
+        });
         break;
       }
       // Strategy mode (fetch) emits a complete strategy_nodes card

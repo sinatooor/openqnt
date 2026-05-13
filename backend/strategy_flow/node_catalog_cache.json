@@ -226,7 +226,7 @@
       "nodeType": "action",
       "label": "Phone Call",
       "description": "Call user with alert",
-      "tooltip": "Place an automated phone call to notify you of urgent opportunities or risks. Uses Twilio Voice API. Reads a text-to-speech message with the alert details.",
+      "tooltip": "AI realtime voice call (Gemini Live) to the user\\'s phone, in-browser, or paired iOS app. Speaks the reason aloud and answers follow-up questions live with full tool access.",
       "inputs": [
         "Trigger"
       ],
@@ -239,10 +239,15 @@
       "color": "#ef4444",
       "defaultData": {
         "actionType": "phoneCall",
+        "mode": "realtime",
+        "transport": "twilio",
         "phoneNumber": "",
         "message": "Urgent trading alert",
-        "voiceType": "alice",
-        "urgencyLevel": "high"
+        "voice": "Aoede",
+        "urgencyLevel": "high",
+        "allowedActions": [
+          "read"
+        ]
       }
     }
   ],
@@ -797,6 +802,198 @@
       "color": "#ef4444",
       "defaultData": {
         "controlType": "stop"
+      }
+    },
+    {
+      "type": "switch",
+      "nodeType": "control",
+      "label": "Switch",
+      "description": "Route to N branches by case",
+      "tooltip": "Evaluate an input value against N case expressions and route the signal to the matching output branch (or \"Default\" if none match). Inspired by n8n\\'s Switch node — use when If/IfElse becomes a chain of nested branches.",
+      "inputs": [
+        "Value"
+      ],
+      "outputs": [
+        "Case 1",
+        "Case 2",
+        "Case 3",
+        "Default"
+      ],
+      "category": "control",
+      "subcategory": "Conditionals",
+      "icon": "GitFork",
+      "color": "#f59e0b",
+      "backtestEligible": true,
+      "defaultData": {
+        "controlType": "switch",
+        "rules": [
+          {
+            "operator": "eq",
+            "value": 0,
+            "outputIndex": 0
+          },
+          {
+            "operator": "gt",
+            "value": 0,
+            "outputIndex": 1
+          },
+          {
+            "operator": "lt",
+            "value": 0,
+            "outputIndex": 2
+          }
+        ],
+        "defaultOutputIndex": 3
+      }
+    },
+    {
+      "type": "splitInBatches",
+      "nodeType": "control",
+      "label": "Split In Batches",
+      "description": "Iterate a list in batches of N",
+      "tooltip": "Process a list of items (e.g. tickers from a screener) in batches. Each tick emits one batch of size `batchSize`; downstream nodes process the batch and the loop continues until the list is exhausted. Inspired by n8n\\'s Split In Batches — distinct from Split Out which fans out one item per branch.",
+      "inputs": [
+        "List"
+      ],
+      "outputs": [
+        "Batch",
+        "Done"
+      ],
+      "category": "control",
+      "subcategory": "Loops",
+      "icon": "Layers",
+      "color": "#06b6d4",
+      "backtestEligible": true,
+      "defaultData": {
+        "controlType": "splitInBatches",
+        "batchSize": 10,
+        "mode": "sequential"
+      }
+    }
+  ],
+  "dataSource": [
+    {
+      "type": "yfinanceData",
+      "nodeType": "dataSource",
+      "label": "Yahoo Finance",
+      "description": "Free OHLCV from Yahoo Finance",
+      "tooltip": "Fetches historical OHLCV from Yahoo Finance. Best for global stocks, ETFs, indices, and major crypto. Free, no API key.",
+      "inputs": [],
+      "outputs": [
+        "OHLCV"
+      ],
+      "category": "dataSources",
+      "subcategory": "Market Data",
+      "icon": "BarChart3",
+      "color": "#a855f7",
+      "backtestEligible": true,
+      "defaultData": {
+        "provider": "yfinance",
+        "symbol": "AAPL",
+        "timeframe": "1d"
+      }
+    },
+    {
+      "type": "avanzaData",
+      "nodeType": "dataSource",
+      "label": "Avanza",
+      "description": "Nordic broker OHLCV via Avanza _api",
+      "tooltip": "Fetches OHLCV from Avanza's reverse-engineered web API. Best for Nordic listings (Stockholm, Copenhagen, Helsinki, Oslo). The orderbookId is auto-resolved by ticker or ISIN.",
+      "inputs": [],
+      "outputs": [
+        "OHLCV"
+      ],
+      "category": "dataSources",
+      "subcategory": "Market Data",
+      "icon": "Building2",
+      "color": "#06b6d4",
+      "backtestEligible": true,
+      "defaultData": {
+        "provider": "avanza",
+        "symbol": "VOLV-B.ST",
+        "timeframe": "1d"
+      }
+    },
+    {
+      "type": "fmpData",
+      "nodeType": "dataSource",
+      "label": "Financial Modeling Prep",
+      "description": "FMP OHLCV (requires FMP_API_KEY)",
+      "tooltip": "Fetches OHLCV from Financial Modeling Prep. Better fundamentals coverage than yfinance for US equities. Requires FMP_API_KEY env var.",
+      "inputs": [],
+      "outputs": [
+        "OHLCV"
+      ],
+      "category": "dataSources",
+      "subcategory": "Market Data",
+      "icon": "Database",
+      "color": "#10b981",
+      "backtestEligible": true,
+      "defaultData": {
+        "provider": "fmp",
+        "symbol": "AAPL",
+        "timeframe": "1d"
+      }
+    },
+    {
+      "type": "avanzaPositions",
+      "nodeType": "dataSource",
+      "label": "Avanza Positions",
+      "description": "Live portfolio positions from Avanza",
+      "tooltip": "Streams the user\\'s connected Avanza account positions into the flow. Useful for portfolio-aware risk overlays. Live-only; not backtestable.",
+      "inputs": [],
+      "outputs": [
+        "Positions"
+      ],
+      "category": "dataSources",
+      "subcategory": "Account",
+      "icon": "Wallet",
+      "color": "#06b6d4",
+      "backtestEligible": false,
+      "defaultData": {
+        "provider": "avanza",
+        "kind": "positions"
+      }
+    },
+    {
+      "type": "avanzaWatchlist",
+      "nodeType": "dataSource",
+      "label": "Avanza Watchlist",
+      "description": "Symbols from a saved Avanza watchlist",
+      "tooltip": "Iterates over the symbols in one of the user\\'s saved Avanza watchlists. Useful as the symbol input for a multi-asset strategy. Live-only.",
+      "inputs": [],
+      "outputs": [
+        "SymbolList"
+      ],
+      "category": "dataSources",
+      "subcategory": "Account",
+      "icon": "List",
+      "color": "#06b6d4",
+      "backtestEligible": false,
+      "defaultData": {
+        "provider": "avanza",
+        "kind": "watchlist",
+        "watchlistId": ""
+      }
+    },
+    {
+      "type": "fredMacro",
+      "nodeType": "dataSource",
+      "label": "FRED Macro",
+      "description": "St. Louis Fed macro time-series",
+      "tooltip": "Fetches macro time-series from FRED (CPI, unemployment, fed funds, GDP, etc.). Use as a regime filter or macro-overlay input. Free with FRED_API_KEY.",
+      "inputs": [],
+      "outputs": [
+        "Series"
+      ],
+      "category": "dataSources",
+      "subcategory": "Macro",
+      "icon": "TrendingUp",
+      "color": "#f59e0b",
+      "backtestEligible": true,
+      "defaultData": {
+        "provider": "fred",
+        "seriesId": "CPIAUCSL"
       }
     }
   ],
@@ -2390,6 +2587,31 @@
         "mathType": "advancedMath",
         "mathFunction": "sqrt"
       }
+    },
+    {
+      "type": "expression",
+      "nodeType": "math",
+      "label": "Expression",
+      "description": "Safe Python-DSL expression",
+      "tooltip": "Evaluate a restricted Python expression over upstream node outputs. Allow-listed only: arithmetic, comparisons, `x if cond else y`, talib.<allow-list>, np.<allow-list>, abs/min/max, and the incoming-input bindings a/b/c. Parsed via AST walker — no arbitrary code, no imports, no attribute access on user objects. Safe substitute for the legacy Code node.",
+      "inputs": [
+        "Input A",
+        "Input B",
+        "Input C"
+      ],
+      "outputs": [
+        "Value"
+      ],
+      "category": "math",
+      "subcategory": "Functions",
+      "icon": "Calculator",
+      "color": "#a855f7",
+      "backtestEligible": true,
+      "defaultData": {
+        "mathType": "expression",
+        "expression": "a",
+        "outputDataType": "number"
+      }
     }
   ],
   "pineScript": [
@@ -3523,6 +3745,33 @@
       "defaultData": {
         "riskType": "portfolioAllocation",
         "targetPercentage": 20
+      }
+    }
+  ],
+  "startNode": [
+    {
+      "type": "startTrigger",
+      "nodeType": "trigger",
+      "label": "Start",
+      "description": "Strategy entry point — portfolio, tickers, capital, mode",
+      "tooltip": "The Strategy Context. Every strategy begins here. Choose the portfolio (broker account), primary tickers, starting capital, and run mode (paper / live / backtest). Downstream nodes inherit this context. There is exactly one Start node per strategy; it cannot be deleted.",
+      "inputs": [],
+      "outputs": [
+        "Signal",
+        "Context"
+      ],
+      "category": "triggers",
+      "subcategory": "Entry",
+      "icon": "Play",
+      "color": "#10b981",
+      "backtestEligible": true,
+      "defaultData": {
+        "triggerType": "startTrigger",
+        "portfolio": "",
+        "tickers": [],
+        "capital": 10000,
+        "mode": "paper",
+        "childTriggerType": "manualTrigger"
       }
     }
   ],

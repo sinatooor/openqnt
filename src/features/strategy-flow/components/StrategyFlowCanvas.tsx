@@ -46,7 +46,9 @@ import {
   LiveTradingPanel,
 
 } from './modals';
-import { useStrategyFlowStore, isValidConnection, validateStrategy } from '../store/strategyFlowStore';
+import { useStrategyFlowStore, isValidConnection, validateStrategy, START_NODE_ID } from '../store/strategyFlowStore';
+import { StrategyContextChip } from './StrategyContextChip';
+import { StrategyContextModal } from './StrategyContextModal';
 import { useExecutionStore } from '../store/executionStore';
 import { useExecutionFlow } from '../hooks/useExecutionFlow';
 import type { StrategyFlowNode, NodeCatalogItem } from '../types';
@@ -304,6 +306,16 @@ const StrategyFlowCanvasInner = () => {
   const [showLiveTrading, setShowLiveTrading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
+  // Strategy Context first-run modal. Opens once if the canvas has no Start
+  // node yet; the user can submit (creates the Start node) or skip (closes
+  // until they explicitly click the chip).
+  const [showStrategyContext, setShowStrategyContext] = useState(false);
+  const hasStartNode = useStrategyFlowStore((s) => s.nodes.some((n) => n.id === START_NODE_ID));
+  const totalNodes = useStrategyFlowStore((s) => s.nodes.length);
+  useEffect(() => {
+    if (!hasStartNode && totalNodes === 0) setShowStrategyContext(true);
+  }, [hasStartNode, totalNodes]);
+
 
   // Use shallow comparison for store values to prevent unnecessary re-renders
   const {
@@ -545,6 +557,11 @@ const StrategyFlowCanvasInner = () => {
           />
         </Panel>
 
+        {/* Top Left: Strategy Context chip — read-only summary of the Start node */}
+        <Panel position="top-left" className="!mt-2 !ml-4 !mb-0">
+          <StrategyContextChip onEdit={() => setShowStrategyContext(true)} />
+        </Panel>
+
         {/* Top Right: Status indicators (below app header) */}
         <Panel position="top-right" className="!mt-2 !mr-4 !mb-0">
           <div className="flex items-center gap-3 px-3 py-2 bg-card/80 backdrop-blur-sm border border-border/30 rounded-lg">
@@ -616,6 +633,7 @@ const StrategyFlowCanvasInner = () => {
 
       {/* Modals */}
       <BacktestModal open={showBacktest} onOpenChange={setShowBacktest} />
+      <StrategyContextModal open={showStrategyContext} onOpenChange={setShowStrategyContext} />
       <TemplatesDialog open={showTemplates} onOpenChange={setShowTemplates} />
       <SearchNodesDialog open={showSearch} onOpenChange={setShowSearch} />
       <ChartModal open={showChart} onOpenChange={setShowChart} />

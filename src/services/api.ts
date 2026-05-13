@@ -455,6 +455,29 @@ export type AiChatEvent =
     | { type: 'strategy_node'; node: any; index: number; total: number }
     | { type: 'strategy_edges'; edges: any[] }
     | { type: 'action'; action: string; data: Record<string, any> }
+    // Strategy-builder agent events (TS sidecar). The Python backend
+    // translates the sidecar's own SSE into these for the chat UI;
+    // see `backend/routers/ai_assistant.py:stream_builder_via_sidecar`.
+    | { type: 'builder_event'; kind: 'start'; provider?: string; modelId?: string }
+    | {
+        type: 'builder_event';
+        kind: 'validate';
+        valid: boolean;
+        errors: string[];
+        warnings: string[];
+        failureSignature: string;
+    }
+    | { type: 'builder_event'; kind: 'verify'; compiles: boolean; errors: string[]; warnings: string[] }
+    | { type: 'builder_event'; kind: 'loop_guard'; signature: string; count: number }
+    | { type: 'builder_event'; kind: 'mutate'; op: string; detail: Record<string, any> }
+    | { type: 'builder_event'; kind: 'submit'; summary?: string }
+    | {
+        type: 'builder_event';
+        kind: 'complete';
+        summary?: string;
+        validateCount?: number;
+        blockedByLoopGuard?: boolean;
+    }
     | { type: 'done' }
     | { type: 'error'; message: string };
 

@@ -88,4 +88,48 @@ export const CONTROL_NODES: NodeCatalogItem[] = [
         color: '#ef4444',
         defaultData: { controlType: 'stop' },
     },
+    {
+        type: 'switch',
+        nodeType: 'control',
+        label: 'Switch',
+        description: 'Route to N branches by case',
+        tooltip: 'Evaluate an input value against N case expressions and route the signal to the matching output branch (or "Default" if none match). Inspired by n8n\'s Switch node — use when If/IfElse becomes a chain of nested branches.',
+        inputs: ['Value'],
+        outputs: ['Case 1', 'Case 2', 'Case 3', 'Default'],
+        category: 'control',
+        subcategory: 'Conditionals',
+        icon: 'GitFork',
+        color: '#f59e0b',
+        backtestEligible: true,
+        defaultData: {
+            controlType: 'switch',
+            // Each rule: { operator: 'eq'|'gt'|'lt'|'gte'|'lte'|'between'|'in', value: any, outputIndex: number }
+            rules: [
+                { operator: 'eq', value: 0, outputIndex: 0 },
+                { operator: 'gt', value: 0, outputIndex: 1 },
+                { operator: 'lt', value: 0, outputIndex: 2 },
+            ],
+            defaultOutputIndex: 3,
+        },
+    },
+    {
+        type: 'splitInBatches',
+        nodeType: 'control',
+        label: 'Split In Batches',
+        description: 'Iterate a list in batches of N',
+        tooltip: 'Process a list of items (e.g. tickers from a screener) in batches. Each tick emits one batch of size `batchSize`; downstream nodes process the batch and the loop continues until the list is exhausted. Inspired by n8n\'s Split In Batches — distinct from Split Out which fans out one item per branch.',
+        inputs: ['List'],
+        outputs: ['Batch', 'Done'],
+        category: 'control',
+        subcategory: 'Loops',
+        icon: 'Layers',
+        color: '#06b6d4',
+        backtestEligible: true,
+        defaultData: {
+            controlType: 'splitInBatches',
+            batchSize: 10,
+            // 'sequential' processes batches one at a time; 'parallel' fans out concurrently.
+            mode: 'sequential',
+        },
+    },
 ];
