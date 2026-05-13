@@ -41,6 +41,12 @@ function buildEnv(): NodeJS.ProcessEnv {
     HF_HOME: p.modelsDir,
     PYTHONDONTWRITEBYTECODE: '1',
     PYTHONUNBUFFERED: '1',
+    // The n8n-style Builder agent runs in a separate Bun process
+    // (services/strategy-ai/) which is NOT yet bundled in the desktop app.
+    // Force the chat endpoint to fall back to the legacy in-process AI
+    // generator so the desktop DMG keeps working. Remove this once
+    // bundle-strategy-ai.sh + spawn wiring lands.
+    AI_BUILDER_VIA_SIDECAR: 'false',
   };
 
   if (!isDev()) {
