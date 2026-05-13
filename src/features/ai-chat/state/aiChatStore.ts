@@ -59,6 +59,14 @@ interface AiChatState {
   updateToolCall: (sessionId: string, msgId: string, tool: string, patch: Partial<StoredToolCall>) => void;
   addAction: (sessionId: string, msgId: string, action: StoredAction) => void;
   addCard: (sessionId: string, msgId: string, card: StoredCard) => void;
+  /**
+   * Like addCard but stable-by-id: if a card with the same id already exists
+   * on the message, its payload is merged with `card.payload` (last write wins
+   * for each top-level key). Used by the Builder agent's live status card
+   * (`builder_status`) so the chat shows one updating panel instead of N
+   * stacked event rows.
+   */
+  upsertCardMerge: (sessionId: string, msgId: string, card: StoredCard) => void;
   setStrategyData: (sessionId: string, msgId: string, nodes: any[], edges: any[]) => void;
   addStrategyNode: (sessionId: string, msgId: string, node: any) => void;
   setStrategyEdges: (sessionId: string, msgId: string, edges: any[]) => void;
@@ -239,6 +247,27 @@ export const useAiChatStore = create<AiChatState>()(
             ...m,
             cards: [...(m.cards ?? []), card],
           })),
+        ),
+
+      upsertCardMerge: (sessionId, msgId, card) =>
+        set((s) =>
+          updateMessage(s, sessionId, msgId, (m) => {
+            const existing = m.cards ?? [];
+            const idx = existing.findIndex((c) => c.id === card.id);
+            if (idx < 0) return { ...m, cards: [...existing, card] };
+            const prev = existing[idx];
+            const merged: StoredCard = {
+              ...prev,
+              cardType: card.cardType,
+              payload: {
+                ...(typeof prev.payload === 'object' && prev.payload !== null ? prev.payload : {}),
+                ...(typeof card.payload === 'object' && card.payload !== null ? card.payload : {}),
+              },
+            };
+            const next = [...existing];
+            next[idx] = merged;
+            return { ...m, cards: next };
+          }),
         ),
 
       setStrategyData: (sessionId, msgId, nodes, edges) =>

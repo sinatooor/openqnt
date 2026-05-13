@@ -74,4 +74,26 @@ export const MATH_NODES: NodeCatalogItem[] = [
         color: '#a855f7',
         defaultData: { mathType: 'advancedMath', mathFunction: 'sqrt' },
     },
+    {
+        type: 'expression',
+        nodeType: 'math',
+        label: 'Expression',
+        description: 'Safe Python-DSL expression',
+        tooltip: 'Evaluate a restricted Python expression over upstream node outputs. Allow-listed only: arithmetic, comparisons, `x if cond else y`, talib.<allow-list>, np.<allow-list>, abs/min/max, and the incoming-input bindings a/b/c. Parsed via AST walker — no arbitrary code, no imports, no attribute access on user objects. Safe substitute for the legacy Code node.',
+        inputs: ['Input A', 'Input B', 'Input C'],
+        outputs: ['Value'],
+        category: 'math',
+        subcategory: 'Functions',
+        icon: 'Calculator',
+        color: '#a855f7',
+        backtestEligible: true,
+        defaultData: {
+            mathType: 'expression',
+            // Bindings: `a`, `b`, `c` are the three input handles.
+            // Examples: `1 if a > b else 0`, `max(0, a - 30) / 70`, `abs(a - b)`, `np.sign(a)`.
+            expression: 'a',
+            // Output data type hint for downstream type checking.
+            outputDataType: 'number',
+        },
+    },
 ];

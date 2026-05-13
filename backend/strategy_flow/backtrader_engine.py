@@ -5,9 +5,11 @@ Converts flow nodes/edges to backtrader strategies and runs backtests.
 """
 
 from __future__ import annotations
+import ast
 import backtrader as bt
 import talib
 import numpy as np
+import operator as _op
 import pandas as pd
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
@@ -15,6 +17,150 @@ import json
 import os
 import io
 import tempfile
+
+
+# ============================================================
+# Expression DSL — safe substitute for the legacy Code node.
+# Allow-listed identifiers + ast-walker; rejects everything else.
+# ============================================================
+
+_DSL_ALLOWED_NAMES = {"talib", "np", "abs", "min", "max", "True", "False", "None"}
+_DSL_ALLOWED_TALIB_FUNCS = {"SMA", "EMA", "RSI", "MACD", "BBANDS", "ATR", "STDDEV"}
+_DSL_ALLOWED_NP_FUNCS = {"abs", "maximum", "minimum", "sign", "where", "log", "exp", "sqrt"}
+
+_DSL_BINOPS = {
+    ast.Add: _op.add, ast.Sub: _op.sub, ast.Mult: _op.mul,
+    ast.Div: _op.truediv, ast.FloorDiv: _op.floordiv, ast.Mod: _op.mod,
+    ast.Pow: _op.pow,
+}
+_DSL_CMPOPS = {
+    ast.Eq: _op.eq, ast.NotEq: _op.ne, ast.Lt: _op.lt, ast.LtE: _op.le,
+    ast.Gt: _op.gt, ast.GtE: _op.ge,
+}
+_DSL_UNARYOPS = {ast.USub: _op.neg, ast.UAdd: _op.pos, ast.Not: _op.not_}
+
+
+def _switch_match(value: Any, rule: Dict[str, Any]) -> bool:
+    """Evaluate a single switch rule against the input value."""
+    op = (rule.get('operator') or 'eq').lower()
+    target = rule.get('value')
+    try:
+        if op == 'eq':
+            return value == target
+        if op == 'neq':
+            return value != target
+        if op == 'gt':
+            return value > target
+        if op == 'gte':
+            return value >= target
+        if op == 'lt':
+            return value < target
+        if op == 'lte':
+            return value <= target
+        if op == 'between':
+            lo, hi = target
+            return lo <= value <= hi
+        if op == 'in':
+            return value in target
+    except Exception:
+        return False
+    return False
+
+
+def _eval_safe_expression(expr: str, bindings: Dict[str, Any]) -> Any:
+    """Evaluate `expr` against `bindings` using a restricted AST walker.
+
+    Rejects: imports, function/class defs, attribute access on user inputs,
+    lambdas, comprehensions, walrus, starred args, and any name not in
+    `_DSL_ALLOWED_NAMES` ∪ bindings. talib.<fn> and np.<fn> are allowed only
+    for names in `_DSL_ALLOWED_TALIB_FUNCS` / `_DSL_ALLOWED_NP_FUNCS`.
+    """
+    tree = ast.parse(expr, mode="eval")
+
+    def walk(node: ast.AST) -> Any:
+        if isinstance(node, ast.Expression):
+            return walk(node.body)
+        if isinstance(node, ast.Constant):
+            if isinstance(node.value, (int, float, bool)) or node.value is None:
+                return node.value
+            raise ValueError("only numeric/boolean/None constants allowed")
+        if isinstance(node, ast.Name):
+            if node.id in bindings:
+                return bindings[node.id]
+            if node.id in _DSL_ALLOWED_NAMES:
+                if node.id == "talib":
+                    return talib
+                if node.id == "np":
+                    return np
+                if node.id == "abs":
+                    return abs
+                if node.id == "min":
+                    return min
+                if node.id == "max":
+                    return max
+                if node.id == "True":
+                    return True
+                if node.id == "False":
+                    return False
+                if node.id == "None":
+                    return None
+            raise ValueError(f"name '{node.id}' is not allowed")
+        if isinstance(node, ast.BinOp):
+            op_fn = _DSL_BINOPS.get(type(node.op))
+            if not op_fn:
+                raise ValueError(f"binary op {type(node.op).__name__} not allowed")
+            return op_fn(walk(node.left), walk(node.right))
+        if isinstance(node, ast.UnaryOp):
+            op_fn = _DSL_UNARYOPS.get(type(node.op))
+            if not op_fn:
+                raise ValueError(f"unary op {type(node.op).__name__} not allowed")
+            return op_fn(walk(node.operand))
+        if isinstance(node, ast.BoolOp):
+            values = [walk(v) for v in node.values]
+            if isinstance(node.op, ast.And):
+                result = True
+                for v in values:
+                    result = result and v
+                return result
+            if isinstance(node.op, ast.Or):
+                result = False
+                for v in values:
+                    result = result or v
+                return result
+            raise ValueError("bool op not allowed")
+        if isinstance(node, ast.Compare):
+            left = walk(node.left)
+            for op_node, comparator in zip(node.ops, node.comparators):
+                cmp_fn = _DSL_CMPOPS.get(type(op_node))
+                if not cmp_fn:
+                    raise ValueError(f"compare op {type(op_node).__name__} not allowed")
+                right = walk(comparator)
+                if not cmp_fn(left, right):
+                    return False
+                left = right
+            return True
+        if isinstance(node, ast.IfExp):
+            return walk(node.body) if walk(node.test) else walk(node.orelse)
+        if isinstance(node, ast.Attribute):
+            # Only allow attribute access on talib / np with allow-listed fn names.
+            if isinstance(node.value, ast.Name) and node.value.id in {"talib", "np"}:
+                allowed = (_DSL_ALLOWED_TALIB_FUNCS if node.value.id == "talib"
+                           else _DSL_ALLOWED_NP_FUNCS)
+                if node.attr not in allowed:
+                    raise ValueError(f"{node.value.id}.{node.attr} not allowed")
+                base = walk(node.value)
+                return getattr(base, node.attr)
+            raise ValueError("attribute access not allowed")
+        if isinstance(node, ast.Call):
+            # No keyword args, no starred args.
+            if node.keywords:
+                raise ValueError("keyword arguments not allowed")
+            func = walk(node.func)
+            args = [walk(a) for a in node.args]
+            return func(*args)
+        raise ValueError(f"AST node {type(node).__name__} not allowed in expression DSL")
+
+    return walk(tree)
 
 
 # ============================================================
@@ -427,9 +573,62 @@ class FlowStrategy(bt.Strategy):
             
             elif cond_type == 'not' and input_values:
                 return not bool(input_values[0])
-        
+
+        # Expression node: safe DSL over upstream inputs (a, b, c).
+        if node_type == 'math' and node_data.get('mathType') == 'expression':
+            return self._eval_expression_node(node, node_map, incoming)
+
+        # Switch node: pick an output by matching the input value against rules.
+        # Returns the matched outputIndex (or defaultOutputIndex). Bar-loop
+        # downstream nodes inspect the index to decide whether to fire.
+        if node_type == 'control' and node_data.get('controlType') == 'switch':
+            inputs = incoming.get(node_id, [])
+            value = None
+            if inputs:
+                source = node_map.get(inputs[0]['source'])
+                if source:
+                    value = self._evaluate_node(source, node_map, incoming)
+            rules = node_data.get('rules', []) or []
+            for rule in rules:
+                if _switch_match(value, rule):
+                    return int(rule.get('outputIndex', 0))
+            return int(node_data.get('defaultOutputIndex', 0))
+
+        # SplitInBatches: bar-loop is per-tick; batching is a workflow-runtime
+        # concept. Stub: pass through the list unchanged so downstream nodes
+        # receive the data. Real batched iteration is implemented in the TS
+        # builder/runtime layer (Phase 4+).
+        if node_type == 'control' and node_data.get('controlType') == 'splitInBatches':
+            inputs = incoming.get(node_id, [])
+            if inputs:
+                source = node_map.get(inputs[0]['source'])
+                if source:
+                    return self._evaluate_node(source, node_map, incoming)
+            return []
+
         return False
-    
+
+    def _eval_expression_node(
+        self,
+        node: Dict[str, Any],
+        node_map: Dict[str, Dict[str, Any]],
+        incoming: Dict[str, List[Dict[str, Any]]],
+    ) -> float:
+        """Evaluate an expression node by resolving its inputs as a/b/c bindings."""
+        node_data = node.get('data', {})
+        expr_str = (node_data.get('expression') or 'a').strip()
+        bindings: Dict[str, Any] = {}
+        for inp in incoming.get(node['id'], []):
+            handle = (inp.get('targetHandle') or '').strip().lower()
+            source = node_map.get(inp.get('source'))
+            if not source or handle not in {'a', 'b', 'c'}:
+                continue
+            bindings[handle] = self._evaluate_node(source, node_map, incoming)
+        try:
+            return _eval_safe_expression(expr_str, bindings)
+        except Exception:
+            return 0
+
     def _compare(self, a: float, operator: str, b: float) -> bool:
         """Compare two values with an operator."""
         if operator == '>':

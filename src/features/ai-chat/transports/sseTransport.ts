@@ -60,6 +60,15 @@ function adaptEvent(event: AiChatEvent): UnifiedEvent {
         cardId: `act-${Math.random().toString(36).slice(2, 8)}`,
         payload: { action: event.action, data: event.data },
       };
+    case 'builder_event':
+      // Coalesce all builder_event sub-kinds into one card per message so the
+      // UI shows a single live "Builder status" panel that updates in place.
+      return {
+        kind: 'card',
+        cardType: 'builder_status',
+        cardId: 'builder',
+        payload: event,
+      };
     case 'done':
       return { kind: 'done' };
     case 'error':

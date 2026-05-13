@@ -27,11 +27,14 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 
 try:
-    from google import genai
-    from google.genai import types
-    GENAI_AVAILABLE = True
+    import anthropic
+    ANTHROPIC_AVAILABLE = True
 except ImportError:
-    GENAI_AVAILABLE = False
+    ANTHROPIC_AVAILABLE = False
+
+# Kept for backward compatibility with any caller that still imports
+# `GENAI_AVAILABLE` from this module; the chat endpoint itself uses Anthropic.
+GENAI_AVAILABLE = ANTHROPIC_AVAILABLE
 
 router = APIRouter(prefix="/api/ai-assistant", tags=["ai-assistant"])
 
@@ -341,6 +344,13 @@ SYSTEM_PROMPT = """You are the AI assistant for Fyer, a professional trading str
 BACKEND_URL = os.getenv("BACKEND_SELF_URL", "http://localhost:8000")
 ORCHESTRATOR_URL = os.getenv("ORCHESTRATOR_URL", "http://localhost:3000")
 
+# Phase 4+ — TS sidecar (services/strategy-ai/) that runs the n8n-inspired
+# Builder agent. When `AI_BUILDER_VIA_SIDECAR` is on, `build_strategy` tool
+# calls stream events from the sidecar instead of the legacy one-shot
+# generator. Default ON because Phase 4 is verified end-to-end.
+STRATEGY_AI_URL = os.getenv("STRATEGY_AI_URL", "http://127.0.0.1:3050")
+AI_BUILDER_VIA_SIDECAR = os.getenv("AI_BUILDER_VIA_SIDECAR", "true").lower() in {"1", "true", "yes", "on"}
+
 async def execute_tool(tool_name: str, args: Dict[str, Any]) -> Dict[str, Any]:
     """Execute a tool call and return the result."""
     import httpx
@@ -547,6 +557,208 @@ async def execute_tool(tool_name: str, args: Dict[str, Any]) -> Dict[str, Any]:
         return {"success": False, "error": str(e)}
 
 # ============================================================
+# Sidecar bridge — forward Builder agent events to chat SSE
+# ============================================================
+
+async def stream_builder_via_sidecar(
+    args: Dict[str, Any],
+    current_nodes: Optional[List[Dict[str, Any]]] = None,
+    current_edges: Optional[List[Dict[str, Any]]] = None,
+    settings: Optional[Dict[str, Any]] = None,
+):
+    """Stream a Builder agent run from the TS sidecar at STRATEGY_AI_URL.
+
+    Yields tuples of `(chat_event_dict, final_result_or_none)`. The final tuple
+    contains the synthesized result that the caller folds back into the Gemini
+    function-response (so the orchestrating LLM sees what was built).
+
+    Translation rules — sidecar event → chat event:
+        node_added         → strategy_node  (existing UI handler)
+        edge_added         → strategy_edges (single-item batch)
+        validation_attempt → builder_event (kind=validate)
+        failure_signature_repeat → builder_event (kind=loop_guard)
+        verification_result → builder_event (kind=verify)
+        node_updated / node_deleted / edge_deleted → builder_event (kind=mutate)
+        submit / run_complete → builder_event (kind=complete) + final result
+        error → error (existing UI handler)
+    """
+    import httpx
+
+    payload = {
+        "message": args.get("description", ""),
+        "draft": {
+            "nodes": current_nodes or [],
+            "edges": current_edges or [],
+            "settings": settings or {},
+        },
+    }
+
+    final_draft: Optional[Dict[str, Any]] = None
+    final_summary: Optional[str] = None
+    node_count = 0
+    edge_count = 0
+
+    try:
+        async with httpx.AsyncClient(timeout=180.0) as client:
+            async with client.stream(
+                "POST",
+                f"{STRATEGY_AI_URL}/agent/run",
+                json=payload,
+                headers={"accept": "text/event-stream"},
+            ) as resp:
+                if resp.status_code != 200:
+                    body = (await resp.aread()).decode("utf-8", errors="replace")
+                    yield ({"type": "error", "message": f"sidecar {resp.status_code}: {body[:300]}"}, None)
+                    return
+
+                event_name = "message"
+                async for raw_line in resp.aiter_lines():
+                    if not raw_line:
+                        event_name = "message"
+                        continue
+                    if raw_line.startswith("event:"):
+                        event_name = raw_line.split(":", 1)[1].strip()
+                        continue
+                    if not raw_line.startswith("data:"):
+                        continue
+                    payload_str = raw_line.split(":", 1)[1].strip()
+                    try:
+                        data = json.loads(payload_str)
+                    except json.JSONDecodeError:
+                        continue
+
+                    if event_name == "node_added":
+                        node = data.get("node")
+                        if node:
+                            node_count += 1
+                            yield (
+                                {
+                                    "type": "strategy_node",
+                                    "node": node,
+                                    "index": node_count - 1,
+                                    "total": -1,  # unknown until run_complete
+                                },
+                                None,
+                            )
+
+                    elif event_name == "edge_added":
+                        edge = data.get("edge")
+                        if edge:
+                            edge_count += 1
+                            yield ({"type": "strategy_edges", "edges": [edge]}, None)
+
+                    elif event_name in {"node_updated", "node_deleted", "edge_deleted"}:
+                        yield (
+                            {
+                                "type": "builder_event",
+                                "kind": "mutate",
+                                "op": event_name,
+                                "detail": data,
+                            },
+                            None,
+                        )
+
+                    elif event_name == "validation_attempt":
+                        result = data.get("result", {})
+                        yield (
+                            {
+                                "type": "builder_event",
+                                "kind": "validate",
+                                "valid": bool(result.get("valid")),
+                                "errors": result.get("errors", []),
+                                "warnings": result.get("warnings", []),
+                                "failureSignature": result.get("failureSignature", ""),
+                            },
+                            None,
+                        )
+
+                    elif event_name == "failure_signature_repeat":
+                        yield (
+                            {
+                                "type": "builder_event",
+                                "kind": "loop_guard",
+                                "signature": data.get("signature", ""),
+                                "count": data.get("count", 2),
+                            },
+                            None,
+                        )
+
+                    elif event_name == "verification_result":
+                        result = data.get("result", {})
+                        yield (
+                            {
+                                "type": "builder_event",
+                                "kind": "verify",
+                                "compiles": bool(result.get("compiles")),
+                                "errors": result.get("errors", []),
+                                "warnings": result.get("warnings", []),
+                            },
+                            None,
+                        )
+
+                    elif event_name == "submit":
+                        final_summary = data.get("summary")
+                        yield (
+                            {
+                                "type": "builder_event",
+                                "kind": "submit",
+                                "summary": final_summary,
+                            },
+                            None,
+                        )
+
+                    elif event_name == "run_complete":
+                        final_draft = data.get("draft")
+                        final_summary = final_summary or data.get("summary")
+                        yield (
+                            {
+                                "type": "builder_event",
+                                "kind": "complete",
+                                "summary": final_summary,
+                                "validateCount": data.get("validateCount", 0),
+                                "blockedByLoopGuard": bool(data.get("blockedByLoopGuard")),
+                            },
+                            None,
+                        )
+
+                    elif event_name == "error":
+                        yield ({"type": "error", "message": data.get("message", "sidecar error")}, None)
+
+                    elif event_name == "run_start":
+                        # Surface provider/model so the UI can show which LLM the sidecar used.
+                        yield (
+                            {
+                                "type": "builder_event",
+                                "kind": "start",
+                                "provider": data.get("provider"),
+                                "modelId": data.get("modelId"),
+                            },
+                            None,
+                        )
+    except Exception as exc:
+        yield ({"type": "error", "message": f"sidecar transport: {exc}"}, None)
+        return
+
+    # Final synthesized result for the LLM's function-response.
+    if final_draft is not None:
+        result = {
+            "success": True,
+            "nodes": final_draft.get("nodes", []),
+            "edges": final_draft.get("edges", []),
+            "node_count": len(final_draft.get("nodes", [])),
+            "message": final_summary or f"Builder produced {len(final_draft.get('nodes', []))} nodes.",
+            "viaSidecar": True,
+        }
+    else:
+        result = {
+            "success": False,
+            "error": "Builder run completed without a final draft.",
+            "viaSidecar": True,
+        }
+    yield (None, result)
+
+
+# ============================================================
 # Streaming Chat Endpoint
 # ============================================================
 
@@ -564,152 +776,172 @@ async def chat_stream(req: AssistantChatRequest):
     - done: Stream complete
     - error: An error occurred
     """
-    if not GENAI_AVAILABLE:
-        raise HTTPException(status_code=500, detail="Google GenAI not available")
+    if not ANTHROPIC_AVAILABLE:
+        raise HTTPException(status_code=500, detail="anthropic SDK not installed")
 
-    api_key = os.getenv("GEMINI_API_KEY")
+    api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
-        raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not configured")
+
+    model_id = os.getenv("ANTHROPIC_MODEL", "claude-opus-4-7")
+
+    # Anthropic tool definitions — the existing TOOL_DEFINITIONS list uses
+    # `parameters` keyed JSON Schema (Gemini's shape), which is identical to
+    # what Anthropic expects under `input_schema`. Translate once at startup.
+    anthropic_tools = [
+        {
+            "name": tool["name"],
+            "description": tool["description"],
+            "input_schema": tool["parameters"],
+        }
+        for tool in TOOL_DEFINITIONS
+    ]
 
     async def event_stream():
         try:
-            client = genai.Client(api_key=api_key)
+            client = anthropic.Anthropic(api_key=api_key)
 
-            # Build conversation history
-            contents = []
+            # Build conversation history (Anthropic shape — string content for
+            # plain history turns; the agent loop later appends structured
+            # content blocks for tool-use rounds).
+            messages: List[Dict[str, Any]] = []
             for msg in req.history:
-                contents.append(types.Content(
-                    role="user" if msg.role == "user" else "model",
-                    parts=[types.Part.from_text(text=msg.content)]
-                ))
+                role = "user" if msg.role == "user" else "assistant"
+                if msg.content:
+                    messages.append({"role": role, "content": msg.content})
 
-            # Add current message
-            contents.append(types.Content(
-                role="user",
-                parts=[types.Part.from_text(text=req.message)]
-            ))
+            messages.append({"role": "user", "content": req.message})
 
-            # Add context if available
             context_str = ""
             if req.context:
                 context_str = f"\n\nCurrent context: {json.dumps(req.context)}"
 
-            # Build tool declarations
-            tool_declarations = []
-            for tool_def in TOOL_DEFINITIONS:
-                tool_declarations.append(types.Tool(
-                    function_declarations=[
-                        types.FunctionDeclaration(
-                            name=tool_def["name"],
-                            description=tool_def["description"],
-                            parameters=tool_def["parameters"]
-                        )
-                    ]
-                ))
-
-            # Call Gemini with function calling
-            config = types.GenerateContentConfig(
-                system_instruction=SYSTEM_PROMPT + context_str,
-                tools=tool_declarations,
-                temperature=0.7,
-                max_output_tokens=4096,
-            )
-
-            # Use non-streaming first call to handle tool calling loop
             max_tool_rounds = 5
             for round_num in range(max_tool_rounds):
-                response = client.models.generate_content(
-                    model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
-                    contents=contents,
-                    config=config,
+                # Opus 4.7: adaptive thinking. No temperature / top_p / top_k /
+                # budget_tokens — those return 400 on 4.7. The `output_config`
+                # effort knob is GA on the wire but not yet in this SDK
+                # version's typed kwargs; the API default (effort=high) is
+                # already the right choice for this orchestrator.
+                response = client.messages.create(
+                    model=model_id,
+                    max_tokens=16000,
+                    system=SYSTEM_PROMPT + context_str,
+                    tools=anthropic_tools,
+                    messages=messages,
+                    thinking={"type": "adaptive"},
                 )
 
-                # Check if the response has function calls
-                has_function_calls = False
-                if response.candidates and response.candidates[0].content and response.candidates[0].content.parts:
-                    for part in response.candidates[0].content.parts:
-                        if part.function_call:
-                            has_function_calls = True
-                            break
+                # Stream any text blocks the model emitted this round (these
+                # may appear before, between, or after tool_use blocks).
+                for block in response.content:
+                    if block.type == "text":
+                        text = block.text or ""
+                        chunk_size = 12
+                        for i in range(0, len(text), chunk_size):
+                            chunk = text[i:i + chunk_size]
+                            yield f"data: {json.dumps({'type': 'text_delta', 'content': chunk})}\n\n"
+                            await asyncio.sleep(0.02)
 
-                if not has_function_calls:
-                    # No tool calls — stream the text response
-                    if response.candidates and response.candidates[0].content:
-                        for part in response.candidates[0].content.parts:
-                            if part.text:
-                                # Stream text in chunks for a streaming feel
-                                text = part.text
-                                chunk_size = 12  # characters per chunk
-                                for i in range(0, len(text), chunk_size):
-                                    chunk = text[i:i+chunk_size]
-                                    yield f"data: {json.dumps({'type': 'text_delta', 'content': chunk})}\n\n"
-                                    await asyncio.sleep(0.02)
+                stop_reason = response.stop_reason
+
+                if stop_reason == "end_turn":
                     break
-                else:
-                    # Process tool calls
-                    function_response_parts = []
-                    for part in response.candidates[0].content.parts:
-                        if part.function_call:
-                            tool_name = part.function_call.name
-                            tool_args = dict(part.function_call.args) if part.function_call.args else {}
 
-                            # Notify frontend that a tool is being called
-                            yield f"data: {json.dumps({'type': 'tool_call', 'tool': tool_name, 'args': tool_args})}\n\n"
-                            await asyncio.sleep(0.1)
+                if stop_reason in {"max_tokens", "refusal"}:
+                    detail = "Response truncated at max_tokens." if stop_reason == "max_tokens" else "The assistant declined this request."
+                    yield f"data: {json.dumps({'type': 'error', 'message': detail})}\n\n"
+                    break
 
-                            # Execute the tool
-                            result = await execute_tool(tool_name, tool_args)
+                if stop_reason != "tool_use":
+                    # Unknown terminal state — surface and break rather than loop.
+                    yield f"data: {json.dumps({'type': 'error', 'message': f'Unexpected stop_reason: {stop_reason}'})}\n\n"
+                    break
 
-                            # Send tool result to frontend
-                            yield f"data: {json.dumps({'type': 'tool_result', 'tool': tool_name, 'result': result})}\n\n"
+                # Process tool calls in order; collect tool_result blocks to
+                # send back as the next user message.
+                tool_use_blocks = [b for b in response.content if b.type == "tool_use"]
+                tool_result_blocks: List[Dict[str, Any]] = []
 
-                            # If strategy nodes were generated, stream them so the
-                            # canvas can render them incrementally. Both build_strategy
-                            # (full strategy) and create_custom_node (single node) use
-                            # the same downstream event so the AiChat canvas hook
-                            # doesn't need to special-case them.
-                            if (
-                                tool_name in ("build_strategy", "create_custom_node")
-                                and result.get("success")
-                                and result.get("nodes")
-                            ):
-                                nodes = result["nodes"]
-                                edges = result.get("edges", [])
-                                for i, node in enumerate(nodes):
-                                    yield f"data: {json.dumps({'type': 'strategy_node', 'node': node, 'index': i, 'total': len(nodes)})}\n\n"
-                                    await asyncio.sleep(0.05 if tool_name == "create_custom_node" else 0.15)
-                                if edges:
-                                    yield f"data: {json.dumps({'type': 'strategy_edges', 'edges': edges})}\n\n"
+                for block in tool_use_blocks:
+                    tool_name = block.name
+                    tool_args = dict(block.input) if block.input else {}
 
-                            # If there's a frontend action, send it
-                            if result.get("action"):
-                                yield f"data: {json.dumps({'type': 'action', 'action': result['action'], 'data': result})}\n\n"
+                    yield f"data: {json.dumps({'type': 'tool_call', 'tool': tool_name, 'args': tool_args})}\n\n"
+                    await asyncio.sleep(0.1)
 
-                            function_response_parts.append(
-                                types.Part.from_function_response(
-                                    name=tool_name,
-                                    response=result,
-                                )
-                            )
+                    # Route build_strategy through the TS sidecar (Phase 4) when enabled.
+                    # The sidecar streams its own progress events — we forward them
+                    # live to the chat SSE so the user sees nodes append in real time
+                    # rather than waiting for a single blob at the end.
+                    if tool_name == "build_strategy" and AI_BUILDER_VIA_SIDECAR:
+                        ctx_snapshot = (req.context or {}).get("visibleData", {}).get("snapshot", {}) if req.context else {}
+                        strategy_ctx = ctx_snapshot.get("context") if isinstance(ctx_snapshot, dict) else None
+                        draft_settings = {"context": strategy_ctx} if strategy_ctx else {}
+                        result: Optional[Dict[str, Any]] = None
+                        async for chat_event, final_result in stream_builder_via_sidecar(
+                            tool_args,
+                            current_nodes=(req.context or {}).get("nodes") if req.context else None,
+                            current_edges=(req.context or {}).get("edges") if req.context else None,
+                            settings=draft_settings,
+                        ):
+                            if chat_event is not None:
+                                yield f"data: {json.dumps(chat_event)}\n\n"
+                            if final_result is not None:
+                                result = final_result
+                        if result is None:
+                            result = {"success": False, "error": "Sidecar stream ended without a result.", "viaSidecar": True}
+                        # Tool-result event sent to the UI omits the heavy nodes
+                        # payload (it was already streamed live).
+                        yield f"data: {json.dumps({'type': 'tool_result', 'tool': tool_name, 'result': {'success': result.get('success', False), 'node_count': result.get('node_count', 0), 'message': result.get('message', ''), 'viaSidecar': True}})}\n\n"
+                    else:
+                        result = await execute_tool(tool_name, tool_args)
+                        yield f"data: {json.dumps({'type': 'tool_result', 'tool': tool_name, 'result': result})}\n\n"
 
-                        elif part.text:
-                            # Mixed text + tool calls: stream the text part
-                            text = part.text
-                            chunk_size = 12
-                            for i in range(0, len(text), chunk_size):
-                                chunk = text[i:i+chunk_size]
-                                yield f"data: {json.dumps({'type': 'text_delta', 'content': chunk})}\n\n"
-                                await asyncio.sleep(0.02)
+                    # Re-emit strategy nodes for non-sidecar tool paths.
+                    if (
+                        tool_name in ("build_strategy", "create_custom_node")
+                        and result.get("success")
+                        and result.get("nodes")
+                        and not result.get("viaSidecar")
+                    ):
+                        nodes = result["nodes"]
+                        edges = result.get("edges", [])
+                        for i, node in enumerate(nodes):
+                            yield f"data: {json.dumps({'type': 'strategy_node', 'node': node, 'index': i, 'total': len(nodes)})}\n\n"
+                            await asyncio.sleep(0.05 if tool_name == "create_custom_node" else 0.15)
+                        if edges:
+                            yield f"data: {json.dumps({'type': 'strategy_edges', 'edges': edges})}\n\n"
 
-                    # Add the assistant response and function results to the conversation
-                    contents.append(response.candidates[0].content)
-                    contents.append(types.Content(
-                        role="user",
-                        parts=function_response_parts,
-                    ))
+                    if result.get("action"):
+                        yield f"data: {json.dumps({'type': 'action', 'action': result['action'], 'data': result})}\n\n"
+
+                    # Feed the result back to the model. Anthropic tool_result
+                    # content accepts a string; JSON-encode dicts so the model
+                    # can parse structured fields if it needs them.
+                    if isinstance(result, (dict, list)):
+                        tool_result_content = json.dumps(result)
+                    else:
+                        tool_result_content = str(result)
+                    tool_result_blocks.append({
+                        "type": "tool_result",
+                        "tool_use_id": block.id,
+                        "content": tool_result_content,
+                    })
+
+                # Append the assistant turn (full content — preserves text +
+                # tool_use blocks the API needs to thread the next turn) and
+                # our tool results, then loop.
+                messages.append({"role": "assistant", "content": response.content})
+                messages.append({"role": "user", "content": tool_result_blocks})
 
             yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
+        except anthropic.RateLimitError as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': f'Rate limited: {e}'})}\n\n"
+        except anthropic.APIStatusError as e:
+            traceback.print_exc()
+            yield f"data: {json.dumps({'type': 'error', 'message': f'API error {e.status_code}: {e.message}'})}\n\n"
         except Exception as e:
             traceback.print_exc()
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"

@@ -2,6 +2,7 @@
  * Node Catalog Index - Re-exports all node categories
  */
 
+export { START_NODE, START_NODES } from './nodes/startNode';
 export { INDICATOR_NODES } from './nodes/indicatorNodes';
 export { CONDITION_NODES } from './nodes/conditionNodes';
 export { ACTION_NODES } from './nodes/actionNodes';
@@ -19,6 +20,7 @@ export { PORTFOLIO_NODES } from './nodes/portfolioNodes';
 export { AGENT_NODES } from './nodes/agentNodes';
 export { DATA_SOURCE_NODES } from './nodes/dataSourceNodes';
 
+import { START_NODES } from './nodes/startNode';
 import { INDICATOR_NODES } from './nodes/indicatorNodes';
 import { CONDITION_NODES } from './nodes/conditionNodes';
 import { ACTION_NODES } from './nodes/actionNodes';
@@ -37,8 +39,9 @@ import { AGENT_NODES } from './nodes/agentNodes';
 import { DATA_SOURCE_NODES } from './nodes/dataSourceNodes';
 import { NodeCatalogItem } from '../types';
 
-// Complete catalog of all nodes (16 categories)
+// Complete catalog of all nodes (16 categories + Start)
 export const NODE_CATALOG: NodeCatalogItem[] = [
+  ...START_NODES,
   ...DATA_SOURCE_NODES,
   ...TRIGGER_NODES,
   ...INTEGRATION_NODES,

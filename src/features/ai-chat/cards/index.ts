@@ -13,6 +13,7 @@ import { CodeBlockCard } from './CodeBlockCard';
 import { BossSubtreeCard } from './BossSubtreeCard';
 import { PlotCard } from './PlotCard';
 import { TableCard } from './TableCard';
+import { BuilderStatusCard } from './BuilderStatusCard';
 
 export const cardRegistry: Record<string, FC<{ payload: any }>> = {
   navigation_action: NavigationActionCard,
@@ -20,6 +21,9 @@ export const cardRegistry: Record<string, FC<{ payload: any }>> = {
   boss_subtree: BossSubtreeCard,
   plot: PlotCard,
   table: TableCard,
+  // Live Builder-agent status panel (Phase 5). One card per assistant message,
+  // updated in place as the TS sidecar emits validate / verify / submit events.
+  builder_status: BuilderStatusCard,
   // strategy_nodes is rendered specially because it reads from message.strategyNodes
   // tool_call is rendered via the StoredToolCall list, not the cards list
 };
@@ -32,4 +36,5 @@ export {
   BossSubtreeCard,
   PlotCard,
   TableCard,
+  BuilderStatusCard,
 };

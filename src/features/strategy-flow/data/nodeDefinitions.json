@@ -1042,6 +1042,94 @@
         "canReceiveFrom": ["condition", "variable"]
       }
     },
+    "switch": {
+      "type": "switch",
+      "nodeType": "control",
+      "label": "Switch",
+      "description": "Route to one of N branches by case",
+      "category": "control",
+      "subcategory": "Flow Control",
+      "icon": "GitFork",
+      "color": "#f59e0b",
+      "pythonCode": "# switch on {{value}} — see params.rules",
+      "backtraderCode": "# switch on {{value}} — see params.rules",
+      "inputs": [
+        { "id": "value", "label": "Value", "dataType": "any", "required": true }
+      ],
+      "outputs": [
+        { "id": "case0", "label": "Case 1", "dataType": "signal" },
+        { "id": "case1", "label": "Case 2", "dataType": "signal" },
+        { "id": "case2", "label": "Case 3", "dataType": "signal" },
+        { "id": "default", "label": "Default", "dataType": "signal" }
+      ],
+      "params": [
+        { "id": "rules", "label": "Rules", "type": "json", "default": [
+          { "operator": "eq", "value": 0, "outputIndex": 0 },
+          { "operator": "gt", "value": 0, "outputIndex": 1 },
+          { "operator": "lt", "value": 0, "outputIndex": 2 }
+        ]},
+        { "id": "defaultOutputIndex", "label": "Default Output", "type": "number", "default": 3 }
+      ],
+      "connections": {
+        "canConnectTo": ["action", "control", "variable"],
+        "canReceiveFrom": ["indicator", "math", "condition", "variable", "environment"]
+      }
+    },
+    "splitInBatches": {
+      "type": "splitInBatches",
+      "nodeType": "control",
+      "label": "Split In Batches",
+      "description": "Iterate a list in batches of N",
+      "category": "control",
+      "subcategory": "Loops",
+      "icon": "Layers",
+      "color": "#06b6d4",
+      "pythonCode": "# iterate {{list}} in batches of {{batchSize}}",
+      "backtraderCode": "# iterate {{list}} in batches of {{batchSize}}",
+      "inputs": [
+        { "id": "list", "label": "List", "dataType": "any", "required": true }
+      ],
+      "outputs": [
+        { "id": "batch", "label": "Batch", "dataType": "any" },
+        { "id": "done", "label": "Done", "dataType": "signal" }
+      ],
+      "params": [
+        { "id": "batchSize", "label": "Batch Size", "type": "number", "default": 10, "min": 1, "max": 1000 },
+        { "id": "mode", "label": "Mode", "type": "select", "default": "sequential", "options": ["sequential", "parallel"] }
+      ],
+      "connections": {
+        "canConnectTo": ["indicator", "condition", "math", "action", "control", "variable"],
+        "canReceiveFrom": ["variable", "integration", "math"]
+      }
+    },
+    "expression": {
+      "type": "expression",
+      "nodeType": "math",
+      "label": "Expression",
+      "description": "Safe Python-DSL expression over upstream inputs",
+      "category": "math",
+      "subcategory": "Functions",
+      "icon": "Calculator",
+      "color": "#a855f7",
+      "pythonCode": "evaluate_expression({{expression}}, {a: a, b: b, c: c})",
+      "backtraderCode": "self.eval_expression({{expression}})",
+      "inputs": [
+        { "id": "a", "label": "Input A", "dataType": "number" },
+        { "id": "b", "label": "Input B", "dataType": "number" },
+        { "id": "c", "label": "Input C", "dataType": "number" }
+      ],
+      "outputs": [
+        { "id": "value", "label": "Value", "dataType": "number" }
+      ],
+      "params": [
+        { "id": "expression", "label": "Expression", "type": "text", "default": "a" },
+        { "id": "outputDataType", "label": "Output Type", "type": "select", "default": "number", "options": ["number", "boolean"] }
+      ],
+      "connections": {
+        "canConnectTo": ["indicator", "condition", "math", "action", "variable"],
+        "canReceiveFrom": ["indicator", "environment", "math", "variable"]
+      }
+    },
     "entryPrice": {
       "type": "entryPrice",
       "nodeType": "tradeInfo",

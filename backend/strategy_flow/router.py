@@ -82,6 +82,50 @@ class ValidateFlowResponse(BaseModel):
     warnings: List[str] = []
 
 
+class DryRunRequest(BaseModel):
+    """Request to validate without executing — agent uses this in its fix loop."""
+    nodes: List[Dict[str, Any]]
+    edges: List[Dict[str, Any]]
+    settings: Optional[Dict[str, Any]] = None
+
+
+class DryRunResponse(BaseModel):
+    """Validation result shaped for the Builder agent's validate→fix loop.
+
+    `failureSignature` is a stable 16-char hash of the structured errors. The
+    agent uses it to detect "I already tried fixing this exact failure" and
+    escalate to the user instead of looping.
+    """
+    valid: bool
+    errors: List[str] = []
+    warnings: List[str] = []
+    failureSignature: str = ""
+    structuredErrors: List[Dict[str, str]] = []
+
+
+class VerifyMockRequest(BaseModel):
+    """Request to verify a strategy compiles cleanly (no real backtest)."""
+    nodes: List[Dict[str, Any]]
+    edges: List[Dict[str, Any]]
+    settings: Optional[Dict[str, Any]] = None
+
+
+class VerifyMockResponse(BaseModel):
+    """Mock-verification result: did the strategy pass validation and compile?
+
+    This is intentionally NOT a full backtest. It runs the dry-run validator
+    plus an attempted compile-to-backtrader, no data fetch. The Builder agent
+    uses this as the final pre-submit check.
+    """
+    compiles: bool
+    valid: bool
+    errors: List[str] = []
+    warnings: List[str] = []
+    failureSignature: str = ""
+    compiledCodeSize: int = 0
+    nodeCoverage: Dict[str, str] = {}  # node_id -> "compiled" | "stub" | "unknown"
+
+
 class CompileFlowRequest(BaseModel):
     """Request to compile flow to Python code."""
     nodes: List[Dict[str, Any]]
@@ -442,6 +486,135 @@ async def get_live_status():
             success=False,
             status="error",
             message=str(e)
+        )
+
+
+# ============================================================
+# Builder-agent contract endpoints (catalog, dry-run, verify-mock)
+# These three form the stable surface the TS Builder agent calls.
+# ============================================================
+
+_CATALOG_CACHE: Optional[Dict[str, Any]] = None
+
+
+def _load_catalog() -> Dict[str, Any]:
+    """Load node_catalog_cache.json into memory once and reuse."""
+    global _CATALOG_CACHE
+    if _CATALOG_CACHE is not None:
+        return _CATALOG_CACHE
+    here = os.path.dirname(__file__)
+    cache_path = os.path.join(here, "node_catalog_cache.json")
+    if not os.path.exists(cache_path):
+        _CATALOG_CACHE = {"version": "unknown", "nodes": {}}
+        return _CATALOG_CACHE
+    with open(cache_path, "r") as f:
+        _CATALOG_CACHE = json.load(f)
+    return _CATALOG_CACHE
+
+
+@router.get("/catalog")
+async def get_catalog():
+    """Return the full node catalog.
+
+    Source of truth for the Builder agent's `lookup_node_schema` tool. Grouped
+    by node category (action, indicator, condition, ...) with each entry's
+    inputs, outputs, defaultData, and metadata.
+
+    Prefers a live parse of the TS catalog files (so newly added nodes are
+    visible immediately) and falls back to the bundled JSON cache if the TS
+    source isn't reachable (e.g. desktop build).
+    """
+    try:
+        from .dynamic_prompt import load_catalog_from_typescript
+        catalog = load_catalog_from_typescript() or _load_catalog()
+    except Exception:
+        catalog = _load_catalog()
+    if isinstance(catalog, dict) and "nodes" in catalog and "catalog" not in catalog:
+        # Fallback cache uses {nodes: {...}} shape; coerce to category arrays.
+        catalog = {}
+    total = sum(len(v) for v in catalog.values() if isinstance(v, list))
+    return {
+        "catalog": catalog,
+        "totalNodeTypes": total,
+        "version": "1.0.0",
+    }
+
+
+@router.post("/validate-dry-run", response_model=DryRunResponse)
+async def validate_dry_run(req: DryRunRequest):
+    """Validate a strategy without executing it. Returns a stable
+    `failureSignature` the Builder agent uses to detect repeated failures."""
+    try:
+        from .validator import validate_flow
+
+        result = validate_flow(
+            nodes=req.nodes,
+            edges=req.edges,
+            settings=req.settings,
+        )
+        return DryRunResponse(
+            valid=result.is_valid,
+            errors=result.errors,
+            warnings=result.warnings,
+            failureSignature=result.failure_signature,
+            structuredErrors=[
+                {"errorClass": cls, "nodeId": nid, "paramPath": path}
+                for cls, nid, path in result.structured_errors
+            ],
+        )
+    except Exception as e:
+        return DryRunResponse(
+            valid=False,
+            errors=[f"validator_crash: {e}"],
+            failureSignature="validator_crash",
+        )
+
+
+@router.post("/verify-mock", response_model=VerifyMockResponse)
+async def verify_mock(req: VerifyMockRequest):
+    """Validate + attempt to compile to backtrader, no data fetch or execution.
+
+    The Builder agent calls this as the final pre-submit gate after passing
+    `validate-dry-run`. Compilation success means the strategy is at least
+    structurally executable; a real backtest is a separate, slower endpoint.
+    """
+    from .validator import validate_flow
+
+    result = validate_flow(
+        nodes=req.nodes,
+        edges=req.edges,
+        settings=req.settings,
+    )
+    if not result.is_valid:
+        return VerifyMockResponse(
+            compiles=False,
+            valid=False,
+            errors=result.errors,
+            warnings=result.warnings,
+            failureSignature=result.failure_signature,
+        )
+
+    try:
+        from .backtrader_engine import compile_to_backtrader
+
+        code = compile_to_backtrader(req.nodes, req.edges, req.settings)
+        coverage = {n["id"]: "compiled" for n in req.nodes}
+        return VerifyMockResponse(
+            compiles=True,
+            valid=True,
+            errors=[],
+            warnings=result.warnings,
+            failureSignature="",
+            compiledCodeSize=len(code or ""),
+            nodeCoverage=coverage,
+        )
+    except Exception as e:
+        return VerifyMockResponse(
+            compiles=False,
+            valid=True,  # validator passed; compilation is what failed
+            errors=[f"compile_error: {e}"],
+            warnings=result.warnings,
+            failureSignature=f"compile:{type(e).__name__}",
         )
 
 

@@ -4,9 +4,17 @@ Flow Validator
 Validates Strategy Flow configurations for correctness and trading logic.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
+import hashlib
 import json
+
+
+# (error_class, node_id, param_path) — captured for failure signature hashing.
+# Mirrors n8n's failureSignature pattern (workflow-loop-controller.ts:364):
+# same logical failure on the same node and param produces the same hash,
+# letting an AI builder detect "I already tried fixing this same thing."
+StructuredError = Tuple[str, str, str]
 
 
 @dataclass
@@ -15,6 +23,18 @@ class ValidationResult:
     is_valid: bool
     errors: List[str]
     warnings: List[str]
+    # Deterministic hash of all structured errors. Stable across runs;
+    # identical for identical failures. Empty string when there are no errors.
+    failure_signature: str = ""
+    structured_errors: List[StructuredError] = field(default_factory=list)
+
+
+def compute_failure_signature(structured: List[StructuredError]) -> str:
+    """Stable 16-char hash of sorted (error_class, node_id, param_path) tuples."""
+    if not structured:
+        return ""
+    payload = "|".join(f"{cls}:{nid}:{path}" for cls, nid, path in sorted(structured))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
 
 
 # Data type compatibility matrix
@@ -36,6 +56,17 @@ NODE_OUTPUT_TYPES = {
     "risk": "number",
     "tradeInfo": "number",
     "llm": "any",
+    # Strategy Context start node: emits a signal (trigger) and a context bundle.
+    # Structurally exempt — no inputs required, undeletable, always id="start".
+    "start": "signal",
+    "trigger": "signal",
+    # n8n-style pattern nodes added in Phase 2.
+    "switch": "signal",
+    "merge": "any",
+    "splitInBatches": "any",
+    "wait": "signal",
+    "httpRequest": "any",
+    "subStrategy": "any",
 }
 
 # Node type to expected input types
@@ -47,7 +78,22 @@ NODE_INPUT_TYPES = {
     "math": {"number"},
     "risk": {"number"},
     "variable": {"any"},
+    # start has no inputs (it IS the entry point); listing here for symmetry.
+    "start": set(),
+    "trigger": set(),
+    "switch": {"any"},
+    "merge": {"any"},
+    "splitInBatches": {"any"},
+    "wait": {"signal", "boolean", "any"},
+    "httpRequest": {"any"},
+    "subStrategy": {"any"},
 }
+
+# Node types that satisfy the "data source" requirement: indicators, environment
+# readings, or an explicit Strategy Context Start/Trigger node. Mirrors n8n's
+# MISSING_TRIGGER informational pattern — having any of these makes a strategy
+# structurally executable.
+DATA_SOURCE_TYPES = {"indicator", "environment", "start", "trigger"}
 
 # Scale categories for compatibility checking
 PRICE_SCALE_INDICATORS = {
@@ -82,64 +128,110 @@ def validate_flow(
     """
     errors: List[str] = []
     warnings: List[str] = []
-    
+    structured: List[StructuredError] = []
+
+    def fail(msg: str, error_class: str, node_id: str = "", param_path: str = "") -> None:
+        errors.append(msg)
+        structured.append((error_class, node_id, param_path))
+
     if not nodes:
-        errors.append("Strategy has no nodes.")
-        return ValidationResult(False, errors, warnings)
-    
+        fail("Strategy has no nodes.", "no_nodes")
+        return ValidationResult(
+            is_valid=False,
+            errors=errors,
+            warnings=warnings,
+            failure_signature=compute_failure_signature(structured),
+            structured_errors=structured,
+        )
+
     # Build node map for quick lookup
     node_map = {node["id"]: node for node in nodes}
-    
+
     # Check 1: Required node types
     node_types = {node.get("type") for node in nodes}
-    has_data_source = bool(node_types & {"indicator", "environment"})
+    has_data_source = bool(node_types & DATA_SOURCE_TYPES)
     has_action = "action" in node_types
     has_condition = bool(node_types & {"condition", "control"})
-    
+
     if not has_data_source:
-        errors.append("Strategy must include at least one indicator or environment node.")
-    
+        fail(
+            "Strategy must include at least one indicator, environment, or start/trigger node.",
+            "missing_data_source",
+        )
+
     if not has_action:
-        errors.append("Strategy must include at least one action node.")
-    
+        fail("Strategy must include at least one action node.", "missing_action")
+
     if not has_condition and len(nodes) > 1:
         warnings.append("No condition nodes found. Strategy may always execute actions.")
-    
+
     # Check 2: Connection type compatibility
     for edge in edges:
         source_node = node_map.get(edge.get("source"))
         target_node = node_map.get(edge.get("target"))
-        
+
         if not source_node or not target_node:
-            errors.append(f"Edge {edge.get('id')} references missing nodes.")
+            fail(
+                f"Edge {edge.get('id')} references missing nodes.",
+                "dangling_edge",
+                node_id=str(edge.get("id", "")),
+            )
             continue
-        
+
         source_type = source_node.get("type", "unknown")
         target_type = target_node.get("type", "unknown")
-        
+
         # Get output type from source
         source_output_type = get_output_type(source_node, edge.get("sourceHandle"))
-        
+
         # Get expected input type from target
         target_input_types = NODE_INPUT_TYPES.get(target_type, {"any"})
-        
-        # Check compatibility
+
+        # Empty input set means this target accepts no inputs (e.g. start nodes).
+        if not target_input_types:
+            fail(
+                f"Node '{target_node.get('data', {}).get('label', target_node['id'])}' "
+                f"is a {target_type} node and cannot receive inputs.",
+                "input_into_source_node",
+                node_id=target_node["id"],
+            )
+            continue
+
         if not is_type_compatible(source_output_type, target_input_types):
-            errors.append(
+            fail(
                 f"Type mismatch: {source_node.get('data', {}).get('label', source_node['id'])} "
                 f"({source_output_type}) cannot connect to "
                 f"{target_node.get('data', {}).get('label', target_node['id'])} "
-                f"(expects {target_input_types})"
+                f"(expects {target_input_types})",
+                "type_mismatch",
+                node_id=target_node["id"],
+                param_path=edge.get("targetHandle") or "input",
             )
     
     # Check 3: Required inputs
     incoming_edges = build_incoming_edges_map(edges)
-    
+
+    # Structural rule: at most one Start node, fixed id "start".
+    start_nodes = [n for n in nodes if n.get("type") == "start"]
+    if len(start_nodes) > 1:
+        for sn in start_nodes[1:]:
+            fail(
+                f"Multiple start nodes detected ('{sn['id']}'). A strategy may have only one.",
+                "multiple_starts",
+                node_id=sn["id"],
+            )
+    for sn in start_nodes:
+        if sn["id"] != "start":
+            warnings.append(
+                f"Start node id is '{sn['id']}' (expected 'start'). "
+                "Renamed automatically on save."
+            )
+
     for node in nodes:
         node_type = node.get("type")
         node_id = node["id"]
         node_data = node.get("data", {})
-        
+
         # Action nodes should have at least one incoming edge
         if node_type == "action":
             if node_id not in incoming_edges:
@@ -147,13 +239,13 @@ def validate_flow(
                     f"Action node '{node_data.get('label', node_id)}' has no input connections. "
                     "It will always execute."
                 )
-        
+
         # Condition nodes should have inputs
         if node_type == "condition":
             condition_type = node_data.get("conditionType", "")
             required_inputs = get_required_inputs(condition_type)
             actual_inputs = len(incoming_edges.get(node_id, []))
-            
+
             if actual_inputs < required_inputs:
                 warnings.append(
                     f"Condition node '{node_data.get('label', node_id)}' needs {required_inputs} "
@@ -163,25 +255,29 @@ def validate_flow(
     # Check 4: Cycle detection
     allow_cycles = (settings or {}).get("allowCycles", False)
     has_cycle, cycle_nodes = detect_cycles(nodes, edges)
-    
+
     if has_cycle and not allow_cycles:
-        errors.append(
+        fail(
             f"Cycle detected in strategy graph: {' -> '.join(cycle_nodes)}. "
-            "Enable 'allowCycles' in settings to permit loops."
+            "Enable 'allowCycles' in settings to permit loops.",
+            "cycle",
+            node_id=cycle_nodes[0] if cycle_nodes else "",
         )
-    
+
     # Check 5: Scale compatibility
     scale_issues = check_scale_compatibility(nodes, edges, node_map)
     warnings.extend(scale_issues)
-    
+
     # Check 6: Parameter validation
     param_issues = validate_parameters(nodes)
     warnings.extend(param_issues)
-    
+
     return ValidationResult(
         is_valid=len(errors) == 0,
         errors=errors,
-        warnings=warnings
+        warnings=warnings,
+        failure_signature=compute_failure_signature(structured),
+        structured_errors=structured,
     )
 
 
