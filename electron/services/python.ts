@@ -22,7 +22,7 @@ export interface PythonHandle {
   proc: ChildProcess;
 }
 
-function buildEnv(): NodeJS.ProcessEnv {
+function buildEnv(opts: PythonStartOptions = {}): NodeJS.ProcessEnv {
   const p = paths();
   // User-managed API keys (decrypted on demand from the safeStorage-encrypted
   // secrets store). These OVERRIDE anything inherited via process.env so a
@@ -41,13 +41,21 @@ function buildEnv(): NodeJS.ProcessEnv {
     HF_HOME: p.modelsDir,
     PYTHONDONTWRITEBYTECODE: '1',
     PYTHONUNBUFFERED: '1',
-    // The n8n-style Builder agent runs in a separate Bun process
-    // (services/strategy-ai/) which is NOT yet bundled in the desktop app.
-    // Force the chat endpoint to fall back to the legacy in-process AI
-    // generator so the desktop DMG keeps working. Remove this once
-    // bundle-strategy-ai.sh + spawn wiring lands.
-    AI_BUILDER_VIA_SIDECAR: 'false',
   };
+
+  // Wire the strategy-ai sidecar URL into Python's env so its chat endpoint
+  // (ai_assistant.py) forwards build_strategy calls through the SSE bridge.
+  // The supervisor pre-allocates the sidecar's port and passes the URL in
+  // here BEFORE the sidecar actually binds — that's fine because Python only
+  // opens the connection at agent-run time, by which point the sidecar is up.
+  // If no URL is provided (sidecar binary missing on disk), keep the legacy
+  // in-process AI generator as the chat's build_strategy path.
+  if (opts.strategyAiUrl) {
+    env.STRATEGY_AI_URL = opts.strategyAiUrl;
+    env.AI_BUILDER_VIA_SIDECAR = 'true';
+  } else {
+    env.AI_BUILDER_VIA_SIDECAR = 'false';
+  }
 
   if (!isDev()) {
     // In packaged builds, prepend our bundled site-packages to PYTHONPATH so the
@@ -59,7 +67,13 @@ function buildEnv(): NodeJS.ProcessEnv {
   return env;
 }
 
-export async function startPython(): Promise<PythonHandle> {
+export interface PythonStartOptions {
+  /** URL the chat should forward build_strategy calls to. Undefined when the
+   * strategy-ai sidecar binary is missing — Python then uses the legacy path. */
+  strategyAiUrl?: string;
+}
+
+export async function startPython(opts: PythonStartOptions = {}): Promise<PythonHandle> {
   const p = paths();
   if (!fs.existsSync(p.pythonBin)) {
     throw new Error(
@@ -69,7 +83,7 @@ export async function startPython(): Promise<PythonHandle> {
   }
 
   const port = await pickFreePort();
-  const env = buildEnv();
+  const env = buildEnv(opts);
 
   log('backend', `Spawning uvicorn on 127.0.0.1:${port} (cwd=${p.backendDir})`);
   const proc = spawn(

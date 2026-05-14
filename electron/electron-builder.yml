@@ -36,6 +36,7 @@ asarUnpack:
   - "resources/redis/**"
   - "resources/orchestrator-*"
   - "resources/orchestrator-engines/**"
+  - "resources/strategy-ai-*"
   - "resources/models/**"
   - "resources/backend/**"
 
