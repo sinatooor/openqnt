@@ -29,6 +29,7 @@ export interface AppPaths {
   backendDir: string;
   orchestratorBinary: string;
   orchestratorEnginesDir: string;
+  strategyAiBinary: string;
   postgresBinDir: string;
   redisBin: string;
   frontendIndex: string;
@@ -79,6 +80,14 @@ export function paths(): AppPaths {
     : path.join(resourcesRoot, `orchestrator-${archDir}`);
   const orchestratorEnginesDir = path.join(resourcesRoot, 'orchestrator-engines');
 
+  // Strategy AI sidecar — n8n-inspired Builder agent (Vercel AI SDK +
+  // Anthropic). In dev mode the user runs `bun --watch src/index.ts` from
+  // services/strategy-ai/ themselves; in packaged builds we spawn the
+  // bun-compiled binary.
+  const strategyAiBinary = isDev
+    ? ''
+    : path.join(resourcesRoot, `strategy-ai-${archDir}`);
+
   const frontendIndex = isDev
     ? 'http://localhost:5173/'
     : path.join(resourcesRoot, 'frontend', 'index.html');
@@ -108,6 +117,7 @@ export function paths(): AppPaths {
     backendDir,
     orchestratorBinary,
     orchestratorEnginesDir,
+    strategyAiBinary,
     postgresBinDir,
     redisBin,
     frontendIndex,

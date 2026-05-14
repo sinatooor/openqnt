@@ -8,7 +8,8 @@
  */
 
 import { app } from 'electron';
-import { isDev } from '../lib/paths';
+import fs from 'node:fs';
+import { isDev, paths } from '../lib/paths';
 import { log, snapshot as logSnapshot } from '../lib/logger';
 import { startPostgres, stopPostgres, type PostgresHandle } from './postgres';
 import { startRedis, stopRedis, type RedisHandle } from './redis';
@@ -18,8 +19,14 @@ import {
   stopOrchestrator,
   type OrchestratorHandle,
 } from './orchestrator';
+import {
+  startStrategyAi,
+  stopStrategyAi,
+  type StrategyAiHandle,
+} from './strategy-ai';
+import { pickFreePort } from './ports';
 
-export type ServiceName = 'postgres' | 'redis' | 'backend' | 'orchestrator';
+export type ServiceName = 'postgres' | 'redis' | 'backend' | 'orchestrator' | 'strategy-ai';
 export type ServiceStatus = 'pending' | 'starting' | 'ready' | 'failed';
 
 export interface HealthSnapshot {
@@ -27,6 +34,7 @@ export interface HealthSnapshot {
   redis: ServiceStatus;
   backend: ServiceStatus;
   orchestrator: ServiceStatus;
+  'strategy-ai': ServiceStatus;
   recentLogs: string[];
   fatal?: { service: ServiceName; reason: string };
   ready: boolean;
@@ -44,6 +52,7 @@ class Supervisor {
     redis: 'pending',
     backend: 'pending',
     orchestrator: 'pending',
+    'strategy-ai': 'pending',
   };
   private fatal: HealthSnapshot['fatal'];
 
@@ -51,13 +60,17 @@ class Supervisor {
   private redis?: RedisHandle;
   private py?: PythonHandle;
   private orch?: OrchestratorHandle;
+  private sa?: StrategyAiHandle;
   private urls?: RuntimeUrls;
+  /** Pre-allocated strategy-ai port so we can wire URLs into Python's env. */
+  private strategyAiPort = 0;
 
   private restartCounts: Record<ServiceName, number[]> = {
     postgres: [],
     redis: [],
     backend: [],
     orchestrator: [],
+    'strategy-ai': [],
   };
 
   snapshot(): HealthSnapshot {
@@ -68,10 +81,12 @@ class Supervisor {
       ready: this.status.backend === 'ready' &&
              this.status.postgres === 'ready' &&
              this.status.redis === 'ready' &&
-             // Orchestrator may be 'failed' (binary missing) — treat that as
-             // 'soft fail' so the app still loads. UI gates orchestrator-only
-             // features behind isDesktop+orchestrator-ready.
-             this.status.orchestrator !== 'starting',
+             // Orchestrator and strategy-ai may be 'failed' (binary missing
+             // or process died) — treat that as soft fail so the app still
+             // loads. The chat falls back to the legacy AI generator when
+             // strategy-ai is unavailable.
+             this.status.orchestrator !== 'starting' &&
+             this.status['strategy-ai'] !== 'starting',
     };
   }
 
@@ -94,6 +109,7 @@ class Supervisor {
         redis: 'ready',
         backend: 'ready',
         orchestrator: 'ready',
+        'strategy-ai': 'ready',
       };
       log('supervisor', 'Dev mode — using external services on default ports');
       return;
@@ -108,9 +124,33 @@ class Supervisor {
       this.redis = await startRedis();
       this.status.redis = 'ready';
 
+      // Pre-allocate the strategy-ai port BEFORE spawning Python so we can
+      // pass STRATEGY_AI_URL into Python's env upfront. Python only opens the
+      // connection at agent-run time, so the sidecar can boot a moment later.
+      // If the sidecar binary is missing, skip the URL so Python falls back
+      // to the legacy in-process AI generator instead of ECONNREFUSED-ing.
+      const haveStrategyAi = fs.existsSync(paths().strategyAiBinary);
+      this.strategyAiPort = haveStrategyAi ? await pickFreePort() : 0;
+
       this.status.backend = 'starting';
-      this.py = await startPython();
+      this.py = await startPython({
+        strategyAiUrl: this.strategyAiPort
+          ? `http://127.0.0.1:${this.strategyAiPort}`
+          : undefined,
+      });
       this.status.backend = 'ready';
+
+      if (haveStrategyAi) {
+        this.status['strategy-ai'] = 'starting';
+        this.sa = await startStrategyAi({
+          pythonBaseUrl: this.py.baseUrl,
+          port: this.strategyAiPort,
+        });
+        this.status['strategy-ai'] = this.sa.available ? 'ready' : 'failed';
+      } else {
+        log('supervisor', 'strategy-ai binary missing — Builder agent disabled, chat uses legacy generator');
+        this.status['strategy-ai'] = 'failed';
+      }
 
       this.status.orchestrator = 'starting';
       this.orch = await startOrchestrator({
@@ -144,8 +184,9 @@ class Supervisor {
 
   async stopAll(): Promise<void> {
     log('supervisor', 'Shutting down…');
-    // Reverse order: orchestrator → backend → redis → postgres
+    // Reverse order: orchestrator → strategy-ai → backend → redis → postgres
     if (this.orch) await stopOrchestrator(this.orch).catch(() => undefined);
+    if (this.sa) await stopStrategyAi(this.sa).catch(() => undefined);
     if (this.py) await stopPython(this.py).catch(() => undefined);
     if (this.redis) await stopRedis(this.redis).catch(() => undefined);
     if (this.pg) await stopPostgres(this.pg).catch(() => undefined);
@@ -201,6 +242,19 @@ class Supervisor {
           }
         },
       },
+      {
+        name: 'strategy-ai',
+        restart: async () => {
+          if (!this.py) return;
+          // Re-use the same pre-allocated port so the Python backend's env
+          // (STRATEGY_AI_URL) still points at us after a restart.
+          if (!this.strategyAiPort) this.strategyAiPort = await pickFreePort();
+          this.sa = await startStrategyAi({
+            pythonBaseUrl: this.py.baseUrl,
+            port: this.strategyAiPort,
+          });
+        },
+      },
     ];
 
     for (const { name, restart } of all) {
@@ -236,6 +290,7 @@ class Supervisor {
       case 'redis': return this.redis?.proc;
       case 'backend': return this.py?.proc;
       case 'orchestrator': return this.orch?.proc ?? undefined;
+      case 'strategy-ai': return this.sa?.proc ?? undefined;
     }
   }
 
