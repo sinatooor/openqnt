@@ -45,6 +45,17 @@ rewrite_one() {
         depbase="$(basename "$dep")"
         install_name_tool -change "$dep" "@rpath/$depbase" "$file" 2>/dev/null || true
       done
+
+  # Re-sign with an ad-hoc signature. `install_name_tool` invalidates the
+  # existing linker-applied signature; on Apple Silicon, AMFI (Apple Mobile
+  # File Integrity) kills any child process that tries to dlopen a Mach-O
+  # whose cdhash on disk doesn't match its embedded signature. Without this
+  # re-sign step, the Python interpreter spawned by Electron gets SIGKILL'd
+  # ~1s after launch as soon as it tries to import a relocated extension.
+  # Standalone shell invocations are forgiving (AMFI runs in permissive mode
+  # for non-hardened parents), which is why the broken DMG appeared to "work"
+  # when you ran python3 from Terminal but died under Electron.
+  codesign --force --sign - --timestamp=none "$file" 2>/dev/null || true
 }
 
 export -f rewrite_one
