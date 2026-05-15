@@ -19,10 +19,10 @@ export const ENVIRONMENT_NODES: NodeCatalogItem[] = [
         defaultData: { environmentType: 'price', priceType: 'mid' },
     },
     {
-        type: 'spread',
+        type: 'bidAskSpread',
         nodeType: 'environment',
-        label: 'Spread',
-        description: 'Bid-Ask spread',
+        label: 'Bid-Ask Spread',
+        description: 'Current bid-ask spread in pips',
         tooltip: 'Current spread in pips. Use to avoid trading during high-spread periods.',
         inputs: [],
         outputs: ['Number'],
@@ -30,7 +30,7 @@ export const ENVIRONMENT_NODES: NodeCatalogItem[] = [
         subcategory: 'Price',
         icon: 'ArrowLeftRight',
         color: '#6366f1',
-        defaultData: { environmentType: 'spread' },
+        defaultData: { environmentType: 'bidAskSpread' },
     },
     {
         type: 'prevCandleOpen',

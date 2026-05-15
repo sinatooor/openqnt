@@ -312,6 +312,7 @@ export type TriggerType =
   | 'brokerEventTrigger' // Order filled, margin call, etc.
   | 'manualTrigger'      // Explicit "Run now" (n8n Manual Trigger)
   | 'cronTrigger'        // Cron expression schedule (n8n Schedule Trigger)
+  | 'conditionTrigger'  // Fires when an incoming value meets a condition (>, <, etc.)
   | 'startTrigger';      // Strategy Context entry point — holds portfolio/tickers/capital/mode
 
 export type StrategyRunMode = 'paper' | 'live' | 'backtest';
@@ -342,6 +343,9 @@ export interface TriggerNodeData extends BaseNodeData {
   // Cron specific
   cronExpression?: string;
   timezone?: string;
+  // Condition trigger specific
+  operator?: '>' | '<' | '>=' | '<=' | '==' | '!=';
+  threshold?: number;
   // Start trigger (Strategy Context) — the source of truth for portfolio/ticker scope.
   // The header chip reads from these fields; updates go through the node's property panel.
   portfolio?: string;          // portfolio/account id (e.g. 'paper-default', 'alpaca-live')

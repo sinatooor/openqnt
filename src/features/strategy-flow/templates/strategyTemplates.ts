@@ -30,6 +30,18 @@ export const STRATEGY_TEMPLATES: StrategyTemplate[] = [
     },
     nodes: [
       {
+        id: 'trig',
+        type: 'trigger',
+        position: { x: -220, y: 60 },
+        data: { label: 'Daily Check', triggerType: 'heartbeatTrigger', intervalMinutes: 1440 },
+      },
+      {
+        id: 'data-spy',
+        type: 'dataSource',
+        position: { x: -220, y: 220 },
+        data: { label: 'SPY Daily', provider: 'yfinance', symbol: 'SPY', timeframe: '1d' },
+      },
+      {
         id: 'rsi',
         type: 'indicator',
         position: { x: 80, y: 220 },
@@ -38,7 +50,7 @@ export const STRATEGY_TEMPLATES: StrategyTemplate[] = [
       {
         id: 'oversold-30',
         type: 'math',
-        position: { x: 80, y: 360 },
+        position: { x: 80, y: 380 },
         data: { label: '30', mathType: 'number', value: 30 },
       },
       {
@@ -50,19 +62,19 @@ export const STRATEGY_TEMPLATES: StrategyTemplate[] = [
       {
         id: 'cond-oversold',
         type: 'condition',
-        position: { x: 360, y: 280 },
+        position: { x: 380, y: 280 },
         data: { label: 'RSI < 30', conditionType: 'compare', operator: '<' },
       },
       {
         id: 'cond-overbought',
         type: 'condition',
-        position: { x: 360, y: 120 },
+        position: { x: 380, y: 120 },
         data: { label: 'RSI > 70', conditionType: 'compare', operator: '>' },
       },
       {
         id: 'buy',
         type: 'action',
-        position: { x: 660, y: 280 },
+        position: { x: 680, y: 280 },
         data: {
           label: 'Buy 10%',
           actionType: 'order',
@@ -75,30 +87,33 @@ export const STRATEGY_TEMPLATES: StrategyTemplate[] = [
       {
         id: 'stop-loss',
         type: 'action',
-        position: { x: 940, y: 220 },
+        position: { x: 960, y: 220 },
         data: { label: 'Stop Loss -3%', actionType: 'stopLoss', stopDistance: 'percent', stopPercent: 3 },
       },
       {
         id: 'take-profit',
         type: 'action',
-        position: { x: 940, y: 340 },
+        position: { x: 960, y: 340 },
         data: { label: 'Take Profit +6%', actionType: 'takeProfit', profitDistance: 'percent', profitPercent: 6 },
       },
       {
         id: 'exit',
         type: 'action',
-        position: { x: 660, y: 120 },
+        position: { x: 680, y: 120 },
         data: { label: 'Close on RSI>70', actionType: 'closePosition' },
       },
     ],
     edges: [
+      // Trigger + data wiring
+      { id: 'e-trig-rsi', source: 'trig', sourceHandle: 'output', target: 'rsi', targetHandle: 'trigger' },
+      { id: 'e-data-rsi', source: 'data-spy', sourceHandle: 'candles', target: 'rsi', targetHandle: 'data' },
       // Entry: RSI < 30  → Buy
       { id: 'e1', source: 'rsi', sourceHandle: 'value', target: 'cond-oversold', targetHandle: 'input-a' },
       { id: 'e2', source: 'oversold-30', sourceHandle: 'output', target: 'cond-oversold', targetHandle: 'input-b' },
       { id: 'e3', source: 'cond-oversold', sourceHandle: 'output', target: 'buy', targetHandle: 'trigger' },
       // Risk legs chain off the entry
-      { id: 'e4', source: 'buy', sourceHandle: 'output', target: 'stop-loss', targetHandle: 'trigger' },
-      { id: 'e5', source: 'buy', sourceHandle: 'output', target: 'take-profit', targetHandle: 'trigger' },
+      { id: 'e4', source: 'buy', sourceHandle: 'next', target: 'stop-loss', targetHandle: 'trigger' },
+      { id: 'e5', source: 'buy', sourceHandle: 'next', target: 'take-profit', targetHandle: 'trigger' },
       // Exit: RSI > 70  → Close
       { id: 'e6', source: 'rsi', sourceHandle: 'value', target: 'cond-overbought', targetHandle: 'input-a' },
       { id: 'e7', source: 'overbought-70', sourceHandle: 'output', target: 'cond-overbought', targetHandle: 'input-b' },
@@ -115,6 +130,18 @@ export const STRATEGY_TEMPLATES: StrategyTemplate[] = [
     featured: true,
     nodes: [
       {
+        id: 'trig',
+        type: 'trigger',
+        position: { x: -220, y: 60 },
+        data: { label: 'Hourly Check', triggerType: 'heartbeatTrigger', intervalMinutes: 60 },
+      },
+      {
+        id: 'data-src',
+        type: 'dataSource',
+        position: { x: -220, y: 200 },
+        data: { label: 'Yahoo Finance', provider: 'yfinance', symbol: 'SPY', timeframe: '1h' },
+      },
+      {
         id: 'sma-fast',
         type: 'indicator',
         position: { x: 100, y: 100 },
@@ -123,23 +150,27 @@ export const STRATEGY_TEMPLATES: StrategyTemplate[] = [
       {
         id: 'sma-slow',
         type: 'indicator',
-        position: { x: 100, y: 220 },
+        position: { x: 100, y: 240 },
         data: { label: 'SMA (Slow)', indicatorType: 'sma', timeframe: '60', params: { period: 20 } },
       },
       {
         id: 'crossover',
         type: 'condition',
-        position: { x: 350, y: 160 },
+        position: { x: 370, y: 170 },
         data: { label: 'Crossover', conditionType: 'crossover' },
       },
       {
         id: 'buy',
         type: 'action',
-        position: { x: 600, y: 160 },
+        position: { x: 620, y: 170 },
         data: { label: 'Buy', actionType: 'order', direction: 'long', size: 10, sizeType: 'percent' },
       },
     ],
     edges: [
+      { id: 'e-trig-fast', source: 'trig', sourceHandle: 'output', target: 'sma-fast', targetHandle: 'trigger' },
+      { id: 'e-trig-slow', source: 'trig', sourceHandle: 'output', target: 'sma-slow', targetHandle: 'trigger' },
+      { id: 'e-data-fast', source: 'data-src', sourceHandle: 'candles', target: 'sma-fast', targetHandle: 'data' },
+      { id: 'e-data-slow', source: 'data-src', sourceHandle: 'candles', target: 'sma-slow', targetHandle: 'data' },
       { id: 'e1', source: 'sma-fast', sourceHandle: 'value', target: 'crossover', targetHandle: 'input-a' },
       { id: 'e2', source: 'sma-slow', sourceHandle: 'value', target: 'crossover', targetHandle: 'input-b' },
       { id: 'e3', source: 'crossover', sourceHandle: 'output', target: 'buy', targetHandle: 'trigger' },
@@ -154,6 +185,18 @@ export const STRATEGY_TEMPLATES: StrategyTemplate[] = [
     indicators: ['RSI'],
     nodes: [
       {
+        id: 'trig',
+        type: 'trigger',
+        position: { x: -220, y: 60 },
+        data: { label: 'Hourly Check', triggerType: 'heartbeatTrigger', intervalMinutes: 60 },
+      },
+      {
+        id: 'data-src',
+        type: 'dataSource',
+        position: { x: -220, y: 200 },
+        data: { label: 'Yahoo Finance', provider: 'yfinance', symbol: 'SPY', timeframe: '1h' },
+      },
+      {
         id: 'rsi',
         type: 'indicator',
         position: { x: 100, y: 150 },
@@ -162,23 +205,25 @@ export const STRATEGY_TEMPLATES: StrategyTemplate[] = [
       {
         id: 'constant-30',
         type: 'math',
-        position: { x: 100, y: 280 },
+        position: { x: 100, y: 300 },
         data: { label: '30', mathType: 'number', value: 30 },
       },
       {
         id: 'threshold',
         type: 'condition',
-        position: { x: 350, y: 180 },
+        position: { x: 370, y: 180 },
         data: { label: 'RSI < 30', conditionType: 'compare', operator: '<' },
       },
       {
         id: 'buy',
         type: 'action',
-        position: { x: 600, y: 180 },
+        position: { x: 620, y: 180 },
         data: { label: 'Buy', actionType: 'order', direction: 'long', size: 10, sizeType: 'percent' },
       },
     ],
     edges: [
+      { id: 'e-trig-rsi', source: 'trig', sourceHandle: 'output', target: 'rsi', targetHandle: 'trigger' },
+      { id: 'e-data-rsi', source: 'data-src', sourceHandle: 'candles', target: 'rsi', targetHandle: 'data' },
       { id: 'e1', source: 'rsi', sourceHandle: 'value', target: 'threshold', targetHandle: 'input-a' },
       { id: 'e2', source: 'constant-30', sourceHandle: 'output', target: 'threshold', targetHandle: 'input-b' },
       { id: 'e3', source: 'threshold', sourceHandle: 'output', target: 'buy', targetHandle: 'trigger' },
@@ -194,6 +239,18 @@ export const STRATEGY_TEMPLATES: StrategyTemplate[] = [
     featured: true,
     nodes: [
       {
+        id: 'trig',
+        type: 'trigger',
+        position: { x: -220, y: 60 },
+        data: { label: 'Hourly Check', triggerType: 'heartbeatTrigger', intervalMinutes: 60 },
+      },
+      {
+        id: 'data-src',
+        type: 'dataSource',
+        position: { x: -220, y: 200 },
+        data: { label: 'Yahoo Finance', provider: 'yfinance', symbol: 'SPY', timeframe: '1h' },
+      },
+      {
         id: 'macd',
         type: 'indicator',
         position: { x: 100, y: 150 },
@@ -202,17 +259,19 @@ export const STRATEGY_TEMPLATES: StrategyTemplate[] = [
       {
         id: 'crossover',
         type: 'condition',
-        position: { x: 350, y: 150 },
+        position: { x: 370, y: 150 },
         data: { label: 'MACD Crossover', conditionType: 'crossover' },
       },
       {
         id: 'buy',
         type: 'action',
-        position: { x: 600, y: 150 },
+        position: { x: 620, y: 150 },
         data: { label: 'Buy', actionType: 'order', direction: 'long', size: 10, sizeType: 'percent' },
       },
     ],
     edges: [
+      { id: 'e-trig-macd', source: 'trig', sourceHandle: 'output', target: 'macd', targetHandle: 'trigger' },
+      { id: 'e-data-macd', source: 'data-src', sourceHandle: 'candles', target: 'macd', targetHandle: 'data' },
       { id: 'e1', source: 'macd', sourceHandle: 'line', target: 'crossover', targetHandle: 'input-a' },
       { id: 'e2', source: 'macd', sourceHandle: 'signal', target: 'crossover', targetHandle: 'input-b' },
       { id: 'e3', source: 'crossover', sourceHandle: 'output', target: 'buy', targetHandle: 'trigger' },
@@ -227,6 +286,18 @@ export const STRATEGY_TEMPLATES: StrategyTemplate[] = [
     indicators: ['Bollinger Bands'],
     nodes: [
       {
+        id: 'trig',
+        type: 'trigger',
+        position: { x: -220, y: 60 },
+        data: { label: 'Hourly Check', triggerType: 'heartbeatTrigger', intervalMinutes: 60 },
+      },
+      {
+        id: 'data-src',
+        type: 'dataSource',
+        position: { x: -220, y: 200 },
+        data: { label: 'Yahoo Finance', provider: 'yfinance', symbol: 'SPY', timeframe: '1h' },
+      },
+      {
         id: 'bb',
         type: 'indicator',
         position: { x: 100, y: 150 },
@@ -235,23 +306,25 @@ export const STRATEGY_TEMPLATES: StrategyTemplate[] = [
       {
         id: 'price',
         type: 'environment',
-        position: { x: 100, y: 280 },
+        position: { x: 100, y: 310 },
         data: { label: 'Price', environmentType: 'price', priceType: 'mid' },
       },
       {
         id: 'compare',
         type: 'condition',
-        position: { x: 350, y: 200 },
+        position: { x: 370, y: 210 },
         data: { label: 'Price > Upper', conditionType: 'compare', operator: '>' },
       },
       {
         id: 'buy',
         type: 'action',
-        position: { x: 600, y: 200 },
+        position: { x: 620, y: 210 },
         data: { label: 'Buy', actionType: 'order', direction: 'long', size: 10, sizeType: 'percent' },
       },
     ],
     edges: [
+      { id: 'e-trig-bb', source: 'trig', sourceHandle: 'output', target: 'bb', targetHandle: 'trigger' },
+      { id: 'e-data-bb', source: 'data-src', sourceHandle: 'candles', target: 'bb', targetHandle: 'data' },
       { id: 'e1', source: 'price', sourceHandle: 'value', target: 'compare', targetHandle: 'input-a' },
       { id: 'e2', source: 'bb', sourceHandle: 'upper', target: 'compare', targetHandle: 'input-b' },
       { id: 'e3', source: 'compare', sourceHandle: 'output', target: 'buy', targetHandle: 'trigger' },
@@ -265,6 +338,18 @@ export const STRATEGY_TEMPLATES: StrategyTemplate[] = [
     difficulty: 'advanced',
     indicators: ['EMA (Fast)', 'EMA (Medium)', 'EMA (Slow)'],
     nodes: [
+      {
+        id: 'trig',
+        type: 'trigger',
+        position: { x: -220, y: 60 },
+        data: { label: 'Hourly Check', triggerType: 'heartbeatTrigger', intervalMinutes: 60 },
+      },
+      {
+        id: 'data-src',
+        type: 'dataSource',
+        position: { x: -220, y: 220 },
+        data: { label: 'Yahoo Finance', provider: 'yfinance', symbol: 'SPY', timeframe: '1h' },
+      },
       {
         id: 'ema-fast',
         type: 'indicator',
@@ -286,29 +371,35 @@ export const STRATEGY_TEMPLATES: StrategyTemplate[] = [
       {
         id: 'cross1',
         type: 'condition',
-        position: { x: 350, y: 140 },
+        position: { x: 370, y: 140 },
         data: { label: 'Fast > Medium', conditionType: 'compare', operator: '>' },
       },
       {
         id: 'cross2',
         type: 'condition',
-        position: { x: 350, y: 260 },
+        position: { x: 370, y: 260 },
         data: { label: 'Medium > Slow', conditionType: 'compare', operator: '>' },
       },
       {
         id: 'and',
         type: 'condition',
-        position: { x: 550, y: 200 },
+        position: { x: 580, y: 200 },
         data: { label: 'AND', conditionType: 'and' },
       },
       {
         id: 'buy',
         type: 'action',
-        position: { x: 750, y: 200 },
+        position: { x: 790, y: 200 },
         data: { label: 'Buy', actionType: 'order', direction: 'long', size: 10, sizeType: 'percent' },
       },
     ],
     edges: [
+      { id: 'e-trig-fast', source: 'trig', sourceHandle: 'output', target: 'ema-fast', targetHandle: 'trigger' },
+      { id: 'e-trig-med', source: 'trig', sourceHandle: 'output', target: 'ema-medium', targetHandle: 'trigger' },
+      { id: 'e-trig-slow', source: 'trig', sourceHandle: 'output', target: 'ema-slow', targetHandle: 'trigger' },
+      { id: 'e-data-fast', source: 'data-src', sourceHandle: 'candles', target: 'ema-fast', targetHandle: 'data' },
+      { id: 'e-data-med', source: 'data-src', sourceHandle: 'candles', target: 'ema-medium', targetHandle: 'data' },
+      { id: 'e-data-slow', source: 'data-src', sourceHandle: 'candles', target: 'ema-slow', targetHandle: 'data' },
       { id: 'e1', source: 'ema-fast', sourceHandle: 'value', target: 'cross1', targetHandle: 'input-a' },
       { id: 'e2', source: 'ema-medium', sourceHandle: 'value', target: 'cross1', targetHandle: 'input-b' },
       { id: 'e3', source: 'ema-medium', sourceHandle: 'value', target: 'cross2', targetHandle: 'input-a' },
@@ -327,49 +418,70 @@ export const STRATEGY_TEMPLATES: StrategyTemplate[] = [
     indicators: ['Asset Spread'],
     nodes: [
       {
+        id: 'trig',
+        type: 'trigger',
+        position: { x: -220, y: 60 },
+        data: { label: 'Hourly Check', triggerType: 'heartbeatTrigger', intervalMinutes: 60 },
+      },
+      {
+        id: 'data-a',
+        type: 'dataSource',
+        position: { x: -220, y: 180 },
+        data: { label: 'Asset A', provider: 'yfinance', symbol: 'SPY', timeframe: '1h' },
+      },
+      {
+        id: 'data-b',
+        type: 'dataSource',
+        position: { x: -220, y: 320 },
+        data: { label: 'Asset B', provider: 'yfinance', symbol: 'QQQ', timeframe: '1h' },
+      },
+      {
         id: 'spread-ind',
         type: 'indicator',
-        position: { x: 100, y: 150 },
+        position: { x: 100, y: 220 },
         data: { label: 'Asset Spread', indicatorType: 'spread', timeframe: '60', params: { calculationType: 'ratio' } },
       },
       {
         id: 'constant-1_05',
         type: 'math',
-        position: { x: 100, y: 280 },
+        position: { x: 100, y: 360 },
         data: { label: '1.05', mathType: 'number', value: 1.05 },
       },
       {
         id: 'constant-0_95',
         type: 'math',
-        position: { x: 100, y: 410 },
+        position: { x: 100, y: 480 },
         data: { label: '0.95', mathType: 'number', value: 0.95 },
       },
       {
         id: 'compare-high',
         type: 'condition',
-        position: { x: 350, y: 180 },
+        position: { x: 370, y: 240 },
         data: { label: 'Spread > 1.05', conditionType: 'compare', operator: '>' },
       },
       {
         id: 'compare-low',
         type: 'condition',
-        position: { x: 350, y: 310 },
+        position: { x: 370, y: 370 },
         data: { label: 'Spread < 0.95', conditionType: 'compare', operator: '<' },
       },
       {
         id: 'short-pair',
         type: 'action',
-        position: { x: 600, y: 180 },
+        position: { x: 630, y: 240 },
         data: { label: 'Short Pair', actionType: 'order', direction: 'short', size: 10, sizeType: 'percent' },
       },
       {
         id: 'long-pair',
         type: 'action',
-        position: { x: 600, y: 310 },
+        position: { x: 630, y: 370 },
         data: { label: 'Long Pair', actionType: 'order', direction: 'long', size: 10, sizeType: 'percent' },
       },
     ],
     edges: [
+      { id: 'e-trig-spread', source: 'trig', sourceHandle: 'output', target: 'spread-ind', targetHandle: 'trigger' },
+      { id: 'e-da-spread', source: 'data-a', sourceHandle: 'candles', target: 'spread-ind', targetHandle: 'data-a' },
+      { id: 'e-db-spread', source: 'data-b', sourceHandle: 'candles', target: 'spread-ind', targetHandle: 'data-b' },
       { id: 'e1', source: 'spread-ind', sourceHandle: 'value', target: 'compare-high', targetHandle: 'input-a' },
       { id: 'e2', source: 'constant-1_05', sourceHandle: 'output', target: 'compare-high', targetHandle: 'input-b' },
       { id: 'e3', source: 'spread-ind', sourceHandle: 'value', target: 'compare-low', targetHandle: 'input-a' },
@@ -387,6 +499,18 @@ export const STRATEGY_TEMPLATES: StrategyTemplate[] = [
     indicators: ['HMM Regime'],
     nodes: [
       {
+        id: 'trig',
+        type: 'trigger',
+        position: { x: -220, y: 60 },
+        data: { label: 'Daily Check', triggerType: 'heartbeatTrigger', intervalMinutes: 1440 },
+      },
+      {
+        id: 'data-src',
+        type: 'dataSource',
+        position: { x: -220, y: 200 },
+        data: { label: 'Yahoo Finance', provider: 'yfinance', symbol: 'SPY', timeframe: '1d' },
+      },
+      {
         id: 'hmm',
         type: 'indicator',
         position: { x: 100, y: 150 },
@@ -395,41 +519,43 @@ export const STRATEGY_TEMPLATES: StrategyTemplate[] = [
       {
         id: 'constant-0',
         type: 'math',
-        position: { x: 100, y: 280 },
+        position: { x: 100, y: 300 },
         data: { label: '0 (Bull)', mathType: 'number', value: 0 },
       },
       {
         id: 'constant-1',
         type: 'math',
-        position: { x: 100, y: 410 },
+        position: { x: 100, y: 420 },
         data: { label: '1 (Bear)', mathType: 'number', value: 1 },
       },
       {
         id: 'is-bull',
         type: 'condition',
-        position: { x: 350, y: 180 },
+        position: { x: 370, y: 180 },
         data: { label: 'Is Bull Regime', conditionType: 'compare', operator: '==' },
       },
       {
         id: 'is-bear',
         type: 'condition',
-        position: { x: 350, y: 310 },
+        position: { x: 370, y: 320 },
         data: { label: 'Is Bear Regime', conditionType: 'compare', operator: '==' },
       },
       {
         id: 'buy',
         type: 'action',
-        position: { x: 600, y: 180 },
+        position: { x: 630, y: 180 },
         data: { label: 'Buy Asset', actionType: 'order', direction: 'long', size: 10, sizeType: 'percent' },
       },
       {
         id: 'sell',
         type: 'action',
-        position: { x: 600, y: 310 },
+        position: { x: 630, y: 320 },
         data: { label: 'Sell Asset', actionType: 'order', direction: 'short', size: 10, sizeType: 'percent' },
       },
     ],
     edges: [
+      { id: 'e-trig-hmm', source: 'trig', sourceHandle: 'output', target: 'hmm', targetHandle: 'trigger' },
+      { id: 'e-data-hmm', source: 'data-src', sourceHandle: 'candles', target: 'hmm', targetHandle: 'data' },
       { id: 'e1', source: 'hmm', sourceHandle: 'value', target: 'is-bull', targetHandle: 'input-a' },
       { id: 'e2', source: 'constant-0', sourceHandle: 'output', target: 'is-bull', targetHandle: 'input-b' },
       { id: 'e3', source: 'hmm', sourceHandle: 'value', target: 'is-bear', targetHandle: 'input-a' },

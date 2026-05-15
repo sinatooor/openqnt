@@ -46,6 +46,7 @@ import {
   PINE_SCRIPT_NODES,
   PORTFOLIO_NODES,
   AGENT_NODES,
+  DATA_SOURCE_NODES,
 } from '../catalog/nodeCatalog';
 import { NodeCatalogItem } from '../types';
 import { SettingsModal, JournalModal, HelpModal } from './modals';
@@ -107,6 +108,14 @@ const TOOL_CATEGORIES: SidebarCategory[] = [
     color: '#8b5cf6',
     nodes: TRIGGER_NODES,
     description: 'Workflow entry points'
+  },
+  {
+    id: 'dataSources',
+    label: 'Data Sources',
+    icon: Database,
+    color: '#06b6d4',
+    nodes: DATA_SOURCE_NODES,
+    description: 'Market data providers'
   },
   {
     id: 'environment',

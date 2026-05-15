@@ -34,6 +34,8 @@ export const TriggerNode = memo(({ id, data, selected }: NodeProps) => {
         return 'Click to run';
       case 'cronTrigger' as any:
         return (nodeData as any).cronExpression || 'Cron schedule';
+      case 'conditionTrigger' as any:
+        return `Value ${(nodeData as any).operator ?? '<'} ${(nodeData as any).threshold ?? 30}`;
       default:
         return catalogItem?.description || 'Trigger';
     }

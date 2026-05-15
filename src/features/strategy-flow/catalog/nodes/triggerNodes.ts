@@ -142,4 +142,23 @@ export const TRIGGER_NODES: NodeCatalogItem[] = [
             timezone: 'America/New_York',
         },
     },
+    {
+        type: 'conditionTrigger',
+        nodeType: 'trigger',
+        label: 'Condition Trigger',
+        description: 'Fires when an incoming value meets a condition (>, <, =, etc.)',
+        tooltip: 'Connect any numeric value (RSI, price, indicator) and define a threshold condition. Fires a signal downstream when satisfied. Wire an indicator output to the Value input, set the operator and threshold.',
+        inputs: ['Value'],
+        outputs: ['Signal'],
+        category: 'triggers',
+        subcategory: 'Condition',
+        icon: 'GitBranch',
+        color: '#f59e0b',
+        backtestEligible: true,
+        defaultData: {
+            triggerType: 'conditionTrigger' as any,
+            operator: '<',
+            threshold: 30,
+        },
+    },
 ];
