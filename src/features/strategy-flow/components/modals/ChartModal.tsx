@@ -3,7 +3,7 @@
  * Equivalent to Blockly's FloatingChartModal
  */
 
-import { memo, useState } from 'react';
+import { memo, useState, useCallback } from 'react';
 import { WindowModal } from './WindowModal';
 import {
   Select,
@@ -50,6 +50,12 @@ export const ChartModal = memo(({
 }: ChartModalProps) => {
   const [symbol, setSymbol] = useState(initialSymbol);
   const [interval, setInterval] = useState(initialInterval);
+  // Tracks whether any select dropdown is open — used to cover the iframe so
+  // it doesn't capture pointer events and swallow the dropdown.
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const openDropdown = useCallback(() => setDropdownOpen(true), []);
+  const closeDropdown = useCallback(() => setDropdownOpen(false), []);
 
   // TradingView widget URL
   const chartUrl = `https://www.tradingview.com/widgetembed/?frameElementId=tradingview_widget&symbol=${symbol}&interval=${interval}&hidesidetoolbar=1&symboledit=0&saveimage=0&toolbarbg=1a1a1a&studies=[]&theme=dark&style=1&timezone=Etc/UTC&withdateranges=1&hide_top_toolbar=0&hide_legend=0&allow_symbol_change=0`;
@@ -66,21 +72,29 @@ export const ChartModal = memo(({
       minHeight={400}
     >
       <div className="flex items-center gap-2 px-4 py-2 border-b border-border">
-        <Select value={symbol} onValueChange={setSymbol}>
+        <Select
+          value={symbol}
+          onValueChange={(v) => { setSymbol(v); closeDropdown(); }}
+          onOpenChange={(o) => o ? openDropdown() : closeDropdown()}
+        >
           <SelectTrigger className="w-32 bg-secondary border-border h-8">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="bg-secondary border-border">
+          <SelectContent className="bg-secondary border-border z-[10002]">
             {SYMBOLS.map(s => (
               <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Select value={interval} onValueChange={setInterval}>
+        <Select
+          value={interval}
+          onValueChange={(v) => { setInterval(v); closeDropdown(); }}
+          onOpenChange={(o) => o ? openDropdown() : closeDropdown()}
+        >
           <SelectTrigger className="w-20 bg-secondary border-border h-8">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="bg-secondary border-border">
+          <SelectContent className="bg-secondary border-border z-[10002]">
             {INTERVALS.map(i => (
               <SelectItem key={i.value} value={i.value}>{i.label}</SelectItem>
             ))}
@@ -88,14 +102,20 @@ export const ChartModal = memo(({
         </Select>
       </div>
 
-      {/* Chart iframe */}
-      <div className="flex-1 h-full">
+      {/* Chart iframe — key forces remount when symbol/interval changes.
+          Transparent overlay covers the iframe while a dropdown is open so the
+          iframe's compositor layer doesn't swallow pointer events. */}
+      <div className="flex-1 h-full relative">
         <iframe
+          key={chartUrl}
           src={chartUrl}
           className="w-full h-full border-0"
           title="TradingView Chart"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         />
+        {dropdownOpen && (
+          <div className="absolute inset-0" style={{ zIndex: 10001 }} />
+        )}
       </div>
     </WindowModal>
   );

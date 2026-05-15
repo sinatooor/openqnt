@@ -15,6 +15,8 @@ import { useStrategyFlowStore } from '../store/strategyFlowStore';
 import { useExecutionStore } from '../store/executionStore';
 import { startHistoryEntry, finalizeHistoryEntry } from '../store/executionHistoryStore';
 import type { StrategyFlowNode, StrategyFlowEdge } from '../types';
+import { computeKernel } from '../runtime/computeKernel';
+import { createEvalContext, evaluateNode, type EvalContext, type NodeEvalResult } from '../runtime/browserInterpreter';
 
 // ---------------------------------------------------------------------------
 // Configurable timing (ms)
@@ -69,73 +71,95 @@ function buildGraph(nodes: StrategyFlowNode[], edges: StrategyFlowEdge[]) {
 }
 
 /**
- * Determine branching for IF/Switch/Condition nodes.
- * Returns which edges to traverse and which to skip.
+ * Determine branching for IF / Switch / Condition nodes using the real
+ * evaluation result. For condition nodes (output: boolean), traverse all
+ * edges from the `output` handle (downstream nodes use the value). For
+ * if/ifElse/switch (multi-output control), traverse only the matching
+ * source handle.
  */
-function simulateBranch(
+function selectBranch(
   node: StrategyFlowNode,
   outEdges: { edge: StrategyFlowEdge; target: string }[],
+  result: NodeEvalResult,
 ): { takenEdges: typeof outEdges; skippedEdges: typeof outEdges; takenBranch: string | null } {
   const controlType = (node.data as Record<string, unknown>)?.controlType as string | undefined;
-  const conditionType = (node.data as Record<string, unknown>)?.conditionType as string | undefined;
 
-  if (outEdges.length <= 1 || (!controlType && !conditionType)) {
-    return { takenEdges: outEdges, skippedEdges: [], takenBranch: null };
-  }
+  if (outEdges.length === 0) return { takenEdges: [], skippedEdges: [], takenBranch: null };
 
-  if (controlType === 'if' || controlType === 'ifElse' || conditionType) {
-    const byHandle = new Map<string, typeof outEdges>();
-    for (const e of outEdges) {
-      const handle = e.edge.sourceHandle || 'default';
-      if (!byHandle.has(handle)) byHandle.set(handle, []);
-      byHandle.get(handle)!.push(e);
-    }
-    const handles = Array.from(byHandle.keys());
-    const takenHandle = handles[Math.random() > 0.5 ? 0 : Math.min(1, handles.length - 1)];
-
+  // if / ifElse / switch — branch on result.branch (then/else or case-N).
+  if (controlType === 'if' || controlType === 'ifElse' || controlType === 'switch') {
     const taken: typeof outEdges = [];
     const skipped: typeof outEdges = [];
-    for (const [handle, edges] of byHandle) {
-      (handle === takenHandle ? taken : skipped).push(...edges);
+    for (const e of outEdges) {
+      const handle = e.edge.sourceHandle || 'output';
+      if (handle === result.branch) taken.push(e);
+      else skipped.push(e);
     }
-    return { takenEdges: taken, skippedEdges: skipped, takenBranch: takenHandle };
+    // If we matched nothing (graph mismatch), fall through to all edges.
+    if (taken.length === 0) return { takenEdges: outEdges, skippedEdges: [], takenBranch: result.branch ?? null };
+    return { takenEdges: taken, skippedEdges: skipped, takenBranch: result.branch ?? null };
   }
 
+  // Condition node — if the boolean output is false, downstream actions
+  // shouldn't fire. Skip outgoing edges when result is falsy.
+  if (node.type === 'condition') {
+    if (result.value === false) {
+      return { takenEdges: [], skippedEdges: outEdges, takenBranch: 'false' };
+    }
+    return { takenEdges: outEdges, skippedEdges: [], takenBranch: 'true' };
+  }
+
+  // Default: traverse all outgoing edges.
   return { takenEdges: outEdges, skippedEdges: [], takenBranch: null };
 }
 
-function simulateNodeExecution(node: StrategyFlowNode): {
+/**
+ * Run a node through the browser interpreter and reshape the result for
+ * the canvas overlay (input/output records). Real values flow through —
+ * no random numbers.
+ */
+function runNodeReal(
+  node: StrategyFlowNode,
+  ctx: EvalContext,
+  edges: StrategyFlowEdge[],
+): {
   input: Record<string, unknown>;
   output: Record<string, unknown>;
   items: number;
-  shouldError: boolean;
+  result: NodeEvalResult;
   waitMs: number | null;
 } {
-  const label = node.data.label;
   const type = node.type || 'unknown';
-  const shouldError = Math.random() < 0.05;
-  const items = type === 'trigger' ? 1 : Math.floor(Math.random() * 10) + 1;
 
-  // Durable Wait: extract wait time from control node
+  // Gather actual input values from connected upstream outputs.
+  const input: Record<string, unknown> = {};
+  for (const e of edges) {
+    if (e.target !== node.id) continue;
+    const v = ctx.outputs.get(`${e.source}:${e.sourceHandle || 'output'}`);
+    if (v !== undefined) input[e.targetHandle || 'in'] = v;
+  }
+
+  const result = evaluateNode(node, ctx, edges);
+
+  // Durable Wait: extract wait time from control node config.
   let waitMs: number | null = null;
   if (type === 'control') {
     const controlType = (node.data as Record<string, unknown>)?.controlType as string;
     if (controlType === 'wait' || controlType === 'waitUntil') {
       const waitSeconds = (node.data as Record<string, unknown>)?.waitSeconds as number ?? 1;
-      waitMs = Math.min(waitSeconds * 1000, 30_000); // Cap at 30s for simulation
+      waitMs = Math.min(Math.max(0.1, waitSeconds) * 1000, 30_000);
     }
   }
 
   return {
-    input: { source: 'upstream', timestamp: new Date().toISOString(), type },
+    input,
     output: {
-      result: shouldError ? null : `${label} output`,
-      items,
-      value: shouldError ? null : +(Math.random() * 100).toFixed(2),
-      signal: type === 'condition' ? (Math.random() > 0.5 ? 'true' : 'false') : undefined,
+      ...result.handles,
+      value: result.value,
+      display: result.display,
     },
-    items,
-    shouldError,
+    items: 1,
+    result,
     waitMs,
   };
 }
@@ -153,8 +177,10 @@ async function traverseV1(
   nodeId: string,
   visited: Set<string>,
   adjacency: Map<string, { edge: StrategyFlowEdge; target: string }[]>,
+  edges: StrategyFlowEdge[],
   nodeMap: Map<string, StrategyFlowNode>,
   exec: ReturnType<typeof useExecutionStore.getState>,
+  ctx: EvalContext,
   signal: AbortSignal,
 ): Promise<void> {
   if (visited.has(nodeId)) return;
@@ -165,44 +191,34 @@ async function traverseV1(
 
   // Skip pinned nodes — use frozen output
   if (exec.nodeStates[nodeId]?.isPinned) {
-    // Keep existing state, just mark as success with pin notation
     return;
   }
 
-  // Handle durable Wait node
-  const { waitMs, shouldError, input, output, items } = simulateNodeExecution(node);
-
   exec.setNodeRunning(nodeId);
+
+  const { waitMs, input, output, items, result } = runNodeReal(node, ctx, edges);
 
   if (waitMs !== null) {
     exec.setNodeWaiting(nodeId);
-    // Persist resume time for durable wait
     const resumeAt = Date.now() + waitMs;
     const key = `wait-resume-${nodeId}`;
     localStorage.setItem(key, String(resumeAt));
     await sleep(waitMs, signal);
     localStorage.removeItem(key);
   } else {
-    await sleep(NODE_EXECUTE_MS + Math.random() * 400, signal);
-  }
-
-  if (shouldError) {
-    exec.setNodeError(nodeId, `Simulated error in ${node.data.label}`);
-    return;
+    await sleep(NODE_EXECUTE_MS, signal);
   }
 
   const outEdges = adjacency.get(nodeId) || [];
-  const { takenEdges, skippedEdges, takenBranch } = simulateBranch(node, outEdges);
+  const { takenEdges, skippedEdges, takenBranch } = selectBranch(node, outEdges, result);
 
   exec.setNodeSuccess(nodeId, output, input, items, takenBranch);
 
-  // Mark skipped
   for (const { target } of skippedEdges) {
     exec.setNodeSkipped(target);
     visited.add(target);
   }
 
-  // Animate edges then recurse (DFS — one branch fully before next)
   for (const { edge, target } of takenEdges) {
     exec.setEdgeRunning(edge.id);
     await sleep(EDGE_ANIMATE_MS, signal);
@@ -210,7 +226,7 @@ async function traverseV1(
     exec.setEdgeActive(edge.id, items);
     await sleep(SETTLE_MS, signal);
 
-    await traverseV1(target, visited, adjacency, nodeMap, exec, signal);
+    await traverseV1(target, visited, adjacency, edges, nodeMap, exec, ctx, signal);
   }
 }
 
@@ -221,8 +237,10 @@ async function traverseV0(
   roots: string[],
   visited: Set<string>,
   adjacency: Map<string, { edge: StrategyFlowEdge; target: string }[]>,
+  edges: StrategyFlowEdge[],
   nodeMap: Map<string, StrategyFlowNode>,
   exec: ReturnType<typeof useExecutionStore.getState>,
+  ctx: EvalContext,
   signal: AbortSignal,
 ): Promise<void> {
   const queue: string[] = [...roots];
@@ -235,12 +253,11 @@ async function traverseV0(
     const node = nodeMap.get(nodeId);
     if (!node) continue;
 
-    // Skip pinned
     if (exec.nodeStates[nodeId]?.isPinned) continue;
 
-    const { waitMs, shouldError, input, output, items } = simulateNodeExecution(node);
-
     exec.setNodeRunning(nodeId);
+
+    const { waitMs, input, output, items, result } = runNodeReal(node, ctx, edges);
 
     if (waitMs !== null) {
       exec.setNodeWaiting(nodeId);
@@ -249,16 +266,11 @@ async function traverseV0(
       await sleep(waitMs, signal);
       localStorage.removeItem(`wait-resume-${nodeId}`);
     } else {
-      await sleep(NODE_EXECUTE_MS + Math.random() * 400, signal);
-    }
-
-    if (shouldError) {
-      exec.setNodeError(nodeId, `Simulated error in ${node.data.label}`);
-      continue;
+      await sleep(NODE_EXECUTE_MS, signal);
     }
 
     const outEdges = adjacency.get(nodeId) || [];
-    const { takenEdges, skippedEdges, takenBranch } = simulateBranch(node, outEdges);
+    const { takenEdges, skippedEdges, takenBranch } = selectBranch(node, outEdges, result);
 
     exec.setNodeSuccess(nodeId, output, input, items, takenBranch);
 
@@ -314,9 +326,23 @@ export function useExecutionFlow() {
     exec.startExecution();
     useStrategyFlowStore.getState().setIsRunning(true);
 
+    // Ensure the WASM-shaped compute kernel is initialized before we start.
+    await computeKernel.init();
+
     const { adjacency, roots } = buildGraph(nodes, edges);
     const nodeMap = new Map(nodes.map((n) => [n.id, n]));
     const visited = new Set<string>();
+
+    // Build a shared evaluation context for this run. Pull the strategy
+    // ticker from the Start node (or first data source) so synthetic
+    // candles match what the user configured.
+    const startNode = nodes.find((n) => (n.data as any)?.triggerType === 'startTrigger');
+    const dataSourceNode = nodes.find((n) => n.type === 'dataSource');
+    const ticker =
+      ((startNode?.data as any)?.tickers?.[0] as string) ||
+      ((dataSourceNode?.data as any)?.symbol as string) ||
+      'SPY';
+    const ctx = createEvalContext(ticker);
 
     let finalPhase: 'completed' | 'error' = 'completed';
 
@@ -324,11 +350,11 @@ export function useExecutionFlow() {
       if (executionOrder === 'v1') {
         // v1: DFS — run one branch fully before starting next
         for (const root of roots) {
-          await traverseV1(root, visited, adjacency, nodeMap, exec, signal);
+          await traverseV1(root, visited, adjacency, edges, nodeMap, exec, ctx, signal);
         }
       } else {
         // v0: BFS — interleaved branches (legacy)
-        await traverseV0(roots, visited, adjacency, nodeMap, exec, signal);
+        await traverseV0(roots, visited, adjacency, edges, nodeMap, exec, ctx, signal);
       }
 
       exec.completeExecution();

@@ -18,6 +18,7 @@ export { IntegrationNode } from './IntegrationNode';
 export { PineScriptNode } from './PineScriptNode';
 export { PortfolioNode } from './PortfolioNode';
 export { AgentNode } from './AgentNode';
+export { DataSourceNode } from './DataSourceNode';
 
 import { IndicatorNode } from './IndicatorNode';
 import { ConditionNode } from './ConditionNode';
@@ -34,6 +35,7 @@ import { IntegrationNode } from './IntegrationNode';
 import { PineScriptNode } from './PineScriptNode';
 import { PortfolioNode } from './PortfolioNode';
 import { AgentNode } from './AgentNode';
+import { DataSourceNode } from './DataSourceNode';
 
 // Node type registry for ReactFlow
 export const nodeTypes = {
@@ -52,4 +54,5 @@ export const nodeTypes = {
   pineScript: PineScriptNode,
   portfolio: PortfolioNode,
   agent: AgentNode,
+  dataSource: DataSourceNode,
 };

@@ -55,6 +55,7 @@ import {
   TIMEFRAME_OPTIONS,
   PortfolioNodeData,
   AgentNodeData,
+  TriggerNodeData,
 } from '../types';
 
 // =============================================================================
@@ -496,6 +497,141 @@ const IndicatorProperties = memo(({ nodeId, data }: IndicatorPropertiesProps) =>
           />
         );
 
+      case 'cci':
+        return (
+          <SliderInput
+            label="Period"
+            value={params.period as number || 20}
+            onChange={(v) => updateParam('period', v)}
+            min={1}
+            max={200}
+          />
+        );
+
+      case 'adx':
+        return (
+          <SliderInput
+            label="Period"
+            value={params.period as number || 14}
+            onChange={(v) => updateParam('period', v)}
+            min={1}
+            max={100}
+          />
+        );
+
+      case 'mfi':
+        return (
+          <SliderInput
+            label="Period"
+            value={params.period as number || 14}
+            onChange={(v) => updateParam('period', v)}
+            min={1}
+            max={100}
+          />
+        );
+
+      case 'stochRSI':
+        return (
+          <>
+            <NumberInput
+              label="RSI Period"
+              value={params.rsiPeriod as number || 14}
+              onChange={(v) => updateParam('rsiPeriod', v)}
+              min={2}
+            />
+            <NumberInput
+              label="Stoch Period"
+              value={params.stochPeriod as number || 14}
+              onChange={(v) => updateParam('stochPeriod', v)}
+              min={2}
+            />
+            <NumberInput
+              label="%K Smooth"
+              value={params.k as number || 3}
+              onChange={(v) => updateParam('k', v)}
+              min={1}
+            />
+            <NumberInput
+              label="%D Smooth"
+              value={params.d as number || 3}
+              onChange={(v) => updateParam('d', v)}
+              min={1}
+            />
+          </>
+        );
+
+      case 'keltner':
+        return (
+          <>
+            <SliderInput
+              label="Period"
+              value={params.period as number || 20}
+              onChange={(v) => updateParam('period', v)}
+              min={1}
+              max={100}
+            />
+            <NumberInput
+              label="ATR Multiplier"
+              value={params.multiplier as number || 2}
+              onChange={(v) => updateParam('multiplier', v)}
+              min={0.1}
+              step={0.1}
+            />
+          </>
+        );
+
+      case 'obv':
+        return (
+          <div className="px-3 py-2 bg-slate-500/10 border border-slate-500/20 rounded-md">
+            <p className="text-xs text-muted-foreground">OBV has no configurable parameters. Connect Price Data and Volume inputs.</p>
+          </div>
+        );
+
+      case 'vwap':
+        return (
+          <div className="px-3 py-2 bg-slate-500/10 border border-slate-500/20 rounded-md">
+            <p className="text-xs text-muted-foreground">VWAP resets daily. Connect Price Data and Volume inputs.</p>
+          </div>
+        );
+
+      case 'hmm_regime':
+        return (
+          <>
+            <NumberInput
+              label="Number of States"
+              value={params.n_states as number || 2}
+              onChange={(v) => updateParam('n_states', Math.max(2, Math.floor(v)))}
+              min={2}
+              step={1}
+              description="2 = bull/bear, 3 = bull/bear/sideways"
+            />
+            <SelectInput
+              label="Feature"
+              value={params.feature as string || 'returns'}
+              onChange={(v) => updateParam('feature', v)}
+              options={[
+                { value: 'returns', label: 'Log Returns' },
+                { value: 'volatility', label: 'Volatility' },
+                { value: 'volume', label: 'Volume' },
+              ]}
+            />
+          </>
+        );
+
+      case 'spread':
+        return (
+          <SelectInput
+            label="Calculation"
+            value={params.calculationType as string || 'ratio'}
+            onChange={(v) => updateParam('calculationType', v)}
+            options={[
+              { value: 'ratio', label: 'Price Ratio (A/B)' },
+              { value: 'difference', label: 'Price Difference (A−B)' },
+              { value: 'zscore', label: 'Z-Score' },
+            ]}
+          />
+        );
+
       default:
         // Generic period parameter
         if ('period' in params) {
@@ -732,6 +868,132 @@ const ActionProperties = memo(({ nodeId, data }: ActionPropertiesProps) => {
         </div>
       );
 
+    case 'closePosition':
+      return (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Symbol (optional override)</Label>
+            <Input
+              value={(data as any).symbol ?? ''}
+              onChange={(e) => updateNodeData(nodeId, { symbol: e.target.value.toUpperCase() || undefined })}
+              placeholder="Leave blank to close by context"
+              className="h-8 text-sm font-mono"
+            />
+            <p className="text-[10px] text-muted-foreground/60">Leave blank to close the position from the strategy context.</p>
+          </div>
+        </div>
+      );
+
+    case 'closeAll':
+      return (
+        <div className="px-3 py-3 bg-red-500/10 border border-red-500/20 rounded-md">
+          <p className="text-xs text-red-300 font-medium">Close All Positions</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Closes every open position when triggered. No additional configuration needed.
+          </p>
+        </div>
+      );
+
+    case 'log':
+      return (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Message</Label>
+            <Textarea
+              value={(data as any).message ?? ''}
+              onChange={(e) => updateNodeData(nodeId, { message: e.target.value })}
+              placeholder="Log message… supports {{variable}} interpolation"
+              className="text-sm min-h-[80px] resize-none"
+            />
+          </div>
+          <SelectInput
+            label="Level"
+            value={(data as any).level ?? 'info'}
+            onChange={(v) => updateNodeData(nodeId, { level: v })}
+            options={[
+              { value: 'debug', label: 'Debug' },
+              { value: 'info', label: 'Info' },
+              { value: 'warn', label: 'Warning' },
+              { value: 'error', label: 'Error' },
+            ]}
+          />
+        </div>
+      );
+
+    case 'options_order':
+      return (
+        <div className="space-y-4">
+          <SelectInput
+            label="Option Type"
+            value={(data as any).optionType ?? 'call'}
+            onChange={(v) => updateNodeData(nodeId, { optionType: v })}
+            options={[
+              { value: 'call', label: 'Call' },
+              { value: 'put', label: 'Put' },
+            ]}
+          />
+          <SelectInput
+            label="Action"
+            value={(data as any).optionAction ?? 'buy'}
+            onChange={(v) => updateNodeData(nodeId, { optionAction: v })}
+            options={[
+              { value: 'buy', label: 'Buy to Open' },
+              { value: 'sell', label: 'Sell to Open' },
+              { value: 'buy_close', label: 'Buy to Close' },
+              { value: 'sell_close', label: 'Sell to Close' },
+            ]}
+          />
+          <NumberInput
+            label="Strike Price"
+            value={(data as any).strike ?? 0}
+            onChange={(v) => updateNodeData(nodeId, { strike: v })}
+            step={0.5}
+          />
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Expiry Date (YYYY-MM-DD)</Label>
+            <Input
+              value={(data as any).expiry ?? ''}
+              onChange={(e) => updateNodeData(nodeId, { expiry: e.target.value })}
+              placeholder="e.g. 2025-12-19"
+              className="h-8 text-sm font-mono"
+            />
+          </div>
+          <NumberInput
+            label="Contracts"
+            value={(data as any).contracts ?? 1}
+            onChange={(v) => updateNodeData(nodeId, { contracts: Math.max(1, Math.floor(v)) })}
+            min={1}
+            step={1}
+          />
+        </div>
+      );
+
+    case 'portfolio_rebalance':
+      return (
+        <div className="space-y-4">
+          <SliderInput
+            label="Drift Threshold (%)"
+            value={(data as any).rebalanceThresholdPercent ?? 5}
+            onChange={(v) => updateNodeData(nodeId, { rebalanceThresholdPercent: v })}
+            min={0.5}
+            max={25}
+            step={0.5}
+          />
+          <SelectInput
+            label="Rebalance Method"
+            value={(data as any).rebalanceMethod ?? 'full'}
+            onChange={(v) => updateNodeData(nodeId, { rebalanceMethod: v })}
+            options={[
+              { value: 'full', label: 'Full rebalance' },
+              { value: 'partial', label: 'Partial (drift only)' },
+            ]}
+          />
+          <p className="text-[10px] text-muted-foreground/60">
+            Rebalances portfolio when any asset drifts beyond the threshold from its target weight.
+          </p>
+        </div>
+      );
+
     default:
       return null;
   }
@@ -866,11 +1128,23 @@ const ControlProperties = memo(({ nodeId, data }: ControlPropertiesProps) => {
   const { updateNodeData } = useStrategyFlowStore();
 
   switch (data.controlType) {
+    case 'if':
+    case 'ifElse':
+      return (
+        <div className="px-3 py-3 bg-amber-500/10 border border-amber-500/20 rounded-md space-y-1">
+          <p className="text-xs text-amber-300 font-medium">{data.controlType === 'if' ? 'If' : 'If / Else'}</p>
+          <p className="text-xs text-muted-foreground">
+            Connect a boolean value to the <span className="font-mono">Condition</span> input.
+            Signal flows to <span className="font-mono">Then</span> when true{data.controlType === 'ifElse' ? ', <span class="font-mono">Else</span> when false' : ''}.
+          </p>
+        </div>
+      );
+
     case 'repeat':
       return (
         <SliderInput
           label="Repeat Count"
-          value={data.repeatCount || 10}
+          value={(data as any).repeatCount || 10}
           onChange={(v) => updateNodeData(nodeId, { repeatCount: v })}
           min={1}
           max={1000}
@@ -880,12 +1154,118 @@ const ControlProperties = memo(({ nodeId, data }: ControlPropertiesProps) => {
     case 'wait':
       return (
         <NumberInput
-          label="Wait Seconds"
-          value={data.waitSeconds || 1}
+          label="Wait (seconds)"
+          value={(data as any).waitSeconds || 1}
           onChange={(v) => updateNodeData(nodeId, { waitSeconds: v })}
           min={0.1}
           step={0.1}
         />
+      );
+
+    case 'waitUntil':
+      return (
+        <div className="space-y-4">
+          <NumberInput
+            label="Timeout (seconds)"
+            value={(data as any).timeout || 60}
+            onChange={(v) => updateNodeData(nodeId, { timeout: v })}
+            min={1}
+            step={1}
+            description="Max seconds to wait before timing out (0 = no timeout)"
+          />
+          <div className="px-3 py-2 bg-slate-500/10 border border-slate-500/20 rounded-md">
+            <p className="text-[10px] text-muted-foreground/70">
+              Connect a boolean to the <span className="font-mono">Condition</span> input. Waits until it becomes true.
+            </p>
+          </div>
+        </div>
+      );
+
+    case 'stop':
+      return (
+        <div className="px-3 py-3 bg-red-500/10 border border-red-500/20 rounded-md">
+          <p className="text-xs text-red-300 font-medium">Stop Execution</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Halts the strategy run when triggered. No configuration needed.
+          </p>
+        </div>
+      );
+
+    case 'switch': {
+      const rules: Array<{operator: string; value: number; outputIndex: number}> = (data as any).rules || [];
+      const OPERATORS = [
+        { value: 'eq', label: 'Equal to (==)' },
+        { value: 'gt', label: 'Greater than (>)' },
+        { value: 'lt', label: 'Less than (<)' },
+        { value: 'gte', label: '>= (≥)' },
+        { value: 'lte', label: '<= (≤)' },
+      ];
+      const updateRule = (idx: number, field: string, val: any) => {
+        const updated = rules.map((r, i) => i === idx ? { ...r, [field]: val } : r);
+        updateNodeData(nodeId, { rules: updated });
+      };
+      const addRule = () => {
+        updateNodeData(nodeId, { rules: [...rules, { operator: 'eq', value: 0, outputIndex: rules.length }] });
+      };
+      const removeRule = (idx: number) => {
+        updateNodeData(nodeId, { rules: rules.filter((_, i) => i !== idx).map((r, i) => ({ ...r, outputIndex: i })) });
+      };
+      return (
+        <div className="space-y-3">
+          <Label className="text-xs text-muted-foreground">Case Rules</Label>
+          {rules.map((rule, idx) => (
+            <div key={idx} className="flex items-center gap-2 p-2 bg-secondary/50 rounded-md">
+              <span className="text-[10px] text-muted-foreground w-14 shrink-0">Case {idx + 1}</span>
+              <Select value={rule.operator} onValueChange={(v) => updateRule(idx, 'operator', v)}>
+                <SelectTrigger className="h-7 text-xs flex-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="z-[10002]">
+                  {OPERATORS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Input
+                type="number"
+                value={rule.value}
+                onChange={(e) => updateRule(idx, 'value', parseFloat(e.target.value) || 0)}
+                className="h-7 text-xs w-20 font-mono"
+              />
+              <button onClick={() => removeRule(idx)} className="text-red-400 hover:text-red-300 text-xs p-1">✕</button>
+            </div>
+          ))}
+          <button
+            onClick={addRule}
+            className="w-full text-xs py-1.5 border border-dashed border-border/50 rounded-md text-muted-foreground hover:text-foreground hover:border-border transition-colors"
+          >
+            + Add Case
+          </button>
+          <p className="text-[10px] text-muted-foreground/60">
+            If no case matches, signal flows to <span className="font-mono">Default</span>.
+          </p>
+        </div>
+      );
+    }
+
+    case 'splitInBatches':
+      return (
+        <div className="space-y-4">
+          <SliderInput
+            label="Batch Size"
+            value={(data as any).batchSize || 10}
+            onChange={(v) => updateNodeData(nodeId, { batchSize: v })}
+            min={1}
+            max={100}
+          />
+          <SelectInput
+            label="Mode"
+            value={(data as any).mode || 'sequential'}
+            onChange={(v) => updateNodeData(nodeId, { mode: v })}
+            options={[
+              { value: 'sequential', label: 'Sequential (one batch at a time)' },
+              { value: 'parallel', label: 'Parallel (all batches at once)' },
+            ]}
+          />
+        </div>
       );
 
     default:
@@ -1030,6 +1410,24 @@ const MathProperties = memo(({ nodeId, data }: MathPropertiesProps) => {
         </div>
       );
 
+    case 'expression':
+      return (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Expression</Label>
+            <Textarea
+              value={(data as any).expression ?? ''}
+              onChange={(e) => updateNodeData(nodeId, { expression: e.target.value })}
+              placeholder="e.g. (a + b) / 2"
+              className="text-sm font-mono min-h-[72px] resize-none"
+            />
+            <p className="text-[10px] text-muted-foreground/60">
+              Use <span className="font-mono">a</span> and <span className="font-mono">b</span> for connected inputs. Supports +&nbsp;−&nbsp;*&nbsp;/&nbsp;**&nbsp;Math.sqrt() etc.
+            </p>
+          </div>
+        </div>
+      );
+
     default:
       return (
         <div className="space-y-4">
@@ -1136,9 +1534,21 @@ interface TradeInfoPropertiesProps {
 }
 
 const TradeInfoProperties = memo(({ nodeId, data }: TradeInfoPropertiesProps) => {
+  const { updateNodeData } = useStrategyFlowStore();
   return (
-    <div className="text-sm text-muted-foreground">
-      <p>This node outputs the {data.tradeInfoType?.replace(/([A-Z])/g, ' $1').toLowerCase().trim()} of the current trade.</p>
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label className="text-xs text-muted-foreground">Symbol (optional override)</Label>
+        <Input
+          value={(data as any).symbol ?? ''}
+          onChange={(e) => updateNodeData(nodeId, { symbol: e.target.value.toUpperCase() || undefined })}
+          placeholder="Leave blank for strategy context"
+          className="h-8 text-sm font-mono"
+        />
+        <p className="text-[10px] text-muted-foreground/60">
+          Outputs {data.tradeInfoType?.replace(/([A-Z])/g, ' $1').toLowerCase().trim() ?? 'trade data'} for the specified position. Leave blank to use the strategy ticker.
+        </p>
+      </div>
     </div>
   );
 });
@@ -2358,6 +2768,452 @@ const ExecutionDataPanel = memo(({ nodeId }: { nodeId: string }) => {
 ExecutionDataPanel.displayName = 'ExecutionDataPanel';
 
 // =============================================================================
+// ENVIRONMENT PROPERTIES
+// =============================================================================
+
+interface EnvironmentPropertiesProps {
+  nodeId: string;
+  data: Record<string, any>;
+}
+
+const EnvironmentProperties = memo(({ nodeId, data }: EnvironmentPropertiesProps) => {
+  const { updateNodeData } = useStrategyFlowStore();
+
+  switch (data.environmentType) {
+    case 'price':
+      return (
+        <SelectInput
+          label="Price Type"
+          value={data.priceType ?? 'close'}
+          onChange={(v) => updateNodeData(nodeId, { priceType: v })}
+          options={[
+            { value: 'open', label: 'Open' },
+            { value: 'high', label: 'High' },
+            { value: 'low', label: 'Low' },
+            { value: 'close', label: 'Close (default)' },
+            { value: 'bid', label: 'Bid' },
+            { value: 'ask', label: 'Ask' },
+            { value: 'mid', label: 'Mid (bid+ask / 2)' },
+          ]}
+        />
+      );
+
+    case 'prevCandleOpen':
+    case 'prevCandleClose':
+    case 'newCandleOpen': {
+      const nBack = data.environmentType === 'newCandleOpen' ? undefined : (
+        <NumberInput
+          label="Bars Back"
+          value={data.barsBack ?? 1}
+          onChange={(v) => updateNodeData(nodeId, { barsBack: Math.max(1, Math.floor(v)) })}
+          min={1}
+          step={1}
+          description="How many bars to look back (1 = previous bar)"
+        />
+      );
+      return (
+        <div className="space-y-4">
+          {nBack}
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Symbol (optional override)</Label>
+            <Input
+              value={data.symbol ?? ''}
+              onChange={(e) => updateNodeData(nodeId, { symbol: e.target.value.toUpperCase() || undefined })}
+              placeholder="Leave blank for strategy context"
+              className="h-8 text-sm font-mono"
+            />
+          </div>
+        </div>
+      );
+    }
+
+    case 'bidAskSpread':
+    case 'isMarketOpen':
+    case 'time':
+    case 'dayOfWeek':
+    default:
+      return (
+        <div className="px-3 py-2 bg-slate-500/10 border border-slate-500/20 rounded-md">
+          <p className="text-xs text-muted-foreground">
+            {data.label ?? 'Environment'} — read-only output. No configuration needed.
+          </p>
+        </div>
+      );
+  }
+});
+EnvironmentProperties.displayName = 'EnvironmentProperties';
+
+// =============================================================================
+// TRIGGER PROPERTIES
+// =============================================================================
+
+interface TriggerPropertiesProps {
+  nodeId: string;
+  data: TriggerNodeData;
+}
+
+const TriggerProperties = memo(({ nodeId, data }: TriggerPropertiesProps) => {
+  const { updateNodeData } = useStrategyFlowStore();
+
+  switch (data.triggerType) {
+    case 'heartbeatTrigger':
+      return (
+        <div className="space-y-4">
+          <SliderInput
+            label="Interval (minutes)"
+            value={data.intervalMinutes ?? 5}
+            onChange={(v) => updateNodeData(nodeId, { intervalMinutes: v })}
+            min={1}
+            max={1440}
+            step={1}
+          />
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Specific Time (HH:MM)</Label>
+            <Input
+              value={data.specificTime ?? ''}
+              onChange={(e) => updateNodeData(nodeId, { specificTime: e.target.value || null })}
+              placeholder="e.g. 09:30"
+              className="h-8 text-sm font-mono"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label className="text-xs text-muted-foreground">At Market Open</Label>
+            <input
+              type="checkbox"
+              checked={!!data.atMarketOpen}
+              onChange={(e) => updateNodeData(nodeId, { atMarketOpen: e.target.checked })}
+              className="w-4 h-4 accent-primary"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label className="text-xs text-muted-foreground">At Market Close</Label>
+            <input
+              type="checkbox"
+              checked={!!data.atMarketClose}
+              onChange={(e) => updateNodeData(nodeId, { atMarketClose: e.target.checked })}
+              className="w-4 h-4 accent-primary"
+            />
+          </div>
+        </div>
+      );
+
+    case 'cronTrigger':
+      return (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Cron Expression</Label>
+            <Input
+              value={(data as any).cronExpression ?? ''}
+              onChange={(e) => updateNodeData(nodeId, { cronExpression: e.target.value } as any)}
+              placeholder="e.g. 0 9 * * 1-5"
+              className="h-8 text-sm font-mono"
+            />
+            <p className="text-[10px] text-muted-foreground/60">Weekdays 9 AM ET: <span className="font-mono">0 9 * * 1-5</span></p>
+          </div>
+          <SelectInput
+            label="Timezone"
+            value={(data as any).timezone ?? 'America/New_York'}
+            onChange={(v) => updateNodeData(nodeId, { timezone: v } as any)}
+            options={[
+              { value: 'America/New_York', label: 'New York (ET)' },
+              { value: 'America/Chicago', label: 'Chicago (CT)' },
+              { value: 'America/Los_Angeles', label: 'Los Angeles (PT)' },
+              { value: 'Europe/London', label: 'London (GMT)' },
+              { value: 'Europe/Stockholm', label: 'Stockholm (CET)' },
+              { value: 'Asia/Tokyo', label: 'Tokyo (JST)' },
+              { value: 'UTC', label: 'UTC' },
+            ]}
+          />
+        </div>
+      );
+
+    case 'webhookTrigger':
+      return (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Webhook Path</Label>
+            <Input
+              value={data.webhookPath ?? ''}
+              onChange={(e) => updateNodeData(nodeId, { webhookPath: e.target.value })}
+              placeholder="/webhook/my-strategy"
+              className="h-8 text-sm font-mono"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">HMAC Secret</Label>
+            <Input
+              type="password"
+              value={data.hmacSecret ?? ''}
+              onChange={(e) => updateNodeData(nodeId, { hmacSecret: e.target.value })}
+              placeholder="Optional signing secret"
+              className="h-8 text-sm"
+            />
+          </div>
+        </div>
+      );
+
+    case 'priceAlertTrigger':
+      return (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Symbol</Label>
+            <Input
+              value={data.symbol ?? ''}
+              onChange={(e) => updateNodeData(nodeId, { symbol: e.target.value.toUpperCase() })}
+              placeholder="AAPL"
+              className="h-8 text-sm font-mono"
+            />
+          </div>
+          <SelectInput
+            label="Condition"
+            value={data.condition ?? 'crosses_above'}
+            onChange={(v) => updateNodeData(nodeId, { condition: v as any })}
+            options={[
+              { value: 'crosses_above', label: 'Crosses Above' },
+              { value: 'crosses_below', label: 'Crosses Below' },
+              { value: 'equals', label: 'Equals' },
+            ]}
+          />
+          <NumberInput
+            label="Price Level"
+            value={data.priceLevel ?? 0}
+            onChange={(v) => updateNodeData(nodeId, { priceLevel: v })}
+            step={0.01}
+          />
+        </div>
+      );
+
+    case 'newsTrigger':
+      return (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Sources</Label>
+            {['newsapi', 'sec', 'rss'].map((src) => (
+              <div key={src} className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">{src.toUpperCase()}</span>
+                <input
+                  type="checkbox"
+                  checked={(data.sources ?? []).includes(src)}
+                  onChange={(e) => {
+                    const current = new Set(data.sources ?? []);
+                    e.target.checked ? current.add(src) : current.delete(src);
+                    updateNodeData(nodeId, { sources: Array.from(current) });
+                  }}
+                  className="w-4 h-4 accent-primary"
+                />
+              </div>
+            ))}
+          </div>
+          <SliderInput
+            label="Min Relevance Score"
+            value={data.minRelevanceScore ?? 0.7}
+            onChange={(v) => updateNodeData(nodeId, { minRelevanceScore: v })}
+            min={0}
+            max={1}
+            step={0.05}
+          />
+        </div>
+      );
+
+    case 'brokerEventTrigger':
+      return (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Event Types</Label>
+            {['order_filled', 'margin_call', 'position_liquidated', 'dividend'].map((ev) => (
+              <div key={ev} className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">{ev.replace(/_/g, ' ')}</span>
+                <input
+                  type="checkbox"
+                  checked={(data.eventTypes ?? []).includes(ev)}
+                  onChange={(e) => {
+                    const current = new Set(data.eventTypes ?? []);
+                    e.target.checked ? current.add(ev) : current.delete(ev);
+                    updateNodeData(nodeId, { eventTypes: Array.from(current) });
+                  }}
+                  className="w-4 h-4 accent-primary"
+                />
+              </div>
+            ))}
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Credential Alias</Label>
+            <Input
+              value={data.credentialAlias ?? ''}
+              onChange={(e) => updateNodeData(nodeId, { credentialAlias: e.target.value })}
+              placeholder="e.g. alpaca-live"
+              className="h-8 text-sm font-mono"
+            />
+          </div>
+        </div>
+      );
+
+    case 'manualTrigger' as any:
+      return (
+        <div className="px-3 py-3 bg-blue-500/10 border border-blue-500/20 rounded-md">
+          <p className="text-xs text-blue-300">
+            Click <strong>Run</strong> in the toolbar to execute this strategy manually.
+          </p>
+        </div>
+      );
+
+    case 'conditionTrigger' as any:
+      return (
+        <div className="space-y-4">
+          <SelectInput
+            label="Operator"
+            value={(data as any).operator ?? '<'}
+            onChange={(v) => updateNodeData(nodeId, { operator: v } as any)}
+            options={[
+              { value: '>', label: 'Greater than (>)' },
+              { value: '<', label: 'Less than (<)' },
+              { value: '>=', label: 'Greater than or equal (>=)' },
+              { value: '<=', label: 'Less than or equal (<=)' },
+              { value: '==', label: 'Equal to (==)' },
+              { value: '!=', label: 'Not equal to (!=)' },
+            ]}
+          />
+          <NumberInput
+            label="Threshold"
+            value={(data as any).threshold ?? 30}
+            onChange={(v) => updateNodeData(nodeId, { threshold: v } as any)}
+            step={0.01}
+          />
+          <p className="text-[10px] text-muted-foreground/60">
+            Connect an indicator or math node to the <span className="font-mono">Value</span> input handle.
+          </p>
+        </div>
+      );
+
+    case 'startTrigger':
+      return (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Portfolio / Account</Label>
+            <Input
+              value={(data as any).portfolio ?? ''}
+              onChange={(e) => updateNodeData(nodeId, { portfolio: e.target.value } as any)}
+              placeholder="e.g. paper-default"
+              className="h-8 text-sm font-mono"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Tickers (comma-separated)</Label>
+            <Input
+              value={((data as any).tickers ?? []).join(', ')}
+              onChange={(e) => {
+                const tickers = e.target.value.split(',').map((t: string) => t.trim().toUpperCase()).filter(Boolean);
+                updateNodeData(nodeId, { tickers } as any);
+              }}
+              placeholder="AAPL, MSFT, BTCUSDT"
+              className="h-8 text-sm font-mono"
+            />
+          </div>
+          <NumberInput
+            label="Starting Capital"
+            value={(data as any).capital ?? 10000}
+            onChange={(v) => updateNodeData(nodeId, { capital: v } as any)}
+            min={0}
+            step={100}
+          />
+          <SelectInput
+            label="Run Mode"
+            value={(data as any).mode ?? 'paper'}
+            onChange={(v) => updateNodeData(nodeId, { mode: v } as any)}
+            options={[
+              { value: 'paper', label: 'Paper Trading' },
+              { value: 'live', label: 'Live Trading' },
+              { value: 'backtest', label: 'Backtest' },
+            ]}
+          />
+        </div>
+      );
+
+    default:
+      return (
+        <p className="text-xs text-muted-foreground">
+          No configurable properties for this trigger type.
+        </p>
+      );
+  }
+});
+TriggerProperties.displayName = 'TriggerProperties';
+
+// =============================================================================
+// DATA SOURCE PROPERTIES
+// =============================================================================
+
+interface DataSourcePropertiesProps {
+  nodeId: string;
+  data: Record<string, any>;
+}
+
+const TIMEFRAME_SELECT_OPTIONS = [
+  { value: '1m', label: '1 Minute' },
+  { value: '5m', label: '5 Minutes' },
+  { value: '15m', label: '15 Minutes' },
+  { value: '30m', label: '30 Minutes' },
+  { value: '1h', label: '1 Hour' },
+  { value: '4h', label: '4 Hours' },
+  { value: '1d', label: '1 Day' },
+  { value: '1wk', label: '1 Week' },
+  { value: '1mo', label: '1 Month' },
+];
+
+const DataSourceProperties = memo(({ nodeId, data }: DataSourcePropertiesProps) => {
+  const { updateNodeData } = useStrategyFlowStore();
+
+  return (
+    <div className="space-y-4">
+      {(data.symbol !== undefined || data.seriesId !== undefined) && (
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">
+            {data.seriesId !== undefined ? 'Series ID' : 'Symbol / Ticker'}
+          </Label>
+          <Input
+            value={data.symbol ?? data.seriesId ?? ''}
+            onChange={(e) => {
+              const val = e.target.value.toUpperCase();
+              const update: Record<string, string> = {};
+              if (data.symbol !== undefined) update.symbol = val;
+              if (data.seriesId !== undefined) update.seriesId = val;
+              updateNodeData(nodeId, update);
+            }}
+            placeholder={data.seriesId !== undefined ? 'e.g. GDP' : 'e.g. AAPL'}
+            className="h-8 text-sm font-mono"
+          />
+        </div>
+      )}
+      {data.timeframe !== undefined && (
+        <SelectInput
+          label="Timeframe"
+          value={data.timeframe ?? '1d'}
+          onChange={(v) => updateNodeData(nodeId, { timeframe: v })}
+          options={TIMEFRAME_SELECT_OPTIONS}
+        />
+      )}
+      {data.watchlistId !== undefined && (
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">Watchlist ID</Label>
+          <Input
+            value={data.watchlistId ?? ''}
+            onChange={(e) => updateNodeData(nodeId, { watchlistId: e.target.value })}
+            placeholder="Avanza watchlist ID"
+            className="h-8 text-sm font-mono"
+          />
+        </div>
+      )}
+      <div className="px-3 py-2 bg-slate-500/10 border border-slate-500/20 rounded-md">
+        <p className="text-[10px] text-muted-foreground/70">
+          Provider: <span className="font-mono text-white/60">{data.provider ?? '—'}</span>
+        </p>
+      </div>
+    </div>
+  );
+});
+DataSourceProperties.displayName = 'DataSourceProperties';
+
+// =============================================================================
 // MAIN COMPONENT
 // =============================================================================
 
@@ -2409,6 +3265,10 @@ export const RightPropertyPanel = memo(() => {
     switch (selectedNode.type) {
       case 'indicator':
         return <IndicatorProperties nodeId={selectedNode.id} data={data as IndicatorNodeData} />;
+      case 'dataSource':
+        return <DataSourceProperties nodeId={selectedNode.id} data={data as Record<string, any>} />;
+      case 'trigger':
+        return <TriggerProperties nodeId={selectedNode.id} data={data as TriggerNodeData} />;
       case 'action':
         return <ActionProperties nodeId={selectedNode.id} data={data as ActionNodeData} />;
       case 'condition':
@@ -2430,11 +3290,7 @@ export const RightPropertyPanel = memo(() => {
       case 'agent':
         return <AgentProperties nodeId={selectedNode.id} data={data as AgentNodeData} />;
       case 'environment':
-        return (
-          <div className="text-sm text-muted-foreground">
-            <p>This node outputs the current {data.label?.toLowerCase()}.</p>
-          </div>
-        );
+        return <EnvironmentProperties nodeId={selectedNode.id} data={data as Record<string, any>} />;
       default:
         return null;
     }

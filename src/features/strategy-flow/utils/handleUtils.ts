@@ -224,7 +224,10 @@ export const getHandleConfigs = (nodeType: string, subType?: string, data?: Stra
     switch (nodeType) {
         case 'indicator': {
             const handles: HandleConfig[] = [];
-            
+
+            // Trigger handle — gates when the indicator recomputes
+            handles.push({ id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' });
+
             // Standard target handles for indicators
             if (subType === 'spread') {
                 handles.push({ id: 'data-a', type: 'target', position: 'left', label: 'Data A', dataType: 'any' });
@@ -302,6 +305,7 @@ export const getHandleConfigs = (nodeType: string, subType?: string, data?: Stra
         case 'condition':
             if (subType === 'and' || subType === 'or') {
                 return [
+                    { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
                     { id: 'input-a', type: 'target', position: 'left', label: 'A', dataType: 'boolean' },
                     { id: 'input-b', type: 'target', position: 'left', label: 'B', dataType: 'boolean' },
                     { id: 'output', type: 'source', position: 'right', label: 'Result', dataType: 'boolean' },
@@ -309,12 +313,14 @@ export const getHandleConfigs = (nodeType: string, subType?: string, data?: Stra
             }
             if (subType === 'not') {
                 return [
+                    { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
                     { id: 'input', type: 'target', position: 'left', label: 'In', dataType: 'boolean' },
                     { id: 'output', type: 'source', position: 'right', label: 'Out', dataType: 'boolean' },
                 ];
             }
             if (subType === 'crossover' || subType === 'crossunder' || subType === 'compare') {
                 return [
+                    { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
                     { id: 'input-a', type: 'target', position: 'left', label: 'A', dataType: 'number' },
                     { id: 'input-b', type: 'target', position: 'left', label: 'B', dataType: 'number' },
                     { id: 'output', type: 'source', position: 'right', label: 'Result', dataType: 'boolean' },
@@ -322,17 +328,20 @@ export const getHandleConfigs = (nodeType: string, subType?: string, data?: Stra
             }
             if (subType === 'threshold') {
                 return [
+                    { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
                     { id: 'input-a', type: 'target', position: 'left', label: 'Value', dataType: 'number' },
                     { id: 'output', type: 'source', position: 'right', label: 'Result', dataType: 'boolean' },
                 ];
             }
             if (subType === 'range') {
                 return [
+                    { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
                     { id: 'input-a', type: 'target', position: 'left', label: 'Value', dataType: 'number' },
                     { id: 'output', type: 'source', position: 'right', label: 'In Range', dataType: 'boolean' },
                 ];
             }
             return [
+                { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
                 { id: 'input-a', type: 'target', position: 'left', label: 'A', dataType: 'any' },
                 { id: 'input-b', type: 'target', position: 'left', label: 'B', dataType: 'any' },
                 { id: 'output', type: 'source', position: 'right', label: 'Result', dataType: 'boolean' },
@@ -376,6 +385,7 @@ export const getHandleConfigs = (nodeType: string, subType?: string, data?: Stra
 
         case 'environment':
             return [
+                { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
                 { id: 'value', type: 'source', position: 'right', label: 'Value', dataType: 'number' },
             ];
 
@@ -399,12 +409,13 @@ export const getHandleConfigs = (nodeType: string, subType?: string, data?: Stra
                 ];
             }
             return [
+                { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
                 { id: 'input', type: 'target', position: 'left', label: 'Input', dataType: 'any' },
                 { id: 'output', type: 'source', position: 'right', label: 'Output', dataType: 'signal' },
             ];
 
         case 'math':
-            // Number node: output only
+            // Number node: output only (constant)
             if (subType === 'number') {
                 return [
                     { id: 'output', type: 'source', position: 'right', label: 'Value', dataType: 'number' },
@@ -413,39 +424,40 @@ export const getHandleConfigs = (nodeType: string, subType?: string, data?: Stra
             // Advanced math: single input, single output
             if (subType === 'advancedMath') {
                 return [
+                    { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
                     { id: 'input', type: 'target', position: 'left', label: 'Input', dataType: 'number' },
                     { id: 'output', type: 'source', position: 'right', label: 'Result', dataType: 'number' },
                 ];
             }
             // Binary operators: two inputs, one output
             return [
+                { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
                 { id: 'input-a', type: 'target', position: 'left', label: 'A', dataType: 'number' },
                 { id: 'input-b', type: 'target', position: 'left', label: 'B', dataType: 'number' },
                 { id: 'output', type: 'source', position: 'right', label: 'Result', dataType: 'number' },
             ];
 
         case 'risk':
-            // Risk params usually output a number (size, distance) or act as a rule (target?)
-            // For now, treat them as sources of configuration values or rules
             if (['positionPercent', 'kellyCriterion', 'fixedAmount'].includes(subType || '')) {
                 return [
+                    { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
                     { id: 'size', type: 'source', position: 'right', label: 'Size', dataType: 'number' },
                 ];
             }
             if (['trailingStop'].includes(subType || '')) {
                 return [
+                    { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
                     { id: 'output', type: 'source', position: 'right', label: 'Rule', dataType: 'any' },
                 ];
             }
-            // Global limits might not need handles, or could be outputs to Strategy Settings?
-            // Let's provide an output just in case they are used as inputs to Trade nodes
             return [
+                { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
                 { id: 'output', type: 'source', position: 'right', label: 'Config', dataType: 'any' },
             ];
 
         case 'tradeInfo':
-            // Trade info nodes source values
             return [
+                { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
                 { id: 'output', type: 'source', position: 'right', label: 'Value', dataType: 'number' },
             ];
 
@@ -530,6 +542,12 @@ export const getHandleConfigs = (nodeType: string, subType?: string, data?: Stra
             ];
 
         case 'trigger':
+            if (subType === 'conditionTrigger') {
+                return [
+                    { id: 'value', type: 'target', position: 'left', label: 'Value', dataType: 'number' },
+                    { id: 'output', type: 'source', position: 'right', label: 'Signal', dataType: 'signal' },
+                ];
+            }
             if (subType === 'webhookTrigger' || subType === 'newsTrigger' || subType === 'brokerEventTrigger') {
                 return [
                     { id: 'output', type: 'source', position: 'right', label: 'Signal', dataType: 'signal' },
@@ -544,6 +562,11 @@ export const getHandleConfigs = (nodeType: string, subType?: string, data?: Stra
             }
             return [
                 { id: 'output', type: 'source', position: 'right', label: 'Signal', dataType: 'signal' },
+            ];
+
+        case 'dataSource':
+            return [
+                { id: 'candles', type: 'source', position: 'right', label: 'Candles', dataType: 'any' },
             ];
 
         case 'integration':

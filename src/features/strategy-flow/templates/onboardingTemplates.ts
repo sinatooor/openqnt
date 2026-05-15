@@ -23,7 +23,7 @@ const retailTraderTemplate: StrategyTemplate = {
       id: 'trigger-heartbeat',
       type: 'trigger',
       position: { x: 60, y: 40 },
-      data: { label: 'Every Candle', triggerType: 'heartbeat' },
+      data: { label: 'Every Candle', triggerType: 'heartbeatTrigger' },
     },
     {
       id: 'sma-fast',
@@ -101,7 +101,7 @@ const wealthManagerTemplate: StrategyTemplate = {
       id: 'trigger-cron',
       type: 'trigger',
       position: { x: 60, y: 40 },
-      data: { label: 'Weekly Check', triggerType: 'cron', params: { cron: '0 9 * * 1' } },
+      data: { label: 'Weekly Check', triggerType: 'cronTrigger', params: { cron: '0 9 * * 1' } },
     },
     {
       id: 'asset-weight',
@@ -171,7 +171,7 @@ const portfolioManagerTemplate: StrategyTemplate = {
       id: 'trigger-hb',
       type: 'trigger',
       position: { x: 60, y: 40 },
-      data: { label: 'Every Candle', triggerType: 'heartbeat' },
+      data: { label: 'Every Candle', triggerType: 'heartbeatTrigger' },
     },
     {
       id: 'rsi-14',
@@ -267,7 +267,7 @@ const hedgeFundTemplate: StrategyTemplate = {
       id: 'trigger-hb',
       type: 'trigger',
       position: { x: 60, y: 40 },
-      data: { label: 'Every Candle', triggerType: 'heartbeat' },
+      data: { label: 'Every Candle', triggerType: 'heartbeatTrigger' },
     },
     {
       id: 'price-a',
@@ -370,7 +370,7 @@ const quantResearcherTemplate: StrategyTemplate = {
       id: 'trigger-hb',
       type: 'trigger',
       position: { x: 60, y: 40 },
-      data: { label: 'Every Candle', triggerType: 'heartbeat' },
+      data: { label: 'Every Candle', triggerType: 'heartbeatTrigger' },
     },
     {
       id: 'rsi',
@@ -487,7 +487,7 @@ const fintechDeveloperTemplate: StrategyTemplate = {
       id: 'trigger-news',
       type: 'trigger',
       position: { x: 60, y: 40 },
-      data: { label: 'News Event', triggerType: 'news' },
+      data: { label: 'News Event', triggerType: 'newsTrigger' },
     },
     {
       id: 'llm-sentiment',

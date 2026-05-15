@@ -37,6 +37,20 @@ export const ADVANCED_STRATEGY_TEMPLATES: StrategyTemplate[] = [
     indicators: ['EMA (200)', 'RSI (14)', 'Stochastic (14,3)', 'Bollinger Bands (20)', 'MACD', 'ATR (14)'],
     featured: true,
     nodes: [
+      // ── Layer 0: Trigger & Data Source ──────────────────────────────────
+      {
+        id: 'trig',
+        type: 'trigger',
+        position: { x: -220, y: 50 },
+        data: { label: 'Hourly Check', triggerType: 'heartbeatTrigger', intervalMinutes: 60 },
+      },
+      {
+        id: 'data-src',
+        type: 'dataSource',
+        position: { x: -220, y: 200 },
+        data: { label: 'Yahoo Finance', provider: 'yfinance', symbol: 'SPY', timeframe: '1h' },
+      },
+
       // ── Layer 1: Indicators & Data Sources ──────────────────────────────
       {
         id: 'ema200',
@@ -223,6 +237,20 @@ export const ADVANCED_STRATEGY_TEMPLATES: StrategyTemplate[] = [
       },
     ],
     edges: [
+      // ── Trigger + data wiring ───────────────────────────────────────────
+      { id: 'e-trig-ema', source: 'trig', sourceHandle: 'output', target: 'ema200', targetHandle: 'trigger' },
+      { id: 'e-trig-rsi', source: 'trig', sourceHandle: 'output', target: 'rsi', targetHandle: 'trigger' },
+      { id: 'e-trig-stoch', source: 'trig', sourceHandle: 'output', target: 'stoch', targetHandle: 'trigger' },
+      { id: 'e-trig-bb', source: 'trig', sourceHandle: 'output', target: 'bb', targetHandle: 'trigger' },
+      { id: 'e-trig-macd', source: 'trig', sourceHandle: 'output', target: 'macd', targetHandle: 'trigger' },
+      { id: 'e-trig-atr', source: 'trig', sourceHandle: 'output', target: 'atr', targetHandle: 'trigger' },
+      { id: 'e-data-ema', source: 'data-src', sourceHandle: 'candles', target: 'ema200', targetHandle: 'data' },
+      { id: 'e-data-rsi', source: 'data-src', sourceHandle: 'candles', target: 'rsi', targetHandle: 'data' },
+      { id: 'e-data-stoch', source: 'data-src', sourceHandle: 'candles', target: 'stoch', targetHandle: 'data' },
+      { id: 'e-data-bb', source: 'data-src', sourceHandle: 'candles', target: 'bb', targetHandle: 'data' },
+      { id: 'e-data-macd', source: 'data-src', sourceHandle: 'candles', target: 'macd', targetHandle: 'data' },
+      { id: 'e-data-atr', source: 'data-src', sourceHandle: 'candles', target: 'atr', targetHandle: 'data' },
+
       // ── Trend filter wiring ─────────────────────────────────────────────
       // Price → trend-up input-a, EMA200 → trend-up input-b
       { id: 'e1', source: 'price', sourceHandle: 'value', target: 'trend-up', targetHandle: 'input-a' },
