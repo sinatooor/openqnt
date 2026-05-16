@@ -54,18 +54,11 @@ function buildGraph(nodes: StrategyFlowNode[], edges: StrategyFlowEdge[]) {
     inDegree.set(edge.target, (inDegree.get(edge.target) || 0) + 1);
   }
 
-  // Root nodes: trigger nodes first, then any with 0 in-degree
-  const roots: string[] = [];
-  for (const node of nodes) {
-    if (node.type === 'trigger' && (inDegree.get(node.id) || 0) === 0) {
-      roots.push(node.id);
-    }
-  }
-  for (const node of nodes) {
-    if ((inDegree.get(node.id) || 0) === 0 && !roots.includes(node.id)) {
-      roots.push(node.id);
-    }
-  }
+  // Roots are EXCLUSIVELY trigger nodes. Standalone math constants,
+  // freestanding indicators, etc. must not "fake-execute" — they only
+  // matter when something downstream pulls them in via a connected edge.
+  // Lazy resolution in browserInterpreter.resolveInput handles that.
+  const roots: string[] = nodes.filter((n) => n.type === 'trigger').map((n) => n.id);
 
   return { adjacency, inDegree, roots };
 }
@@ -323,26 +316,36 @@ export function useExecutionFlow() {
       ? startHistoryEntry(workflowId, strategyName, executionOrder, triggerNode?.id ?? null)
       : null;
 
+    const { adjacency, roots } = buildGraph(nodes, edges);
+
+    // Without at least one trigger node, nothing should run — orphan
+    // nodes don't "fake-execute". Bail early with a clear message.
+    if (roots.length === 0) {
+      console.warn('[strategy-flow] No trigger nodes on the canvas — add a Heartbeat, Cron, Manual Trigger, etc. to run the strategy.');
+      useStrategyFlowStore.getState().setIsRunning(false);
+      return;
+    }
+
     exec.startExecution();
     useStrategyFlowStore.getState().setIsRunning(true);
 
     // Ensure the WASM-shaped compute kernel is initialized before we start.
     await computeKernel.init();
 
-    const { adjacency, roots } = buildGraph(nodes, edges);
     const nodeMap = new Map(nodes.map((n) => [n.id, n]));
     const visited = new Set<string>();
 
     // Build a shared evaluation context for this run. Pull the strategy
     // ticker from the Start node (or first data source) so synthetic
-    // candles match what the user configured.
+    // candles match what the user configured. Pass `nodes` so the
+    // interpreter can lazily evaluate upstream data dependencies.
     const startNode = nodes.find((n) => (n.data as any)?.triggerType === 'startTrigger');
     const dataSourceNode = nodes.find((n) => n.type === 'dataSource');
     const ticker =
       ((startNode?.data as any)?.tickers?.[0] as string) ||
       ((dataSourceNode?.data as any)?.symbol as string) ||
       'SPY';
-    const ctx = createEvalContext(ticker);
+    const ctx = createEvalContext(ticker, nodes);
 
     let finalPhase: 'completed' | 'error' = 'completed';
 

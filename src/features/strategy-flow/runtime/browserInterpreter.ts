@@ -34,6 +34,10 @@ export type EvalContext = {
   defaultCandles: Candle[];
   /** Strategy ticker for synthetic data. */
   ticker: string;
+  /** Node lookup so resolveInput can lazily evaluate upstream data nodes. */
+  nodeMap: Map<string, StrategyFlowNode>;
+  /** Recursion guard to avoid cycles in lazy resolution. */
+  resolving: Set<string>;
 };
 
 export type NodeEvalResult = {
@@ -47,7 +51,11 @@ export type NodeEvalResult = {
   display?: string;
 };
 
-/** Resolve an input handle value by walking the connected upstream edge. */
+/**
+ * Resolve an input handle value by walking the connected upstream edge.
+ * If the upstream node hasn't been evaluated yet (e.g. a data dependency
+ * not on the trigger's walk path), lazily evaluate it now.
+ */
 function resolveInput(
   ctx: EvalContext,
   edges: StrategyFlowEdge[],
@@ -56,7 +64,21 @@ function resolveInput(
 ): number | boolean | string | null | undefined {
   const edge = edges.find((e) => e.target === nodeId && e.targetHandle === handle);
   if (!edge) return undefined;
-  return ctx.outputs.get(`${edge.source}:${edge.sourceHandle || 'output'}`);
+  const key = `${edge.source}:${edge.sourceHandle || 'output'}`;
+  if (ctx.outputs.has(key)) return ctx.outputs.get(key);
+
+  // Lazy data-dep evaluation: pull the source node into the context.
+  // Recursion guard prevents infinite loops on accidental cycles.
+  if (ctx.resolving.has(edge.source)) return undefined;
+  const source = ctx.nodeMap.get(edge.source);
+  if (!source) return undefined;
+  ctx.resolving.add(edge.source);
+  try {
+    evaluateNode(source, ctx, edges);
+  } finally {
+    ctx.resolving.delete(edge.source);
+  }
+  return ctx.outputs.get(key);
 }
 
 const asNumber = (v: unknown, fallback = 0): number =>
@@ -389,15 +411,19 @@ function evalVariable(
 
 /**
  * Create a fresh evaluation context for one run. Defaults to a synthetic
- * series for the strategy's primary ticker.
+ * series for the strategy's primary ticker. The nodeMap lets resolveInput
+ * lazily evaluate upstream data dependencies that aren't on the trigger's
+ * walk path.
  */
-export function createEvalContext(ticker = 'SPY'): EvalContext {
+export function createEvalContext(ticker = 'SPY', nodes: StrategyFlowNode[] = []): EvalContext {
   return {
     candles: new Map(),
     outputs: new Map(),
     variables: new Map(),
     defaultCandles: getSyntheticCandles({ ticker, bars: 250 }),
     ticker,
+    nodeMap: new Map(nodes.map((n) => [n.id, n])),
+    resolving: new Set(),
   };
 }
 
