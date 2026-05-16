@@ -21,6 +21,7 @@ import {
   newId,
 } from '../types/strategy-draft';
 import type { PythonBridge, CatalogNode, DryRunResponse, VerifyMockResponse } from '../python-bridge';
+import { getHandleConfigs, type HandleConfig } from './handleConfigs';
 
 // ── State held across tool calls within a single agent run ──────────────────
 
@@ -51,19 +52,62 @@ const emit = (state: BuilderState, e: BuilderEvent) => state.onEvent?.(e);
 
 // ── Catalog cache shared across tools in one run ───────────────────────────
 
+/** A catalog node enriched with the real handle topology the canvas uses. */
+export type EnrichedCatalogNode = CatalogNode & {
+  /**
+   * Authoritative handle list (id, type, position, label, dataType).
+   * `id` is the value the LLM should pass to `connect()` as
+   * sourceHandle / targetHandle.
+   */
+  handles: HandleConfig[];
+};
+
 export interface CatalogIndex {
-  /** flat type -> CatalogNode lookup */
-  byType: Map<string, CatalogNode>;
-  /** raw response for full-listing tools */
-  raw: Record<string, CatalogNode[]>;
+  /** flat type -> EnrichedCatalogNode lookup */
+  byType: Map<string, EnrichedCatalogNode>;
+  /** raw response for full-listing tools (enriched too) */
+  raw: Record<string, EnrichedCatalogNode[]>;
 }
 
+/**
+ * Enrich a catalog node with its real handle topology. The frontend's
+ * `getHandleConfigs(nodeType, subType)` is the source of truth — we mirror it
+ * here so the LLM sees handle IDs the canvas will actually validate against.
+ */
+const enrichNode = (n: CatalogNode): EnrichedCatalogNode => {
+  const subType =
+    (n.defaultData?.indicatorType as string | undefined) ??
+    (n.defaultData?.conditionType as string | undefined) ??
+    (n.defaultData?.actionType as string | undefined) ??
+    (n.defaultData?.triggerType as string | undefined) ??
+    (n.defaultData?.mathType as string | undefined) ??
+    (n.defaultData?.controlType as string | undefined) ??
+    (n.defaultData?.riskType as string | undefined) ??
+    (n.defaultData?.variableType as string | undefined) ??
+    (n.defaultData?.environmentType as string | undefined) ??
+    (n.defaultData?.tradeInfoType as string | undefined) ??
+    (n.defaultData?.llmType as string | undefined) ??
+    (n.defaultData?.integrationType as string | undefined) ??
+    (n.defaultData?.pineType as string | undefined) ??
+    (n.defaultData?.agentType as string | undefined) ??
+    (n.defaultData?.provider as string | undefined) ??
+    n.type;
+  const handles = getHandleConfigs(n.nodeType, subType);
+  return { ...n, handles };
+};
+
 export const buildCatalogIndex = (raw: Record<string, CatalogNode[]>): CatalogIndex => {
-  const byType = new Map<string, CatalogNode>();
-  for (const arr of Object.values(raw)) {
-    for (const n of arr) byType.set(n.type, n);
+  const enrichedRaw: Record<string, EnrichedCatalogNode[]> = {};
+  const byType = new Map<string, EnrichedCatalogNode>();
+  for (const [cat, arr] of Object.entries(raw)) {
+    enrichedRaw[cat] = [];
+    for (const n of arr) {
+      const enriched = enrichNode(n);
+      enrichedRaw[cat]!.push(enriched);
+      byType.set(n.type, enriched);
+    }
   }
-  return { byType, raw };
+  return { byType, raw: enrichedRaw };
 };
 
 // ── Tool definitions ───────────────────────────────────────────────────────
@@ -75,21 +119,34 @@ export const createBuilderTools = (
 ) => ({
   lookup_node_schema: tool({
     description:
-      'Return the full schema for a catalog node type (inputs, outputs, params, defaultData). Call before adding or configuring a node of an unfamiliar type. Returns null if the type is unknown — in that case do not invent the node.',
+      'Return the full schema for a catalog node type — including `handles` (the authoritative handle ids the canvas uses for connect()), `defaultData`, and metadata. Call this BEFORE adding any node whose handle topology you are not sure of. The handle `id` field is what you pass as `sourceHandle` / `targetHandle` in connect() — labels are display-only.',
     parameters: z.object({
-      type: z.string().describe('Node type to look up, e.g. "rsi", "order", "switch", "expression".'),
+      type: z.string().describe('Node type to look up, e.g. "rsi", "order", "switch", "expression", "conditionTrigger".'),
     }),
     execute: async ({ type }) => {
       const node = catalog.byType.get(type);
-      return node ?? { error: `unknown node type: ${type}`, similar: suggest(type, catalog) };
+      if (!node) return { error: `unknown node type: ${type}`, similar: suggest(type, catalog) };
+      // Project a minimal, LLM-friendly shape that emphasises handles + defaultData.
+      return {
+        type: node.type,
+        nodeType: node.nodeType,
+        label: node.label,
+        description: node.description,
+        category: node.category,
+        defaultData: node.defaultData,
+        handles: {
+          inputs: node.handles.filter((h) => h.type === 'target').map((h) => ({ id: h.id, label: h.label, dataType: h.dataType })),
+          outputs: node.handles.filter((h) => h.type === 'source').map((h) => ({ id: h.id, label: h.label, dataType: h.dataType })),
+        },
+      };
     },
   }),
 
   list_node_types: tool({
     description:
-      'List available node types, optionally filtered by category (action, indicator, condition, control, math, integration, trigger, ...). Use for discovery when the right node type is unclear.',
+      'List available node types, optionally filtered by category (action, indicator, condition, control, math, integration, trigger, dataSource, ...). Use for discovery when the right node type is unclear. Use this BEFORE inventing a node type that may not exist.',
     parameters: z.object({
-      category: z.string().optional().describe('Optional category filter (e.g. "indicator").'),
+      category: z.string().optional().describe('Optional category filter (e.g. "indicator", "trigger", "dataSource").'),
     }),
     execute: async ({ category }) => {
       if (category) {

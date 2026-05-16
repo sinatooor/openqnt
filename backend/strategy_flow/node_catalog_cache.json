@@ -454,7 +454,7 @@
       "nodeType": "agent",
       "label": "Quant Agent",
       "description": "Terminal-function analyst",
-      "tooltip": "Quantitative agent with read access to Bloomberg-style terminal functions (HDS holders, DES description, GIP intraday graph, SPLC supply chain, WEI world indices, …). Pick which functions it can call; the agent fetches each one, synthesizes the data, and emits a signal with confidence.",
+      "tooltip": "Quantitative agent with read access to Bloomberg-style terminal functions (HDS holders, DES description, GIP intraday graph, SPLC supply chain, WEI world indices, \u2026). Pick which functions it can call; the agent fetches each one, synthesizes the data, and emits a signal with confidence.",
       "inputs": [
         "Trigger",
         "Symbols"
@@ -809,7 +809,7 @@
       "nodeType": "control",
       "label": "Switch",
       "description": "Route to N branches by case",
-      "tooltip": "Evaluate an input value against N case expressions and route the signal to the matching output branch (or \"Default\" if none match). Inspired by n8n\\'s Switch node — use when If/IfElse becomes a chain of nested branches.",
+      "tooltip": "Evaluate an input value against N case expressions and route the signal to the matching output branch (or \"Default\" if none match). Inspired by n8n\\'s Switch node \u2014 use when If/IfElse becomes a chain of nested branches.",
       "inputs": [
         "Value"
       ],
@@ -851,7 +851,7 @@
       "nodeType": "control",
       "label": "Split In Batches",
       "description": "Iterate a list in batches of N",
-      "tooltip": "Process a list of items (e.g. tickers from a screener) in batches. Each tick emits one batch of size `batchSize`; downstream nodes process the batch and the loop continues until the list is exhausted. Inspired by n8n\\'s Split In Batches — distinct from Split Out which fans out one item per branch.",
+      "tooltip": "Process a list of items (e.g. tickers from a screener) in batches. Each tick emits one batch of size `batchSize`; downstream nodes process the batch and the loop continues until the list is exhausted. Inspired by n8n\\'s Split In Batches \u2014 distinct from Split Out which fans out one item per branch.",
       "inputs": [
         "List"
       ],
@@ -1018,10 +1018,10 @@
       }
     },
     {
-      "type": "spread",
+      "type": "bidAskSpread",
       "nodeType": "environment",
-      "label": "Spread",
-      "description": "Bid-Ask spread",
+      "label": "Bid-Ask Spread",
+      "description": "Current bid-ask spread in pips",
       "tooltip": "Current spread in pips. Use to avoid trading during high-spread periods.",
       "inputs": [],
       "outputs": [
@@ -1032,7 +1032,7 @@
       "icon": "ArrowLeftRight",
       "color": "#6366f1",
       "defaultData": {
-        "environmentType": "spread"
+        "environmentType": "bidAskSpread"
       }
     },
     {
@@ -1877,7 +1877,7 @@
       "nodeType": "integration",
       "label": "HTTP Request",
       "description": "Call any API",
-      "tooltip": "Make HTTP requests to any REST API — the most versatile node. Fetch data, send commands, or integrate with any service that has an API. Inspired by n8n\\'s HTTP Request node.",
+      "tooltip": "Make HTTP requests to any REST API \u2014 the most versatile node. Fetch data, send commands, or integrate with any service that has an API. Inspired by n8n\\'s HTTP Request node.",
       "inputs": [
         "Trigger",
         "Data"
@@ -2408,7 +2408,7 @@
     {
       "type": "newsSentimentSignal",
       "nodeType": "llm",
-      "label": "News → Signal",
+      "label": "News \u2192 Signal",
       "description": "Convert news sentiment to signal",
       "tooltip": "Fetches and analyzes news headlines to generate trading signals. Filters by relevance and recency.",
       "inputs": [
@@ -2425,7 +2425,7 @@
       "color": "#ef4444",
       "backtestEligible": false,
       "defaultData": {
-        "label": "News → Signal",
+        "label": "News \u2192 Signal",
         "llmType": "newsSentimentSignal",
         "prompt": "Analyze the latest news for the given symbol. Determine if the news is bullish, bearish, or neutral. Consider impact magnitude and relevance.",
         "model": "gpt-4o-mini",
@@ -2529,7 +2529,7 @@
       "type": "multiply",
       "nodeType": "math",
       "label": "Multiply",
-      "description": "A × B",
+      "description": "A \u00d7 B",
       "tooltip": "Multiply two values. Use for position sizing or ATR-based stops.",
       "inputs": [
         "Number",
@@ -2550,7 +2550,7 @@
       "type": "divide",
       "nodeType": "math",
       "label": "Divide",
-      "description": "A ÷ B",
+      "description": "A \u00f7 B",
       "tooltip": "Divide A by B. Calculate ratios or normalize values.",
       "inputs": [
         "Number",
@@ -2593,7 +2593,7 @@
       "nodeType": "math",
       "label": "Expression",
       "description": "Safe Python-DSL expression",
-      "tooltip": "Evaluate a restricted Python expression over upstream node outputs. Allow-listed only: arithmetic, comparisons, `x if cond else y`, talib.<allow-list>, np.<allow-list>, abs/min/max, and the incoming-input bindings a/b/c. Parsed via AST walker — no arbitrary code, no imports, no attribute access on user objects. Safe substitute for the legacy Code node.",
+      "tooltip": "Evaluate a restricted Python expression over upstream node outputs. Allow-listed only: arithmetic, comparisons, `x if cond else y`, talib.<allow-list>, np.<allow-list>, abs/min/max, and the incoming-input bindings a/b/c. Parsed via AST walker \u2014 no arbitrary code, no imports, no attribute access on user objects. Safe substitute for the legacy Code node.",
       "inputs": [
         "Input A",
         "Input B",
@@ -3753,7 +3753,7 @@
       "type": "startTrigger",
       "nodeType": "trigger",
       "label": "Start",
-      "description": "Strategy entry point — portfolio, tickers, capital, mode",
+      "description": "Strategy entry point \u2014 portfolio, tickers, capital, mode",
       "tooltip": "The Strategy Context. Every strategy begins here. Choose the portfolio (broker account), primary tickers, starting capital, and run mode (paper / live / backtest). Downstream nodes inherit this context. There is exactly one Start node per strategy; it cannot be deleted.",
       "inputs": [],
       "outputs": [
@@ -3855,7 +3855,7 @@
       "nodeType": "trigger",
       "label": "Heartbeat",
       "description": "Schedule-based trigger",
-      "tooltip": "Fires workflow on a configurable schedule — every N minutes, at market open/close, or daily at a specific time. Powered by BullMQ repeatable jobs. Inspired by OpenClaw heartbeat daemon.",
+      "tooltip": "Fires workflow on a configurable schedule \u2014 every N minutes, at market open/close, or daily at a specific time. Powered by BullMQ repeatable jobs. Inspired by OpenClaw heartbeat daemon.",
       "inputs": [],
       "outputs": [
         "Signal"
@@ -3901,7 +3901,7 @@
       "nodeType": "trigger",
       "label": "Price Alert",
       "description": "Price threshold trigger",
-      "tooltip": "Fires when a specific asset crosses a price threshold. Runs as a cheap pre-check in Node.js — no LLM or Python compute required. Extremely fast and cost-effective.",
+      "tooltip": "Fires when a specific asset crosses a price threshold. Runs as a cheap pre-check in Node.js \u2014 no LLM or Python compute required. Extremely fast and cost-effective.",
       "inputs": [],
       "outputs": [
         "Signal",
@@ -3986,7 +3986,7 @@
       "color": "#10b981",
       "backtestEligible": true,
       "defaultData": {
-        "triggerType": "'manualTrigger' as any"
+        "triggerType": "manualTrigger"
       }
     },
     {
@@ -4005,9 +4005,32 @@
       "color": "#6366f1",
       "backtestEligible": true,
       "defaultData": {
-        "triggerType": "'cronTrigger' as any",
+        "triggerType": "cronTrigger",
         "cronExpression": "0 9 * * 1-5",
         "timezone": "America/New_York"
+      }
+    },
+    {
+      "type": "conditionTrigger",
+      "nodeType": "trigger",
+      "label": "Condition Trigger",
+      "description": "Fires when an incoming value meets a condition (>, <, =, etc.)",
+      "tooltip": "Connect any numeric value (RSI, price, indicator) and define a threshold condition. Fires a signal downstream when satisfied. Wire an indicator output to the Value input, set the operator and threshold.",
+      "inputs": [
+        "Value"
+      ],
+      "outputs": [
+        "Signal"
+      ],
+      "category": "triggers",
+      "subcategory": "Condition",
+      "icon": "GitBranch",
+      "color": "#f59e0b",
+      "backtestEligible": true,
+      "defaultData": {
+        "triggerType": "conditionTrigger",
+        "operator": "<",
+        "threshold": 30
       }
     }
   ],

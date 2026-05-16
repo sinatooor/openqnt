@@ -22,7 +22,10 @@ import { BUILDER_AGENT_PROMPT } from './prompt';
 import type { PythonBridge } from '../python-bridge';
 
 export const MAX_VALIDATE_ATTEMPTS = 3;
-export const MAX_AGENT_STEPS = 24;
+// Each add_node / connect / lookup / validate / verify / submit counts as one
+// step. A 12-node strategy with 15 edges already takes ~30 steps, so 24 was
+// too tight — the agent ran out of budget before calling submit().
+export const MAX_AGENT_STEPS = 50;
 
 export interface BuilderRunInput {
   /** Natural-language user request. */
