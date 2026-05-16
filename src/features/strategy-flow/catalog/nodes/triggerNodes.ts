@@ -120,7 +120,7 @@ export const TRIGGER_NODES: NodeCatalogItem[] = [
         color: '#10b981',
         backtestEligible: true,
         defaultData: {
-            triggerType: 'manualTrigger' as any,
+            triggerType: 'manualTrigger',
         },
     },
     {
@@ -137,7 +137,7 @@ export const TRIGGER_NODES: NodeCatalogItem[] = [
         color: '#6366f1',
         backtestEligible: true,
         defaultData: {
-            triggerType: 'cronTrigger' as any,
+            triggerType: 'cronTrigger',
             cronExpression: '0 9 * * 1-5',
             timezone: 'America/New_York',
         },
@@ -156,7 +156,7 @@ export const TRIGGER_NODES: NodeCatalogItem[] = [
         color: '#f59e0b',
         backtestEligible: true,
         defaultData: {
-            triggerType: 'conditionTrigger' as any,
+            triggerType: 'conditionTrigger',
             operator: '<',
             threshold: 30,
         },

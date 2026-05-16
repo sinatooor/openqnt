@@ -47,7 +47,11 @@ const tryLoad = (path: string): number => {
   let count = 0;
   const parsed = parseEnvFile(readFileSync(path, 'utf8'));
   for (const [k, v] of Object.entries(parsed)) {
-    if (process.env[k] === undefined) {
+    // Treat empty string the same as undefined — some shells export
+    // `ANTHROPIC_API_KEY=""` which would otherwise block the .env file from
+    // populating the real value.
+    const existing = process.env[k];
+    if (existing === undefined || existing === '') {
       process.env[k] = v;
       count++;
     }

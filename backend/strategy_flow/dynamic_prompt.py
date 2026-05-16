@@ -127,6 +127,12 @@ def _parse_ts_value(raw: str) -> Any:
     """Parse a single TypeScript value (string, number, bool, array, object)."""
     raw = raw.strip()
 
+    # Strip trailing TS type casts like `'foo' as any` or `42 as unknown`
+    # so the parser captures the underlying literal, not the cast syntax.
+    cast = re.match(r"^(.+?)\s+as\s+(?:any|unknown|never|[A-Za-z_][\w.]*)\s*$", raw, re.DOTALL)
+    if cast:
+        raw = cast.group(1).strip()
+
     # String (single or double quotes)
     if (raw.startswith("'") and raw.endswith("'")) or \
        (raw.startswith('"') and raw.endswith('"')):
