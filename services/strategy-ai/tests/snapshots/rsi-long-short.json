@@ -1,0 +1,26 @@
+{
+  "prompt": "build a long and short RSI strategy: buy when RSI < 30, sell short when RSI > 70",
+  "nodeCount": 9,
+  "edgeCount": 8,
+  "nodeShapes": [
+    "action/order",
+    "action/order",
+    "condition/compare",
+    "condition/compare",
+    "dataSource/yfinance",
+    "indicator/rsi",
+    "math/number",
+    "math/number",
+    "trigger/heartbeatTrigger"
+  ],
+  "edgeShapes": [
+    "condition/compare.output → action/order.trigger",
+    "condition/compare.output → action/order.trigger",
+    "dataSource/yfinance.candles → indicator/rsi.data",
+    "indicator/rsi.value → condition/compare.input-a",
+    "indicator/rsi.value → condition/compare.input-a",
+    "math/number.output → condition/compare.input-b",
+    "math/number.output → condition/compare.input-b",
+    "trigger/heartbeatTrigger.output → indicator/rsi.trigger"
+  ]
+}

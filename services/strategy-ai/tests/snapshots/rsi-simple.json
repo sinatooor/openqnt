@@ -1,0 +1,20 @@
+{
+  "prompt": "build an RSI strategy",
+  "nodeCount": 6,
+  "edgeCount": 5,
+  "nodeShapes": [
+    "action/order",
+    "condition/compare",
+    "dataSource/yfinance",
+    "indicator/rsi",
+    "math/number",
+    "trigger/heartbeatTrigger"
+  ],
+  "edgeShapes": [
+    "condition/compare.output → action/order.trigger",
+    "dataSource/yfinance.candles → indicator/rsi.data",
+    "indicator/rsi.value → condition/compare.input-a",
+    "math/number.output → condition/compare.input-b",
+    "trigger/heartbeatTrigger.output → indicator/rsi.trigger"
+  ]
+}

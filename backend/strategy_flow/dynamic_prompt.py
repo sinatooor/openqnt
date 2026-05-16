@@ -235,10 +235,65 @@ def _split_top_level(text: str) -> List[str]:
 # Load full catalog
 # ============================================================
 
+_SUBTYPE_KEYS = (
+    "indicatorType", "conditionType", "actionType", "triggerType",
+    "mathType", "controlType", "riskType", "variableType",
+    "environmentType", "tradeInfoType", "llmType", "integrationType",
+    "pineType", "agentType", "provider",
+)
+
+
+def _node_subtype(node: Dict[str, Any]) -> Optional[str]:
+    """Extract the discriminator subtype from a catalog node's defaultData."""
+    default_data = node.get("defaultData") or {}
+    for key in _SUBTYPE_KEYS:
+        val = default_data.get(key)
+        if isinstance(val, str) and val:
+            return val
+    # Fall back to the catalog `type` field (e.g. startTrigger).
+    return node.get("type")
+
+
+# Path to the handle-config map emitted by scripts/extract-handle-configs.ts.
+# Single source of truth for handle topology: the frontend's
+# `src/features/strategy-flow/utils/handleUtils.ts` (extracted to JSON at
+# build time). When this file is missing, nodes are served without handles —
+# the strategy-ai service treats that as "fall back to empty" rather than
+# silently using a stale Python copy.
+_HANDLE_CONFIGS_PATH = Path(__file__).parent / "handle_configs.json"
+
+
+@lru_cache(maxsize=1)
+def _load_handle_configs() -> Dict[str, List[Dict[str, Any]]]:
+    if not _HANDLE_CONFIGS_PATH.exists():
+        return {}
+    try:
+        return json.loads(_HANDLE_CONFIGS_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def _attach_handles(node: Dict[str, Any]) -> None:
+    """Augment a catalog node with its handle topology (mutates in place)."""
+    handle_map = _load_handle_configs()
+    if not handle_map:
+        return
+    sub = _node_subtype(node)
+    key = f"{node.get('nodeType')}/{sub}"
+    handles = handle_map.get(key) or handle_map.get(node.get("type", "")) or []
+    if handles:
+        node["handles"] = handles
+
+
 def load_catalog_from_typescript() -> Dict[str, List[Dict[str, Any]]]:
     """
     Load all node definitions from frontend TypeScript catalog files.
     Returns dict keyed by category name.
+
+    Each node is augmented with a `handles` array (id/type/position/label/
+    dataType) sourced from `handle_configs.json` — the single source of
+    truth for handle topology. The Builder agent uses these ids directly
+    when calling `connect()`.
     """
     catalog: Dict[str, List[Dict[str, Any]]] = {}
 
@@ -254,6 +309,8 @@ def load_catalog_from_typescript() -> Dict[str, List[Dict[str, Any]]]:
 
         nodes = parse_ts_node_file(ts_file)
         if nodes:
+            for node in nodes:
+                _attach_handles(node)
             # Derive category from filename: indicatorNodes.ts → indicator
             cat_name = ts_file.stem.replace("Nodes", "")
             catalog[cat_name] = nodes

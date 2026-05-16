@@ -1,0 +1,7194 @@
+{
+  "action/order": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "size",
+      "type": "target",
+      "position": "left",
+      "label": "Size",
+      "dataType": "number"
+    },
+    {
+      "id": "limitPrice",
+      "type": "target",
+      "position": "left",
+      "label": "Limit",
+      "dataType": "number"
+    },
+    {
+      "id": "stopPrice",
+      "type": "target",
+      "position": "left",
+      "label": "Stop",
+      "dataType": "number"
+    },
+    {
+      "id": "takeProfitPrice",
+      "type": "target",
+      "position": "left",
+      "label": "TP",
+      "dataType": "number"
+    },
+    {
+      "id": "next",
+      "type": "source",
+      "position": "right",
+      "label": "Next",
+      "dataType": "signal"
+    }
+  ],
+  "order": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "size",
+      "type": "target",
+      "position": "left",
+      "label": "Size",
+      "dataType": "number"
+    },
+    {
+      "id": "limitPrice",
+      "type": "target",
+      "position": "left",
+      "label": "Limit",
+      "dataType": "number"
+    },
+    {
+      "id": "stopPrice",
+      "type": "target",
+      "position": "left",
+      "label": "Stop",
+      "dataType": "number"
+    },
+    {
+      "id": "takeProfitPrice",
+      "type": "target",
+      "position": "left",
+      "label": "TP",
+      "dataType": "number"
+    },
+    {
+      "id": "next",
+      "type": "source",
+      "position": "right",
+      "label": "Next",
+      "dataType": "signal"
+    }
+  ],
+  "action/closePosition": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "next",
+      "type": "source",
+      "position": "right",
+      "label": "Next",
+      "dataType": "signal"
+    }
+  ],
+  "closePosition": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "next",
+      "type": "source",
+      "position": "right",
+      "label": "Next",
+      "dataType": "signal"
+    }
+  ],
+  "action/closeAll": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "next",
+      "type": "source",
+      "position": "right",
+      "label": "Next",
+      "dataType": "signal"
+    }
+  ],
+  "closeAll": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "next",
+      "type": "source",
+      "position": "right",
+      "label": "Next",
+      "dataType": "signal"
+    }
+  ],
+  "action/stopLoss": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "stopPrice",
+      "type": "target",
+      "position": "left",
+      "label": "Price",
+      "dataType": "number"
+    },
+    {
+      "id": "next",
+      "type": "source",
+      "position": "right",
+      "label": "Next",
+      "dataType": "signal"
+    }
+  ],
+  "stopLoss": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "stopPrice",
+      "type": "target",
+      "position": "left",
+      "label": "Price",
+      "dataType": "number"
+    },
+    {
+      "id": "next",
+      "type": "source",
+      "position": "right",
+      "label": "Next",
+      "dataType": "signal"
+    }
+  ],
+  "action/takeProfit": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "takeProfitPrice",
+      "type": "target",
+      "position": "left",
+      "label": "Price",
+      "dataType": "number"
+    },
+    {
+      "id": "next",
+      "type": "source",
+      "position": "right",
+      "label": "Next",
+      "dataType": "signal"
+    }
+  ],
+  "takeProfit": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "takeProfitPrice",
+      "type": "target",
+      "position": "left",
+      "label": "Price",
+      "dataType": "number"
+    },
+    {
+      "id": "next",
+      "type": "source",
+      "position": "right",
+      "label": "Next",
+      "dataType": "signal"
+    }
+  ],
+  "action/trailingStop": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "next",
+      "type": "source",
+      "position": "right",
+      "label": "Next",
+      "dataType": "signal"
+    }
+  ],
+  "trailingStop": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "next",
+      "type": "source",
+      "position": "right",
+      "label": "Next",
+      "dataType": "signal"
+    }
+  ],
+  "action/notification": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "next",
+      "type": "source",
+      "position": "right",
+      "label": "Next",
+      "dataType": "signal"
+    }
+  ],
+  "notification": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "next",
+      "type": "source",
+      "position": "right",
+      "label": "Next",
+      "dataType": "signal"
+    }
+  ],
+  "action/log": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "next",
+      "type": "source",
+      "position": "right",
+      "label": "Next",
+      "dataType": "signal"
+    }
+  ],
+  "log": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "next",
+      "type": "source",
+      "position": "right",
+      "label": "Next",
+      "dataType": "signal"
+    }
+  ],
+  "action/options_order": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "next",
+      "type": "source",
+      "position": "right",
+      "label": "Next",
+      "dataType": "signal"
+    }
+  ],
+  "options_order": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "next",
+      "type": "source",
+      "position": "right",
+      "label": "Next",
+      "dataType": "signal"
+    }
+  ],
+  "action/portfolio_rebalance": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "next",
+      "type": "source",
+      "position": "right",
+      "label": "Next",
+      "dataType": "signal"
+    }
+  ],
+  "portfolio_rebalance": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "next",
+      "type": "source",
+      "position": "right",
+      "label": "Next",
+      "dataType": "signal"
+    }
+  ],
+  "action/phoneCall": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "next",
+      "type": "source",
+      "position": "right",
+      "label": "Next",
+      "dataType": "signal"
+    }
+  ],
+  "phoneCall": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "next",
+      "type": "source",
+      "position": "right",
+      "label": "Next",
+      "dataType": "signal"
+    }
+  ],
+  "agent/news_analyst": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "symbols",
+      "type": "target",
+      "position": "left",
+      "label": "Symbols",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "confidence",
+      "type": "source",
+      "position": "right",
+      "label": "Confidence",
+      "dataType": "number"
+    },
+    {
+      "id": "findings",
+      "type": "source",
+      "position": "right",
+      "label": "Findings",
+      "dataType": "any"
+    }
+  ],
+  "newsAgentNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "symbols",
+      "type": "target",
+      "position": "left",
+      "label": "Symbols",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "confidence",
+      "type": "source",
+      "position": "right",
+      "label": "Confidence",
+      "dataType": "number"
+    },
+    {
+      "id": "findings",
+      "type": "source",
+      "position": "right",
+      "label": "Findings",
+      "dataType": "any"
+    }
+  ],
+  "agent/macro_analyst": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "symbols",
+      "type": "target",
+      "position": "left",
+      "label": "Symbols",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "confidence",
+      "type": "source",
+      "position": "right",
+      "label": "Confidence",
+      "dataType": "number"
+    },
+    {
+      "id": "findings",
+      "type": "source",
+      "position": "right",
+      "label": "Findings",
+      "dataType": "any"
+    }
+  ],
+  "macroAgentNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "symbols",
+      "type": "target",
+      "position": "left",
+      "label": "Symbols",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "confidence",
+      "type": "source",
+      "position": "right",
+      "label": "Confidence",
+      "dataType": "number"
+    },
+    {
+      "id": "findings",
+      "type": "source",
+      "position": "right",
+      "label": "Findings",
+      "dataType": "any"
+    }
+  ],
+  "agent/technical_analyst": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "symbols",
+      "type": "target",
+      "position": "left",
+      "label": "Symbols",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "confidence",
+      "type": "source",
+      "position": "right",
+      "label": "Confidence",
+      "dataType": "number"
+    },
+    {
+      "id": "findings",
+      "type": "source",
+      "position": "right",
+      "label": "Findings",
+      "dataType": "any"
+    }
+  ],
+  "technicalAgentNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "symbols",
+      "type": "target",
+      "position": "left",
+      "label": "Symbols",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "confidence",
+      "type": "source",
+      "position": "right",
+      "label": "Confidence",
+      "dataType": "number"
+    },
+    {
+      "id": "findings",
+      "type": "source",
+      "position": "right",
+      "label": "Findings",
+      "dataType": "any"
+    }
+  ],
+  "agent/social_monitor": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "symbols",
+      "type": "target",
+      "position": "left",
+      "label": "Symbols",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "confidence",
+      "type": "source",
+      "position": "right",
+      "label": "Confidence",
+      "dataType": "number"
+    },
+    {
+      "id": "findings",
+      "type": "source",
+      "position": "right",
+      "label": "Findings",
+      "dataType": "any"
+    }
+  ],
+  "socialAgentNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "symbols",
+      "type": "target",
+      "position": "left",
+      "label": "Symbols",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "confidence",
+      "type": "source",
+      "position": "right",
+      "label": "Confidence",
+      "dataType": "number"
+    },
+    {
+      "id": "findings",
+      "type": "source",
+      "position": "right",
+      "label": "Findings",
+      "dataType": "any"
+    }
+  ],
+  "agent/synthesis": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "symbols",
+      "type": "target",
+      "position": "left",
+      "label": "Symbols",
+      "dataType": "any"
+    },
+    {
+      "id": "agentData",
+      "type": "target",
+      "position": "left",
+      "label": "Agent Data",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "confidence",
+      "type": "source",
+      "position": "right",
+      "label": "Confidence",
+      "dataType": "number"
+    },
+    {
+      "id": "recommendation",
+      "type": "source",
+      "position": "right",
+      "label": "Rec",
+      "dataType": "any"
+    }
+  ],
+  "synthesisAgentNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "symbols",
+      "type": "target",
+      "position": "left",
+      "label": "Symbols",
+      "dataType": "any"
+    },
+    {
+      "id": "agentData",
+      "type": "target",
+      "position": "left",
+      "label": "Agent Data",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "confidence",
+      "type": "source",
+      "position": "right",
+      "label": "Confidence",
+      "dataType": "number"
+    },
+    {
+      "id": "recommendation",
+      "type": "source",
+      "position": "right",
+      "label": "Rec",
+      "dataType": "any"
+    }
+  ],
+  "agent/fundamentals_analyst": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "symbols",
+      "type": "target",
+      "position": "left",
+      "label": "Symbols",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "confidence",
+      "type": "source",
+      "position": "right",
+      "label": "Confidence",
+      "dataType": "number"
+    },
+    {
+      "id": "findings",
+      "type": "source",
+      "position": "right",
+      "label": "Findings",
+      "dataType": "any"
+    }
+  ],
+  "fundamentalsAgentNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "symbols",
+      "type": "target",
+      "position": "left",
+      "label": "Symbols",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "confidence",
+      "type": "source",
+      "position": "right",
+      "label": "Confidence",
+      "dataType": "number"
+    },
+    {
+      "id": "findings",
+      "type": "source",
+      "position": "right",
+      "label": "Findings",
+      "dataType": "any"
+    }
+  ],
+  "agent/sentiment_analyst": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "symbols",
+      "type": "target",
+      "position": "left",
+      "label": "Symbols",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "confidence",
+      "type": "source",
+      "position": "right",
+      "label": "Confidence",
+      "dataType": "number"
+    },
+    {
+      "id": "score",
+      "type": "source",
+      "position": "right",
+      "label": "Score",
+      "dataType": "number"
+    }
+  ],
+  "sentimentAgentNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "symbols",
+      "type": "target",
+      "position": "left",
+      "label": "Symbols",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "confidence",
+      "type": "source",
+      "position": "right",
+      "label": "Confidence",
+      "dataType": "number"
+    },
+    {
+      "id": "score",
+      "type": "source",
+      "position": "right",
+      "label": "Score",
+      "dataType": "number"
+    }
+  ],
+  "agent/quant_analyst": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "symbols",
+      "type": "target",
+      "position": "left",
+      "label": "Symbols",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "confidence",
+      "type": "source",
+      "position": "right",
+      "label": "Confidence",
+      "dataType": "number"
+    },
+    {
+      "id": "findings",
+      "type": "source",
+      "position": "right",
+      "label": "Findings",
+      "dataType": "any"
+    }
+  ],
+  "quantAgentNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "symbols",
+      "type": "target",
+      "position": "left",
+      "label": "Symbols",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "confidence",
+      "type": "source",
+      "position": "right",
+      "label": "Confidence",
+      "dataType": "number"
+    },
+    {
+      "id": "findings",
+      "type": "source",
+      "position": "right",
+      "label": "Findings",
+      "dataType": "any"
+    }
+  ],
+  "agent/research_analyst": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "symbols",
+      "type": "target",
+      "position": "left",
+      "label": "Symbols",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "confidence",
+      "type": "source",
+      "position": "right",
+      "label": "Confidence",
+      "dataType": "number"
+    },
+    {
+      "id": "findings",
+      "type": "source",
+      "position": "right",
+      "label": "Findings",
+      "dataType": "any"
+    },
+    {
+      "id": "riskScore",
+      "type": "source",
+      "position": "right",
+      "label": "Risk Score",
+      "dataType": "number"
+    }
+  ],
+  "researchAgentNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "symbols",
+      "type": "target",
+      "position": "left",
+      "label": "Symbols",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "confidence",
+      "type": "source",
+      "position": "right",
+      "label": "Confidence",
+      "dataType": "number"
+    },
+    {
+      "id": "findings",
+      "type": "source",
+      "position": "right",
+      "label": "Findings",
+      "dataType": "any"
+    },
+    {
+      "id": "riskScore",
+      "type": "source",
+      "position": "right",
+      "label": "Risk Score",
+      "dataType": "number"
+    }
+  ],
+  "condition/compare": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "boolean"
+    }
+  ],
+  "compare": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "boolean"
+    }
+  ],
+  "condition/crossover": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "boolean"
+    }
+  ],
+  "crossover": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "boolean"
+    }
+  ],
+  "condition/crossunder": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "boolean"
+    }
+  ],
+  "crossunder": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "boolean"
+    }
+  ],
+  "condition/threshold": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "Value",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "boolean"
+    }
+  ],
+  "threshold": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "Value",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "boolean"
+    }
+  ],
+  "condition/range": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "Value",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "In Range",
+      "dataType": "boolean"
+    }
+  ],
+  "range": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "Value",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "In Range",
+      "dataType": "boolean"
+    }
+  ],
+  "condition/and": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "boolean"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "boolean"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "boolean"
+    }
+  ],
+  "and": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "boolean"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "boolean"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "boolean"
+    }
+  ],
+  "condition/or": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "boolean"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "boolean"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "boolean"
+    }
+  ],
+  "or": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "boolean"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "boolean"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "boolean"
+    }
+  ],
+  "condition/not": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "In",
+      "dataType": "boolean"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Out",
+      "dataType": "boolean"
+    }
+  ],
+  "not": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "In",
+      "dataType": "boolean"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Out",
+      "dataType": "boolean"
+    }
+  ],
+  "control/if": [
+    {
+      "id": "condition",
+      "type": "target",
+      "position": "left",
+      "label": "Condition",
+      "dataType": "boolean"
+    },
+    {
+      "id": "then",
+      "type": "source",
+      "position": "right",
+      "label": "Then",
+      "dataType": "signal"
+    }
+  ],
+  "if": [
+    {
+      "id": "condition",
+      "type": "target",
+      "position": "left",
+      "label": "Condition",
+      "dataType": "boolean"
+    },
+    {
+      "id": "then",
+      "type": "source",
+      "position": "right",
+      "label": "Then",
+      "dataType": "signal"
+    }
+  ],
+  "control/ifElse": [
+    {
+      "id": "condition",
+      "type": "target",
+      "position": "left",
+      "label": "Condition",
+      "dataType": "boolean"
+    },
+    {
+      "id": "then",
+      "type": "source",
+      "position": "right",
+      "label": "Then",
+      "dataType": "signal"
+    },
+    {
+      "id": "else",
+      "type": "source",
+      "position": "right",
+      "label": "Else",
+      "dataType": "signal"
+    }
+  ],
+  "ifElse": [
+    {
+      "id": "condition",
+      "type": "target",
+      "position": "left",
+      "label": "Condition",
+      "dataType": "boolean"
+    },
+    {
+      "id": "then",
+      "type": "source",
+      "position": "right",
+      "label": "Then",
+      "dataType": "signal"
+    },
+    {
+      "id": "else",
+      "type": "source",
+      "position": "right",
+      "label": "Else",
+      "dataType": "signal"
+    }
+  ],
+  "control/repeat": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Output",
+      "dataType": "signal"
+    }
+  ],
+  "repeat": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Output",
+      "dataType": "signal"
+    }
+  ],
+  "control/wait": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Output",
+      "dataType": "signal"
+    }
+  ],
+  "wait": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Output",
+      "dataType": "signal"
+    }
+  ],
+  "control/waitUntil": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Output",
+      "dataType": "signal"
+    }
+  ],
+  "waitUntil": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Output",
+      "dataType": "signal"
+    }
+  ],
+  "control/stop": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Output",
+      "dataType": "signal"
+    }
+  ],
+  "stop": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Output",
+      "dataType": "signal"
+    }
+  ],
+  "control/switch": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Output",
+      "dataType": "signal"
+    }
+  ],
+  "switch": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Output",
+      "dataType": "signal"
+    }
+  ],
+  "control/splitInBatches": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Output",
+      "dataType": "signal"
+    }
+  ],
+  "splitInBatches": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Output",
+      "dataType": "signal"
+    }
+  ],
+  "dataSource/yfinance": [
+    {
+      "id": "candles",
+      "type": "source",
+      "position": "right",
+      "label": "Candles",
+      "dataType": "any"
+    }
+  ],
+  "yfinanceData": [
+    {
+      "id": "candles",
+      "type": "source",
+      "position": "right",
+      "label": "Candles",
+      "dataType": "any"
+    }
+  ],
+  "dataSource/avanza": [
+    {
+      "id": "candles",
+      "type": "source",
+      "position": "right",
+      "label": "Candles",
+      "dataType": "any"
+    }
+  ],
+  "avanzaData": [
+    {
+      "id": "candles",
+      "type": "source",
+      "position": "right",
+      "label": "Candles",
+      "dataType": "any"
+    }
+  ],
+  "dataSource/fmp": [
+    {
+      "id": "candles",
+      "type": "source",
+      "position": "right",
+      "label": "Candles",
+      "dataType": "any"
+    }
+  ],
+  "fmpData": [
+    {
+      "id": "candles",
+      "type": "source",
+      "position": "right",
+      "label": "Candles",
+      "dataType": "any"
+    }
+  ],
+  "avanzaPositions": [
+    {
+      "id": "candles",
+      "type": "source",
+      "position": "right",
+      "label": "Candles",
+      "dataType": "any"
+    }
+  ],
+  "avanzaWatchlist": [
+    {
+      "id": "candles",
+      "type": "source",
+      "position": "right",
+      "label": "Candles",
+      "dataType": "any"
+    }
+  ],
+  "dataSource/fred": [
+    {
+      "id": "candles",
+      "type": "source",
+      "position": "right",
+      "label": "Candles",
+      "dataType": "any"
+    }
+  ],
+  "fredMacro": [
+    {
+      "id": "candles",
+      "type": "source",
+      "position": "right",
+      "label": "Candles",
+      "dataType": "any"
+    }
+  ],
+  "environment/price": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "price": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "environment/bidAskSpread": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "bidAskSpread": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "environment/prevCandleOpen": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "prevCandleOpen": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "environment/prevCandleClose": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "prevCandleClose": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "environment/time": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "time": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "environment/dayOfWeek": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "dayOfWeek": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "environment/newCandleOpen": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "newCandleOpen": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "environment/isMarketOpen": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "isMarketOpen": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "indicator/sma": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "sma": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "indicator/ema": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "ema": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "indicator/dema": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "dema": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "indicator/tema": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "tema": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "indicator/rsi": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "rsi": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "indicator/stochastic": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "upper",
+      "type": "source",
+      "position": "right",
+      "label": "%K",
+      "dataType": "number"
+    },
+    {
+      "id": "lower",
+      "type": "source",
+      "position": "right",
+      "label": "%D",
+      "dataType": "number"
+    }
+  ],
+  "stochastic": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "upper",
+      "type": "source",
+      "position": "right",
+      "label": "%K",
+      "dataType": "number"
+    },
+    {
+      "id": "lower",
+      "type": "source",
+      "position": "right",
+      "label": "%D",
+      "dataType": "number"
+    }
+  ],
+  "indicator/cci": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "cci": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "indicator/stochRSI": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "stochRSI": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "indicator/mfi": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "volume",
+      "type": "target",
+      "position": "left",
+      "label": "Volume",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "mfi": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "volume",
+      "type": "target",
+      "position": "left",
+      "label": "Volume",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "indicator/macd": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "line",
+      "type": "source",
+      "position": "right",
+      "label": "MACD",
+      "dataType": "number"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "number"
+    },
+    {
+      "id": "histogram",
+      "type": "source",
+      "position": "right",
+      "label": "Histogram",
+      "dataType": "number"
+    }
+  ],
+  "macd": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "line",
+      "type": "source",
+      "position": "right",
+      "label": "MACD",
+      "dataType": "number"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "number"
+    },
+    {
+      "id": "histogram",
+      "type": "source",
+      "position": "right",
+      "label": "Histogram",
+      "dataType": "number"
+    }
+  ],
+  "indicator/adx": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "volume",
+      "type": "target",
+      "position": "left",
+      "label": "Volume",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "adx": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "volume",
+      "type": "target",
+      "position": "left",
+      "label": "Volume",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "indicator/sar": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "sar": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "indicator/ichimoku": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "tenkan",
+      "type": "source",
+      "position": "right",
+      "label": "Tenkan",
+      "dataType": "number"
+    },
+    {
+      "id": "kijun",
+      "type": "source",
+      "position": "right",
+      "label": "Kijun",
+      "dataType": "number"
+    },
+    {
+      "id": "senkou_a",
+      "type": "source",
+      "position": "right",
+      "label": "Span A",
+      "dataType": "number"
+    },
+    {
+      "id": "senkou_b",
+      "type": "source",
+      "position": "right",
+      "label": "Span B",
+      "dataType": "number"
+    },
+    {
+      "id": "chikou",
+      "type": "source",
+      "position": "right",
+      "label": "Chikou",
+      "dataType": "number"
+    }
+  ],
+  "ichimoku": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "tenkan",
+      "type": "source",
+      "position": "right",
+      "label": "Tenkan",
+      "dataType": "number"
+    },
+    {
+      "id": "kijun",
+      "type": "source",
+      "position": "right",
+      "label": "Kijun",
+      "dataType": "number"
+    },
+    {
+      "id": "senkou_a",
+      "type": "source",
+      "position": "right",
+      "label": "Span A",
+      "dataType": "number"
+    },
+    {
+      "id": "senkou_b",
+      "type": "source",
+      "position": "right",
+      "label": "Span B",
+      "dataType": "number"
+    },
+    {
+      "id": "chikou",
+      "type": "source",
+      "position": "right",
+      "label": "Chikou",
+      "dataType": "number"
+    }
+  ],
+  "indicator/alligator": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "jaw",
+      "type": "source",
+      "position": "right",
+      "label": "Jaw",
+      "dataType": "number"
+    },
+    {
+      "id": "teeth",
+      "type": "source",
+      "position": "right",
+      "label": "Teeth",
+      "dataType": "number"
+    },
+    {
+      "id": "lips",
+      "type": "source",
+      "position": "right",
+      "label": "Lips",
+      "dataType": "number"
+    }
+  ],
+  "alligator": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "jaw",
+      "type": "source",
+      "position": "right",
+      "label": "Jaw",
+      "dataType": "number"
+    },
+    {
+      "id": "teeth",
+      "type": "source",
+      "position": "right",
+      "label": "Teeth",
+      "dataType": "number"
+    },
+    {
+      "id": "lips",
+      "type": "source",
+      "position": "right",
+      "label": "Lips",
+      "dataType": "number"
+    }
+  ],
+  "indicator/aroon": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "aroonup",
+      "type": "source",
+      "position": "right",
+      "label": "Up",
+      "dataType": "number"
+    },
+    {
+      "id": "aroondown",
+      "type": "source",
+      "position": "right",
+      "label": "Down",
+      "dataType": "number"
+    }
+  ],
+  "aroon": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "aroonup",
+      "type": "source",
+      "position": "right",
+      "label": "Up",
+      "dataType": "number"
+    },
+    {
+      "id": "aroondown",
+      "type": "source",
+      "position": "right",
+      "label": "Down",
+      "dataType": "number"
+    }
+  ],
+  "indicator/dmi": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "plus_di",
+      "type": "source",
+      "position": "right",
+      "label": "+DI",
+      "dataType": "number"
+    },
+    {
+      "id": "minus_di",
+      "type": "source",
+      "position": "right",
+      "label": "-DI",
+      "dataType": "number"
+    },
+    {
+      "id": "adx",
+      "type": "source",
+      "position": "right",
+      "label": "ADX",
+      "dataType": "number"
+    }
+  ],
+  "dmi": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "plus_di",
+      "type": "source",
+      "position": "right",
+      "label": "+DI",
+      "dataType": "number"
+    },
+    {
+      "id": "minus_di",
+      "type": "source",
+      "position": "right",
+      "label": "-DI",
+      "dataType": "number"
+    },
+    {
+      "id": "adx",
+      "type": "source",
+      "position": "right",
+      "label": "ADX",
+      "dataType": "number"
+    }
+  ],
+  "indicator/bb": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "upper",
+      "type": "source",
+      "position": "right",
+      "label": "Upper",
+      "dataType": "number"
+    },
+    {
+      "id": "middle",
+      "type": "source",
+      "position": "right",
+      "label": "Middle",
+      "dataType": "number"
+    },
+    {
+      "id": "lower",
+      "type": "source",
+      "position": "right",
+      "label": "Lower",
+      "dataType": "number"
+    }
+  ],
+  "bb": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "upper",
+      "type": "source",
+      "position": "right",
+      "label": "Upper",
+      "dataType": "number"
+    },
+    {
+      "id": "middle",
+      "type": "source",
+      "position": "right",
+      "label": "Middle",
+      "dataType": "number"
+    },
+    {
+      "id": "lower",
+      "type": "source",
+      "position": "right",
+      "label": "Lower",
+      "dataType": "number"
+    }
+  ],
+  "indicator/keltner": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "upper",
+      "type": "source",
+      "position": "right",
+      "label": "Upper",
+      "dataType": "number"
+    },
+    {
+      "id": "middle",
+      "type": "source",
+      "position": "right",
+      "label": "Middle",
+      "dataType": "number"
+    },
+    {
+      "id": "lower",
+      "type": "source",
+      "position": "right",
+      "label": "Lower",
+      "dataType": "number"
+    }
+  ],
+  "keltner": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "upper",
+      "type": "source",
+      "position": "right",
+      "label": "Upper",
+      "dataType": "number"
+    },
+    {
+      "id": "middle",
+      "type": "source",
+      "position": "right",
+      "label": "Middle",
+      "dataType": "number"
+    },
+    {
+      "id": "lower",
+      "type": "source",
+      "position": "right",
+      "label": "Lower",
+      "dataType": "number"
+    }
+  ],
+  "indicator/donchian": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "upper",
+      "type": "source",
+      "position": "right",
+      "label": "Upper",
+      "dataType": "number"
+    },
+    {
+      "id": "middle",
+      "type": "source",
+      "position": "right",
+      "label": "Middle",
+      "dataType": "number"
+    },
+    {
+      "id": "lower",
+      "type": "source",
+      "position": "right",
+      "label": "Lower",
+      "dataType": "number"
+    }
+  ],
+  "donchian": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "upper",
+      "type": "source",
+      "position": "right",
+      "label": "Upper",
+      "dataType": "number"
+    },
+    {
+      "id": "middle",
+      "type": "source",
+      "position": "right",
+      "label": "Middle",
+      "dataType": "number"
+    },
+    {
+      "id": "lower",
+      "type": "source",
+      "position": "right",
+      "label": "Lower",
+      "dataType": "number"
+    }
+  ],
+  "indicator/atr": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "atr": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "indicator/obv": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "volume",
+      "type": "target",
+      "position": "left",
+      "label": "Volume",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "obv": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "volume",
+      "type": "target",
+      "position": "left",
+      "label": "Volume",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "indicator/vwap": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "volume",
+      "type": "target",
+      "position": "left",
+      "label": "Volume",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "vwap": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "volume",
+      "type": "target",
+      "position": "left",
+      "label": "Volume",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "indicator/hmm_regime": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "hmm_regime": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Price Data",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "indicator/spread": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data-a",
+      "type": "target",
+      "position": "left",
+      "label": "Data A",
+      "dataType": "any"
+    },
+    {
+      "id": "data-b",
+      "type": "target",
+      "position": "left",
+      "label": "Data B",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "spread": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data-a",
+      "type": "target",
+      "position": "left",
+      "label": "Data A",
+      "dataType": "any"
+    },
+    {
+      "id": "data-b",
+      "type": "target",
+      "position": "left",
+      "label": "Data B",
+      "dataType": "any"
+    },
+    {
+      "id": "value",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "integration/telegramNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Done",
+      "dataType": "signal"
+    }
+  ],
+  "telegramNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Done",
+      "dataType": "signal"
+    }
+  ],
+  "integration/slackNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Done",
+      "dataType": "signal"
+    }
+  ],
+  "slackNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Done",
+      "dataType": "signal"
+    }
+  ],
+  "integration/emailNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Done",
+      "dataType": "signal"
+    }
+  ],
+  "emailNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Done",
+      "dataType": "signal"
+    }
+  ],
+  "integration/smsNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Done",
+      "dataType": "signal"
+    }
+  ],
+  "smsNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Done",
+      "dataType": "signal"
+    }
+  ],
+  "integration/httpRequestNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Done",
+      "dataType": "signal"
+    }
+  ],
+  "httpRequestNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Done",
+      "dataType": "signal"
+    }
+  ],
+  "integration/databaseQueryNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Done",
+      "dataType": "signal"
+    }
+  ],
+  "databaseQueryNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Done",
+      "dataType": "signal"
+    }
+  ],
+  "integration/codePythonNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Done",
+      "dataType": "signal"
+    }
+  ],
+  "codePythonNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Done",
+      "dataType": "signal"
+    }
+  ],
+  "integration/codeJavascriptNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Done",
+      "dataType": "signal"
+    }
+  ],
+  "codeJavascriptNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Done",
+      "dataType": "signal"
+    }
+  ],
+  "integration/aiAnalysisNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Done",
+      "dataType": "signal"
+    }
+  ],
+  "aiAnalysisNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Done",
+      "dataType": "signal"
+    }
+  ],
+  "integration/mergeNode": [
+    {
+      "id": "data-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "any"
+    },
+    {
+      "id": "data-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Merged",
+      "dataType": "any"
+    }
+  ],
+  "mergeNode": [
+    {
+      "id": "data-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "any"
+    },
+    {
+      "id": "data-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Merged",
+      "dataType": "any"
+    }
+  ],
+  "integration/splitNode": [
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "item",
+      "type": "source",
+      "position": "right",
+      "label": "Item",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Done",
+      "dataType": "signal"
+    }
+  ],
+  "splitNode": [
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "item",
+      "type": "source",
+      "position": "right",
+      "label": "Item",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Done",
+      "dataType": "signal"
+    }
+  ],
+  "integration/setNode": [
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    }
+  ],
+  "setNode": [
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    }
+  ],
+  "integration/filterNode": [
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "passed",
+      "type": "source",
+      "position": "right",
+      "label": "Passed",
+      "dataType": "any"
+    },
+    {
+      "id": "rejected",
+      "type": "source",
+      "position": "right",
+      "label": "Rejected",
+      "dataType": "any"
+    }
+  ],
+  "filterNode": [
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "passed",
+      "type": "source",
+      "position": "right",
+      "label": "Passed",
+      "dataType": "any"
+    },
+    {
+      "id": "rejected",
+      "type": "source",
+      "position": "right",
+      "label": "Rejected",
+      "dataType": "any"
+    }
+  ],
+  "integration/aggregateNode": [
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    }
+  ],
+  "aggregateNode": [
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    }
+  ],
+  "integration/hitlNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "approved",
+      "type": "source",
+      "position": "right",
+      "label": "Approved",
+      "dataType": "signal"
+    },
+    {
+      "id": "rejected",
+      "type": "source",
+      "position": "right",
+      "label": "Rejected",
+      "dataType": "signal"
+    }
+  ],
+  "hitlNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "approved",
+      "type": "source",
+      "position": "right",
+      "label": "Approved",
+      "dataType": "signal"
+    },
+    {
+      "id": "rejected",
+      "type": "source",
+      "position": "right",
+      "label": "Rejected",
+      "dataType": "signal"
+    }
+  ],
+  "integration/subWorkflowNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Done",
+      "dataType": "signal"
+    }
+  ],
+  "subWorkflowNode": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Done",
+      "dataType": "signal"
+    }
+  ],
+  "llm/llmDecision": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "JSON",
+      "dataType": "any"
+    }
+  ],
+  "llmDecision": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "JSON",
+      "dataType": "any"
+    }
+  ],
+  "llm/sentimentAnalysis": [
+    {
+      "id": "text",
+      "type": "target",
+      "position": "left",
+      "label": "Text",
+      "dataType": "any"
+    },
+    {
+      "id": "score",
+      "type": "source",
+      "position": "right",
+      "label": "Score",
+      "dataType": "number"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "boolean"
+    }
+  ],
+  "sentimentAnalysis": [
+    {
+      "id": "text",
+      "type": "target",
+      "position": "left",
+      "label": "Text",
+      "dataType": "any"
+    },
+    {
+      "id": "score",
+      "type": "source",
+      "position": "right",
+      "label": "Score",
+      "dataType": "number"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "boolean"
+    }
+  ],
+  "llm/regimeDetection": [
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "indicators",
+      "type": "target",
+      "position": "left",
+      "label": "Indicators",
+      "dataType": "any"
+    },
+    {
+      "id": "regime",
+      "type": "source",
+      "position": "right",
+      "label": "Regime",
+      "dataType": "any"
+    },
+    {
+      "id": "confidence",
+      "type": "source",
+      "position": "right",
+      "label": "Confidence",
+      "dataType": "number"
+    }
+  ],
+  "regimeDetection": [
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "indicators",
+      "type": "target",
+      "position": "left",
+      "label": "Indicators",
+      "dataType": "any"
+    },
+    {
+      "id": "regime",
+      "type": "source",
+      "position": "right",
+      "label": "Regime",
+      "dataType": "any"
+    },
+    {
+      "id": "confidence",
+      "type": "source",
+      "position": "right",
+      "label": "Confidence",
+      "dataType": "number"
+    }
+  ],
+  "llm/nlStrategyRules": [
+    {
+      "id": "context",
+      "type": "target",
+      "position": "left",
+      "label": "Context",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "any"
+    },
+    {
+      "id": "reasoning",
+      "type": "source",
+      "position": "right",
+      "label": "Reasoning",
+      "dataType": "any"
+    }
+  ],
+  "nlStrategyRules": [
+    {
+      "id": "context",
+      "type": "target",
+      "position": "left",
+      "label": "Context",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "any"
+    },
+    {
+      "id": "reasoning",
+      "type": "source",
+      "position": "right",
+      "label": "Reasoning",
+      "dataType": "any"
+    }
+  ],
+  "llm/parameterTuning": [
+    {
+      "id": "performance",
+      "type": "target",
+      "position": "left",
+      "label": "Performance",
+      "dataType": "any"
+    },
+    {
+      "id": "params",
+      "type": "target",
+      "position": "left",
+      "label": "Params",
+      "dataType": "any"
+    },
+    {
+      "id": "suggested",
+      "type": "source",
+      "position": "right",
+      "label": "Suggested",
+      "dataType": "any"
+    }
+  ],
+  "parameterTuning": [
+    {
+      "id": "performance",
+      "type": "target",
+      "position": "left",
+      "label": "Performance",
+      "dataType": "any"
+    },
+    {
+      "id": "params",
+      "type": "target",
+      "position": "left",
+      "label": "Params",
+      "dataType": "any"
+    },
+    {
+      "id": "suggested",
+      "type": "source",
+      "position": "right",
+      "label": "Suggested",
+      "dataType": "any"
+    }
+  ],
+  "llm/marketRegimeClassification": [
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "indicators",
+      "type": "target",
+      "position": "left",
+      "label": "Indicators",
+      "dataType": "any"
+    },
+    {
+      "id": "regime",
+      "type": "source",
+      "position": "right",
+      "label": "Regime",
+      "dataType": "any"
+    },
+    {
+      "id": "confidence",
+      "type": "source",
+      "position": "right",
+      "label": "Confidence",
+      "dataType": "number"
+    }
+  ],
+  "marketRegimeClassification": [
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "indicators",
+      "type": "target",
+      "position": "left",
+      "label": "Indicators",
+      "dataType": "any"
+    },
+    {
+      "id": "regime",
+      "type": "source",
+      "position": "right",
+      "label": "Regime",
+      "dataType": "any"
+    },
+    {
+      "id": "confidence",
+      "type": "source",
+      "position": "right",
+      "label": "Confidence",
+      "dataType": "number"
+    }
+  ],
+  "llm/newsSentimentSignal": [
+    {
+      "id": "symbol",
+      "type": "target",
+      "position": "left",
+      "label": "Symbol",
+      "dataType": "any"
+    },
+    {
+      "id": "news",
+      "type": "target",
+      "position": "left",
+      "label": "News",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "any"
+    },
+    {
+      "id": "strength",
+      "type": "source",
+      "position": "right",
+      "label": "Strength",
+      "dataType": "number"
+    }
+  ],
+  "newsSentimentSignal": [
+    {
+      "id": "symbol",
+      "type": "target",
+      "position": "left",
+      "label": "Symbol",
+      "dataType": "any"
+    },
+    {
+      "id": "news",
+      "type": "target",
+      "position": "left",
+      "label": "News",
+      "dataType": "any"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "any"
+    },
+    {
+      "id": "strength",
+      "type": "source",
+      "position": "right",
+      "label": "Strength",
+      "dataType": "number"
+    }
+  ],
+  "llm/customCode": [
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "context",
+      "type": "target",
+      "position": "left",
+      "label": "Context",
+      "dataType": "any"
+    },
+    {
+      "id": "result",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "any"
+    }
+  ],
+  "customCode": [
+    {
+      "id": "data",
+      "type": "target",
+      "position": "left",
+      "label": "Data",
+      "dataType": "any"
+    },
+    {
+      "id": "context",
+      "type": "target",
+      "position": "left",
+      "label": "Context",
+      "dataType": "any"
+    },
+    {
+      "id": "result",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "any"
+    }
+  ],
+  "math/add": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "number"
+    }
+  ],
+  "add": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "number"
+    }
+  ],
+  "math/subtract": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "number"
+    }
+  ],
+  "subtract": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "number"
+    }
+  ],
+  "math/multiply": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "number"
+    }
+  ],
+  "multiply": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "number"
+    }
+  ],
+  "math/divide": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "number"
+    }
+  ],
+  "divide": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "number"
+    }
+  ],
+  "math/advancedMath": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Input",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "number"
+    }
+  ],
+  "advancedMath": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Input",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "number"
+    }
+  ],
+  "math/expression": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "number"
+    }
+  ],
+  "expression": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "number"
+    }
+  ],
+  "pineScript/pine_strategy": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Script",
+      "dataType": "any"
+    }
+  ],
+  "pine_strategy": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Script",
+      "dataType": "any"
+    }
+  ],
+  "pineScript/pine_indicator": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Script",
+      "dataType": "any"
+    }
+  ],
+  "pine_indicator": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Script",
+      "dataType": "any"
+    }
+  ],
+  "pineScript/pine_input_int": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pine_input_int": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pineScript/pine_input_float": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pine_input_float": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pineScript/pine_input_bool": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "boolean"
+    }
+  ],
+  "pine_input_bool": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "boolean"
+    }
+  ],
+  "pineScript/pine_input_source": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pine_input_source": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pineScript/pine_close": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pine_close": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pineScript/pine_open": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pine_open": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pineScript/pine_high": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pine_high": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pineScript/pine_low": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pine_low": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pineScript/pine_volume": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pine_volume": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pineScript/pine_bar_index": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pine_bar_index": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pineScript/pine_ta_sma": [
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "Source",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "Length",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pine_ta_sma": [
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "Source",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "Length",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pineScript/pine_ta_ema": [
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "Source",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "Length",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pine_ta_ema": [
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "Source",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "Length",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pineScript/pine_ta_rsi": [
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "Source",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "Length",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pine_ta_rsi": [
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "Source",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "Length",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pineScript/pine_ta_macd": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Source",
+      "dataType": "number"
+    },
+    {
+      "id": "macd",
+      "type": "source",
+      "position": "right",
+      "label": "MACD",
+      "dataType": "number"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "number"
+    },
+    {
+      "id": "histogram",
+      "type": "source",
+      "position": "right",
+      "label": "Histogram",
+      "dataType": "number"
+    }
+  ],
+  "pine_ta_macd": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Source",
+      "dataType": "number"
+    },
+    {
+      "id": "macd",
+      "type": "source",
+      "position": "right",
+      "label": "MACD",
+      "dataType": "number"
+    },
+    {
+      "id": "signal",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "number"
+    },
+    {
+      "id": "histogram",
+      "type": "source",
+      "position": "right",
+      "label": "Histogram",
+      "dataType": "number"
+    }
+  ],
+  "pineScript/pine_ta_bb": [
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "Source",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "Length",
+      "dataType": "number"
+    },
+    {
+      "id": "basis",
+      "type": "source",
+      "position": "right",
+      "label": "Basis",
+      "dataType": "number"
+    },
+    {
+      "id": "upper",
+      "type": "source",
+      "position": "right",
+      "label": "Upper",
+      "dataType": "number"
+    },
+    {
+      "id": "lower",
+      "type": "source",
+      "position": "right",
+      "label": "Lower",
+      "dataType": "number"
+    }
+  ],
+  "pine_ta_bb": [
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "Source",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "Length",
+      "dataType": "number"
+    },
+    {
+      "id": "basis",
+      "type": "source",
+      "position": "right",
+      "label": "Basis",
+      "dataType": "number"
+    },
+    {
+      "id": "upper",
+      "type": "source",
+      "position": "right",
+      "label": "Upper",
+      "dataType": "number"
+    },
+    {
+      "id": "lower",
+      "type": "source",
+      "position": "right",
+      "label": "Lower",
+      "dataType": "number"
+    }
+  ],
+  "pineScript/pine_ta_atr": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Length",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pine_ta_atr": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Length",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pineScript/pine_ta_stoch": [
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "Source",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "Length",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pine_ta_stoch": [
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "Source",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "Length",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pineScript/pine_ta_vwap": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Source",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pine_ta_vwap": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Source",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "pineScript/pine_ta_crossover": [
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "boolean"
+    }
+  ],
+  "pine_ta_crossover": [
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "boolean"
+    }
+  ],
+  "pineScript/pine_ta_crossunder": [
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "boolean"
+    }
+  ],
+  "pine_ta_crossunder": [
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "boolean"
+    }
+  ],
+  "pineScript/pine_compare": [
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "boolean"
+    }
+  ],
+  "pine_compare": [
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "number"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "boolean"
+    }
+  ],
+  "pineScript/pine_and": [
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "boolean"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "boolean"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "boolean"
+    }
+  ],
+  "pine_and": [
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "boolean"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "boolean"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "boolean"
+    }
+  ],
+  "pineScript/pine_or": [
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "boolean"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "boolean"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "boolean"
+    }
+  ],
+  "pine_or": [
+    {
+      "id": "input-a",
+      "type": "target",
+      "position": "left",
+      "label": "A",
+      "dataType": "boolean"
+    },
+    {
+      "id": "input-b",
+      "type": "target",
+      "position": "left",
+      "label": "B",
+      "dataType": "boolean"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "boolean"
+    }
+  ],
+  "pineScript/pine_not": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Input",
+      "dataType": "boolean"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "boolean"
+    }
+  ],
+  "pine_not": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Input",
+      "dataType": "boolean"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Result",
+      "dataType": "boolean"
+    }
+  ],
+  "pineScript/pine_strategy_entry": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Condition",
+      "dataType": "boolean"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    }
+  ],
+  "pine_strategy_entry": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Condition",
+      "dataType": "boolean"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    }
+  ],
+  "pineScript/pine_strategy_close": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Condition",
+      "dataType": "boolean"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    }
+  ],
+  "pine_strategy_close": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Condition",
+      "dataType": "boolean"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    }
+  ],
+  "pineScript/pine_strategy_exit": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Condition",
+      "dataType": "boolean"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    }
+  ],
+  "pine_strategy_exit": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Condition",
+      "dataType": "boolean"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    }
+  ],
+  "pineScript/pine_plot": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Series",
+      "dataType": "number"
+    }
+  ],
+  "pine_plot": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Series",
+      "dataType": "number"
+    }
+  ],
+  "pineScript/pine_plotshape": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Condition",
+      "dataType": "boolean"
+    }
+  ],
+  "pine_plotshape": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Condition",
+      "dataType": "boolean"
+    }
+  ],
+  "pineScript/pine_hline": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Level",
+      "dataType": "number"
+    }
+  ],
+  "pine_hline": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Level",
+      "dataType": "number"
+    }
+  ],
+  "pineScript/pine_bgcolor": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Condition",
+      "dataType": "boolean"
+    }
+  ],
+  "pine_bgcolor": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Condition",
+      "dataType": "boolean"
+    }
+  ],
+  "pineScript/pine_alertcondition": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Condition",
+      "dataType": "boolean"
+    }
+  ],
+  "pine_alertcondition": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Condition",
+      "dataType": "boolean"
+    }
+  ],
+  "pineScript/pine_alert": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Condition",
+      "dataType": "boolean"
+    }
+  ],
+  "pine_alert": [
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Condition",
+      "dataType": "boolean"
+    }
+  ],
+  "portfolio/portfolio_read_holdings": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "portfolio_read_holdings": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "portfolio/portfolio_total_value": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "portfolio_total_value": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "portfolio/portfolio_asset_weight": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "portfolio_asset_weight": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "portfolio/portfolio_asset_pnl": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "portfolio_asset_pnl": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "portfolio/portfolio_day_change": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "portfolio_day_change": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "portfolio/portfolio_concentration_check": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "portfolio_concentration_check": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "portfolio/portfolio_diversification_score": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "portfolio_diversification_score": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "portfolio/portfolio_correlation_check": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "portfolio_correlation_check": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "portfolio/portfolio_drawdown": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "portfolio_drawdown": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "portfolio/portfolio_rebalance_signal": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "portfolio_rebalance_signal": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "portfolio/portfolio_set_target": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "portfolio_set_target": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "portfolio/portfolio_optimizer": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "portfolio_optimizer": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "portfolio/portfolio_sector_exposure": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "portfolio_sector_exposure": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "risk/maxDrawdown": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Config",
+      "dataType": "any"
+    }
+  ],
+  "risk_max_drawdown": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Config",
+      "dataType": "any"
+    }
+  ],
+  "risk/dailyLossLimit": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Config",
+      "dataType": "any"
+    }
+  ],
+  "risk_daily_loss_limit": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Config",
+      "dataType": "any"
+    }
+  ],
+  "risk/positionPercent": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "size",
+      "type": "source",
+      "position": "right",
+      "label": "Size",
+      "dataType": "number"
+    }
+  ],
+  "risk_position_percent": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "size",
+      "type": "source",
+      "position": "right",
+      "label": "Size",
+      "dataType": "number"
+    }
+  ],
+  "risk/kellyCriterion": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "size",
+      "type": "source",
+      "position": "right",
+      "label": "Size",
+      "dataType": "number"
+    }
+  ],
+  "risk_kelly_criterion": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "size",
+      "type": "source",
+      "position": "right",
+      "label": "Size",
+      "dataType": "number"
+    }
+  ],
+  "risk/trailingStop": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Rule",
+      "dataType": "any"
+    }
+  ],
+  "risk_trailing_stop": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Rule",
+      "dataType": "any"
+    }
+  ],
+  "risk/portfolioAllocation": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Config",
+      "dataType": "any"
+    }
+  ],
+  "portfolio_allocation": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Config",
+      "dataType": "any"
+    }
+  ],
+  "trigger/startTrigger": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    }
+  ],
+  "startTrigger": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    }
+  ],
+  "tradeInfo/entryPrice": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "trade_entry_price": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "tradeInfo/positionSize": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "trade_position_size": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "tradeInfo/pnl": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "trade_pnl": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "tradeInfo/tradeDuration": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "trade_duration": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "trigger/heartbeatTrigger": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    }
+  ],
+  "heartbeatTrigger": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    }
+  ],
+  "trigger/webhookTrigger": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    }
+  ],
+  "webhookTrigger": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    }
+  ],
+  "trigger/priceAlertTrigger": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "price",
+      "type": "source",
+      "position": "right",
+      "label": "Price",
+      "dataType": "number"
+    }
+  ],
+  "priceAlertTrigger": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "price",
+      "type": "source",
+      "position": "right",
+      "label": "Price",
+      "dataType": "number"
+    }
+  ],
+  "trigger/newsTrigger": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    }
+  ],
+  "newsTrigger": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    }
+  ],
+  "trigger/brokerEventTrigger": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    }
+  ],
+  "brokerEventTrigger": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    }
+  ],
+  "trigger/manualTrigger": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    }
+  ],
+  "manualTrigger": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    }
+  ],
+  "trigger/cronTrigger": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    }
+  ],
+  "cronTrigger": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    }
+  ],
+  "trigger/conditionTrigger": [
+    {
+      "id": "value",
+      "type": "target",
+      "position": "left",
+      "label": "Value",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    }
+  ],
+  "conditionTrigger": [
+    {
+      "id": "value",
+      "type": "target",
+      "position": "left",
+      "label": "Value",
+      "dataType": "number"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Signal",
+      "dataType": "signal"
+    }
+  ],
+  "variable/setVariable": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Input",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Output",
+      "dataType": "signal"
+    }
+  ],
+  "setVariable": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Input",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Output",
+      "dataType": "signal"
+    }
+  ],
+  "variable/getVariable": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "any"
+    }
+  ],
+  "getVariable": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "any"
+    }
+  ],
+  "variable/changeVariable": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Input",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Output",
+      "dataType": "signal"
+    }
+  ],
+  "changeVariable": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "input",
+      "type": "target",
+      "position": "left",
+      "label": "Input",
+      "dataType": "any"
+    },
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Output",
+      "dataType": "signal"
+    }
+  ],
+  "math/number": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ],
+  "number": [
+    {
+      "id": "output",
+      "type": "source",
+      "position": "right",
+      "label": "Value",
+      "dataType": "number"
+    }
+  ]
+}

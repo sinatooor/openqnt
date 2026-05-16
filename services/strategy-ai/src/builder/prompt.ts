@@ -61,70 +61,85 @@ to set up a strategy context.`;
 
 export const NODE_DOMAIN_PATTERNS = `## Trading strategy patterns
 
-### Minimal viable strategy (5 nodes)
-
-The smallest correct strategy has FIVE node groups, in this order:
+A strategy is a graph of:
 
   trigger  →  dataSource  →  indicator(s)  →  condition  →  action
 
-That is the default. Build ONLY this unless the user explicitly asked for more.
+The trigger feeds each indicator's \`trigger\` input handle so the indicator
+recomputes when the trigger fires. The dataSource feeds candles to each
+indicator's \`data\` input handle. Both wirings are required.
 
-Concrete example for "build an RSI strategy":
+Handle ids come from \`lookup_node_schema(type).handles\` — never pass a
+display label as \`sourceHandle\` / \`targetHandle\`. The canvas validates by id.
 
-  Heartbeat (trigger)
-    → Yahoo Finance (dataSource, symbol from Start)
-        → RSI (indicator, period 14)
-            → Compare (condition, RSI value < 30)
-                → Place Order (action, long, market)
+### Few-shot examples
 
-That is FIVE nodes and FOUR edges. Do not add more nodes than the user requested.
+Each example shows the EXACT minimal output for the user's request. Imitate
+the shape — don't add nodes the user didn't ask for.
 
-### What NOT to add unless asked
+#### Example 1 — "build an RSI strategy"
 
-Do NOT add any of the following unless the user explicitly mentions them in the request:
-  - A short side (Sell/Short order, Close Short, etc.) — default to LONG ONLY.
-  - Exit conditions (e.g. RSI > 70 for an RSI buy) — only if the user asked.
-  - Stop Loss or Take Profit actions.
-  - Position sizing nodes (Position Size %, Kelly, Fixed Amount).
-  - Risk overlays (Max Daily Drawdown, Max Open Positions, etc.).
-  - Duplicate indicators (one SMA is enough — don't add an extra RSI on the side).
-  - Notifications (Telegram, Slack, Email) unless explicitly requested.
+6 nodes, 5 edges. LONG-ONLY, no stops, no take-profits, single RSI.
 
-Each extra node is friction for the user to delete. Bias HARD toward fewer nodes.
+  add_node("heartbeatTrigger", id="trig")
+  add_node("yfinanceData", params={symbol:"SPY"}, id="data")
+  add_node("rsi", params={period:14}, id="rsi")
+  add_node("number", params={value:30}, id="thresh")
+  add_node("compare", params={operator:"<"}, id="cmp")
+  add_node("order", params={direction:"long", orderType:"market"}, id="buy")
+  connect("trig", "rsi", "output", "trigger")
+  connect("data", "rsi", "candles", "data")
+  connect("rsi", "cmp", "value", "input-a")
+  connect("thresh", "cmp", "output", "input-b")
+  connect("cmp", "buy", "output", "trigger")
 
-### Standard composition shapes
+#### Example 2 — "SMA crossover on AAPL"
 
-  - Mean reversion: trigger → dataSource → RSI → Compare(<30) → Order(long)
-  - Trend follow:   trigger → dataSource → SMA(fast) + SMA(slow) → Crossover → Order(long)
-  - Breakout:       trigger → dataSource → Bollinger → Compare(close > upper) → Order(long)
+6 nodes, 7 edges. One trigger feeds both SMAs; one dataSource (AAPL) feeds
+both SMAs.
 
-The dataSource node feeds candles to each indicator's "data" input handle.
-The trigger feeds the indicator's "trigger" input handle so the indicator
-recomputes each fire. Both wirings are required.
+  add_node("heartbeatTrigger", id="trig")
+  add_node("yfinanceData", params={symbol:"AAPL"}, id="data")
+  add_node("sma", params={period:10}, id="fast")
+  add_node("sma", params={period:50}, id="slow")
+  add_node("crossover", id="cross")
+  add_node("order", params={direction:"long", orderType:"market"}, id="buy")
+  connect("trig", "fast", "output", "trigger")
+  connect("trig", "slow", "output", "trigger")
+  connect("data", "fast", "candles", "data")
+  connect("data", "slow", "candles", "data")
+  connect("fast", "cross", "value", "input-a")
+  connect("slow", "cross", "value", "input-b")
+  connect("cross", "buy", "output", "trigger")
 
-### Wiring rules (handle IDs)
+#### Example 3 — "RSI strategy with 3% stop loss"
 
-Always call connect() with explicit \`sourceHandle\` and \`targetHandle\` IDs from
-the node's \`handles\` (see \`lookup_node_schema\`). Common ids:
+The user asked for a stop, so we add it (and only it). Stop chains off the
+order's \`next\` handle.
 
-  - trigger nodes:  output ids = "output" (Signal)
-  - dataSource:     output id  = "candles"
-  - indicators:     input ids  = "trigger" (Signal), "data" (Price Data); output id = "value" (or "upper/middle/lower" for BB, "line/signal/histogram" for MACD)
-  - condition:      input ids  = "input-a", "input-b" (and "trigger" optional); output id = "output"
-  - action:         input ids  = "trigger" (Signal), and per-action like "size" / "stopPrice"; output id = "next"
-  - control if:     input id   = "condition" (Boolean); output ids = "then" / "else"
-  - math number:    output id  = "output"
+  ... base RSI strategy as Example 1 ...
+  add_node("stopLoss", params={stopPrice:3}, id="sl")
+  connect("buy", "sl", "next", "trigger")
 
-NEVER pass display labels (like "Price Data" or "Signal") as handle ids — use the
-\`id\` string from the handles list. The canvas validates by id, not label.
+### Rules implied by the examples
 
-### Advanced patterns (use only when the user asks)
+- Build exactly what the user asked for — nothing more. No short side
+  unless asked. No stops/take-profits unless asked. No risk overlays.
+  No notifications. No duplicate indicators with the same params.
+- The default direction is LONG. Default trigger is heartbeat. Default
+  ticker is SPY when the user didn't name one.
+- For threshold comparisons, use \`compare\` + a \`number\` constant
+  (see Example 1) — gives the user a visible handle to edit the value.
 
-  - \`switch\` (control): N-way routing by value/condition; use instead of nested IfElse
-  - \`merge\` (integration): join multiple signal streams (append / by-key / by-position)
-  - \`splitInBatches\` (control): iterate a list in batches of N (e.g. screen 100 tickers in 10s)
-  - \`expression\` (math): safe Python DSL over upstream inputs (a, b, c). Use INSTEAD of the legacy Code/Python nodes for ad-hoc math. Allowed: arithmetic, comparisons, \`x if cond else y\`, \`abs/min/max\`, \`np.<small set>\`, \`talib.<small set>\`. NO imports, NO attribute access on user inputs.
-  - \`subWorkflowNode\` (integration): invoke a saved strategy by id; use for composing strategies.`;
+### Advanced node types (use only when the user asks)
+
+  - \`switch\` (control): N-way routing by value/condition.
+  - \`merge\` (integration): join signal streams (append / by-key / by-position).
+  - \`splitInBatches\` (control): iterate a list in batches (e.g. screen 100 tickers).
+  - \`expression\` (math): safe Python DSL over upstream inputs (a, b, c).
+    Allowed: arithmetic, comparisons, \`x if cond else y\`, \`abs/min/max\`,
+    \`np.<small set>\`, \`talib.<small set>\`. NO imports, NO attribute access.
+  - \`subWorkflowNode\` (integration): invoke a saved strategy by id.`;
 
 export const NODE_CONFIGURATION_RULE = `## Node configuration safety rules
 - Before adding a node, call \`lookup_node_schema(type)\` to confirm its inputs, outputs, params, and defaultData. The catalog is the source of truth.
@@ -139,9 +154,8 @@ Before calling \`submit\`, verify in your head:
   1. Every node referenced by an edge exists (no dangling source/target ids).
   2. Every action node has at least one incoming signal/boolean edge.
   3. Every condition node has its required inputs connected.
-  4. The Start node still exists with id \`"start"\` and has not been mutated.
-  5. No cycles unless the user explicitly asked for one (then set \`settings.allowCycles=true\`).
-  6. The last \`validate\` call returned \`valid: true\` (or you've hit the 3-attempt budget — in which case explain the warnings).
+  4. No cycles unless the user explicitly asked for one (then set \`settings.allowCycles=true\`).
+  5. The last \`validate\` call returned \`valid: true\` (or you've hit the 3-attempt budget — in which case explain the warnings).
 Then call \`verify\` (compile check) before \`submit\`. If \`verify\` fails, do one repair pass and submit anyway with a warning in your final message.`;
 
 export const BUILDER_AGENT_PROMPT = [

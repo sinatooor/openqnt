@@ -23,6 +23,19 @@ export interface CatalogNode {
   defaultData?: Record<string, unknown>;
   params?: Array<{ id: string; label?: string; type?: string; default?: unknown; options?: unknown[] }>;
   connections?: { canConnectTo?: string[]; canReceiveFrom?: string[] };
+  /**
+   * Authoritative handle topology — embedded by the Python `/catalog`
+   * endpoint from `backend/strategy_flow/handle_configs.json` (extracted
+   * from the frontend's `getHandleConfigs` via
+   * `scripts/extract-handle-configs.ts`).
+   */
+  handles?: Array<{
+    id: string;
+    type: 'target' | 'source';
+    position: 'left' | 'right';
+    label: string;
+    dataType?: string;
+  }>;
 }
 
 export interface CatalogResponse {
