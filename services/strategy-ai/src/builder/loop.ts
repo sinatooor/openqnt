@@ -90,13 +90,16 @@ export const runBuilder = async (
   let lastText = '';
 
   // We run via generateText so the SDK orchestrates the tool-call loop for us;
-  // we still enforce our own budget on top.
+  // we still enforce our own budget on top. Temperature pinned to 0 to make
+  // snapshot tests stable — without it, the same prompt sometimes adds an
+  // optional decorative edge and the snapshot drifts run-to-run.
   const { text } = await generateText({
     model: deps.model,
     system: BUILDER_AGENT_PROMPT,
     messages,
     tools,
     maxSteps: MAX_AGENT_STEPS,
+    temperature: 0,
     // Stop early when (a) the agent has called submit, or (b) it has burned
     // its validate budget and a duplicate failure-signature was detected.
     experimental_continueSteps: false,

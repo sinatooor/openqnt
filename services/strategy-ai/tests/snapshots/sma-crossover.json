@@ -1,0 +1,22 @@
+{
+  "prompt": "build an SMA crossover strategy on AAPL",
+  "nodeCount": 6,
+  "edgeCount": 7,
+  "nodeShapes": [
+    "action/order",
+    "condition/crossover",
+    "dataSource/yfinance",
+    "indicator/sma",
+    "indicator/sma",
+    "trigger/heartbeatTrigger"
+  ],
+  "edgeShapes": [
+    "condition/crossover.output → action/order.trigger",
+    "dataSource/yfinance.candles → indicator/sma.data",
+    "dataSource/yfinance.candles → indicator/sma.data",
+    "indicator/sma.value → condition/crossover.input-a",
+    "indicator/sma.value → condition/crossover.input-b",
+    "trigger/heartbeatTrigger.output → indicator/sma.trigger",
+    "trigger/heartbeatTrigger.output → indicator/sma.trigger"
+  ]
+}

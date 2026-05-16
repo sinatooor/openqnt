@@ -23,7 +23,51 @@
         "orderType": "market",
         "size": 0.1,
         "sizeType": "lots"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "size",
+          "type": "target",
+          "position": "left",
+          "label": "Size",
+          "dataType": "number"
+        },
+        {
+          "id": "limitPrice",
+          "type": "target",
+          "position": "left",
+          "label": "Limit",
+          "dataType": "number"
+        },
+        {
+          "id": "stopPrice",
+          "type": "target",
+          "position": "left",
+          "label": "Stop",
+          "dataType": "number"
+        },
+        {
+          "id": "takeProfitPrice",
+          "type": "target",
+          "position": "left",
+          "label": "TP",
+          "dataType": "number"
+        },
+        {
+          "id": "next",
+          "type": "source",
+          "position": "right",
+          "label": "Next",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "closePosition",
@@ -43,7 +87,23 @@
       "color": "#ef4444",
       "defaultData": {
         "actionType": "closePosition"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "next",
+          "type": "source",
+          "position": "right",
+          "label": "Next",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "closeAll",
@@ -63,7 +123,23 @@
       "color": "#ef4444",
       "defaultData": {
         "actionType": "closeAll"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "next",
+          "type": "source",
+          "position": "right",
+          "label": "Next",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "stopLoss",
@@ -85,7 +161,30 @@
       "defaultData": {
         "actionType": "stopLoss",
         "stopPrice": 0
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "stopPrice",
+          "type": "target",
+          "position": "left",
+          "label": "Price",
+          "dataType": "number"
+        },
+        {
+          "id": "next",
+          "type": "source",
+          "position": "right",
+          "label": "Next",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "takeProfit",
@@ -107,7 +206,30 @@
       "defaultData": {
         "actionType": "takeProfit",
         "takeProfitPrice": 0
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "takeProfitPrice",
+          "type": "target",
+          "position": "left",
+          "label": "Price",
+          "dataType": "number"
+        },
+        {
+          "id": "next",
+          "type": "source",
+          "position": "right",
+          "label": "Next",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "trailingStop",
@@ -128,7 +250,23 @@
       "defaultData": {
         "actionType": "trailingStop",
         "trailingDistance": 10
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "next",
+          "type": "source",
+          "position": "right",
+          "label": "Next",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "notification",
@@ -150,7 +288,23 @@
         "actionType": "notification",
         "message": "Signal triggered",
         "channel": "telegram"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "next",
+          "type": "source",
+          "position": "right",
+          "label": "Next",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "log",
@@ -171,7 +325,23 @@
       "defaultData": {
         "actionType": "log",
         "message": "Log message"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "next",
+          "type": "source",
+          "position": "right",
+          "label": "Next",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "options_order",
@@ -198,7 +368,23 @@
         "expiration": "next_month",
         "size": 1,
         "sizeType": "contracts"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "next",
+          "type": "source",
+          "position": "right",
+          "label": "Next",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "portfolio_rebalance",
@@ -219,7 +405,23 @@
       "defaultData": {
         "actionType": "portfolio_rebalance",
         "rebalanceThresholdPercent": 5
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "next",
+          "type": "source",
+          "position": "right",
+          "label": "Next",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "phoneCall",
@@ -248,7 +450,23 @@
         "allowedActions": [
           "read"
         ]
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "next",
+          "type": "source",
+          "position": "right",
+          "label": "Next",
+          "dataType": "signal"
+        }
+      ]
     }
   ],
   "agent": [
@@ -278,7 +496,44 @@
         "model": "gemini-2.0-flash",
         "symbols": [],
         "confidenceThreshold": 0.5
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "symbols",
+          "type": "target",
+          "position": "left",
+          "label": "Symbols",
+          "dataType": "any"
+        },
+        {
+          "id": "signal",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "signal"
+        },
+        {
+          "id": "confidence",
+          "type": "source",
+          "position": "right",
+          "label": "Confidence",
+          "dataType": "number"
+        },
+        {
+          "id": "findings",
+          "type": "source",
+          "position": "right",
+          "label": "Findings",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "macroAgentNode",
@@ -306,7 +561,44 @@
         "model": "gemini-2.0-flash",
         "symbols": [],
         "confidenceThreshold": 0.5
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "symbols",
+          "type": "target",
+          "position": "left",
+          "label": "Symbols",
+          "dataType": "any"
+        },
+        {
+          "id": "signal",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "signal"
+        },
+        {
+          "id": "confidence",
+          "type": "source",
+          "position": "right",
+          "label": "Confidence",
+          "dataType": "number"
+        },
+        {
+          "id": "findings",
+          "type": "source",
+          "position": "right",
+          "label": "Findings",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "technicalAgentNode",
@@ -334,7 +626,44 @@
         "model": "gemini-2.0-flash",
         "symbols": [],
         "confidenceThreshold": 0.5
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "symbols",
+          "type": "target",
+          "position": "left",
+          "label": "Symbols",
+          "dataType": "any"
+        },
+        {
+          "id": "signal",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "signal"
+        },
+        {
+          "id": "confidence",
+          "type": "source",
+          "position": "right",
+          "label": "Confidence",
+          "dataType": "number"
+        },
+        {
+          "id": "findings",
+          "type": "source",
+          "position": "right",
+          "label": "Findings",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "socialAgentNode",
@@ -362,7 +691,44 @@
         "model": "gemini-2.0-flash",
         "symbols": [],
         "confidenceThreshold": 0.5
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "symbols",
+          "type": "target",
+          "position": "left",
+          "label": "Symbols",
+          "dataType": "any"
+        },
+        {
+          "id": "signal",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "signal"
+        },
+        {
+          "id": "confidence",
+          "type": "source",
+          "position": "right",
+          "label": "Confidence",
+          "dataType": "number"
+        },
+        {
+          "id": "findings",
+          "type": "source",
+          "position": "right",
+          "label": "Findings",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "synthesisAgentNode",
@@ -391,7 +757,51 @@
         "model": "gemini-2.0-flash",
         "symbols": [],
         "confidenceThreshold": 0.6
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "symbols",
+          "type": "target",
+          "position": "left",
+          "label": "Symbols",
+          "dataType": "any"
+        },
+        {
+          "id": "agentData",
+          "type": "target",
+          "position": "left",
+          "label": "Agent Data",
+          "dataType": "any"
+        },
+        {
+          "id": "signal",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "signal"
+        },
+        {
+          "id": "confidence",
+          "type": "source",
+          "position": "right",
+          "label": "Confidence",
+          "dataType": "number"
+        },
+        {
+          "id": "recommendation",
+          "type": "source",
+          "position": "right",
+          "label": "Rec",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "fundamentalsAgentNode",
@@ -419,7 +829,44 @@
         "model": "gemini-2.0-flash",
         "symbols": [],
         "confidenceThreshold": 0.5
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "symbols",
+          "type": "target",
+          "position": "left",
+          "label": "Symbols",
+          "dataType": "any"
+        },
+        {
+          "id": "signal",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "signal"
+        },
+        {
+          "id": "confidence",
+          "type": "source",
+          "position": "right",
+          "label": "Confidence",
+          "dataType": "number"
+        },
+        {
+          "id": "findings",
+          "type": "source",
+          "position": "right",
+          "label": "Findings",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "sentimentAgentNode",
@@ -447,7 +894,44 @@
         "model": "gemini-2.0-flash",
         "symbols": [],
         "confidenceThreshold": 0.5
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "symbols",
+          "type": "target",
+          "position": "left",
+          "label": "Symbols",
+          "dataType": "any"
+        },
+        {
+          "id": "signal",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "signal"
+        },
+        {
+          "id": "confidence",
+          "type": "source",
+          "position": "right",
+          "label": "Confidence",
+          "dataType": "number"
+        },
+        {
+          "id": "score",
+          "type": "source",
+          "position": "right",
+          "label": "Score",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "quantAgentNode",
@@ -483,7 +967,44 @@
           "WEI"
         ],
         "terminalToolMaxCalls": 8
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "symbols",
+          "type": "target",
+          "position": "left",
+          "label": "Symbols",
+          "dataType": "any"
+        },
+        {
+          "id": "signal",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "signal"
+        },
+        {
+          "id": "confidence",
+          "type": "source",
+          "position": "right",
+          "label": "Confidence",
+          "dataType": "number"
+        },
+        {
+          "id": "findings",
+          "type": "source",
+          "position": "right",
+          "label": "Findings",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "researchAgentNode",
@@ -517,7 +1038,51 @@
           "stress_test"
         ],
         "researchDepth": "standard"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "symbols",
+          "type": "target",
+          "position": "left",
+          "label": "Symbols",
+          "dataType": "any"
+        },
+        {
+          "id": "signal",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "signal"
+        },
+        {
+          "id": "confidence",
+          "type": "source",
+          "position": "right",
+          "label": "Confidence",
+          "dataType": "number"
+        },
+        {
+          "id": "findings",
+          "type": "source",
+          "position": "right",
+          "label": "Findings",
+          "dataType": "any"
+        },
+        {
+          "id": "riskScore",
+          "type": "source",
+          "position": "right",
+          "label": "Risk Score",
+          "dataType": "number"
+        }
+      ]
     }
   ],
   "condition": [
@@ -540,7 +1105,37 @@
       "defaultData": {
         "conditionType": "compare",
         "operator": ">"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "input-a",
+          "type": "target",
+          "position": "left",
+          "label": "A",
+          "dataType": "number"
+        },
+        {
+          "id": "input-b",
+          "type": "target",
+          "position": "left",
+          "label": "B",
+          "dataType": "number"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Result",
+          "dataType": "boolean"
+        }
+      ]
     },
     {
       "type": "crossover",
@@ -560,7 +1155,37 @@
       "color": "#22c55e",
       "defaultData": {
         "conditionType": "crossover"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "input-a",
+          "type": "target",
+          "position": "left",
+          "label": "A",
+          "dataType": "number"
+        },
+        {
+          "id": "input-b",
+          "type": "target",
+          "position": "left",
+          "label": "B",
+          "dataType": "number"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Result",
+          "dataType": "boolean"
+        }
+      ]
     },
     {
       "type": "crossunder",
@@ -580,7 +1205,37 @@
       "color": "#ef4444",
       "defaultData": {
         "conditionType": "crossunder"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "input-a",
+          "type": "target",
+          "position": "left",
+          "label": "A",
+          "dataType": "number"
+        },
+        {
+          "id": "input-b",
+          "type": "target",
+          "position": "left",
+          "label": "B",
+          "dataType": "number"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Result",
+          "dataType": "boolean"
+        }
+      ]
     },
     {
       "type": "threshold",
@@ -601,7 +1256,30 @@
         "conditionType": "threshold",
         "operator": ">",
         "value": 70
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "input-a",
+          "type": "target",
+          "position": "left",
+          "label": "Value",
+          "dataType": "number"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Result",
+          "dataType": "boolean"
+        }
+      ]
     },
     {
       "type": "range",
@@ -622,7 +1300,30 @@
         "conditionType": "range",
         "minValue": 30,
         "maxValue": 70
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "input-a",
+          "type": "target",
+          "position": "left",
+          "label": "Value",
+          "dataType": "number"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "In Range",
+          "dataType": "boolean"
+        }
+      ]
     },
     {
       "type": "and",
@@ -642,7 +1343,37 @@
       "color": "#6366f1",
       "defaultData": {
         "conditionType": "and"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "input-a",
+          "type": "target",
+          "position": "left",
+          "label": "A",
+          "dataType": "boolean"
+        },
+        {
+          "id": "input-b",
+          "type": "target",
+          "position": "left",
+          "label": "B",
+          "dataType": "boolean"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Result",
+          "dataType": "boolean"
+        }
+      ]
     },
     {
       "type": "or",
@@ -662,7 +1393,37 @@
       "color": "#6366f1",
       "defaultData": {
         "conditionType": "or"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "input-a",
+          "type": "target",
+          "position": "left",
+          "label": "A",
+          "dataType": "boolean"
+        },
+        {
+          "id": "input-b",
+          "type": "target",
+          "position": "left",
+          "label": "B",
+          "dataType": "boolean"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Result",
+          "dataType": "boolean"
+        }
+      ]
     },
     {
       "type": "not",
@@ -681,7 +1442,30 @@
       "color": "#6366f1",
       "defaultData": {
         "conditionType": "not"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "input",
+          "type": "target",
+          "position": "left",
+          "label": "In",
+          "dataType": "boolean"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Out",
+          "dataType": "boolean"
+        }
+      ]
     }
   ],
   "control": [
@@ -703,7 +1487,23 @@
       "color": "#f59e0b",
       "defaultData": {
         "controlType": "if"
-      }
+      },
+      "handles": [
+        {
+          "id": "condition",
+          "type": "target",
+          "position": "left",
+          "label": "Condition",
+          "dataType": "boolean"
+        },
+        {
+          "id": "then",
+          "type": "source",
+          "position": "right",
+          "label": "Then",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "ifElse",
@@ -724,7 +1524,30 @@
       "color": "#f59e0b",
       "defaultData": {
         "controlType": "ifElse"
-      }
+      },
+      "handles": [
+        {
+          "id": "condition",
+          "type": "target",
+          "position": "left",
+          "label": "Condition",
+          "dataType": "boolean"
+        },
+        {
+          "id": "then",
+          "type": "source",
+          "position": "right",
+          "label": "Then",
+          "dataType": "signal"
+        },
+        {
+          "id": "else",
+          "type": "source",
+          "position": "right",
+          "label": "Else",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "repeat",
@@ -743,7 +1566,23 @@
       "defaultData": {
         "controlType": "repeat",
         "repeatCount": 10
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Output",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "wait",
@@ -764,7 +1603,23 @@
       "defaultData": {
         "controlType": "wait",
         "waitSeconds": 1
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Output",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "waitUntil",
@@ -784,7 +1639,23 @@
       "color": "#8b5cf6",
       "defaultData": {
         "controlType": "waitUntil"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Output",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "stop",
@@ -802,7 +1673,23 @@
       "color": "#ef4444",
       "defaultData": {
         "controlType": "stop"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Output",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "switch",
@@ -844,7 +1731,23 @@
           }
         ],
         "defaultOutputIndex": 3
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Output",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "splitInBatches",
@@ -868,7 +1771,23 @@
         "controlType": "splitInBatches",
         "batchSize": 10,
         "mode": "sequential"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Output",
+          "dataType": "signal"
+        }
+      ]
     }
   ],
   "dataSource": [
@@ -891,7 +1810,16 @@
         "provider": "yfinance",
         "symbol": "AAPL",
         "timeframe": "1d"
-      }
+      },
+      "handles": [
+        {
+          "id": "candles",
+          "type": "source",
+          "position": "right",
+          "label": "Candles",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "avanzaData",
@@ -912,7 +1840,16 @@
         "provider": "avanza",
         "symbol": "VOLV-B.ST",
         "timeframe": "1d"
-      }
+      },
+      "handles": [
+        {
+          "id": "candles",
+          "type": "source",
+          "position": "right",
+          "label": "Candles",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "fmpData",
@@ -933,7 +1870,16 @@
         "provider": "fmp",
         "symbol": "AAPL",
         "timeframe": "1d"
-      }
+      },
+      "handles": [
+        {
+          "id": "candles",
+          "type": "source",
+          "position": "right",
+          "label": "Candles",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "avanzaPositions",
@@ -953,7 +1899,16 @@
       "defaultData": {
         "provider": "avanza",
         "kind": "positions"
-      }
+      },
+      "handles": [
+        {
+          "id": "candles",
+          "type": "source",
+          "position": "right",
+          "label": "Candles",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "avanzaWatchlist",
@@ -974,7 +1929,16 @@
         "provider": "avanza",
         "kind": "watchlist",
         "watchlistId": ""
-      }
+      },
+      "handles": [
+        {
+          "id": "candles",
+          "type": "source",
+          "position": "right",
+          "label": "Candles",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "fredMacro",
@@ -994,7 +1958,16 @@
       "defaultData": {
         "provider": "fred",
         "seriesId": "CPIAUCSL"
-      }
+      },
+      "handles": [
+        {
+          "id": "candles",
+          "type": "source",
+          "position": "right",
+          "label": "Candles",
+          "dataType": "any"
+        }
+      ]
     }
   ],
   "environment": [
@@ -1015,7 +1988,23 @@
       "defaultData": {
         "environmentType": "price",
         "priceType": "mid"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "value",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "bidAskSpread",
@@ -1033,7 +2022,23 @@
       "color": "#6366f1",
       "defaultData": {
         "environmentType": "bidAskSpread"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "value",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "prevCandleOpen",
@@ -1052,7 +2057,23 @@
       "defaultData": {
         "environmentType": "prevCandleOpen",
         "shift": 1
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "value",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "prevCandleClose",
@@ -1071,7 +2092,23 @@
       "defaultData": {
         "environmentType": "prevCandleClose",
         "shift": 1
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "value",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "time",
@@ -1089,7 +2126,23 @@
       "color": "#8b5cf6",
       "defaultData": {
         "environmentType": "time"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "value",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "dayOfWeek",
@@ -1107,7 +2160,23 @@
       "color": "#8b5cf6",
       "defaultData": {
         "environmentType": "dayOfWeek"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "value",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "newCandleOpen",
@@ -1125,7 +2194,23 @@
       "color": "#8b5cf6",
       "defaultData": {
         "environmentType": "newCandleOpen"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "value",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "isMarketOpen",
@@ -1143,7 +2228,23 @@
       "color": "#8b5cf6",
       "defaultData": {
         "environmentType": "isMarketOpen"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "value",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     }
   ],
   "indicator": [
@@ -1170,7 +2271,30 @@
           "period": 14,
           "priceType": "close"
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Price Data",
+          "dataType": "any"
+        },
+        {
+          "id": "value",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "ema",
@@ -1195,7 +2319,30 @@
           "period": 14,
           "priceType": "close"
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Price Data",
+          "dataType": "any"
+        },
+        {
+          "id": "value",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "dema",
@@ -1220,7 +2367,30 @@
           "period": 14,
           "priceType": "close"
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Price Data",
+          "dataType": "any"
+        },
+        {
+          "id": "value",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "tema",
@@ -1245,7 +2415,30 @@
           "period": 14,
           "priceType": "close"
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Price Data",
+          "dataType": "any"
+        },
+        {
+          "id": "value",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "rsi",
@@ -1269,7 +2462,30 @@
         "params": {
           "period": 14
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Price Data",
+          "dataType": "any"
+        },
+        {
+          "id": "value",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "stochastic",
@@ -1296,7 +2512,37 @@
           "dPeriod": 3,
           "slowing": 3
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Price Data",
+          "dataType": "any"
+        },
+        {
+          "id": "upper",
+          "type": "source",
+          "position": "right",
+          "label": "%K",
+          "dataType": "number"
+        },
+        {
+          "id": "lower",
+          "type": "source",
+          "position": "right",
+          "label": "%D",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "cci",
@@ -1320,7 +2566,30 @@
         "params": {
           "period": 20
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Price Data",
+          "dataType": "any"
+        },
+        {
+          "id": "value",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "stochRSI",
@@ -1348,7 +2617,30 @@
           "k": 3,
           "d": 3
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Price Data",
+          "dataType": "any"
+        },
+        {
+          "id": "value",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "mfi",
@@ -1373,7 +2665,37 @@
         "params": {
           "period": 14
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Price Data",
+          "dataType": "any"
+        },
+        {
+          "id": "volume",
+          "type": "target",
+          "position": "left",
+          "label": "Volume",
+          "dataType": "any"
+        },
+        {
+          "id": "value",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "macd",
@@ -1401,7 +2723,44 @@
           "slowPeriod": 26,
           "signalPeriod": 9
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Price Data",
+          "dataType": "any"
+        },
+        {
+          "id": "line",
+          "type": "source",
+          "position": "right",
+          "label": "MACD",
+          "dataType": "number"
+        },
+        {
+          "id": "signal",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "number"
+        },
+        {
+          "id": "histogram",
+          "type": "source",
+          "position": "right",
+          "label": "Histogram",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "adx",
@@ -1425,7 +2784,37 @@
         "params": {
           "period": 14
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Price Data",
+          "dataType": "any"
+        },
+        {
+          "id": "volume",
+          "type": "target",
+          "position": "left",
+          "label": "Volume",
+          "dataType": "any"
+        },
+        {
+          "id": "value",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "sar",
@@ -1450,7 +2839,30 @@
           "step": 0.02,
           "max": 0.2
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Price Data",
+          "dataType": "any"
+        },
+        {
+          "id": "value",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "ichimoku",
@@ -1481,7 +2893,58 @@
           "laggingSpan2Period": 52,
           "displacement": 26
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Price Data",
+          "dataType": "any"
+        },
+        {
+          "id": "tenkan",
+          "type": "source",
+          "position": "right",
+          "label": "Tenkan",
+          "dataType": "number"
+        },
+        {
+          "id": "kijun",
+          "type": "source",
+          "position": "right",
+          "label": "Kijun",
+          "dataType": "number"
+        },
+        {
+          "id": "senkou_a",
+          "type": "source",
+          "position": "right",
+          "label": "Span A",
+          "dataType": "number"
+        },
+        {
+          "id": "senkou_b",
+          "type": "source",
+          "position": "right",
+          "label": "Span B",
+          "dataType": "number"
+        },
+        {
+          "id": "chikou",
+          "type": "source",
+          "position": "right",
+          "label": "Chikou",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "alligator",
@@ -1512,7 +2975,44 @@
           "lipsPeriod": 5,
           "lipsShift": 3
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Price Data",
+          "dataType": "any"
+        },
+        {
+          "id": "jaw",
+          "type": "source",
+          "position": "right",
+          "label": "Jaw",
+          "dataType": "number"
+        },
+        {
+          "id": "teeth",
+          "type": "source",
+          "position": "right",
+          "label": "Teeth",
+          "dataType": "number"
+        },
+        {
+          "id": "lips",
+          "type": "source",
+          "position": "right",
+          "label": "Lips",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "aroon",
@@ -1537,7 +3037,37 @@
         "params": {
           "period": 14
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Price Data",
+          "dataType": "any"
+        },
+        {
+          "id": "aroonup",
+          "type": "source",
+          "position": "right",
+          "label": "Up",
+          "dataType": "number"
+        },
+        {
+          "id": "aroondown",
+          "type": "source",
+          "position": "right",
+          "label": "Down",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "dmi",
@@ -1563,7 +3093,44 @@
         "params": {
           "period": 14
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Price Data",
+          "dataType": "any"
+        },
+        {
+          "id": "plus_di",
+          "type": "source",
+          "position": "right",
+          "label": "+DI",
+          "dataType": "number"
+        },
+        {
+          "id": "minus_di",
+          "type": "source",
+          "position": "right",
+          "label": "-DI",
+          "dataType": "number"
+        },
+        {
+          "id": "adx",
+          "type": "source",
+          "position": "right",
+          "label": "ADX",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "bb",
@@ -1591,7 +3158,44 @@
           "deviation": 2,
           "band": "middle"
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Price Data",
+          "dataType": "any"
+        },
+        {
+          "id": "upper",
+          "type": "source",
+          "position": "right",
+          "label": "Upper",
+          "dataType": "number"
+        },
+        {
+          "id": "middle",
+          "type": "source",
+          "position": "right",
+          "label": "Middle",
+          "dataType": "number"
+        },
+        {
+          "id": "lower",
+          "type": "source",
+          "position": "right",
+          "label": "Lower",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "keltner",
@@ -1619,7 +3223,44 @@
           "multiplier": 2,
           "band": "middle"
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Price Data",
+          "dataType": "any"
+        },
+        {
+          "id": "upper",
+          "type": "source",
+          "position": "right",
+          "label": "Upper",
+          "dataType": "number"
+        },
+        {
+          "id": "middle",
+          "type": "source",
+          "position": "right",
+          "label": "Middle",
+          "dataType": "number"
+        },
+        {
+          "id": "lower",
+          "type": "source",
+          "position": "right",
+          "label": "Lower",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "donchian",
@@ -1645,7 +3286,44 @@
         "params": {
           "period": 20
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Price Data",
+          "dataType": "any"
+        },
+        {
+          "id": "upper",
+          "type": "source",
+          "position": "right",
+          "label": "Upper",
+          "dataType": "number"
+        },
+        {
+          "id": "middle",
+          "type": "source",
+          "position": "right",
+          "label": "Middle",
+          "dataType": "number"
+        },
+        {
+          "id": "lower",
+          "type": "source",
+          "position": "right",
+          "label": "Lower",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "atr",
@@ -1669,7 +3347,30 @@
         "params": {
           "period": 14
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Price Data",
+          "dataType": "any"
+        },
+        {
+          "id": "value",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "obv",
@@ -1692,7 +3393,37 @@
         "indicatorType": "obv",
         "timeframe": "60",
         "params": {}
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Price Data",
+          "dataType": "any"
+        },
+        {
+          "id": "volume",
+          "type": "target",
+          "position": "left",
+          "label": "Volume",
+          "dataType": "any"
+        },
+        {
+          "id": "value",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "vwap",
@@ -1715,7 +3446,37 @@
         "indicatorType": "vwap",
         "timeframe": "60",
         "params": {}
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Price Data",
+          "dataType": "any"
+        },
+        {
+          "id": "volume",
+          "type": "target",
+          "position": "left",
+          "label": "Volume",
+          "dataType": "any"
+        },
+        {
+          "id": "value",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "hmm_regime",
@@ -1740,7 +3501,30 @@
           "n_states": 2,
           "feature": "returns"
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Price Data",
+          "dataType": "any"
+        },
+        {
+          "id": "value",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "spread",
@@ -1765,7 +3549,37 @@
         "params": {
           "calculationType": "ratio"
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data-a",
+          "type": "target",
+          "position": "left",
+          "label": "Data A",
+          "dataType": "any"
+        },
+        {
+          "id": "data-b",
+          "type": "target",
+          "position": "left",
+          "label": "Data B",
+          "dataType": "any"
+        },
+        {
+          "id": "value",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     }
   ],
   "integration": [
@@ -1794,7 +3608,37 @@
         "message": "",
         "chatId": "",
         "credentialAlias": "telegram"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "signal",
+          "type": "source",
+          "position": "right",
+          "label": "Done",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "slackNode",
@@ -1819,7 +3663,37 @@
         "channel": "#trading-alerts",
         "message": "",
         "credentialAlias": "slack"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "signal",
+          "type": "source",
+          "position": "right",
+          "label": "Done",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "emailNode",
@@ -1845,7 +3719,37 @@
         "subject": "Strategy Alert",
         "body": "",
         "credentialAlias": "sendgrid"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "signal",
+          "type": "source",
+          "position": "right",
+          "label": "Done",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "smsNode",
@@ -1870,7 +3774,37 @@
         "to": "",
         "message": "",
         "credentialAlias": "twilio"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "signal",
+          "type": "source",
+          "position": "right",
+          "label": "Done",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "httpRequestNode",
@@ -1899,7 +3833,37 @@
         "body": "null",
         "authentication": "none",
         "credentialAlias": ""
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "signal",
+          "type": "source",
+          "position": "right",
+          "label": "Done",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "databaseQueryNode",
@@ -1923,7 +3887,37 @@
         "integrationType": "databaseQueryNode",
         "query": "SELECT * FROM ...",
         "parameterized": true
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "signal",
+          "type": "source",
+          "position": "right",
+          "label": "Done",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "codePythonNode",
@@ -1948,7 +3942,37 @@
         "integrationType": "codePythonNode",
         "code": "# Python code\\nimport pandas as pd\\n\\ndef execute(input_data):\\n    return {\"result\": input_data}",
         "language": "python"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "signal",
+          "type": "source",
+          "position": "right",
+          "label": "Done",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "codeJavascriptNode",
@@ -1973,7 +3997,37 @@
         "integrationType": "codeJavascriptNode",
         "code": "// JavaScript code\\nmodule.exports = function execute(inputData) {\\n  return { result: inputData };\\n};",
         "language": "javascript"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "signal",
+          "type": "source",
+          "position": "right",
+          "label": "Done",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "aiAnalysisNode",
@@ -2000,7 +4054,37 @@
         "prompt": "",
         "context": {},
         "model": "gpt-4o"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "signal",
+          "type": "source",
+          "position": "right",
+          "label": "Done",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "mergeNode",
@@ -2024,7 +4108,30 @@
         "integrationType": "mergeNode",
         "mergeMode": "append",
         "joinKey": ""
-      }
+      },
+      "handles": [
+        {
+          "id": "data-a",
+          "type": "target",
+          "position": "left",
+          "label": "A",
+          "dataType": "any"
+        },
+        {
+          "id": "data-b",
+          "type": "target",
+          "position": "left",
+          "label": "B",
+          "dataType": "any"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Merged",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "splitNode",
@@ -2047,7 +4154,30 @@
       "defaultData": {
         "integrationType": "splitNode",
         "fieldToSplit": "items"
-      }
+      },
+      "handles": [
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "item",
+          "type": "source",
+          "position": "right",
+          "label": "Item",
+          "dataType": "any"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Done",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "setNode",
@@ -2069,7 +4199,23 @@
       "defaultData": {
         "integrationType": "setNode",
         "assignments": []
-      }
+      },
+      "handles": [
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Data",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "filterNode",
@@ -2094,7 +4240,30 @@
         "field": "",
         "operator": ">",
         "value": 0
-      }
+      },
+      "handles": [
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "passed",
+          "type": "source",
+          "position": "right",
+          "label": "Passed",
+          "dataType": "any"
+        },
+        {
+          "id": "rejected",
+          "type": "source",
+          "position": "right",
+          "label": "Rejected",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "aggregateNode",
@@ -2117,7 +4286,23 @@
         "integrationType": "aggregateNode",
         "operation": "average",
         "field": "value"
-      }
+      },
+      "handles": [
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Data",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "hitlNode",
@@ -2144,7 +4329,37 @@
         "message": "Approve this action?",
         "timeoutMinutes": 30,
         "credentialAlias": "telegram"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "approved",
+          "type": "source",
+          "position": "right",
+          "label": "Approved",
+          "dataType": "signal"
+        },
+        {
+          "id": "rejected",
+          "type": "source",
+          "position": "right",
+          "label": "Rejected",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "subWorkflowNode",
@@ -2167,7 +4382,37 @@
       "backtestEligible": false,
       "defaultData": {
         "integrationType": "subWorkflowNode"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "signal",
+          "type": "source",
+          "position": "right",
+          "label": "Done",
+          "dataType": "signal"
+        }
+      ]
     }
   ],
   "llm": [
@@ -2202,7 +4447,23 @@
           "shouldTrade": false,
           "confidence": 0
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "JSON",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "sentimentAnalysis",
@@ -2241,7 +4502,30 @@
           "confidence": 0,
           "summary": "No data"
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "text",
+          "type": "target",
+          "position": "left",
+          "label": "Text",
+          "dataType": "any"
+        },
+        {
+          "id": "score",
+          "type": "source",
+          "position": "right",
+          "label": "Score",
+          "dataType": "number"
+        },
+        {
+          "id": "signal",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "boolean"
+        }
+      ]
     },
     {
       "type": "regimeDetection",
@@ -2285,7 +4569,37 @@
           "confidence": 0.5,
           "reasoning": "Default fallback"
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "indicators",
+          "type": "target",
+          "position": "left",
+          "label": "Indicators",
+          "dataType": "any"
+        },
+        {
+          "id": "regime",
+          "type": "source",
+          "position": "right",
+          "label": "Regime",
+          "dataType": "any"
+        },
+        {
+          "id": "confidence",
+          "type": "source",
+          "position": "right",
+          "label": "Confidence",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "nlStrategyRules",
@@ -2321,7 +4635,30 @@
           "confidence": 0,
           "reasoning": "No signal"
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "context",
+          "type": "target",
+          "position": "left",
+          "label": "Context",
+          "dataType": "any"
+        },
+        {
+          "id": "signal",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "any"
+        },
+        {
+          "id": "reasoning",
+          "type": "source",
+          "position": "right",
+          "label": "Reasoning",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "parameterTuning",
@@ -2363,7 +4700,30 @@
           "expectedImprovement": 0,
           "reasoning": "No suggestions"
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "performance",
+          "type": "target",
+          "position": "left",
+          "label": "Performance",
+          "dataType": "any"
+        },
+        {
+          "id": "params",
+          "type": "target",
+          "position": "left",
+          "label": "Params",
+          "dataType": "any"
+        },
+        {
+          "id": "suggested",
+          "type": "source",
+          "position": "right",
+          "label": "Suggested",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "marketRegimeClassification",
@@ -2403,7 +4763,37 @@
           "momentum": "neutral",
           "overallScore": 0.5
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "indicators",
+          "type": "target",
+          "position": "left",
+          "label": "Indicators",
+          "dataType": "any"
+        },
+        {
+          "id": "regime",
+          "type": "source",
+          "position": "right",
+          "label": "Regime",
+          "dataType": "any"
+        },
+        {
+          "id": "confidence",
+          "type": "source",
+          "position": "right",
+          "label": "Confidence",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "newsSentimentSignal",
@@ -2443,7 +4833,37 @@
           "keyNews": [],
           "reasoning": "No news"
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "symbol",
+          "type": "target",
+          "position": "left",
+          "label": "Symbol",
+          "dataType": "any"
+        },
+        {
+          "id": "news",
+          "type": "target",
+          "position": "left",
+          "label": "News",
+          "dataType": "any"
+        },
+        {
+          "id": "signal",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "any"
+        },
+        {
+          "id": "strength",
+          "type": "source",
+          "position": "right",
+          "label": "Strength",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "customCode",
@@ -2479,7 +4899,30 @@
           "signal": "hold",
           "confidence": 0
         }
-      }
+      },
+      "handles": [
+        {
+          "id": "data",
+          "type": "target",
+          "position": "left",
+          "label": "Data",
+          "dataType": "any"
+        },
+        {
+          "id": "context",
+          "type": "target",
+          "position": "left",
+          "label": "Context",
+          "dataType": "any"
+        },
+        {
+          "id": "result",
+          "type": "source",
+          "position": "right",
+          "label": "Result",
+          "dataType": "any"
+        }
+      ]
     }
   ],
   "math": [
@@ -2502,7 +4945,37 @@
       "color": "#14b8a6",
       "defaultData": {
         "mathType": "add"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "input-a",
+          "type": "target",
+          "position": "left",
+          "label": "A",
+          "dataType": "number"
+        },
+        {
+          "id": "input-b",
+          "type": "target",
+          "position": "left",
+          "label": "B",
+          "dataType": "number"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Result",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "subtract",
@@ -2523,7 +4996,37 @@
       "color": "#14b8a6",
       "defaultData": {
         "mathType": "subtract"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "input-a",
+          "type": "target",
+          "position": "left",
+          "label": "A",
+          "dataType": "number"
+        },
+        {
+          "id": "input-b",
+          "type": "target",
+          "position": "left",
+          "label": "B",
+          "dataType": "number"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Result",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "multiply",
@@ -2544,7 +5047,37 @@
       "color": "#14b8a6",
       "defaultData": {
         "mathType": "multiply"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "input-a",
+          "type": "target",
+          "position": "left",
+          "label": "A",
+          "dataType": "number"
+        },
+        {
+          "id": "input-b",
+          "type": "target",
+          "position": "left",
+          "label": "B",
+          "dataType": "number"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Result",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "divide",
@@ -2565,7 +5098,37 @@
       "color": "#14b8a6",
       "defaultData": {
         "mathType": "divide"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "input-a",
+          "type": "target",
+          "position": "left",
+          "label": "A",
+          "dataType": "number"
+        },
+        {
+          "id": "input-b",
+          "type": "target",
+          "position": "left",
+          "label": "B",
+          "dataType": "number"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Result",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "advancedMath",
@@ -2586,7 +5149,30 @@
       "defaultData": {
         "mathType": "advancedMath",
         "mathFunction": "sqrt"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "input",
+          "type": "target",
+          "position": "left",
+          "label": "Input",
+          "dataType": "number"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Result",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "expression",
@@ -2611,7 +5197,37 @@
         "mathType": "expression",
         "expression": "a",
         "outputDataType": "number"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "input-a",
+          "type": "target",
+          "position": "left",
+          "label": "A",
+          "dataType": "number"
+        },
+        {
+          "id": "input-b",
+          "type": "target",
+          "position": "left",
+          "label": "B",
+          "dataType": "number"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Result",
+          "dataType": "number"
+        }
+      ]
     }
   ],
   "pineScript": [
@@ -2634,7 +5250,16 @@
         "label": "strategy()",
         "scriptTitle": "My Strategy",
         "overlay": true
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Script",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "pine_indicator",
@@ -2655,7 +5280,16 @@
         "label": "indicator()",
         "scriptTitle": "My Indicator",
         "overlay": true
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Script",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "pine_input_int",
@@ -2676,7 +5310,16 @@
         "label": "input.int",
         "inputName": "Length",
         "inputDefault": 14
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "pine_input_float",
@@ -2697,7 +5340,16 @@
         "label": "input.float",
         "inputName": "Multiplier",
         "inputDefault": 2.0
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "pine_input_bool",
@@ -2718,7 +5370,16 @@
         "label": "input.bool",
         "inputName": "Use Filter",
         "inputDefault": true
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "boolean"
+        }
+      ]
     },
     {
       "type": "pine_input_source",
@@ -2739,7 +5400,16 @@
         "label": "input.source",
         "inputName": "Source",
         "inputDefault": "close"
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "pine_close",
@@ -2758,7 +5428,16 @@
       "defaultData": {
         "pineType": "pine_close",
         "label": "close"
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "pine_open",
@@ -2777,7 +5456,16 @@
       "defaultData": {
         "pineType": "pine_open",
         "label": "open"
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "pine_high",
@@ -2796,7 +5484,16 @@
       "defaultData": {
         "pineType": "pine_high",
         "label": "high"
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "pine_low",
@@ -2815,7 +5512,16 @@
       "defaultData": {
         "pineType": "pine_low",
         "label": "low"
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "pine_volume",
@@ -2834,7 +5540,16 @@
       "defaultData": {
         "pineType": "pine_volume",
         "label": "volume"
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "pine_bar_index",
@@ -2853,7 +5568,16 @@
       "defaultData": {
         "pineType": "pine_bar_index",
         "label": "bar_index"
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "pine_ta_sma",
@@ -2877,7 +5601,30 @@
         "label": "ta.sma",
         "period": 14,
         "source": "close"
-      }
+      },
+      "handles": [
+        {
+          "id": "input-a",
+          "type": "target",
+          "position": "left",
+          "label": "Source",
+          "dataType": "number"
+        },
+        {
+          "id": "input-b",
+          "type": "target",
+          "position": "left",
+          "label": "Length",
+          "dataType": "number"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "pine_ta_ema",
@@ -2901,7 +5648,30 @@
         "label": "ta.ema",
         "period": 14,
         "source": "close"
-      }
+      },
+      "handles": [
+        {
+          "id": "input-a",
+          "type": "target",
+          "position": "left",
+          "label": "Source",
+          "dataType": "number"
+        },
+        {
+          "id": "input-b",
+          "type": "target",
+          "position": "left",
+          "label": "Length",
+          "dataType": "number"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "pine_ta_rsi",
@@ -2925,7 +5695,30 @@
         "label": "ta.rsi",
         "period": 14,
         "source": "close"
-      }
+      },
+      "handles": [
+        {
+          "id": "input-a",
+          "type": "target",
+          "position": "left",
+          "label": "Source",
+          "dataType": "number"
+        },
+        {
+          "id": "input-b",
+          "type": "target",
+          "position": "left",
+          "label": "Length",
+          "dataType": "number"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "pine_ta_macd",
@@ -2949,7 +5742,37 @@
         "pineType": "pine_ta_macd",
         "label": "ta.macd",
         "source": "close"
-      }
+      },
+      "handles": [
+        {
+          "id": "input",
+          "type": "target",
+          "position": "left",
+          "label": "Source",
+          "dataType": "number"
+        },
+        {
+          "id": "macd",
+          "type": "source",
+          "position": "right",
+          "label": "MACD",
+          "dataType": "number"
+        },
+        {
+          "id": "signal",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "number"
+        },
+        {
+          "id": "histogram",
+          "type": "source",
+          "position": "right",
+          "label": "Histogram",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "pine_ta_bb",
@@ -2975,7 +5798,44 @@
         "label": "ta.bb",
         "period": 20,
         "source": "close"
-      }
+      },
+      "handles": [
+        {
+          "id": "input-a",
+          "type": "target",
+          "position": "left",
+          "label": "Source",
+          "dataType": "number"
+        },
+        {
+          "id": "input-b",
+          "type": "target",
+          "position": "left",
+          "label": "Length",
+          "dataType": "number"
+        },
+        {
+          "id": "basis",
+          "type": "source",
+          "position": "right",
+          "label": "Basis",
+          "dataType": "number"
+        },
+        {
+          "id": "upper",
+          "type": "source",
+          "position": "right",
+          "label": "Upper",
+          "dataType": "number"
+        },
+        {
+          "id": "lower",
+          "type": "source",
+          "position": "right",
+          "label": "Lower",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "pine_ta_atr",
@@ -2997,7 +5857,23 @@
         "pineType": "pine_ta_atr",
         "label": "ta.atr",
         "period": 14
-      }
+      },
+      "handles": [
+        {
+          "id": "input",
+          "type": "target",
+          "position": "left",
+          "label": "Length",
+          "dataType": "number"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "pine_ta_stoch",
@@ -3021,7 +5897,30 @@
         "label": "ta.stoch",
         "period": 14,
         "source": "close"
-      }
+      },
+      "handles": [
+        {
+          "id": "input-a",
+          "type": "target",
+          "position": "left",
+          "label": "Source",
+          "dataType": "number"
+        },
+        {
+          "id": "input-b",
+          "type": "target",
+          "position": "left",
+          "label": "Length",
+          "dataType": "number"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "pine_ta_vwap",
@@ -3043,7 +5942,23 @@
         "pineType": "pine_ta_vwap",
         "label": "ta.vwap",
         "source": "close"
-      }
+      },
+      "handles": [
+        {
+          "id": "input",
+          "type": "target",
+          "position": "left",
+          "label": "Source",
+          "dataType": "number"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "pine_ta_crossover",
@@ -3065,7 +5980,30 @@
       "defaultData": {
         "pineType": "pine_ta_crossover",
         "label": "ta.crossover"
-      }
+      },
+      "handles": [
+        {
+          "id": "input-a",
+          "type": "target",
+          "position": "left",
+          "label": "A",
+          "dataType": "number"
+        },
+        {
+          "id": "input-b",
+          "type": "target",
+          "position": "left",
+          "label": "B",
+          "dataType": "number"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "boolean"
+        }
+      ]
     },
     {
       "type": "pine_ta_crossunder",
@@ -3087,7 +6025,30 @@
       "defaultData": {
         "pineType": "pine_ta_crossunder",
         "label": "ta.crossunder"
-      }
+      },
+      "handles": [
+        {
+          "id": "input-a",
+          "type": "target",
+          "position": "left",
+          "label": "A",
+          "dataType": "number"
+        },
+        {
+          "id": "input-b",
+          "type": "target",
+          "position": "left",
+          "label": "B",
+          "dataType": "number"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "boolean"
+        }
+      ]
     },
     {
       "type": "pine_compare",
@@ -3110,7 +6071,30 @@
         "pineType": "pine_compare",
         "label": "Compare",
         "operator": ">"
-      }
+      },
+      "handles": [
+        {
+          "id": "input-a",
+          "type": "target",
+          "position": "left",
+          "label": "A",
+          "dataType": "number"
+        },
+        {
+          "id": "input-b",
+          "type": "target",
+          "position": "left",
+          "label": "B",
+          "dataType": "number"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Result",
+          "dataType": "boolean"
+        }
+      ]
     },
     {
       "type": "pine_and",
@@ -3132,7 +6116,30 @@
       "defaultData": {
         "pineType": "pine_and",
         "label": "and"
-      }
+      },
+      "handles": [
+        {
+          "id": "input-a",
+          "type": "target",
+          "position": "left",
+          "label": "A",
+          "dataType": "boolean"
+        },
+        {
+          "id": "input-b",
+          "type": "target",
+          "position": "left",
+          "label": "B",
+          "dataType": "boolean"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Result",
+          "dataType": "boolean"
+        }
+      ]
     },
     {
       "type": "pine_or",
@@ -3154,7 +6161,30 @@
       "defaultData": {
         "pineType": "pine_or",
         "label": "or"
-      }
+      },
+      "handles": [
+        {
+          "id": "input-a",
+          "type": "target",
+          "position": "left",
+          "label": "A",
+          "dataType": "boolean"
+        },
+        {
+          "id": "input-b",
+          "type": "target",
+          "position": "left",
+          "label": "B",
+          "dataType": "boolean"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Result",
+          "dataType": "boolean"
+        }
+      ]
     },
     {
       "type": "pine_not",
@@ -3175,7 +6205,23 @@
       "defaultData": {
         "pineType": "pine_not",
         "label": "not"
-      }
+      },
+      "handles": [
+        {
+          "id": "input",
+          "type": "target",
+          "position": "left",
+          "label": "Input",
+          "dataType": "boolean"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Result",
+          "dataType": "boolean"
+        }
+      ]
     },
     {
       "type": "pine_strategy_entry",
@@ -3198,7 +6244,23 @@
         "label": "strategy.entry",
         "entryId": "Long",
         "direction": "long"
-      }
+      },
+      "handles": [
+        {
+          "id": "input",
+          "type": "target",
+          "position": "left",
+          "label": "Condition",
+          "dataType": "boolean"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "pine_strategy_close",
@@ -3220,7 +6282,23 @@
         "pineType": "pine_strategy_close",
         "label": "strategy.close",
         "entryId": "Long"
-      }
+      },
+      "handles": [
+        {
+          "id": "input",
+          "type": "target",
+          "position": "left",
+          "label": "Condition",
+          "dataType": "boolean"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "pine_strategy_exit",
@@ -3242,7 +6320,23 @@
         "pineType": "pine_strategy_exit",
         "label": "strategy.exit",
         "entryId": "Long"
-      }
+      },
+      "handles": [
+        {
+          "id": "input",
+          "type": "target",
+          "position": "left",
+          "label": "Condition",
+          "dataType": "boolean"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "pine_plot",
@@ -3264,7 +6358,16 @@
         "plotColor": "#2962FF",
         "plotTitle": "Plot",
         "plotLineWidth": 2
-      }
+      },
+      "handles": [
+        {
+          "id": "input",
+          "type": "target",
+          "position": "left",
+          "label": "Series",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "pine_plotshape",
@@ -3284,7 +6387,16 @@
         "pineType": "pine_plotshape",
         "label": "plotshape",
         "plotColor": "#4CAF50"
-      }
+      },
+      "handles": [
+        {
+          "id": "input",
+          "type": "target",
+          "position": "left",
+          "label": "Condition",
+          "dataType": "boolean"
+        }
+      ]
     },
     {
       "type": "pine_hline",
@@ -3304,7 +6416,16 @@
         "pineType": "pine_hline",
         "label": "hline",
         "plotColor": "#787B86"
-      }
+      },
+      "handles": [
+        {
+          "id": "input",
+          "type": "target",
+          "position": "left",
+          "label": "Level",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "pine_bgcolor",
@@ -3324,7 +6445,16 @@
         "pineType": "pine_bgcolor",
         "label": "bgcolor",
         "plotColor": "#2962FF"
-      }
+      },
+      "handles": [
+        {
+          "id": "input",
+          "type": "target",
+          "position": "left",
+          "label": "Condition",
+          "dataType": "boolean"
+        }
+      ]
     },
     {
       "type": "pine_alertcondition",
@@ -3344,7 +6474,16 @@
         "pineType": "pine_alertcondition",
         "label": "alertcondition",
         "alertMessage": "Alert triggered!"
-      }
+      },
+      "handles": [
+        {
+          "id": "input",
+          "type": "target",
+          "position": "left",
+          "label": "Condition",
+          "dataType": "boolean"
+        }
+      ]
     },
     {
       "type": "pine_alert",
@@ -3364,7 +6503,16 @@
         "pineType": "pine_alert",
         "label": "alert",
         "alertMessage": "Signal detected!"
-      }
+      },
+      "handles": [
+        {
+          "id": "input",
+          "type": "target",
+          "position": "left",
+          "label": "Condition",
+          "dataType": "boolean"
+        }
+      ]
     }
   ],
   "portfolio": [
@@ -3384,7 +6532,16 @@
       "color": "#06b6d4",
       "defaultData": {
         "portfolioAction": "readHoldings"
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "portfolio_total_value",
@@ -3402,7 +6559,16 @@
       "color": "#06b6d4",
       "defaultData": {
         "portfolioAction": "totalValue"
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "portfolio_asset_weight",
@@ -3423,7 +6589,16 @@
       "defaultData": {
         "portfolioAction": "assetWeight",
         "symbol": ""
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "portfolio_asset_pnl",
@@ -3445,7 +6620,16 @@
       "defaultData": {
         "portfolioAction": "assetPnl",
         "symbol": ""
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "portfolio_day_change",
@@ -3464,7 +6648,16 @@
       "color": "#06b6d4",
       "defaultData": {
         "portfolioAction": "dayChange"
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "portfolio_concentration_check",
@@ -3486,7 +6679,16 @@
       "defaultData": {
         "portfolioAction": "concentrationCheck",
         "threshold": 30
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "portfolio_diversification_score",
@@ -3504,7 +6706,16 @@
       "color": "#f59e0b",
       "defaultData": {
         "portfolioAction": "diversificationScore"
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "portfolio_correlation_check",
@@ -3527,7 +6738,16 @@
         "portfolioAction": "correlationCheck",
         "symbolA": "",
         "symbolB": ""
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "portfolio_drawdown",
@@ -3546,7 +6766,16 @@
       "color": "#f59e0b",
       "defaultData": {
         "portfolioAction": "drawdown"
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "portfolio_rebalance_signal",
@@ -3568,7 +6797,16 @@
       "defaultData": {
         "portfolioAction": "rebalanceSignal",
         "driftThreshold": 5
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "portfolio_set_target",
@@ -3591,7 +6829,16 @@
         "portfolioAction": "setTarget",
         "symbol": "",
         "targetPct": 0
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "portfolio_optimizer",
@@ -3612,7 +6859,16 @@
       "defaultData": {
         "portfolioAction": "optimize",
         "goal": "maxSharpe"
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "portfolio_sector_exposure",
@@ -3630,7 +6886,16 @@
       "color": "#10b981",
       "defaultData": {
         "portfolioAction": "sectorExposure"
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     }
   ],
   "risk": [
@@ -3651,7 +6916,23 @@
       "defaultData": {
         "riskType": "maxDrawdown",
         "value": 10
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Config",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "risk_daily_loss_limit",
@@ -3670,7 +6951,23 @@
       "defaultData": {
         "riskType": "dailyLossLimit",
         "value": 2
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Config",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "risk_position_percent",
@@ -3689,7 +6986,23 @@
       "defaultData": {
         "riskType": "positionPercent",
         "percentage": 2
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "size",
+          "type": "source",
+          "position": "right",
+          "label": "Size",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "risk_kelly_criterion",
@@ -3707,7 +7020,23 @@
       "color": "#f97316",
       "defaultData": {
         "riskType": "kellyCriterion"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "size",
+          "type": "source",
+          "position": "right",
+          "label": "Size",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "risk_trailing_stop",
@@ -3726,7 +7055,23 @@
       "defaultData": {
         "riskType": "trailingStop",
         "value": 20
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Rule",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "portfolio_allocation",
@@ -3745,7 +7090,23 @@
       "defaultData": {
         "riskType": "portfolioAllocation",
         "targetPercentage": 20
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Config",
+          "dataType": "any"
+        }
+      ]
     }
   ],
   "startNode": [
@@ -3772,7 +7133,16 @@
         "capital": 10000,
         "mode": "paper",
         "childTriggerType": "manualTrigger"
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "signal"
+        }
+      ]
     }
   ],
   "tradeInfo": [
@@ -3792,7 +7162,23 @@
       "color": "#8b5cf6",
       "defaultData": {
         "tradeInfoType": "entryPrice"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "trade_position_size",
@@ -3810,7 +7196,23 @@
       "color": "#8b5cf6",
       "defaultData": {
         "tradeInfoType": "positionSize"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "trade_pnl",
@@ -3828,7 +7230,23 @@
       "color": "#8b5cf6",
       "defaultData": {
         "tradeInfoType": "pnl"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "trade_duration",
@@ -3846,7 +7264,23 @@
       "color": "#8b5cf6",
       "defaultData": {
         "tradeInfoType": "tradeDuration"
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     }
   ],
   "trigger": [
@@ -3871,7 +7305,16 @@
         "atMarketOpen": false,
         "atMarketClose": false,
         "specificTime": "null"
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "webhookTrigger",
@@ -3894,7 +7337,23 @@
         "webhookPath": "",
         "hmacSecret": "",
         "expectedFields": []
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "source",
+          "position": "right",
+          "label": "Data",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "priceAlertTrigger",
@@ -3917,7 +7376,23 @@
         "symbol": "AAPL",
         "condition": "crosses_above",
         "priceLevel": 0
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "signal"
+        },
+        {
+          "id": "price",
+          "type": "source",
+          "position": "right",
+          "label": "Price",
+          "dataType": "number"
+        }
+      ]
     },
     {
       "type": "newsTrigger",
@@ -3944,7 +7419,23 @@
         ],
         "symbols": [],
         "minRelevanceScore": 0.7
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "source",
+          "position": "right",
+          "label": "Data",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "brokerEventTrigger",
@@ -3968,7 +7459,23 @@
           "order_filled"
         ],
         "credentialAlias": ""
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "signal"
+        },
+        {
+          "id": "data",
+          "type": "source",
+          "position": "right",
+          "label": "Data",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "manualTrigger",
@@ -3987,7 +7494,16 @@
       "backtestEligible": true,
       "defaultData": {
         "triggerType": "manualTrigger"
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "cronTrigger",
@@ -4008,7 +7524,16 @@
         "triggerType": "cronTrigger",
         "cronExpression": "0 9 * * 1-5",
         "timezone": "America/New_York"
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "conditionTrigger",
@@ -4031,7 +7556,23 @@
         "triggerType": "conditionTrigger",
         "operator": "<",
         "threshold": 30
-      }
+      },
+      "handles": [
+        {
+          "id": "value",
+          "type": "target",
+          "position": "left",
+          "label": "Value",
+          "dataType": "number"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Signal",
+          "dataType": "signal"
+        }
+      ]
     }
   ],
   "variable": [
@@ -4054,7 +7595,30 @@
         "variableType": "setVariable",
         "variableName": "myVar",
         "value": 0
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "input",
+          "type": "target",
+          "position": "left",
+          "label": "Input",
+          "dataType": "any"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Output",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "getVariable",
@@ -4072,7 +7636,16 @@
       "defaultData": {
         "variableType": "getVariable",
         "variableName": "myVar"
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "any"
+        }
+      ]
     },
     {
       "type": "changeVariable",
@@ -4093,7 +7666,30 @@
         "variableType": "changeVariable",
         "variableName": "myVar",
         "value": 1
-      }
+      },
+      "handles": [
+        {
+          "id": "trigger",
+          "type": "target",
+          "position": "left",
+          "label": "Trigger",
+          "dataType": "signal"
+        },
+        {
+          "id": "input",
+          "type": "target",
+          "position": "left",
+          "label": "Input",
+          "dataType": "any"
+        },
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Output",
+          "dataType": "signal"
+        }
+      ]
     },
     {
       "type": "number",
@@ -4111,7 +7707,16 @@
       "defaultData": {
         "mathType": "number",
         "value": 0
-      }
+      },
+      "handles": [
+        {
+          "id": "output",
+          "type": "source",
+          "position": "right",
+          "label": "Value",
+          "dataType": "number"
+        }
+      ]
     }
   ]
 }

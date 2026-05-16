@@ -16,6 +16,7 @@
     "e2e": "playwright test",
     "e2e:install": "playwright install --with-deps chromium",
     "codemod:runtime-urls": "bun run scripts/codemod-runtime-urls.ts",
+    "extract-handles": "bun run scripts/extract-handle-configs.ts",
     "electron:tsc": "tsc -p electron/tsconfig.json && echo '{\"type\":\"commonjs\"}' > electron/dist/package.json",
     "electron:tsc:watch": "tsc -p electron/tsconfig.json --watch",
     "electron:dev": "concurrently -k -n vite,tsc,electron 'bun run dev' 'bun run electron:tsc:watch' 'wait-on http://localhost:5173 && electron electron/dist/main.js --dev'",

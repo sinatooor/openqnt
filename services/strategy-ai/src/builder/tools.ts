@@ -21,7 +21,20 @@ import {
   newId,
 } from '../types/strategy-draft';
 import type { PythonBridge, CatalogNode, DryRunResponse, VerifyMockResponse } from '../python-bridge';
-import { getHandleConfigs, type HandleConfig } from './handleConfigs';
+
+/**
+ * The handle topology the LLM uses when calling connect(). Served by the
+ * Python `/catalog` endpoint as an embedded `handles` field on each node,
+ * sourced from the frontend's `getHandleConfigs` via
+ * `scripts/extract-handle-configs.ts`. Single source of truth = frontend.
+ */
+export interface HandleConfig {
+  id: string;
+  type: 'target' | 'source';
+  position: 'left' | 'right';
+  label: string;
+  dataType?: string;
+}
 
 // ── State held across tool calls within a single agent run ──────────────────
 
@@ -70,31 +83,19 @@ export interface CatalogIndex {
 }
 
 /**
- * Enrich a catalog node with its real handle topology. The frontend's
- * `getHandleConfigs(nodeType, subType)` is the source of truth — we mirror it
- * here so the LLM sees handle IDs the canvas will actually validate against.
+ * Adopt the server-provided `handles` field on each catalog node. The Python
+ * `/catalog` endpoint embeds it (sourced from the frontend's
+ * `getHandleConfigs` via `scripts/extract-handle-configs.ts`). If the server
+ * omits the field — e.g. talking to an older backend — we fall back to an
+ * empty array and let `connect()` auto-fill handles. We deliberately do NOT
+ * recompute handles here; one source of truth on the backend.
  */
-const enrichNode = (n: CatalogNode): EnrichedCatalogNode => {
-  const subType =
-    (n.defaultData?.indicatorType as string | undefined) ??
-    (n.defaultData?.conditionType as string | undefined) ??
-    (n.defaultData?.actionType as string | undefined) ??
-    (n.defaultData?.triggerType as string | undefined) ??
-    (n.defaultData?.mathType as string | undefined) ??
-    (n.defaultData?.controlType as string | undefined) ??
-    (n.defaultData?.riskType as string | undefined) ??
-    (n.defaultData?.variableType as string | undefined) ??
-    (n.defaultData?.environmentType as string | undefined) ??
-    (n.defaultData?.tradeInfoType as string | undefined) ??
-    (n.defaultData?.llmType as string | undefined) ??
-    (n.defaultData?.integrationType as string | undefined) ??
-    (n.defaultData?.pineType as string | undefined) ??
-    (n.defaultData?.agentType as string | undefined) ??
-    (n.defaultData?.provider as string | undefined) ??
-    n.type;
-  const handles = getHandleConfigs(n.nodeType, subType);
-  return { ...n, handles };
-};
+const adoptHandles = (n: CatalogNode): EnrichedCatalogNode => ({
+  ...n,
+  handles: Array.isArray((n as { handles?: HandleConfig[] }).handles)
+    ? ((n as { handles: HandleConfig[] }).handles)
+    : [],
+});
 
 export const buildCatalogIndex = (raw: Record<string, CatalogNode[]>): CatalogIndex => {
   const enrichedRaw: Record<string, EnrichedCatalogNode[]> = {};
@@ -102,7 +103,7 @@ export const buildCatalogIndex = (raw: Record<string, CatalogNode[]>): CatalogIn
   for (const [cat, arr] of Object.entries(raw)) {
     enrichedRaw[cat] = [];
     for (const n of arr) {
-      const enriched = enrichNode(n);
+      const enriched = adoptHandles(n);
       enrichedRaw[cat]!.push(enriched);
       byType.set(n.type, enriched);
     }
