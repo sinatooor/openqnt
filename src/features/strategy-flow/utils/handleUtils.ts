@@ -565,6 +565,16 @@ export const getHandleConfigs = (nodeType: string, subType?: string, data?: Stra
             ];
 
         case 'dataSource':
+            // apiDataSource emits arbitrary JSON from the manifest, not OHLCV —
+            // surface a separate handle id so downstream graph readers can tell
+            // the two apart. Also takes a trigger input so the fetch only runs
+            // when an upstream trigger fires (same pattern as indicators).
+            if (subType === 'apiDataSource') {
+                return [
+                    { id: 'trigger', type: 'target', position: 'left', label: 'Trigger', dataType: 'signal' },
+                    { id: 'data', type: 'source', position: 'right', label: 'Data', dataType: 'any' },
+                ];
+            }
             return [
                 { id: 'candles', type: 'source', position: 'right', label: 'Candles', dataType: 'any' },
             ];

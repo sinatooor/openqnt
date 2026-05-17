@@ -871,6 +871,15 @@ def run_backtest(
     
     # Get data — let an explicit dataSource node override provider/symbol/timeframe.
     ds_overrides = _resolve_data_source_node(nodes) or {}
+    if (ds_overrides.get('dataSourceType') or '').lower() == 'apidatasource':
+        return {
+            'success': False,
+            'error': (
+                "apiDataSource nodes are live-only — they fetch arbitrary JSON "
+                "from external APIs (FMP, Finnhub, Polygon, ...). Swap to a "
+                "yfinance / fmp / avanza data source for backtesting."
+            ),
+        }
     eff_symbol = ds_overrides.get('symbol') or symbol
     eff_timeframe = ds_overrides.get('timeframe') or timeframe
     eff_provider = ds_overrides.get('provider') or 'yfinance'

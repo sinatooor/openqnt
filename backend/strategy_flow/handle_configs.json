@@ -1927,6 +1927,38 @@
       "dataType": "any"
     }
   ],
+  "dataSource/apiDataSource": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    }
+  ],
+  "apiDataSource": [
+    {
+      "id": "trigger",
+      "type": "target",
+      "position": "left",
+      "label": "Trigger",
+      "dataType": "signal"
+    },
+    {
+      "id": "data",
+      "type": "source",
+      "position": "right",
+      "label": "Data",
+      "dataType": "any"
+    }
+  ],
   "environment/price": [
     {
       "id": "trigger",

@@ -1,0 +1,17 @@
+{
+  "prompt": "every hour, fetch senate trading activity for AAPL and alert me via telegram when a senator buys $50,000 or more",
+  "nodeCount": 4,
+  "edgeCount": 4,
+  "nodeShapes": [
+    "dataSource/apiDataSource",
+    "integration/codePythonNode",
+    "integration/telegramNode",
+    "trigger/heartbeatTrigger"
+  ],
+  "edgeShapes": [
+    "dataSource/apiDataSource.data → integration/codePythonNode.data",
+    "integration/codePythonNode.output → integration/telegramNode.data",
+    "integration/codePythonNode.signal → integration/telegramNode.trigger",
+    "trigger/heartbeatTrigger.output → dataSource/apiDataSource.trigger"
+  ]
+}
