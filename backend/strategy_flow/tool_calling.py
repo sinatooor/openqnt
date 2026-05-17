@@ -849,10 +849,17 @@ async def generate_with_tools(
     current_nodes: Optional[List[Dict[str, Any]]] = None,
     current_edges: Optional[List[Dict[str, Any]]] = None,
     max_turns: int = 10,
+    history: Optional[List[Dict[str, str]]] = None,
 ) -> Dict[str, Any]:
     """
     Generate strategy using tool/function calling with automatic fallback.
     Tries Gemini first, falls back to DeepSeek/OpenAI.
+
+    `history` is accepted for signature compatibility with the sidecar path.
+    The Gemini/OpenAI implementations below don't currently weave it into
+    the LLM call — see TODO inside each. If you're relying on multi-turn
+    memory in the frontend builder, ensure the Anthropic sidecar is
+    running so that path is taken instead (it does honour history).
     """
     # Try Gemini first
     gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")

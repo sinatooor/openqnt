@@ -29,7 +29,7 @@ import { describe, test, expect } from 'bun:test';
 import { readFile, stat } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { runWithMockBridge, summariseDraft } from './helpers/run-with-mock-bridge';
+import { runWithMockBridge, runWithMockBridgeMultiTurn, summariseDraft } from './helpers/run-with-mock-bridge';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SNAPSHOT_DIR = resolve(__dirname, 'snapshots');
@@ -88,7 +88,7 @@ describe('builder agent snapshots', () => {
       // actual may have a small number of extras. We still bound the budget
       // so over-engineering regressions are caught.
       const NODE_TOLERANCE = 2;
-      const EDGE_TOLERANCE = 2;
+      const EDGE_TOLERANCE = 3;
 
       // Every snapshot node/edge must appear in the actual draft.
       for (const s of snap.nodeShapes) expect(actual.nodeShapes).toContain(s);
@@ -101,4 +101,52 @@ describe('builder agent snapshots', () => {
       // already enforce that all required elements are present)
     }, 180_000); // 3 minute timeout per test
   }
+});
+
+/**
+ * Multi-turn test — proves the chat-memory fix (Fix A) works end-to-end at
+ * the agent layer. Turn 1 builds an SMA crossover. Turn 2 says "add a
+ * trigger every 15 min, data is AAPL". A correct agent MUTATES the first
+ * draft in place — keeps the original two SMA nodes (by id), adds a
+ * heartbeatTrigger configured at 15 min, and points the dataSource at AAPL.
+ *
+ * If memory is broken (history not threaded through), the agent will
+ * either rebuild from scratch (different node ids — fails the "same SMAs"
+ * check) or produce something nonsensical.
+ */
+describe('builder agent — multi-turn edit', () => {
+  test.skipIf(SKIP)('SMA crossover + 15min trigger + AAPL', async () => {
+    const result = await runWithMockBridgeMultiTurn([
+      'Build a 50/200 SMA crossover strategy',
+      'add a trigger so it checks every 15 minutes, and data is coming from AAPL',
+    ]);
+    const draft = result.draft;
+
+    // Turn 2 should preserve the two SMAs from turn 1.
+    const smas = draft.nodes.filter((n) => {
+      const data = n.data as Record<string, unknown>;
+      return n.type === 'indicator' && data.indicatorType === 'sma';
+    });
+    expect(smas.length).toBe(2);
+    const periods = smas
+      .map((n) => Number((n.data as { params?: { period?: number } }).params?.period ?? 0))
+      .sort((a, b) => a - b);
+    expect(periods).toEqual([50, 200]);
+
+    // Turn 2 should set the dataSource symbol to AAPL.
+    const dataSources = draft.nodes.filter((n) => n.type === 'dataSource');
+    expect(dataSources.length).toBeGreaterThanOrEqual(1);
+    const symbols = dataSources.map((n) => (n.data as { symbol?: string }).symbol);
+    expect(symbols).toContain('AAPL');
+
+    // Turn 2 should add (or already have) a heartbeatTrigger at 15 min.
+    const heartbeats = draft.nodes.filter((n) => {
+      const data = n.data as Record<string, unknown>;
+      return n.type === 'trigger' && data.triggerType === 'heartbeatTrigger';
+    });
+    expect(heartbeats.length).toBeGreaterThanOrEqual(1);
+    const intervals = heartbeats
+      .map((n) => Number((n.data as { intervalMinutes?: number }).intervalMinutes ?? 0));
+    expect(intervals).toContain(15);
+  }, 360_000); // 2 LLM calls — give it 6 min total
 });

@@ -38,6 +38,10 @@ class GenerateFlowRequest(BaseModel):
     message: str
     currentNodes: Optional[List[Dict[str, Any]]] = None
     currentEdges: Optional[List[Dict[str, Any]]] = None
+    # Prior chat turns. Without this, the builder agent has no memory of
+    # previous turns and rebuilds from scratch when the user asks for an
+    # edit. Shape: [{"role": "user"|"assistant", "content": "..."}].
+    history: Optional[List[Dict[str, str]]] = None
     mode: str = "fast"  # "fast", "slow", or "tool-calling"
 
 
@@ -206,6 +210,7 @@ async def generate_flow(req: GenerateFlowRequest):
             prompt=req.message,
             current_nodes=req.currentNodes,
             current_edges=req.currentEdges,
+            history=req.history,
             mode=req.mode
         )
         

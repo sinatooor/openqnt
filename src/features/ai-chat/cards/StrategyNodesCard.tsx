@@ -1,34 +1,23 @@
 /**
- * StrategyNodesCard — renders generated strategy nodes with a layered preview
- * and "Add to Canvas" / "Replace Canvas" actions.
+ * StrategyNodesCard — renders generated strategy nodes as a real mini
+ * ReactFlow graph (faithful to what will land on the canvas) with
+ * "Add to Canvas" / "Replace Canvas" actions.
  *
  * Used by both Ask mode (streaming nodes via card events) and Strategy mode
  * (a single complete card from /api/strategy-flow/generate).
  */
 
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Blocks, ChevronRight } from 'lucide-react';
+import { Blocks } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { ReactFlow, ReactFlowProvider, Background, BackgroundVariant } from '@xyflow/react';
 import { Button } from '@/components/ui/button';
 import { useStrategyFlowStore } from '@/features/strategy-flow/store/strategyFlowStore';
 import { layoutStrategyNodes } from '@/features/strategy-flow/utils/layoutNodes';
+import { nodeTypes } from '@/features/strategy-flow/components/nodes';
 import { PinButton } from '../components/PinButton';
-
-const NODE_TYPE_COLORS: Record<string, string> = {
-  environment: 'border-indigo-500/40 bg-indigo-500/10 text-indigo-300',
-  indicator:   'border-purple-500/40 bg-purple-500/10 text-purple-300',
-  trigger:     'border-amber-500/40 bg-amber-500/10 text-amber-300',
-  llm:         'border-violet-500/40 bg-violet-500/10 text-violet-300',
-  math:        'border-teal-500/40 bg-teal-500/10 text-teal-300',
-  variable:    'border-pink-500/40 bg-pink-500/10 text-pink-300',
-  tradeInfo:   'border-cyan-500/40 bg-cyan-500/10 text-cyan-300',
-  condition:   'border-amber-500/40 bg-amber-500/10 text-amber-300',
-  control:     'border-slate-400/40 bg-slate-500/10 text-slate-300',
-  risk:        'border-red-500/40 bg-red-500/10 text-red-300',
-  action:      'border-emerald-500/40 bg-emerald-500/10 text-emerald-300',
-  integration: 'border-blue-500/40 bg-blue-500/10 text-blue-300',
-};
 
 interface Props {
   nodes: any[];
@@ -43,17 +32,18 @@ export function StrategyNodesCard({ nodes, edges, message }: Props) {
 
   if (!nodes || nodes.length === 0) return null;
 
-  const { nodes: layouted } = layoutStrategyNodes(nodes, edges);
+  // Lay out once for both the preview and the "Add to Canvas" action so the
+  // user sees the same graph in both places.
+  const { nodes: layouted, edges: layoutedEdges } = useMemo(
+    () => layoutStrategyNodes(nodes, edges),
+    [nodes, edges],
+  );
 
-  const layerMap = new Map<number, typeof layouted>();
-  for (const n of layouted) {
-    const x = n.position.x;
-    if (!layerMap.has(x)) layerMap.set(x, []);
-    layerMap.get(x)!.push(n);
-  }
-  const layers = Array.from(layerMap.entries())
-    .sort(([a], [b]) => a - b)
-    .map(([, group]) => group);
+  // Count layers (distinct x positions) for the header summary.
+  const layerCount = useMemo(
+    () => new Set(layouted.map((n: any) => n.position.x)).size,
+    [layouted],
+  );
 
   const handleAdd = (replace: boolean) => {
     const { nodes: laid, edges: laidEdges } = layoutStrategyNodes(nodes, edges);
@@ -102,7 +92,7 @@ export function StrategyNodesCard({ nodes, edges, message }: Props) {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[10px] text-white/30">
-            {layers.length} layers · {edges.length} connections
+            {layerCount} layers · {edges.length} connections
           </span>
           <PinButton
             cardType="strategy_nodes"
@@ -112,35 +102,35 @@ export function StrategyNodesCard({ nodes, edges, message }: Props) {
         </div>
       </div>
 
-      <div className="px-3 py-3 overflow-x-auto">
-        <div className="flex items-start gap-2 min-w-min">
-          {layers.map((layer, li) => (
-            <div key={li} className="flex items-center gap-2">
-              <div className="flex flex-col gap-1.5 min-w-[110px]">
-                {layer.map((node: any, ni: number) => {
-                  const colors =
-                    NODE_TYPE_COLORS[node.type || ''] ||
-                    'border-white/20 bg-white/5 text-white/50';
-                  return (
-                    <motion.div
-                      key={node.id || ni}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: (li * layer.length + ni) * 0.04 }}
-                      className={`px-2.5 py-1.5 rounded-md border text-[10px] font-medium truncate ${colors}`}
-                      title={`${node.type}: ${node.data?.label || node.id}`}
-                    >
-                      {node.data?.label || node.type || 'Node'}
-                    </motion.div>
-                  );
-                })}
-              </div>
-              {li < layers.length - 1 && (
-                <ChevronRight className="w-3.5 h-3.5 text-white/15 flex-shrink-0" />
-              )}
-            </div>
-          ))}
-        </div>
+      {/*
+        Mini ReactFlow preview — read-only, fit-to-view, uses the same
+        nodeTypes registry as the main canvas so the preview looks identical
+        to what lands after "Add to Canvas". Pointer interactions are
+        disabled (no drag/pan/zoom) — clicking the card buttons is the only
+        way to act on the strategy.
+      */}
+      <div className="h-44 w-full border-b border-pink-500/10 bg-[#0e0e10] relative">
+        <ReactFlowProvider>
+          <ReactFlow
+            nodes={layouted as any}
+            edges={layoutedEdges as any}
+            nodeTypes={nodeTypes}
+            fitView
+            fitViewOptions={{ padding: 0.2 }}
+            nodesDraggable={false}
+            nodesConnectable={false}
+            elementsSelectable={false}
+            panOnDrag={false}
+            panOnScroll={false}
+            zoomOnScroll={false}
+            zoomOnPinch={false}
+            zoomOnDoubleClick={false}
+            preventScrolling={false}
+            proOptions={{ hideAttribution: true }}
+          >
+            <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="#27272a" />
+          </ReactFlow>
+        </ReactFlowProvider>
       </div>
 
       {message && (

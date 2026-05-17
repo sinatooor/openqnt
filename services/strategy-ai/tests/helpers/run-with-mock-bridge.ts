@@ -131,6 +131,43 @@ export const runWithMockBridge = async (prompt: string): Promise<BuilderRunResul
   return runBuilder({ message: prompt }, { bridge, model });
 };
 
+/**
+ * Multi-turn helper: runs `prompts` sequentially, threading the previous
+ * turn's draft + summary into the next turn's `initialDraft` and `history`.
+ * Mirrors what the frontend does after Fix A — the chat composer passes
+ * `currentNodes/Edges` from the canvas store and `history` from the chat
+ * store. Snapshots the FINAL draft.
+ */
+export const runWithMockBridgeMultiTurn = async (
+  prompts: string[],
+): Promise<BuilderRunResult> => {
+  ensureEnv();
+  const catalog = await loadCatalog();
+  const bridge = new MockPythonBridge(catalog) as unknown as PythonBridge;
+  const { model } = resolveModel();
+
+  let draft: BuilderRunResult['draft'] | undefined;
+  let history: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+  let lastResult: BuilderRunResult | undefined;
+
+  for (const prompt of prompts) {
+    const result = await runBuilder(
+      { message: prompt, initialDraft: draft, history },
+      { bridge, model },
+    );
+    // Append this turn to history for the next iteration.
+    history = [
+      ...history,
+      { role: 'user', content: prompt },
+      { role: 'assistant', content: result.summary || 'ok' },
+    ];
+    draft = result.draft;
+    lastResult = result;
+  }
+  if (!lastResult) throw new Error('runWithMockBridgeMultiTurn: no prompts');
+  return lastResult;
+};
+
 // ── Snapshot shape ──────────────────────────────────────────────────────────
 
 const subTypeOf = (data: Record<string, unknown>): string => {
