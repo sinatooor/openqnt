@@ -44,6 +44,10 @@ export const strategyTransport: Transport = {
             message: opts.message,
             currentNodes: opts.currentNodes && opts.currentNodes.length > 0 ? opts.currentNodes : null,
             currentEdges: opts.currentEdges && opts.currentEdges.length > 0 ? opts.currentEdges : null,
+            // Prior chat turns — lets the builder agent see what was asked +
+            // built last turn so follow-up edits mutate in place instead of
+            // regenerating from scratch.
+            history: opts.history && opts.history.length > 0 ? opts.history : undefined,
             mode: 'tool-calling',
             page_context: opts.pageContext ?? undefined,
             system_prompt: opts.skillSystemPrompt ?? undefined,

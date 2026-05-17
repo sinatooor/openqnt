@@ -54,6 +54,111 @@ def _get_tool_calling():
 
 
 # ============================================================
+# Strategy-AI sidecar (Anthropic) — bridge to services/strategy-ai
+# ============================================================
+
+STRATEGY_AI_URL = os.getenv("STRATEGY_AI_URL", "http://127.0.0.1:3050")
+
+
+async def _call_strategy_ai_sidecar(
+    prompt: str,
+    current_nodes: Optional[List[Dict[str, Any]]] = None,
+    current_edges: Optional[List[Dict[str, Any]]] = None,
+    history: Optional[List[Dict[str, str]]] = None,
+) -> Optional[Dict[str, Any]]:
+    """
+    POST the user request to the Anthropic-backed strategy-ai sidecar
+    (`services/strategy-ai`) and collect the final draft.
+
+    The sidecar exposes `POST /agent/run` as Server-Sent Events. We don't
+    surface the intermediate tool-call events here (the frontend's strategy
+    transport is non-streaming today); we just wait for `run_complete` and
+    return the final draft + summary in the shape `generate_flow_strategy`
+    expects.
+
+    Returns `None` if the sidecar is unreachable (caller falls back to
+    Gemini). Returns `{success, nodes, edges, message, toolCalls}` otherwise.
+
+    Why route here: the snapshot tests (`services/strategy-ai/tests/`)
+    exercise this exact agent + prompt + tools. Routing the frontend
+    through it means what the user sees in the chat matches what passes
+    in CI — no model/prompt drift between test and prod.
+    """
+    payload = {
+        "message": prompt,
+        "draft": {
+            "nodes": current_nodes or [],
+            "edges": current_edges or [],
+            "settings": {},
+        },
+        "history": history or [],
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=2.0)) as client:
+            async with client.stream(
+                "POST",
+                f"{STRATEGY_AI_URL}/agent/run",
+                json=payload,
+                headers={"Accept": "text/event-stream"},
+            ) as response:
+                if response.status_code != 200:
+                    body = await response.aread()
+                    print(f"[ai_generator] sidecar HTTP {response.status_code}: {body[:200]!r}")
+                    return None
+
+                final_draft: Optional[Dict[str, Any]] = None
+                final_summary: Optional[str] = None
+                tool_calls = 0
+                event_name: Optional[str] = None
+                async for line in response.aiter_lines():
+                    if not line:
+                        continue
+                    if line.startswith("event:"):
+                        event_name = line[len("event:"):].strip()
+                        continue
+                    if line.startswith("data:"):
+                        data_str = line[len("data:"):].strip()
+                        if not data_str:
+                            continue
+                        try:
+                            data = json.loads(data_str)
+                        except json.JSONDecodeError:
+                            continue
+                        # Count tool-call events for telemetry parity with the
+                        # Gemini path's `toolCalls` field.
+                        if event_name in {
+                            "node_added", "node_updated", "node_deleted",
+                            "edge_added", "edge_deleted",
+                            "validation_attempt", "verification_result",
+                        }:
+                            tool_calls += 1
+                        elif event_name == "run_complete":
+                            final_draft = data.get("draft")
+                            final_summary = data.get("summary")
+                        event_name = None
+
+                if final_draft is None:
+                    print("[ai_generator] sidecar finished without run_complete")
+                    return None
+
+                return {
+                    "success": True,
+                    "nodes": final_draft.get("nodes", []),
+                    "edges": final_draft.get("edges", []),
+                    "message": final_summary,
+                    "toolCalls": tool_calls,
+                }
+    except (httpx.ConnectError, httpx.ConnectTimeout) as e:
+        # Sidecar not running — silent fallback to Gemini path.
+        print(f"[ai_generator] sidecar unreachable at {STRATEGY_AI_URL}: {e}")
+        return None
+    except Exception as e:
+        print(f"[ai_generator] sidecar error: {e}")
+        return None
+
+
+# ============================================================
 # LLM API Calls
 # ============================================================
 
@@ -213,30 +318,58 @@ async def generate_flow_strategy(
     prompt: str,
     current_nodes: Optional[List[Dict[str, Any]]] = None,
     current_edges: Optional[List[Dict[str, Any]]] = None,
+    history: Optional[List[Dict[str, str]]] = None,
     mode: str = "fast"
 ) -> Dict[str, Any]:
     """
     Generate a flow strategy from natural language.
-    
+
     Args:
         prompt: User's strategy description
         current_nodes: Existing nodes (for modification)
         current_edges: Existing edges (for modification)
+        history: Prior chat turns ([{role, content}, ...]) — required for
+            multi-turn edits ("add a 15 min trigger") to mutate the existing
+            draft instead of regenerating from scratch.
         mode: "fast", "slow" (includes validation), or "tool-calling" (function calling)
-    
+
     Returns:
         Dictionary with nodes, edges, message, and metadata
     """
-    # ── Tool-calling mode: use function calling instead of prompt-based ──
+    # ── Tool-calling mode ────────────────────────────────────────────────
+    # Prefer the Anthropic-backed strategy-ai sidecar — it's the path the
+    # headless snapshot tests exercise (same prompt, same tools, same model)
+    # so the frontend builder result will match the verified behaviour.
+    # Fall back to the legacy Gemini/OpenAI tool_calling.py implementation
+    # only if the sidecar is unreachable.
     if mode == "tool-calling":
+        sidecar_result = await _call_strategy_ai_sidecar(
+            prompt=prompt,
+            current_nodes=current_nodes,
+            current_edges=current_edges,
+            history=history,
+        )
+        if sidecar_result is not None:
+            result = sidecar_result
+            if result.get("success") and result.get("nodes"):
+                nodes, edges, fixes = auto_fix_flow(result["nodes"], result["edges"])
+                result["nodes"] = nodes
+                result["edges"] = edges
+                if fixes:
+                    result["autoFixed"] = True
+                    result.setdefault("fixes", []).extend(fixes)
+            result["generationMode"] = "tool-calling"
+            return result
+
+        # Sidecar unreachable — fall back to Gemini/OpenAI tool calling.
         try:
             tc = _get_tool_calling()
             result = await tc.generate_with_tools(
                 prompt=prompt,
                 current_nodes=current_nodes,
                 current_edges=current_edges,
+                history=history,
             )
-            # Apply auto-fixes on top of tool-calling result
             if result.get("success") and result.get("nodes"):
                 nodes, edges, fixes = auto_fix_flow(result["nodes"], result["edges"])
                 result["nodes"] = nodes
