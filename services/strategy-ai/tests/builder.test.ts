@@ -65,6 +65,7 @@ const cases = [
   'rsi-long-short',
   'macd-crossover',
   'senate-trading-alert',
+  'trump-truth-social-alert',
 ];
 
 describe('builder agent snapshots', () => {

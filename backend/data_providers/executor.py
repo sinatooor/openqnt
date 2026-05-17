@@ -197,19 +197,32 @@ def fetch_api_data(
     headers: Dict[str, str] = {"Accept": "application/json"}
     request_kwargs: Dict[str, Any] = {"timeout": timeout, "headers": headers}
 
+    # Split params into URL query vs request body. For GETs everything is
+    # query; for non-GETs the user-supplied params become the JSON body.
+    # `query`-style auth always goes in URL params (Apify and other services
+    # accept ?token=... on POSTs), regardless of method.
+    url_params: Dict[str, Any] = {}
+    body_params: Dict[str, Any] = {}
+    if method == "GET":
+        url_params.update(query_or_body)
+    else:
+        body_params.update(query_or_body)
+
     if auth_style == "query" and api_key and auth_param:
-        query_or_body[auth_param] = api_key
+        url_params[auth_param] = api_key
     elif auth_style == "header" and api_key and auth_param:
         headers[auth_param] = api_key
     elif auth_style == "bearer" and api_key:
         headers["Authorization"] = f"Bearer {api_key}"
     elif auth_style == "body" and api_key and auth_param:
-        query_or_body[auth_param] = api_key
+        body_params[auth_param] = api_key
 
     if method == "GET":
-        request_kwargs["params"] = query_or_body
+        request_kwargs["params"] = url_params
     else:
-        request_kwargs["json"] = query_or_body
+        if url_params:
+            request_kwargs["params"] = url_params
+        request_kwargs["json"] = body_params
         headers["Content-Type"] = "application/json"
 
     try:
