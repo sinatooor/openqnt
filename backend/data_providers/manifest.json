@@ -370,6 +370,44 @@
           "description": "Scrape any URL and get clean markdown."
         }
       }
+    },
+    "apify": {
+      "name": "Apify (web scrapers)",
+      "envKey": "APIFY_API_TOKEN",
+      "baseUrl": "https://api.apify.com",
+      "docsUrl": "https://docs.apify.com/api/v2",
+      "authStyle": "query",
+      "authParam": "token",
+      "endpoints": {
+        "truth-social-trump": {
+          "path": "/v2/acts/sTDLfdZAmte0aYlxg/run-sync-get-dataset-items",
+          "method": "POST",
+          "params": {
+            "username": { "type": "string", "required": false, "default": "realDonaldTrump", "example": "realDonaldTrump" },
+            "maxPosts": { "type": "number", "required": false, "default": 20, "min": 5, "example": 20 },
+            "useLastPostId": { "type": "boolean", "required": false, "default": false },
+            "onlyReplies": { "type": "boolean", "required": false, "default": false },
+            "onlyMedia": { "type": "boolean", "required": false, "default": false },
+            "cleanContent": { "type": "boolean", "required": false, "default": true }
+          },
+          "output": { "shape": "array", "fields": ["id", "content", "created_at", "url", "account", "favourites_count", "reblogs_count", "replies_count", "in_reply_to", "media_attachments"] },
+          "description": "Latest Truth Social posts from a user (defaults to realDonaldTrump). Powered by an Apify actor; run-sync waits for the scrape to finish (typically 5-15s). Use to react to political news/announcements in near real time."
+        },
+        "truth-social-user": {
+          "path": "/v2/acts/sTDLfdZAmte0aYlxg/run-sync-get-dataset-items",
+          "method": "POST",
+          "params": {
+            "username": { "type": "string", "required": true, "example": "DonaldJTrumpJr" },
+            "maxPosts": { "type": "number", "required": false, "default": 20, "min": 5, "example": 20 },
+            "useLastPostId": { "type": "boolean", "required": false, "default": false },
+            "onlyReplies": { "type": "boolean", "required": false, "default": false },
+            "onlyMedia": { "type": "boolean", "required": false, "default": false },
+            "cleanContent": { "type": "boolean", "required": false, "default": true }
+          },
+          "output": { "shape": "array", "fields": ["id", "content", "created_at", "url", "account", "favourites_count", "reblogs_count", "replies_count", "in_reply_to", "media_attachments"] },
+          "description": "Same as truth-social-trump but for any Truth Social username. Pass `username` explicitly."
+        }
+      }
     }
   }
 }
