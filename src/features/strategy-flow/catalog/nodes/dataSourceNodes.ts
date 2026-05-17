@@ -128,4 +128,25 @@ export const DATA_SOURCE_NODES: NodeCatalogItem[] = [
       seriesId: 'CPIAUCSL',
     },
   },
+  {
+    type: 'apiDataSource',
+    nodeType: 'dataSource',
+    label: 'External API',
+    description: 'Fetch JSON from any configured provider (FMP, Finnhub, Polygon, ...)',
+    tooltip:
+      'Generic data source backed by backend/data_providers/manifest.json. Pick a provider + endpoint; the manifest resolves URL, params, and auth. Returns arbitrary JSON (not OHLCV) — pipe through a Code (Python) node to shape it. Live-only.',
+    inputs: [],
+    outputs: ['JSON'],
+    category: 'dataSources',
+    subcategory: 'External APIs',
+    icon: 'Plug',
+    color: '#f59e0b',
+    backtestEligible: false,
+    defaultData: {
+      dataSourceType: 'apiDataSource',
+      provider: 'fmp',
+      endpoint: 'senate-trading',
+      paramOverrides: { symbol: 'AAPL' },
+    },
+  },
 ];

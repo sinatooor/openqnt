@@ -30,6 +30,7 @@ const SPECS: SnapshotSpec[] = [
   { name: 'rsi-with-stop', prompt: 'build an RSI strategy with a 3% stop loss' },
   { name: 'rsi-long-short', prompt: 'build a long and short RSI strategy: buy when RSI < 30, sell short when RSI > 70' },
   { name: 'macd-crossover', prompt: 'MACD bullish crossover strategy on TSLA' },
+  { name: 'senate-trading-alert', prompt: 'every hour, fetch senate trading activity for AAPL and alert me via telegram when a senator buys $50,000 or more' },
 ];
 
 const main = async () => {

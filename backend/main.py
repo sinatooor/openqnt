@@ -328,6 +328,13 @@ try:
 except Exception as _e:
     print(f"Warning: realtime router failed to load: {_e}")
 
+# Data-provider manifest + apiDataSource executor (FMP, Finnhub, Polygon, etc.)
+try:
+    from routers import data_providers as data_providers_router
+    app.include_router(data_providers_router.router)
+except Exception as _e:
+    print(f"Warning: data_providers router failed to load: {_e}")
+
 
 # ============================================================
 # Root-level health and custom-blocks endpoints

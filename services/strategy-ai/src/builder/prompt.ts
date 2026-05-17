@@ -139,7 +139,40 @@ order's \`next\` handle.
   - \`expression\` (math): safe Python DSL over upstream inputs (a, b, c).
     Allowed: arithmetic, comparisons, \`x if cond else y\`, \`abs/min/max\`,
     \`np.<small set>\`, \`talib.<small set>\`. NO imports, NO attribute access.
-  - \`subWorkflowNode\` (integration): invoke a saved strategy by id.`;
+  - \`subWorkflowNode\` (integration): invoke a saved strategy by id.
+
+### External API data (apiDataSource)
+
+For data that isn't plain OHLCV — congressional/senate trades, insider
+filings, news, fundamentals, sentiment, macro, etc. — use the
+\`apiDataSource\` node. It is backed by a manifest of providers we hold API
+keys for (FMP, Finnhub, Polygon, FRED, NewsAPI, Alpha Vantage, EIA,
+OpenAQ, Brave Search, Tavily, Perplexity, Firecrawl).
+
+Workflow:
+
+  1. \`list_integrations()\` — see providers, endpoint names, hasKey flags.
+  2. \`lookup_integration(provider, endpoint)\` — see params, auth, output shape.
+  3. \`add_node("apiDataSource", params={provider, endpoint, paramOverrides:{...}})\`.
+  4. The output handle is \`data\` (JSON), not \`candles\`. Pipe through a
+     \`codePythonNode\` (integration) to filter / reshape, then into the
+     downstream action (e.g. \`telegramNode\`, \`alertNode\`, \`order\`).
+
+#### Example 4 — "alert me when a senator buys AAPL above $50k hourly"
+
+5 nodes, 4 edges. Schedule trigger → apiDataSource → filter → notify.
+
+  add_node("scheduleTrigger", params={interval:"1h"}, id="trig")
+  add_node("apiDataSource", params={provider:"fmp", endpoint:"senate-trading", paramOverrides:{symbol:"AAPL"}}, id="senate")
+  add_node("codePythonNode", params={code:"# filter to purchases >= $50k"}, id="filter")
+  add_node("telegramNode", params={message:"Senator trade on AAPL: {{filter.output}}"}, id="alert")
+  connect("trig", "senate", "output", "trigger")
+  connect("senate", "filter", "data", "input")
+  connect("filter", "alert", "output", "trigger")
+
+Note: apiDataSource is live-only (\`backtestEligible: false\`). For
+backtests pick a real OHLCV provider (\`yfinanceData\`, \`fmpData\`,
+\`avanzaData\`).`;
 
 export const NODE_CONFIGURATION_RULE = `## Node configuration safety rules
 - Before adding a node, call \`lookup_node_schema(type)\` to confirm its inputs, outputs, params, and defaultData. The catalog is the source of truth.

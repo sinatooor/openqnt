@@ -1,0 +1,375 @@
+{
+  "version": 1,
+  "description": "Catalog of external API endpoints the apiDataSource node can call. Edit by hand; the backend serves it at GET /api/data-providers and the AI builder reads it via list_integrations / lookup_integration tools.",
+  "providers": {
+    "fmp": {
+      "name": "Financial Modeling Prep",
+      "envKey": "FMP_API_KEY",
+      "baseUrl": "https://financialmodelingprep.com",
+      "docsUrl": "https://site.financialmodelingprep.com/developer/docs",
+      "authStyle": "query",
+      "authParam": "apikey",
+      "endpoints": {
+        "senate-trading": {
+          "path": "/api/v4/senate-trading",
+          "method": "GET",
+          "params": {
+            "symbol": { "type": "string", "required": true, "example": "AAPL" }
+          },
+          "output": { "shape": "array", "fields": ["symbol", "transactionDate", "dateRecieved", "owner", "type", "amount", "comment", "senator", "office", "link"] },
+          "description": "US senator disclosed trades for a ticker (PTRs from the STOCK Act)."
+        },
+        "house-trading": {
+          "path": "/api/v4/senate-disclosure",
+          "method": "GET",
+          "params": {
+            "symbol": { "type": "string", "required": true, "example": "AAPL" }
+          },
+          "output": { "shape": "array", "fields": ["symbol", "disclosureDate", "transactionDate", "owner", "ticker", "assetDescription", "type", "amount", "representative", "district", "link"] },
+          "description": "US House of Representatives disclosed trades for a ticker."
+        },
+        "insider-trading": {
+          "path": "/api/v4/insider-trading",
+          "method": "GET",
+          "params": {
+            "symbol": { "type": "string", "required": true, "example": "AAPL" },
+            "limit": { "type": "number", "required": false, "default": 100 }
+          },
+          "output": { "shape": "array", "fields": ["symbol", "transactionDate", "reportingName", "transactionType", "securitiesTransacted", "price", "filingDate"] },
+          "description": "SEC Form 4 insider buys/sells for a ticker."
+        },
+        "historical-price-full": {
+          "path": "/api/v3/historical-price-full/{symbol}",
+          "method": "GET",
+          "params": {
+            "symbol": { "type": "string", "required": true, "templated": true, "example": "AAPL" },
+            "from": { "type": "date", "required": false, "example": "2025-01-01" },
+            "to": { "type": "date", "required": false, "example": "2025-12-31" }
+          },
+          "output": { "shape": "object", "pickPath": "historical", "fields": ["date", "open", "high", "low", "close", "volume", "adjClose"] },
+          "description": "End-of-day OHLCV history. Prefer the yfinance dataSource for plain OHLCV unless you need FMP-specific adj fields."
+        },
+        "income-statement": {
+          "path": "/api/v3/income-statement/{symbol}",
+          "method": "GET",
+          "params": {
+            "symbol": { "type": "string", "required": true, "templated": true, "example": "AAPL" },
+            "period": { "type": "string", "required": false, "default": "annual", "enum": ["annual", "quarter"] },
+            "limit": { "type": "number", "required": false, "default": 10 }
+          },
+          "output": { "shape": "array", "fields": ["date", "revenue", "grossProfit", "operatingIncome", "netIncome", "eps"] },
+          "description": "Annual or quarterly income statement for a ticker."
+        },
+        "earnings-calendar": {
+          "path": "/api/v3/earning_calendar",
+          "method": "GET",
+          "params": {
+            "from": { "type": "date", "required": false, "example": "2026-01-01" },
+            "to": { "type": "date", "required": false, "example": "2026-12-31" }
+          },
+          "output": { "shape": "array", "fields": ["symbol", "date", "epsEstimated", "eps", "revenueEstimated", "revenue", "time"] },
+          "description": "Upcoming and historical earnings dates with estimates."
+        }
+      }
+    },
+    "finnhub": {
+      "name": "Finnhub",
+      "envKey": "FINNHUB_API_KEY",
+      "baseUrl": "https://finnhub.io/api/v1",
+      "docsUrl": "https://finnhub.io/docs/api",
+      "authStyle": "query",
+      "authParam": "token",
+      "endpoints": {
+        "senate-trading": {
+          "path": "/stock/congressional-trading",
+          "method": "GET",
+          "params": {
+            "symbol": { "type": "string", "required": true, "example": "AAPL" },
+            "from": { "type": "date", "required": false, "example": "2025-01-01" },
+            "to": { "type": "date", "required": false, "example": "2025-12-31" }
+          },
+          "output": { "shape": "object", "pickPath": "data", "fields": ["amountFrom", "amountTo", "assetName", "filingDate", "name", "position", "transactionDate", "transactionType"] },
+          "description": "US congressional (Senate + House) disclosed trades for a ticker."
+        },
+        "insider-transactions": {
+          "path": "/stock/insider-transactions",
+          "method": "GET",
+          "params": {
+            "symbol": { "type": "string", "required": true, "example": "AAPL" }
+          },
+          "output": { "shape": "object", "pickPath": "data", "fields": ["name", "share", "change", "filingDate", "transactionDate", "transactionPrice", "transactionCode"] },
+          "description": "Insider transactions filed with the SEC for a ticker."
+        },
+        "company-news": {
+          "path": "/company-news",
+          "method": "GET",
+          "params": {
+            "symbol": { "type": "string", "required": true, "example": "AAPL" },
+            "from": { "type": "date", "required": true, "example": "2026-04-01" },
+            "to": { "type": "date", "required": true, "example": "2026-05-16" }
+          },
+          "output": { "shape": "array", "fields": ["category", "datetime", "headline", "id", "image", "related", "source", "summary", "url"] },
+          "description": "Company-specific news headlines."
+        },
+        "earnings-surprises": {
+          "path": "/stock/earnings",
+          "method": "GET",
+          "params": {
+            "symbol": { "type": "string", "required": true, "example": "AAPL" }
+          },
+          "output": { "shape": "array", "fields": ["actual", "estimate", "period", "symbol", "surprise", "surprisePercent"] },
+          "description": "Historical earnings surprises for a ticker."
+        },
+        "recommendation-trends": {
+          "path": "/stock/recommendation",
+          "method": "GET",
+          "params": {
+            "symbol": { "type": "string", "required": true, "example": "AAPL" }
+          },
+          "output": { "shape": "array", "fields": ["buy", "hold", "period", "sell", "strongBuy", "strongSell", "symbol"] },
+          "description": "Analyst recommendation trends by period."
+        }
+      }
+    },
+    "polygon": {
+      "name": "Polygon.io",
+      "envKey": "POLYGON_API_KEY",
+      "baseUrl": "https://api.polygon.io",
+      "docsUrl": "https://polygon.io/docs",
+      "authStyle": "query",
+      "authParam": "apiKey",
+      "endpoints": {
+        "ticker-news": {
+          "path": "/v2/reference/news",
+          "method": "GET",
+          "params": {
+            "ticker": { "type": "string", "required": true, "example": "AAPL" },
+            "limit": { "type": "number", "required": false, "default": 10 }
+          },
+          "output": { "shape": "object", "pickPath": "results", "fields": ["id", "publisher", "title", "author", "published_utc", "article_url", "tickers", "description"] },
+          "description": "News for a specific ticker."
+        },
+        "aggregates-bars": {
+          "path": "/v2/aggs/ticker/{ticker}/range/{multiplier}/{timespan}/{from}/{to}",
+          "method": "GET",
+          "params": {
+            "ticker": { "type": "string", "required": true, "templated": true, "example": "AAPL" },
+            "multiplier": { "type": "number", "required": true, "templated": true, "example": 1 },
+            "timespan": { "type": "string", "required": true, "templated": true, "enum": ["minute", "hour", "day", "week", "month"], "example": "day" },
+            "from": { "type": "date", "required": true, "templated": true, "example": "2025-01-01" },
+            "to": { "type": "date", "required": true, "templated": true, "example": "2025-12-31" }
+          },
+          "output": { "shape": "object", "pickPath": "results", "fields": ["o", "h", "l", "c", "v", "t", "vw"] },
+          "description": "OHLCV aggregate bars at any timeframe."
+        }
+      }
+    },
+    "alpha-vantage": {
+      "name": "Alpha Vantage",
+      "envKey": "ALPHA_VANTAGE_API_KEY",
+      "baseUrl": "https://www.alphavantage.co",
+      "docsUrl": "https://www.alphavantage.co/documentation/",
+      "authStyle": "query",
+      "authParam": "apikey",
+      "endpoints": {
+        "news-sentiment": {
+          "path": "/query",
+          "method": "GET",
+          "params": {
+            "function": { "type": "string", "required": true, "default": "NEWS_SENTIMENT" },
+            "tickers": { "type": "string", "required": true, "example": "AAPL" },
+            "limit": { "type": "number", "required": false, "default": 50 }
+          },
+          "output": { "shape": "object", "pickPath": "feed", "fields": ["title", "url", "time_published", "summary", "overall_sentiment_score", "overall_sentiment_label", "ticker_sentiment"] },
+          "description": "News with sentiment scores per ticker."
+        },
+        "earnings-calendar": {
+          "path": "/query",
+          "method": "GET",
+          "params": {
+            "function": { "type": "string", "required": true, "default": "EARNINGS_CALENDAR" },
+            "horizon": { "type": "string", "required": false, "default": "3month", "enum": ["3month", "6month", "12month"] }
+          },
+          "output": { "shape": "csv", "description": "Returned as CSV; downstream code node can parse." },
+          "description": "Upcoming earnings dates across the market."
+        }
+      }
+    },
+    "fred": {
+      "name": "FRED (St Louis Fed)",
+      "envKey": "FRED_API_KEY",
+      "baseUrl": "https://api.stlouisfed.org/fred",
+      "docsUrl": "https://fred.stlouisfed.org/docs/api/fred/",
+      "authStyle": "query",
+      "authParam": "api_key",
+      "endpoints": {
+        "series-observations": {
+          "path": "/series/observations",
+          "method": "GET",
+          "params": {
+            "series_id": { "type": "string", "required": true, "example": "CPIAUCSL" },
+            "observation_start": { "type": "date", "required": false, "example": "2020-01-01" },
+            "observation_end": { "type": "date", "required": false, "example": "2026-01-01" },
+            "file_type": { "type": "string", "required": false, "default": "json" }
+          },
+          "output": { "shape": "object", "pickPath": "observations", "fields": ["date", "value", "realtime_start", "realtime_end"] },
+          "description": "Time-series data for a FRED series (e.g. CPIAUCSL, UNRATE, FEDFUNDS, DGS10)."
+        }
+      }
+    },
+    "newsapi": {
+      "name": "NewsAPI.org",
+      "envKey": "NEWSAPI_KEY",
+      "baseUrl": "https://newsapi.org/v2",
+      "docsUrl": "https://newsapi.org/docs",
+      "authStyle": "query",
+      "authParam": "apiKey",
+      "endpoints": {
+        "everything": {
+          "path": "/everything",
+          "method": "GET",
+          "params": {
+            "q": { "type": "string", "required": true, "example": "Apple Inc" },
+            "from": { "type": "date", "required": false, "example": "2026-05-01" },
+            "language": { "type": "string", "required": false, "default": "en" },
+            "sortBy": { "type": "string", "required": false, "default": "publishedAt", "enum": ["publishedAt", "relevancy", "popularity"] },
+            "pageSize": { "type": "number", "required": false, "default": 20 }
+          },
+          "output": { "shape": "object", "pickPath": "articles", "fields": ["source", "author", "title", "description", "url", "urlToImage", "publishedAt", "content"] },
+          "description": "Full-text news search across thousands of sources."
+        },
+        "top-headlines": {
+          "path": "/top-headlines",
+          "method": "GET",
+          "params": {
+            "category": { "type": "string", "required": false, "default": "business", "enum": ["business", "technology", "entertainment", "general", "health", "science", "sports"] },
+            "country": { "type": "string", "required": false, "default": "us" },
+            "pageSize": { "type": "number", "required": false, "default": 20 }
+          },
+          "output": { "shape": "object", "pickPath": "articles", "fields": ["source", "title", "description", "url", "publishedAt"] },
+          "description": "Top headlines by category and country."
+        }
+      }
+    },
+    "eia": {
+      "name": "U.S. EIA (Energy Information Admin)",
+      "envKey": "EIA_API_KEY",
+      "baseUrl": "https://api.eia.gov/v2",
+      "docsUrl": "https://www.eia.gov/opendata/documentation.php",
+      "authStyle": "query",
+      "authParam": "api_key",
+      "endpoints": {
+        "petroleum-spot-prices": {
+          "path": "/petroleum/pri/spt/data",
+          "method": "GET",
+          "params": {
+            "frequency": { "type": "string", "required": false, "default": "daily" },
+            "data[]": { "type": "string", "required": false, "default": "value" }
+          },
+          "output": { "shape": "object", "pickPath": "response.data", "fields": ["period", "value", "duoarea", "product"] },
+          "description": "Daily petroleum spot prices (WTI, Brent, gasoline)."
+        }
+      }
+    },
+    "openaq": {
+      "name": "OpenAQ",
+      "envKey": "OPENAQ_API_KEY",
+      "baseUrl": "https://api.openaq.org/v3",
+      "docsUrl": "https://docs.openaq.org/",
+      "authStyle": "header",
+      "authParam": "X-API-Key",
+      "endpoints": {
+        "locations": {
+          "path": "/locations",
+          "method": "GET",
+          "params": {
+            "coordinates": { "type": "string", "required": false, "example": "40.7,-74.0" },
+            "radius": { "type": "number", "required": false, "default": 25000 },
+            "limit": { "type": "number", "required": false, "default": 100 }
+          },
+          "output": { "shape": "object", "pickPath": "results", "fields": ["id", "name", "country", "coordinates", "sensors"] },
+          "description": "Air-quality monitoring locations near a coordinate."
+        }
+      }
+    },
+    "brave-search": {
+      "name": "Brave Search",
+      "envKey": "BRAVE_SEARCH_API_KEY",
+      "baseUrl": "https://api.search.brave.com/res/v1",
+      "docsUrl": "https://api.search.brave.com/app/documentation",
+      "authStyle": "header",
+      "authParam": "X-Subscription-Token",
+      "endpoints": {
+        "web-search": {
+          "path": "/web/search",
+          "method": "GET",
+          "params": {
+            "q": { "type": "string", "required": true, "example": "TSLA earnings preview" },
+            "count": { "type": "number", "required": false, "default": 10 }
+          },
+          "output": { "shape": "object", "pickPath": "web.results", "fields": ["title", "url", "description", "age"] },
+          "description": "General-purpose web search."
+        }
+      }
+    },
+    "tavily": {
+      "name": "Tavily",
+      "envKey": "TAVILY_API_KEY",
+      "baseUrl": "https://api.tavily.com",
+      "docsUrl": "https://docs.tavily.com/",
+      "authStyle": "body",
+      "authParam": "api_key",
+      "endpoints": {
+        "search": {
+          "path": "/search",
+          "method": "POST",
+          "params": {
+            "query": { "type": "string", "required": true, "example": "AAPL earnings reaction" },
+            "max_results": { "type": "number", "required": false, "default": 5 },
+            "search_depth": { "type": "string", "required": false, "default": "basic", "enum": ["basic", "advanced"] }
+          },
+          "output": { "shape": "object", "pickPath": "results", "fields": ["title", "url", "content", "score"] },
+          "description": "Research-optimised web search returning extracted content."
+        }
+      }
+    },
+    "perplexity": {
+      "name": "Perplexity",
+      "envKey": "PERPLEXITY_API_KEY",
+      "baseUrl": "https://api.perplexity.ai",
+      "docsUrl": "https://docs.perplexity.ai/",
+      "authStyle": "bearer",
+      "endpoints": {
+        "chat-completions": {
+          "path": "/chat/completions",
+          "method": "POST",
+          "params": {
+            "model": { "type": "string", "required": true, "default": "sonar" },
+            "messages": { "type": "array", "required": true, "example": [{ "role": "user", "content": "Summarise today's macro news for AAPL." }] }
+          },
+          "output": { "shape": "object", "pickPath": "choices.0.message.content" },
+          "description": "Online research LLM that grounds answers in fresh web sources."
+        }
+      }
+    },
+    "firecrawl": {
+      "name": "Firecrawl",
+      "envKey": "FIRECRAWL_API_KEY",
+      "baseUrl": "https://api.firecrawl.dev/v1",
+      "docsUrl": "https://docs.firecrawl.dev/",
+      "authStyle": "bearer",
+      "endpoints": {
+        "scrape": {
+          "path": "/scrape",
+          "method": "POST",
+          "params": {
+            "url": { "type": "string", "required": true, "example": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0000320193" },
+            "formats": { "type": "array", "required": false, "default": ["markdown"] }
+          },
+          "output": { "shape": "object", "pickPath": "data.markdown" },
+          "description": "Scrape any URL and get clean markdown."
+        }
+      }
+    }
+  }
+}

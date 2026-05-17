@@ -43,7 +43,7 @@ const SUBTYPE_KEYS = [
   'indicatorType', 'conditionType', 'actionType', 'triggerType',
   'mathType', 'controlType', 'riskType', 'variableType',
   'environmentType', 'tradeInfoType', 'llmType', 'integrationType',
-  'pineType', 'agentType', 'provider',
+  'pineType', 'agentType', 'dataSourceType', 'provider',
 ];
 
 const extractSubType = (n: CatalogNode): string | undefined => {

@@ -64,6 +64,46 @@ export interface VerifyMockResponse {
   nodeCoverage: Record<string, string>;
 }
 
+export interface DataProviderSummary {
+  id: string;
+  name: string;
+  envKey: string | null;
+  hasKey: boolean;
+  baseUrl: string;
+  docsUrl?: string;
+  endpoints: string[];
+}
+
+export interface DataProvidersResponse {
+  providers: DataProviderSummary[];
+}
+
+export interface EndpointParamSpec {
+  type: string;
+  required?: boolean;
+  default?: unknown;
+  example?: unknown;
+  enum?: unknown[];
+  templated?: boolean;
+}
+
+export interface EndpointSpec {
+  provider: string;
+  endpoint: string;
+  name: string;
+  baseUrl: string;
+  docsUrl?: string;
+  envKey: string | null;
+  hasKey: boolean;
+  authStyle?: string;
+  authParam?: string;
+  method: string;
+  path: string;
+  params: Record<string, EndpointParamSpec>;
+  output: Record<string, unknown>;
+  description?: string;
+}
+
 export class PythonBridge {
   constructor(private readonly baseUrl: string = process.env.STRATEGY_PY_URL ?? 'http://127.0.0.1:8000') {}
 
@@ -99,5 +139,19 @@ export class PythonBridge {
     });
     if (!r.ok) throw new Error(`verify-mock: ${r.status} ${await r.text()}`);
     return (await r.json()) as VerifyMockResponse;
+  }
+
+  async listDataProviders(): Promise<DataProvidersResponse> {
+    const r = await fetch(`${this.baseUrl}/api/data-providers`);
+    if (!r.ok) throw new Error(`data-providers: ${r.status} ${await r.text()}`);
+    return (await r.json()) as DataProvidersResponse;
+  }
+
+  async lookupDataEndpoint(provider: string, endpoint: string): Promise<EndpointSpec> {
+    const r = await fetch(
+      `${this.baseUrl}/api/data-providers/${encodeURIComponent(provider)}/${encodeURIComponent(endpoint)}`,
+    );
+    if (!r.ok) throw new Error(`data-providers lookup: ${r.status} ${await r.text()}`);
+    return (await r.json()) as EndpointSpec;
   }
 }

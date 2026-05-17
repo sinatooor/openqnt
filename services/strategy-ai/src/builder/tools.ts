@@ -309,6 +309,37 @@ export const createBuilderTools = (
     }),
     execute: async ({ question, reason }) => ({ asked: true, question, reason: reason ?? null }),
   }),
+
+  list_integrations: tool({
+    description:
+      'List configured external API providers (FMP, Finnhub, Polygon, FRED, NewsAPI, ...) with their available endpoint names and whether the env key is set. Call this BEFORE adding an apiDataSource node so you know which provider + endpoint to pick. Source: backend/data_providers/manifest.json.',
+    parameters: z.object({}),
+    execute: async () => {
+      const { providers } = await bridge.listDataProviders();
+      return providers.map((p) => ({
+        id: p.id,
+        name: p.name,
+        hasKey: p.hasKey,
+        endpoints: p.endpoints,
+      }));
+    },
+  }),
+
+  lookup_integration: tool({
+    description:
+      'Return the full spec for one external API endpoint: URL, method, param names + types + required flags, auth style, output shape. Call this BEFORE configuring an apiDataSource node so you pass the right param names. Source: backend/data_providers/manifest.json.',
+    parameters: z.object({
+      provider: z.string().describe('Provider id from list_integrations (e.g. "fmp", "finnhub").'),
+      endpoint: z.string().describe('Endpoint id under that provider (e.g. "senate-trading").'),
+    }),
+    execute: async ({ provider, endpoint }) => {
+      try {
+        return await bridge.lookupDataEndpoint(provider, endpoint);
+      } catch (e) {
+        return { error: e instanceof Error ? e.message : String(e) };
+      }
+    },
+  }),
 });
 
 // ── Helpers ────────────────────────────────────────────────────────────────

@@ -20,13 +20,16 @@ import type {
   PythonBridge,
   CatalogNode,
   CatalogResponse,
+  DataProvidersResponse,
   DryRunResponse,
+  EndpointSpec,
   VerifyMockResponse,
 } from '../../src/python-bridge';
 import type { StrategyDraft } from '../../src/types/strategy-draft';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CATALOG_PATH = resolve(__dirname, '../../../../backend/strategy_flow/node_catalog_cache.json');
+const MANIFEST_PATH = resolve(__dirname, '../../../../backend/data_providers/manifest.json');
 
 let _envLoaded = false;
 const ensureEnv = () => {
@@ -46,7 +49,31 @@ const loadCatalog = async (): Promise<Record<string, CatalogNode[]>> => {
   return _catalogCache!;
 };
 
-class MockPythonBridge implements Pick<PythonBridge, 'getCatalog' | 'validateDryRun' | 'verifyMock'> {
+interface ManifestProvider {
+  name: string;
+  envKey?: string;
+  baseUrl?: string;
+  docsUrl?: string;
+  authStyle?: string;
+  authParam?: string;
+  endpoints?: Record<string, {
+    path: string;
+    method?: string;
+    params?: Record<string, unknown>;
+    output?: Record<string, unknown>;
+    description?: string;
+  }>;
+}
+
+let _manifestCache: { providers: Record<string, ManifestProvider> } | undefined;
+const loadManifest = async () => {
+  if (_manifestCache) return _manifestCache;
+  const raw = await readFile(MANIFEST_PATH, 'utf8');
+  _manifestCache = JSON.parse(raw) as typeof _manifestCache;
+  return _manifestCache!;
+};
+
+class MockPythonBridge implements Pick<PythonBridge, 'getCatalog' | 'validateDryRun' | 'verifyMock' | 'listDataProviders' | 'lookupDataEndpoint'> {
   constructor(private readonly catalog: Record<string, CatalogNode[]>) {}
   async getCatalog(): Promise<CatalogResponse> {
     const total = Object.values(this.catalog).reduce((s, a) => s + a.length, 0);
@@ -57,6 +84,42 @@ class MockPythonBridge implements Pick<PythonBridge, 'getCatalog' | 'validateDry
   }
   async verifyMock(_d: StrategyDraft): Promise<VerifyMockResponse> {
     return { compiles: true, valid: true, errors: [], warnings: [], failureSignature: '', compiledCodeSize: 0, nodeCoverage: {} };
+  }
+  async listDataProviders(): Promise<DataProvidersResponse> {
+    const m = await loadManifest();
+    const providers = Object.entries(m.providers).map(([id, p]) => ({
+      id,
+      name: p.name ?? id,
+      envKey: p.envKey ?? null,
+      hasKey: true, // tests assume keys present so the agent doesn't filter providers out
+      baseUrl: p.baseUrl ?? '',
+      docsUrl: p.docsUrl,
+      endpoints: Object.keys(p.endpoints ?? {}).sort(),
+    }));
+    return { providers };
+  }
+  async lookupDataEndpoint(provider: string, endpoint: string): Promise<EndpointSpec> {
+    const m = await loadManifest();
+    const p = m.providers[provider];
+    if (!p) throw new Error(`unknown provider: ${provider}`);
+    const spec = p.endpoints?.[endpoint];
+    if (!spec) throw new Error(`unknown endpoint ${endpoint} for ${provider}`);
+    return {
+      provider,
+      endpoint,
+      name: p.name ?? provider,
+      baseUrl: p.baseUrl ?? '',
+      docsUrl: p.docsUrl,
+      envKey: p.envKey ?? null,
+      hasKey: true,
+      authStyle: p.authStyle,
+      authParam: p.authParam,
+      method: spec.method ?? 'GET',
+      path: spec.path,
+      params: (spec.params ?? {}) as Record<string, never>,
+      output: (spec.output ?? {}) as Record<string, unknown>,
+      description: spec.description,
+    };
   }
 }
 
@@ -75,7 +138,7 @@ const subTypeOf = (data: Record<string, unknown>): string => {
     'indicatorType', 'conditionType', 'actionType', 'triggerType',
     'controlType', 'mathType', 'riskType', 'variableType',
     'environmentType', 'tradeInfoType', 'llmType', 'integrationType',
-    'pineType', 'agentType', 'provider',
+    'pineType', 'agentType', 'dataSourceType', 'provider',
   ];
   for (const k of keys) {
     const v = data[k];
