@@ -79,19 +79,22 @@ cat /tmp/openqnt-requirements.txt
 
 # 4. Try the heavy/optional deps individually so one failure doesn't poison
 #    the whole bundle. The backend gates each of these at runtime.
-echo "→ Trying optional deps (best-effort)…"
-for opt in \
+echo "-> Trying optional deps (best-effort)"
+for dep in \
   "TA-Lib" \
   "nautilus_trader" \
   "chromadb" \
   "sentence-transformers" \
-  "aioapns" "twilio" "phonenumbers" "pyotp"; do
-  echo "  trying $opt…"
+  "aioapns" \
+  "twilio" \
+  "phonenumbers" \
+  "pyotp"; do
+  echo "  trying $dep"
   "$PY_BIN" -m uv pip install \
     --python "$PY_BIN" \
     --target "$OUT_LIBS" \
     --no-cache \
-    "$opt" 2>&1 | tail -3 || echo "  ⚠ $opt skipped — feature will degrade at runtime"
+    "$dep" 2>&1 | tail -3 || echo "  WARN: $dep skipped - feature will degrade at runtime"
 done
 
 # 5. Pre-downloading the sentence-transformers MPNet model is optional and

@@ -48,6 +48,24 @@ SEC_USER_AGENT = os.getenv(
 )
 FMP_API_KEY = os.getenv("FMP_API_KEY")
 
+_FEAR_GREED_CACHE: Optional[Dict[str, Any]] = None
+_FEAR_GREED_CACHE_TS: Optional[datetime] = None
+_FEAR_GREED_CACHE_TTL = timedelta(hours=6)
+
+
+def _get_fear_greed_cache() -> Optional[Dict[str, Any]]:
+    if _FEAR_GREED_CACHE is None or _FEAR_GREED_CACHE_TS is None:
+        return None
+    if datetime.now(timezone.utc) - _FEAR_GREED_CACHE_TS > _FEAR_GREED_CACHE_TTL:
+        return None
+    return {**_FEAR_GREED_CACHE, "cached": True}
+
+
+def _set_fear_greed_cache(payload: Dict[str, Any]) -> None:
+    global _FEAR_GREED_CACHE, _FEAR_GREED_CACHE_TS
+    _FEAR_GREED_CACHE = payload
+    _FEAR_GREED_CACHE_TS = datetime.now(timezone.utc)
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Data source selection — every endpoint accepts ?source=auto|yfinance|avanza|fmp
@@ -1164,6 +1182,9 @@ async def get_fear_greed() -> Dict[str, Any]:
         if components:
             score = sum(c["score"] for c in components) / len(components)
         else:
+            cached = _get_fear_greed_cache()
+            if cached is not None:
+                return cached
             score = 50.0
         score = round(score, 1)
 
@@ -1172,7 +1193,7 @@ async def get_fear_greed() -> Dict[str, Any]:
         elif score < 75:  label = "Greed"
         else:             label = "Extreme Greed"
 
-        return {
+        payload = {
             "source": "yfinance",
             "score": score,
             "label": label,
@@ -1182,6 +1203,9 @@ async def get_fear_greed() -> Dict[str, Any]:
             "components_total": 7,
             "missing": ["put_call"],
         }
+        if components:
+            _set_fear_greed_cache(payload)
+        return payload
 
     try:
         return await _run(_build)

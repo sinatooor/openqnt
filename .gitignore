@@ -104,3 +104,7 @@ release/
 #   - docs/      (architecture.md, template docs)
 # Make sure no stray rules above re-exclude them.
 # =============================================================================
+fame.html
+nathenantony-line-ranges.txt
+.gitignore
+StrategyBuilderDemo.tsx

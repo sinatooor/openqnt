@@ -374,9 +374,13 @@ export default function GipView(props: GipViewProps) {
       1,
     );
     volSeriesRef.current = volSeries;
-    chart.priceScale('volume-pane').applyOptions({
-      scaleMargins: { top: 0.1, bottom: 0 },
-    });
+    try {
+      chart.priceScale('volume-pane').applyOptions({
+        scaleMargins: { top: 0.1, bottom: 0 },
+      });
+    } catch (err) {
+      console.warn('GipView: volume price scale unavailable', err);
+    }
 
     // VWAP (toggleable).
     if (showVwap) {

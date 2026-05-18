@@ -10,8 +10,19 @@ import { authMiddleware } from '../middleware/auth.js';
 import { prisma } from '../../config/database.js';
 import { logger } from '../../utils/logger.js';
 import { resumeExecution } from '../../services/executionService.js';
+import { Prisma } from '@prisma/client';
 
 const router = Router();
+function isDbUnavailable(error: unknown): boolean {
+    if (error instanceof Prisma.PrismaClientInitializationError) return true;
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        return ['P1001', 'P1002', 'P2021'].includes(error.code);
+    }
+    const message = (error as { message?: string } | null)?.message;
+    if (!message) return false;
+    return /connect|ECONNREFUSED|does not exist|no such table/i.test(message);
+}
+
 
 router.use(authMiddleware);
 
@@ -75,6 +86,10 @@ router.get('/pending', async (req: Request, res: Response) => {
             count: active.length,
         });
     } catch (error) {
+        if (isDbUnavailable(error)) {
+            res.json({ approvals: [], count: 0, warning: 'approvals unavailable' });
+            return;
+        }
         logger.error({ error }, 'Failed to list pending approvals');
         res.status(500).json({ error: 'Failed to list pending approvals' });
     }
@@ -110,6 +125,12 @@ router.get('/', async (req: Request, res: Response) => {
 
         res.json({ approvals, total, limit, offset });
     } catch (error) {
+        if (isDbUnavailable(error)) {
+            const limit = Math.min(Number(req.query.limit) || 50, 200);
+            const offset = Number(req.query.offset) || 0;
+            res.json({ approvals: [], total: 0, limit, offset, warning: 'approvals unavailable' });
+            return;
+        }
         logger.error({ error }, 'Failed to list approvals');
         res.status(500).json({ error: 'Failed to list approvals' });
     }
