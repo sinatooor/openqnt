@@ -162,6 +162,11 @@ STRATEGY_TOOLS = [
                     "enum": ["lots", "percent"],
                     "description": "Size unit"
                 },
+                "broker": {
+                    "type": "string",
+                    "enum": ["paper", "ibkr", "avanza", "alpaca"],
+                    "description": "Broker to route the order to. Defaults to 'paper'. Use 'ibkr' for US stocks via TWS, 'avanza' for Nordic stocks via Avanza."
+                },
                 "stopPrice": {"type": "number", "description": "Stop loss price level"},
                 "takeProfitPrice": {"type": "number", "description": "Take profit price level"},
                 "trailingDistance": {"type": "number", "description": "Trailing stop distance"},

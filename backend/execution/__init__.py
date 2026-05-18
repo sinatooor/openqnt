@@ -33,12 +33,14 @@ from .panic import PanicService
 from .paper_broker import PaperBroker
 from .alpaca_broker import AlpacaBroker
 from .ibkr_broker import IBKRBroker
+from .avanza_broker import AvanzaBroker
 from .risk_gate import RiskConfig, RiskDecision, RiskGate
 from .runner import ExecutionRunner
 
 __all__ = [
     "AccountSnapshot",
     "AlpacaBroker",
+    "AvanzaBroker",
     "ExecutionRunner",
     "Fill",
     "IBKRBroker",

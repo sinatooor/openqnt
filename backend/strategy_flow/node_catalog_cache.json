@@ -22,7 +22,8 @@
         "direction": "long",
         "orderType": "market",
         "size": 0.1,
-        "sizeType": "lots"
+        "sizeType": "lots",
+        "broker": "paper"
       },
       "handles": [
         {

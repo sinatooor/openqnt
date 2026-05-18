@@ -659,6 +659,9 @@ def auto_fix_flow(
                 if "direction" not in data:
                     data["direction"] = "buy"
                     fixes.append(f"Set default direction=buy for {node['id']}")
+                if "broker" not in data:
+                    data["broker"] = "paper"
+                    fixes.append(f"Set default broker=paper for {node['id']}")
     
     # Ensure all edges reference valid nodes
     node_ids = {node["id"] for node in nodes}
@@ -862,7 +865,8 @@ def get_strategy_template(template_id: str) -> Dict[str, Any]:
                         "label": "Buy",
                         "actionType": "order",
                         "direction": "buy",
-                        "size": 10
+                        "size": 10,
+                        "broker": "paper"
                     }
                 },
                 {
@@ -932,7 +936,8 @@ def get_strategy_template(template_id: str) -> Dict[str, Any]:
                         "label": "Buy",
                         "actionType": "order",
                         "direction": "buy",
-                        "size": 10
+                        "size": 10,
+                        "broker": "paper"
                     }
                 },
                 {
