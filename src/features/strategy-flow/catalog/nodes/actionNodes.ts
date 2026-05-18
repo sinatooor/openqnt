@@ -16,7 +16,7 @@ export const ACTION_NODES: NodeCatalogItem[] = [
         subcategory: 'Orders',
         icon: 'ShoppingCart',
         color: '#10b981',
-        defaultData: { actionType: 'order', direction: 'long', orderType: 'market', size: 0.1, sizeType: 'lots' },
+        defaultData: { actionType: 'order', direction: 'long', orderType: 'market', size: 0.1, sizeType: 'lots', broker: 'paper' },
     },
     {
         type: 'closePosition',

@@ -43,6 +43,10 @@ export const ActionNode = memo(({ id, data, selected }: NodeProps) => {
                 <span className="text-white/80 capitalize">{nodeData.orderType}</span>
               </div>
             )}
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-white/50">Broker</span>
+              <span className="text-white/80 uppercase">{nodeData.broker ?? 'paper'}</span>
+            </div>
           </div>
         );
 

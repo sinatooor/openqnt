@@ -1,6 +1,6 @@
 """
 Global AI Assistant Router
-Full-featured AI chat with Gemini function-calling and SSE streaming.
+Full-featured AI chat with Anthropic tool-use and SSE streaming.
 This powers the /ai-chat page — the single global AI interface for the entire app.
 
 Tools available to the AI:
@@ -31,10 +31,6 @@ try:
     ANTHROPIC_AVAILABLE = True
 except ImportError:
     ANTHROPIC_AVAILABLE = False
-
-# Kept for backward compatibility with any caller that still imports
-# `GENAI_AVAILABLE` from this module; the chat endpoint itself uses Anthropic.
-GENAI_AVAILABLE = ANTHROPIC_AVAILABLE
 
 router = APIRouter(prefix="/api/ai-assistant", tags=["ai-assistant"])
 
@@ -955,101 +951,6 @@ async def chat_stream(req: AssistantChatRequest):
             "X-Accel-Buffering": "no",
         }
     )
-
-
-# Non-streaming fallback
-@router.post("/chat")
-async def chat_non_streaming(req: AssistantChatRequest):
-    """Non-streaming fallback for environments that don't support SSE."""
-    if not GENAI_AVAILABLE:
-        raise HTTPException(status_code=500, detail="Google GenAI not available")
-
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
-
-    try:
-        client = genai.Client(api_key=api_key)
-
-        contents = []
-        for msg in req.history:
-            contents.append(types.Content(
-                role="user" if msg.role == "user" else "model",
-                parts=[types.Part.from_text(text=msg.content)]
-            ))
-        contents.append(types.Content(
-            role="user",
-            parts=[types.Part.from_text(text=req.message)]
-        ))
-
-        tool_declarations = []
-        for tool_def in TOOL_DEFINITIONS:
-            tool_declarations.append(types.Tool(
-                function_declarations=[
-                    types.FunctionDeclaration(
-                        name=tool_def["name"],
-                        description=tool_def["description"],
-                        parameters=tool_def["parameters"]
-                    )
-                ]
-            ))
-
-        config = types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT,
-            tools=tool_declarations,
-            temperature=0.7,
-            max_output_tokens=4096,
-        )
-
-        all_text = ""
-        tool_results = []
-        actions = []
-
-        for _ in range(5):
-            response = client.models.generate_content(
-                model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
-                contents=contents,
-                config=config,
-            )
-
-            has_function_calls = False
-            function_response_parts = []
-
-            if response.candidates and response.candidates[0].content and response.candidates[0].content.parts:
-                for part in response.candidates[0].content.parts:
-                    if part.function_call:
-                        has_function_calls = True
-                        result = await execute_tool(
-                            part.function_call.name,
-                            dict(part.function_call.args) if part.function_call.args else {}
-                        )
-                        tool_results.append({"tool": part.function_call.name, "result": result})
-                        if result.get("action"):
-                            actions.append({"action": result["action"], "data": result})
-
-                        function_response_parts.append(
-                            types.Part.from_function_response(
-                                name=part.function_call.name,
-                                response=result,
-                            )
-                        )
-                    elif part.text:
-                        all_text += part.text
-
-            if not has_function_calls:
-                break
-
-            contents.append(response.candidates[0].content)
-            contents.append(types.Content(role="user", parts=function_response_parts))
-
-        return {
-            "response": all_text,
-            "tool_results": tool_results,
-            "actions": actions,
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/tools")

@@ -22,6 +22,15 @@ interface PropertyPanelProps {
   onClose: () => void;
 }
 
+// Fields that should render as a Select dropdown instead of a free-text input.
+// Keyed by the defaultData field name; values are the allowed choices.
+const ENUM_FIELDS: Record<string, string[]> = {
+  broker: ['paper', 'ibkr', 'avanza', 'alpaca'],
+  direction: ['long', 'short'],
+  orderType: ['market', 'limit', 'stop'],
+  sizeType: ['lots', 'usd', 'percent'],
+};
+
 const categoryColors: Record<NodeCategory, string> = {
   dataSources: 'border-l-cyan-600',
   indicators: 'border-l-violet-500',
@@ -163,6 +172,29 @@ export const PropertyPanel = memo(({ node, onClose }: PropertyPanelProps) => {
             rows={key === 'code' ? 8 : 3}
             className="w-full rounded-md border border-input bg-background/50 px-2 py-1 text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
           />
+        </div>
+      );
+    }
+    const enumOptions = ENUM_FIELDS[key];
+    if (enumOptions) {
+      return (
+        <div key={key} className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">{label}</Label>
+          <Select
+            value={String(currentValue ?? enumOptions[0])}
+            onValueChange={(v) => handleTopLevelChange(key, v)}
+          >
+            <SelectTrigger className="h-8 text-sm bg-background/50">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {enumOptions.map((opt) => (
+                <SelectItem key={opt} value={opt} className="text-sm">
+                  {opt}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       );
     }

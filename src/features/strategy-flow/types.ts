@@ -174,6 +174,10 @@ export interface ConditionNodeData extends BaseNodeData {
   inputB?: number | string;
 }
 
+// Broker selection for Order/Action nodes — must match the names registered
+// in `backend/routers/execution.py:_build_runners()`.
+export type Broker = 'paper' | 'ibkr' | 'avanza' | 'alpaca';
+
 // Action Node Data
 export interface ActionNodeData extends BaseNodeData {
   actionType: ActionType;
@@ -183,6 +187,7 @@ export interface ActionNodeData extends BaseNodeData {
   size?: number;
   sizeType?: SizeType;
   limitPrice?: number;
+  broker?: Broker;
   // Stop/TP specific
   stopPrice?: number;
   takeProfitPrice?: number;
