@@ -123,8 +123,13 @@ export default function MarketPulsePanel() {
         const map = new Map<string, Quote>();
         for (const q of quotes?.quotes ?? []) map.set(q.symbol, q);
         setSnapshot(map);
-        if (fearGreed) setFg(fearGreed);
-        setStatus(movers?.data || quotes?.quotes || fearGreed ? 'live' : 'offline');
+        const hasFearGreed = Boolean(fearGreed && fearGreed.components_computed > 0);
+        if (hasFearGreed) {
+          setFg(fearGreed);
+        } else {
+          setFg(null);
+        }
+        setStatus(movers?.data || quotes?.quotes || hasFearGreed ? 'live' : 'offline');
       } catch {
         if (!cancelled) setStatus('offline');
       }

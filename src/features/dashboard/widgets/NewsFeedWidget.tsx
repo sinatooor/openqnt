@@ -1,12 +1,12 @@
 /**
- * NewsFeedWidget — Aggregates real headlines from /api/news (orchestrator
- * NewsAPI proxy) with fallback to /api/terminal/news/SPY (yfinance).
+ * NewsFeedWidget — Aggregates real headlines from /api/news (backend
+ * NewsAPI/Google RSS) with fallback to /api/terminal/news/SPY (yfinance).
  */
 import { useEffect, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { terminalApiGet } from '@/features/terminal/apiClient';
 
-import { orchestratorBase } from '@/lib/runtimeConfig';
+import { apiBase } from '@/lib/runtimeConfig';
 interface NewsItem {
   id: string | number | null;
   title: string;
@@ -30,8 +30,7 @@ interface TerminalNewsResponse {
   };
 }
 
-const ORCHESTRATOR_URL =
-  orchestratorBase();
+const BACKEND_URL = apiBase();
 
 function classifySentiment(headline: string | null | undefined): 'bullish' | 'bearish' | 'neutral' {
   // Defensive null guard — backend payloads occasionally lack a headline
@@ -66,9 +65,9 @@ export default function NewsFeedWidget() {
     let cancelled = false;
     const ctrl = new AbortController();
 
-    const tryOrchestrator = async (): Promise<NewsItem[] | null> => {
+    const tryBackend = async (): Promise<NewsItem[] | null> => {
       try {
-        const r = await fetch(`${ORCHESTRATOR_URL}/api/news?limit=10`, { signal: ctrl.signal });
+        const r = await fetch(`${BACKEND_URL}/api/news?limit=10`, { signal: ctrl.signal });
         if (!r.ok) return null;
         const body = await r.json();
         const arr = Array.isArray(body) ? body : body.articles ?? body.items ?? body.data ?? [];
@@ -104,7 +103,7 @@ export default function NewsFeedWidget() {
     };
 
     const load = async () => {
-      const news = (await tryOrchestrator()) ?? (await tryTerminalNews());
+      const news = (await tryBackend()) ?? (await tryTerminalNews());
       if (cancelled) return;
       if (news && news.length) {
         setItems(news);
