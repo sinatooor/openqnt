@@ -1,11 +1,22 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { authMiddleware } from '../middleware/auth.js';
 import { DataIngestionService } from '../../services/dataIngestionService.js';
 import { PortfolioEventMatcher } from '../../services/portfolioEventMatcher.js';
 import { logger } from '../../utils/logger.js';
 
 const router = Router();
+function isDbUnavailable(error: unknown): boolean {
+    if (error instanceof Prisma.PrismaClientInitializationError) return true;
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        return ['P1001', 'P1002', 'P2021'].includes(error.code);
+    }
+    const message = (error as { message?: string } | null)?.message;
+    if (!message) return false;
+    return /connect|ECONNREFUSED|does not exist|no such table/i.test(message);
+}
+
 
 // All data event routes require authentication
 router.use(authMiddleware);
@@ -42,6 +53,11 @@ router.get('/', async (req: Request, res: Response) => {
         const result = await DataIngestionService.getEvents(filter);
         res.json(result);
     } catch (error: any) {
+        if (isDbUnavailable(error)) {
+            const fallback = listEventsSchema.parse(req.query);
+            res.json({ events: [], total: 0, limit: fallback.limit, offset: fallback.offset, warning: 'data-events unavailable' });
+            return;
+        }
         if (error.name === 'ZodError') {
             res.status(400).json({ error: 'Validation error', details: error.errors });
             return;
@@ -71,6 +87,11 @@ router.get('/portfolio', async (req: Request, res: Response) => {
 
         res.json(result);
     } catch (error: any) {
+        if (isDbUnavailable(error)) {
+            const fallback = portfolioEventsSchema.parse(req.query);
+            res.json({ events: [], total: 0, portfolioSymbols: [], limit: fallback.limit, offset: fallback.offset, warning: 'portfolio events unavailable' });
+            return;
+        }
         if (error.name === 'ZodError') {
             res.status(400).json({ error: 'Validation error', details: error.errors });
             return;

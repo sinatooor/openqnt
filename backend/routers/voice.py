@@ -390,7 +390,12 @@ class UpdateVoiceTradingRequest(BaseModel):
 async def get_voice_profile(user_id: str):
     profile = voice_db.get_user_voice_profile(user_id)
     if not profile:
-        raise HTTPException(status_code=404, detail="user not found")
+        return VoiceProfileResponse(
+            user_id=user_id,
+            phone_number=None,
+            voice_trading_enabled=False,
+            ios_devices=0,
+        )
     devices = voice_db.list_ios_devices(user_id)
     return VoiceProfileResponse(
         user_id=user_id,
