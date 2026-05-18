@@ -9,7 +9,7 @@
  * - Day change, total P&L, and performance metrics
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { usePageContext, AskAi } from '@/features/ai-chat';
@@ -372,6 +372,65 @@ const Portfolio = () => {
   }, [displayHoldings, totalValue]);
 
   const demoHistory = useMemo(() => generateDemoHistory(), []);
+  const [portfolioHistory, setPortfolioHistory] = useState<Array<{ timestamp: number; totalValue: number; date: string }>>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  const snapshotHistory = useMemo(() =>
+    store.history.map((point) => ({
+      timestamp: point.timestamp,
+      totalValue: point.totalValue,
+      date: new Date(point.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    })),
+  [store.history]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadHistory = async () => {
+      if (isDemo && !hasHoldings) {
+        setPortfolioHistory(demoHistory);
+        return;
+      }
+
+      if (displayHoldings.length === 0) {
+        setPortfolioHistory([]);
+        return;
+      }
+
+      setHistoryLoading(true);
+      try {
+        const payload = {
+          holdings: displayHoldings.map((h) => ({ symbol: h.symbol, quantity: h.quantity })),
+          days: 90,
+        };
+        const response = await api.getPortfolioHistoryWithHoldings(payload);
+        const points = (response?.history ?? []) as Array<{ timestamp: number; totalValue: number }>;
+        const mapped = points.map((point) => ({
+          timestamp: point.timestamp,
+          totalValue: point.totalValue,
+          date: new Date(point.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        }));
+        if (!cancelled) setPortfolioHistory(mapped);
+      } catch (error) {
+        console.error('Failed to fetch portfolio history:', error);
+        if (!cancelled) setPortfolioHistory([]);
+      } finally {
+        if (!cancelled) setHistoryLoading(false);
+      }
+    };
+
+    void loadHistory();
+    return () => {
+      cancelled = true;
+    };
+  }, [displayHoldings, demoHistory, hasHoldings, isDemo]);
+
+  const chartHistory = useMemo(() => {
+    if (isDemo && !hasHoldings) return demoHistory;
+    if (portfolioHistory.length > 0) return portfolioHistory;
+    if (snapshotHistory.length > 0) return snapshotHistory;
+    return [];
+  }, [demoHistory, hasHoldings, isDemo, portfolioHistory, snapshotHistory]);
 
   const handleRefreshPrices = useCallback(async () => {
     if (isDemo && !hasHoldings) {
@@ -437,25 +496,25 @@ const Portfolio = () => {
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Select
-                      value={store.costBasisMethod}
-                      onValueChange={(v) => store.setCostBasisMethod(v as CostBasisMethod)}
-                    >
+                <Select
+                  value={store.costBasisMethod}
+                  onValueChange={(v) => store.setCostBasisMethod(v as CostBasisMethod)}
+                >
+                  <Tooltip>
+                    <TooltipTrigger asChild>
                       <SelectTrigger className="h-7 w-[110px] bg-muted/40 border-border/60 text-[11px]">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-[#1e1e2e] border-border/60">
-                        <SelectItem value="FIFO">FIFO</SelectItem>
-                        <SelectItem value="LIFO">LIFO</SelectItem>
-                        <SelectItem value="HIFO">HIFO</SelectItem>
-                        <SelectItem value="AVERAGE">Average</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TooltipTrigger>
-                  <TooltipContent>Cost-basis method for sells</TooltipContent>
-                </Tooltip>
+                    </TooltipTrigger>
+                    <TooltipContent>Cost-basis method for sells</TooltipContent>
+                  </Tooltip>
+                  <SelectContent className="bg-[#1e1e2e] border-border/60">
+                    <SelectItem value="FIFO">FIFO</SelectItem>
+                    <SelectItem value="LIFO">LIFO</SelectItem>
+                    <SelectItem value="HIFO">HIFO</SelectItem>
+                    <SelectItem value="AVERAGE">Average</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
@@ -588,7 +647,7 @@ const Portfolio = () => {
                       <CardContent>
                         <div className="h-[300px]">
                           <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={demoHistory}>
+                            <AreaChart data={chartHistory}>
                               <defs>
                                 <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
                                   <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
@@ -630,6 +689,16 @@ const Portfolio = () => {
                             </AreaChart>
                           </ResponsiveContainer>
                         </div>
+                        {historyLoading && (
+                          <div className="mt-2 text-[10px] text-muted-foreground">
+                            Loading real portfolio history…
+                          </div>
+                        )}
+                        {!historyLoading && chartHistory.length === 0 && (
+                          <div className="mt-2 text-[10px] text-muted-foreground">
+                            No portfolio history yet. Refresh prices to capture snapshots.
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   </motion.div>

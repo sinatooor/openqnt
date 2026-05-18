@@ -257,6 +257,10 @@ class ApiClient {
         return this.get<any>(`/api/portfolio/history?${query}`);
     }
 
+    async getPortfolioHistoryWithHoldings(payload: { holdings: Array<{ symbol: string; quantity: number }>; days?: number }) {
+        return this.post<any>('/api/portfolio/history', payload);
+    }
+
     async getPortfolioAnalytics() {
         return this.get<any>('/api/portfolio/analytics');
     }

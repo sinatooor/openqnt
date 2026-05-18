@@ -8,7 +8,6 @@ import {
     Code2,
     LineChart,
     Settings,
-    User,
     Briefcase,
     FlaskConical,
     Newspaper,
@@ -22,7 +21,6 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useAuthStore } from '@/stores/authStore';
 import { useAppModeStore } from '@/stores/appModeStore';
 // Profile/Voice/Credentials now live inside Settings; the standalone
 // ProfileModal was removed. The avatar button below routes to /settings.
@@ -52,7 +50,6 @@ const NAV_ITEMS: NavItemDef[] = [
 export const AppNavBar = () => {
     const navigate = useNavigate();
     const { pathname } = useLocation();
-    const { user } = useAuthStore();
     const { mode } = useAppModeStore();
 
     if (pathname === '/login') return null;
@@ -104,21 +101,6 @@ export const AppNavBar = () => {
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="text-xs">
                         {mode === 'demo' ? 'Paper trading mode' : 'Live trading mode'} — switch in Dashboard
-                    </TooltipContent>
-                </Tooltip>
-                <div className="h-5 w-px bg-white/10 mx-1" />
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <button
-                            onClick={() => navigate('/settings#profile')}
-                            className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/20 text-primary text-xs font-bold transition-all hover:bg-primary/30"
-                            aria-label="Open profile in Settings"
-                        >
-                            {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || <User className="w-4 h-4" />}
-                        </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-xs">
-                        {user?.name || user?.email || 'Profile'}
                     </TooltipContent>
                 </Tooltip>
             </nav>
