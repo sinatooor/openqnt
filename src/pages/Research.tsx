@@ -11,10 +11,11 @@ import { useState, useEffect, useMemo, useCallback, type ReactNode } from 'react
 import {
     Layers, FlaskConical, Play, BarChart2, Loader2, AlertCircle, RefreshCw,
     TrendingDown, GitCompare, SlidersHorizontal, Activity, BarChart3, Beaker,
-    Shield, Lock, History, ArrowRight, Calculator, type LucideIcon,
+    Shield, Lock, History, ArrowRight, Calculator, Briefcase, type LucideIcon,
 } from 'lucide-react';
 import { api } from '@/services/api';
 import { useStrategyFlowStore } from '@/features/strategy-flow/store/strategyFlowStore';
+import { usePortfolioStore } from '@/stores/portfolioStore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -391,6 +392,31 @@ const Field = ({
 );
 
 /* -------------------------------------------------------------------------- */
+/*  Portfolio prefill chip                                                    */
+/* -------------------------------------------------------------------------- */
+
+interface PortfolioPrefillProps {
+    /** Label shown on the chip; e.g. "Use top: AAPL" or "Use my portfolio value" */
+    label: string;
+    /** Tooltip / aria description */
+    title?: string;
+    /** Click handler that applies the prefill to the relevant input(s) */
+    onClick: () => void;
+}
+
+const PortfolioPrefillChip = ({ label, title, onClick }: PortfolioPrefillProps) => (
+    <button
+        type="button"
+        onClick={onClick}
+        title={title}
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-orange-500/15 text-orange-300 hover:bg-orange-500/25 transition-colors"
+    >
+        <Briefcase className="w-3 h-3" />
+        {label}
+    </button>
+);
+
+/* -------------------------------------------------------------------------- */
 /*  Page                                                                      */
 /* -------------------------------------------------------------------------- */
 
@@ -401,6 +427,25 @@ const Research = () => {
     const [error, setError] = useState<string | null>(null);
 
     const tool = useMemo(() => TOOLS.find((t) => t.id === activeTool)!, [activeTool]);
+
+    // ── Portfolio integration ────────────────────────────────────
+    // When Avanza is connected, the user's positions live in portfolioStore
+    // (auto-imported by Portfolio.tsx). Surface them here so tools can
+    // pre-fill ticker / portfolio-value fields instead of asking the user
+    // to retype what we already know.
+    const portfolioHoldings = usePortfolioStore((s) => s.holdings);
+    const topHolding = useMemo(() => {
+        if (!portfolioHoldings.length) return null;
+        const sorted = [...portfolioHoldings].sort(
+            (a, b) => (b.quantity * (b.currentPrice || b.avgCost)) - (a.quantity * (a.currentPrice || a.avgCost))
+        );
+        return sorted[0];
+    }, [portfolioHoldings]);
+    const portfolioTotalValue = useMemo(
+        () => portfolioHoldings.reduce((s, h) => s + h.quantity * (h.currentPrice || h.avgCost), 0),
+        [portfolioHoldings]
+    );
+    const hasPortfolio = portfolioHoldings.length > 0;
 
     /* QuantStats state ----------------------------------------------------- */
     const [qsTicker, setQsTicker] = useState('AAPL');
@@ -613,6 +658,16 @@ const Research = () => {
                     {activeTool === 'quantstats' && (
                         <ToolPanel tool={tool}>
                             <InputsCard footer={<RunButton isRunning={isRunning} onClick={runQuantStats} label="Analyze" />}>
+                                {hasPortfolio && topHolding && (
+                                    <div className="mb-3 flex items-center gap-2 text-[11px] text-muted-foreground">
+                                        <span>Using {portfolioHoldings.length} Avanza holdings.</span>
+                                        <PortfolioPrefillChip
+                                            label={`Top: ${topHolding.symbol}`}
+                                            title={`Use your largest holding (${topHolding.name})`}
+                                            onClick={() => setQsTicker(topHolding.symbol.toUpperCase())}
+                                        />
+                                    </div>
+                                )}
                                 <FieldGrid cols={4}>
                                     <Field label="Ticker">
                                         <Input value={qsTicker} onChange={(e) => setQsTicker(e.target.value.toUpperCase())} placeholder="AAPL" />
@@ -677,6 +732,16 @@ const Research = () => {
                     {activeTool === 'strategies' && (
                         <ToolPanel tool={tool}>
                             <InputsCard footer={<RunButton isRunning={isRunning} onClick={runStrategy} label="Run Backtest" />}>
+                                {hasPortfolio && topHolding && (
+                                    <div className="mb-3 flex items-center gap-2 text-[11px] text-muted-foreground">
+                                        <span>Using {portfolioHoldings.length} Avanza holdings.</span>
+                                        <PortfolioPrefillChip
+                                            label={`Top: ${topHolding.symbol}`}
+                                            title={`Use your largest holding (${topHolding.name})`}
+                                            onClick={() => setStratTicker(topHolding.symbol.toUpperCase())}
+                                        />
+                                    </div>
+                                )}
                                 <FieldGrid cols={4}>
                                     <Field label="Strategy" span="all">
                                         <Select value={selStrategy} onValueChange={(v) => { setSelStrategy(v); setStratResult(null); }}>
@@ -756,6 +821,16 @@ const Research = () => {
                     {activeTool === 'mcpt' && (
                         <ToolPanel tool={tool}>
                             <InputsCard footer={<RunButton isRunning={isRunning} onClick={runMCPT} label="Run MCPT" />}>
+                                {hasPortfolio && topHolding && (
+                                    <div className="mb-3 flex items-center gap-2 text-[11px] text-muted-foreground">
+                                        <span>Using {portfolioHoldings.length} Avanza holdings.</span>
+                                        <PortfolioPrefillChip
+                                            label={`Top: ${topHolding.symbol}`}
+                                            title={`Test your largest holding (${topHolding.name})`}
+                                            onClick={() => setMcptSymbol(topHolding.symbol.toUpperCase())}
+                                        />
+                                    </div>
+                                )}
                                 <FieldGrid cols={3}>
                                     <Field label="Symbol">
                                         <Input value={mcptSymbol} onChange={(e) => setMcptSymbol(e.target.value.toUpperCase())} />
@@ -947,6 +1022,16 @@ const Research = () => {
                     {activeTool === 'var' && (
                         <ToolPanel tool={tool}>
                             <InputsCard footer={<RunButton isRunning={isRunning} onClick={runVaR} label="Calculate" />}>
+                                {hasPortfolio && (
+                                    <div className="mb-3 flex items-center gap-2 text-[11px] text-muted-foreground">
+                                        <span>Using {portfolioHoldings.length} Avanza holdings.</span>
+                                        <PortfolioPrefillChip
+                                            label={`Value: ${new Intl.NumberFormat('sv-SE', { maximumFractionDigits: 0 }).format(portfolioTotalValue)} SEK`}
+                                            title="Use your live Avanza portfolio total value"
+                                            onClick={() => setVarPortVal(Math.round(portfolioTotalValue))}
+                                        />
+                                    </div>
+                                )}
                                 <Field label="Daily Returns" span="all">
                                     <Textarea value={varReturns} onChange={(e) => setVarReturns(e.target.value)} placeholder="0.01, -0.02, 0.005, …" className="font-mono text-xs min-h-[100px]" />
                                 </Field>

@@ -88,6 +88,10 @@ import { PAGE_CONTENT_CLASS } from '@/components/PageHeader';
 import { usePortfolioStore, type AssetType, type HoldingInputMode, type PortfolioHolding, type CostBasisMethod, ASSET_COLORS, CHART_COLORS } from '@/stores/portfolioStore';
 import { useAppModeStore } from '@/stores/appModeStore';
 import { useAccountStore } from '@/stores/accountStore';
+import { useIntegrationsStore } from '@/stores/integrationsStore';
+import { avanzaApi, type AvanzaPosition, type AvanzaTimePeriod } from '@/integrations/avanza/api';
+import { AvanzaInsights } from '@/integrations/avanza/AvanzaInsights';
+import { AvanzaWatchlistsWidget } from '@/integrations/avanza/AvanzaWatchlistsWidget';
 import { api } from '@/services/api';
 
 // Portfolio sub-features
@@ -218,6 +222,11 @@ const Portfolio = () => {
   const [selectedAsset, setSelectedAsset] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [loadingPrices, setLoadingPrices] = useState(false);
+  const [syncingAvanza, setSyncingAvanza] = useState(false);
+  const [chartPeriod, setChartPeriod] = useState<AvanzaTimePeriod>('ONE_YEAR');
+
+  const avanzaStatus = useIntegrationsStore((s) => s.integrations.avanza.status);
+  const avanzaConnected = avanzaStatus === 'connected';
 
   const toggleLots = useCallback((id: string) => {
     setExpandedLots((prev) => {
@@ -269,6 +278,72 @@ const Portfolio = () => {
     [allHoldings, activeAccountId]
   );
   const hasHoldings = holdings.length > 0;
+
+  const importFromAvanza = useCallback(async (silent = false) => {
+    setSyncingAvanza(true);
+    try {
+      // Trigger a backend sync first so positions are fresh
+      await avanzaApi.sync().catch(() => {/* already synced recently, ok */});
+      const { positions } = await avanzaApi.positions();
+      if (!positions.length) {
+        if (!silent) toast.info('No positions found in your Avanza account.');
+        return;
+      }
+
+      const now = Date.now();
+      const imported: PortfolioHolding[] = positions.map((p: AvanzaPosition) => {
+        // Use market-value / quantity for a consistent SEK current price
+        const currentPrice = p.quantity > 0 ? (p.marketValue ?? 0) / p.quantity : (p.lastPrice ?? 0);
+        const avgCost = p.averagePrice ?? currentPrice;
+        const assetType: AssetType =
+          p.currency === 'SEK' && (p.name ?? '').toLowerCase().includes('fond') ? 'etf'
+          : p.currency === 'SEK' && (p.name ?? '').toLowerCase().includes('guld') ? 'gold'
+          : 'stock';
+
+        return {
+          id: `avanza-${p.accountId}-${p.orderbookId}`,
+          symbol: p.name ?? `AZA:${p.orderbookId}`,
+          name: p.name ?? p.orderbookId,
+          assetType,
+          inputMode: 'quantity' as HoldingInputMode,
+          quantity: p.quantity ?? 0,
+          targetPercentage: 0,
+          avgCost,
+          currentPrice,
+          previousClose: currentPrice,
+          lastUpdated: now,
+          currency: 'SEK',
+          addedAt: now,
+          accountId: p.accountId ?? 'default',
+          lots: [{
+            id: `avanza-lot-${p.orderbookId}-${now}`,
+            qty: p.quantity ?? 0,
+            price: avgCost,
+            fees: 0,
+            openedAt: now,
+            closedQty: 0,
+          }],
+        };
+      });
+
+      // Merge: keep manual holdings, replace only Avanza-sourced ones
+      const manual = store.holdings.filter((h) => !h.id.startsWith('avanza-'));
+      store.importHoldings([...manual, ...imported]);
+      if (!silent) toast.success(`Synced ${imported.length} positions from Avanza.`);
+    } catch (e) {
+      if (!silent) toast.error(`Avanza import failed: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setSyncingAvanza(false);
+    }
+  }, [store]);
+
+  // Auto-import from Avanza when connected and portfolio is empty
+  useEffect(() => {
+    if (avanzaConnected && store.holdings.length === 0) {
+      void importFromAvanza(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [avanzaConnected]);
 
   usePageContext({
     page: 'portfolio',
@@ -399,6 +474,21 @@ const Portfolio = () => {
 
       setHistoryLoading(true);
       try {
+        // Prefer Avanza's own performance chart when connected — it knows the
+        // real per-day portfolio value including dividends, cash flows, etc.
+        if (avanzaConnected) {
+          const chart = await avanzaApi.performanceChart(chartPeriod);
+          const mapped = chart.points
+            .filter((p) => p.timestamp != null && p.totalValue != null)
+            .map((p) => ({
+              timestamp: p.timestamp,
+              totalValue: p.totalValue as number,
+              date: new Date(p.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            }));
+          if (!cancelled) setPortfolioHistory(mapped);
+          return;
+        }
+
         const payload = {
           holdings: displayHoldings.map((h) => ({ symbol: h.symbol, quantity: h.quantity })),
           days: 90,
@@ -423,7 +513,7 @@ const Portfolio = () => {
     return () => {
       cancelled = true;
     };
-  }, [displayHoldings, demoHistory, hasHoldings, isDemo]);
+  }, [displayHoldings, demoHistory, hasHoldings, isDemo, avanzaConnected, chartPeriod]);
 
   const chartHistory = useMemo(() => {
     if (isDemo && !hasHoldings) return demoHistory;
@@ -515,6 +605,21 @@ const Portfolio = () => {
                     <SelectItem value="AVERAGE">Average</SelectItem>
                   </SelectContent>
                 </Select>
+                {avanzaConnected && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => void importFromAvanza(false)}
+                        disabled={syncingAvanza}
+                        className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-orange-500/15 text-orange-400 hover:bg-orange-500/25 transition-colors ${syncingAvanza ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <RefreshCw className={`w-3 h-3 ${syncingAvanza ? 'animate-spin' : ''}`} />
+                        Avanza
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>Sync holdings from Avanza</TooltipContent>
+                  </Tooltip>
+                )}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
@@ -629,6 +734,9 @@ const Portfolio = () => {
 
               {/* ═══ OVERVIEW TAB ═══ */}
               <TabsContent value="overview" className="space-y-6">
+                <AvanzaInsights connected={avanzaConnected} />
+                <AvanzaWatchlistsWidget connected={avanzaConnected} />
+
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* ─── Portfolio Value Chart ─── */}
                   <motion.div
@@ -639,10 +747,29 @@ const Portfolio = () => {
                   >
                     <Card className="bg-card/60 backdrop-blur-sm border-border/30 shadow-trading-lg">
                       <CardHeader className="pb-2">
-                        <CardTitle className="flex items-center gap-2 text-foreground text-sm">
-                          <BarChart3 className="w-4 h-4 text-primary" />
-                          Portfolio Value Over Time
-                        </CardTitle>
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="flex items-center gap-2 text-foreground text-sm">
+                            <BarChart3 className="w-4 h-4 text-primary" />
+                            Portfolio Value Over Time
+                          </CardTitle>
+                          {avanzaConnected && (
+                            <div className="flex items-center gap-1 text-[10px]">
+                              {(['ONE_WEEK','ONE_MONTH','THREE_MONTHS','THIS_YEAR','ONE_YEAR','THREE_YEARS','ALL_TIME'] as AvanzaTimePeriod[]).map((p) => {
+                                const label = { ONE_WEEK:'1W', ONE_MONTH:'1M', THREE_MONTHS:'3M', THIS_YEAR:'YTD', ONE_YEAR:'1Y', THREE_YEARS:'3Y', ALL_TIME:'ALL' }[p];
+                                const active = chartPeriod === p;
+                                return (
+                                  <button
+                                    key={p}
+                                    onClick={() => setChartPeriod(p)}
+                                    className={`px-2 py-1 rounded transition-colors ${active ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'}`}
+                                  >
+                                    {label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       </CardHeader>
                       <CardContent>
                         <div className="h-[300px]">
@@ -677,6 +804,8 @@ const Portfolio = () => {
                                   fontSize: 12,
                                   color: '#e2e8f0',
                                 }}
+                                labelStyle={{ color: '#e2e8f0' }}
+                                itemStyle={{ color: '#e2e8f0' }}
                                 formatter={(value: number) => [formatCurrency(value), 'Portfolio Value']}
                               />
                               <Area
@@ -750,6 +879,8 @@ const Portfolio = () => {
                                       fontSize: 12,
                                       color: '#e2e8f0',
                                     }}
+                                    labelStyle={{ color: '#e2e8f0' }}
+                                    itemStyle={{ color: '#e2e8f0' }}
                                     formatter={(value: number, name: string) => [
                                       formatCurrency(value),
                                       name,
@@ -1160,6 +1291,8 @@ const Portfolio = () => {
                                 fontSize: 12,
                                 color: '#e2e8f0',
                               }}
+                              labelStyle={{ color: '#e2e8f0' }}
+                              itemStyle={{ color: '#e2e8f0' }}
                               formatter={(value: number) => [formatCurrency(value), 'Value']}
                             />
                             <Bar dataKey="value" radius={[0, 4, 4, 0]}>
@@ -1208,6 +1341,8 @@ const Portfolio = () => {
                                 fontSize: 12,
                                 color: '#e2e8f0',
                               }}
+                              labelStyle={{ color: '#e2e8f0' }}
+                              itemStyle={{ color: '#e2e8f0' }}
                               formatter={(value: number, name: string) => [formatCurrency(value), name]}
                             />
                           </PieChart>

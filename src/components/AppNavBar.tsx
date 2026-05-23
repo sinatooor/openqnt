@@ -14,6 +14,8 @@ import {
     ChartCandlestick,
     BotMessageSquare,
     Network,
+    Activity,
+    StickyNote,
 } from 'lucide-react';
 import {
     Tooltip,
@@ -38,6 +40,8 @@ const NAV_ITEMS: NavItemDef[] = [
     { icon: <LayoutDashboard className="w-4 h-4" />, label: 'Dashboard', path: '/' },
     { icon: <Code2 className="w-4 h-4" />, label: 'Builder', path: '/builder' },
     { icon: <Briefcase className="w-4 h-4" />, label: 'Portfolio', path: '/portfolio' },
+    { icon: <Activity className="w-4 h-4" />, label: 'Market', path: '/market' },
+    { icon: <StickyNote className="w-4 h-4" />, label: 'Notes', path: '/notes' },
     { icon: <LineChart className="w-4 h-4" />, label: 'Executions', path: '/executions' },
     { icon: <FlaskConical className="w-4 h-4" />, label: 'Research', path: '/research' },
     { icon: <Newspaper className="w-4 h-4" />, label: 'News', path: '/news' },

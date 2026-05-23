@@ -366,7 +366,10 @@ export const FloatingToolbar = memo(
         toast.success('Workflow saved to library');
 
         if (isLoggedIn) {
-          await saveStrategy(strategyName, nodes, edges);
+          // Thread strategy-runtime settings (currently just livePortfolio)
+          // into the saved payload so the backend FlowInterpreter picks it up.
+          const livePortfolio = useStrategyFlowStore.getState().livePortfolio;
+          await saveStrategy(strategyName, nodes, edges, { livePortfolio });
           toast.success('Strategy also saved to your account');
         }
       } catch (error: unknown) {

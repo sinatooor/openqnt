@@ -342,6 +342,11 @@ interface StrategyFlowState {
   // Pine Script Mode
   pineScriptMode: boolean;
 
+  // When true, portfolio_* nodes in this strategy will read from the user's
+  // live Avanza positions instead of the backtest simulator. Plumbs through
+  // to backend `settings.livePortfolio` in run/backtest requests.
+  livePortfolio: boolean;
+
   // When the canvas was loaded from a template that ships a canonical
   // backtest spec, BacktestModal uses this to call the canonical engine
   // (`/api/backtest/run`) instead of the legacy code-gen path. Cleared
@@ -443,6 +448,9 @@ interface StrategyFlowActions {
   // Pine Script Mode
   togglePineScriptMode: () => void;
 
+  // Live-portfolio mode toggle (Avanza hydration of portfolio nodes)
+  setLivePortfolio: (on: boolean) => void;
+
   // Template → canonical backtest hint
   setTemplateBacktestSpec: (spec: TemplateBacktestSpec | null) => void;
 }
@@ -479,6 +487,7 @@ const initialState: StrategyFlowState = {
   searchQuery: '',
   contextMenu: null,
   pineScriptMode: false,
+  livePortfolio: false,
   templateBacktestSpec: null,
 };
 
@@ -1012,6 +1021,12 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
       hideContextMenu: () => {
         set({ contextMenu: null });
       },
+
+      // =========================================================================
+      // LIVE-PORTFOLIO MODE
+      // =========================================================================
+
+      setLivePortfolio: (on: boolean) => set({ livePortfolio: on, isModified: true }),
 
       // =========================================================================
       // PINE SCRIPT MODE

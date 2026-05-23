@@ -1,13 +1,16 @@
 """
-AvanzaClient — typed wrapper over the `_api` endpoints from §4 of the
-reference. Read-only methods work anonymously when no auth is provided;
-account/private and trading methods require an `AvanzaAuth` instance.
+AvanzaClient — typed wrapper over the current `_api` endpoints.
 
-Trading writes are guarded twice:
+Endpoint map updated from browser traffic capture (2026-05-23):
+  OLD (broken)                              NEW (working)
+  /_api/positions                       →  /_api/position-data/positions
+  /_api/usercontent/watchlist           →  /_api/watchlist/watchlist
+  /_api/account-transactions/…          →  /_api/transactions/dividends
+  account id (numeric)                  →  urlParameterId (encrypted)
+
+Trading writes are double-gated:
   - constructor flag `enable_trading` (off by default)
-  - per-call `confirm=True` argument (the router sets this only when the
-    request body explicitly opts in)
-Both must be true for a write to reach the network.
+  - per-call `confirm=True` argument
 """
 
 from __future__ import annotations
@@ -19,19 +22,10 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 
-from .auth import AvanzaAuth, AvanzaAuthError, AVANZA_BASE, USER_AGENT
+from .auth import AvanzaAuth, AvanzaAuthError, AVANZA_BASE, _BROWSER_HEADERS
 
 logger = logging.getLogger(__name__)
 
-
-# Map our short instrument-type aliases to Avanza's lowercase URL segment.
-_INSTRUMENT_TYPES = {
-    "stock", "fund", "bond", "option", "future-forward", "certificate",
-    "warrant", "exchange-traded-fund", "index", "premium-bond",
-    "subscription-option", "equity-linked-bond", "convertible",
-}
-
-# Per-IP rate budget. Avanza is undocumented; reference suggests <1 req/s.
 _REQUEST_GAP_SEC = float(os.getenv("AVANZA_MIN_REQUEST_GAP", "0.4"))
 
 
@@ -50,8 +44,10 @@ class AvanzaClient:
         self._owned_anon = anon_client is None
         self._anon = anon_client or httpx.AsyncClient(
             base_url=AVANZA_BASE,
-            timeout=httpx.Timeout(15.0, connect=8.0),
-            headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
+            http2=True,
+            timeout=httpx.Timeout(20.0, connect=8.0),
+            headers=_BROWSER_HEADERS,
+            follow_redirects=True,
         )
         if enable_trading is None:
             enable_trading = os.getenv("AVANZA_TRADING_ENABLED", "false").lower() in {"1", "true", "yes"}
@@ -66,7 +62,7 @@ class AvanzaClient:
             await self._auth.aclose()
 
     # ------------------------------------------------------------------
-    # internal request helpers
+    # internal helpers
     # ------------------------------------------------------------------
 
     async def _throttle(self) -> None:
@@ -77,36 +73,31 @@ class AvanzaClient:
                 await asyncio.sleep(wait)
             self._last_req_at = asyncio.get_event_loop().time()
 
-    async def _get_anon(self, path: str, params: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+    async def _get_anon(self, path: str, params: Optional[Dict[str, str]] = None) -> Any:
         await self._throttle()
         r = await self._anon.get(path, params=params)
-        return _json_or_raise(r, path)
+        return _parse(r, path)
 
-    async def _post_anon(self, path: str, body: Dict[str, Any]) -> Dict[str, Any]:
-        await self._throttle()
-        r = await self._anon.post(path, json=body)
-        return _json_or_raise(r, path)
-
-    async def _get_auth(self, path: str, params: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+    async def _get_auth(self, path: str, params: Optional[Dict[str, str]] = None) -> Any:
         if not self._auth:
             raise AvanzaAuthError("auth required for this endpoint")
         await self._throttle()
         r = await self._auth.request("GET", path, params=params)
-        return _json_or_raise(r, path)
+        return _parse(r, path)
 
-    async def _post_auth(self, path: str, body: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def _post_auth(self, path: str, body: Optional[Dict[str, Any]] = None) -> Any:
         if not self._auth:
             raise AvanzaAuthError("auth required for this endpoint")
         await self._throttle()
         r = await self._auth.request("POST", path, json_body=body)
-        return _json_or_raise(r, path)
+        return _parse(r, path)
 
-    async def _delete_auth(self, path: str) -> Dict[str, Any]:
+    async def _delete_auth(self, path: str) -> Any:
         if not self._auth:
             raise AvanzaAuthError("auth required for this endpoint")
         await self._throttle()
         r = await self._auth.request("DELETE", path)
-        return _json_or_raise(r, path)
+        return _parse(r, path)
 
     def _trade_guard(self, confirm: bool) -> None:
         if not self._enable_trading:
@@ -119,30 +110,71 @@ class AvanzaClient:
             )
 
     # ------------------------------------------------------------------
-    # §4.1 market data — instrument info (anonymous)
+    # Account / portfolio (auth required)
+    # ------------------------------------------------------------------
+
+    async def accounts_list(self) -> List[Dict[str, Any]]:
+        """Returns list with id, name, accountType, urlParameterId per account."""
+        result = await self._get_auth("/_api/account-overview/accounts/list")
+        return result if isinstance(result, list) else result.get("data", [])
+
+    async def account_overview(self) -> Dict[str, Any]:
+        """Portfolio summary with categories, accounts, and loans."""
+        return await self._get_auth("/_api/account-overview/overview/categorizedAccounts")
+
+    async def positions(self) -> Dict[str, Any]:
+        """All positions across all accounts."""
+        return await self._get_auth("/_api/position-data/positions")
+
+    async def positions_for_account(self, url_param_id: str) -> Dict[str, Any]:
+        """Positions for a single account identified by its urlParameterId."""
+        return await self._get_auth(f"/_api/position-data/positions/{url_param_id}")
+
+    async def watchlists(self) -> List[Dict[str, Any]]:
+        result = await self._get_auth("/_api/watchlist/watchlist")
+        return result if isinstance(result, list) else result.get("data", [])
+
+    async def add_to_watchlist(self, watchlist_id: str, orderbook_id: str) -> Dict[str, Any]:
+        return await self._post_auth(
+            f"/_api/watchlist/{watchlist_id}/orderbooks/{orderbook_id}"
+        )
+
+    async def remove_from_watchlist(self, watchlist_id: str, orderbook_id: str) -> Dict[str, Any]:
+        return await self._delete_auth(
+            f"/_api/watchlist/{watchlist_id}/orderbooks/{orderbook_id}"
+        )
+
+    async def transactions(
+        self,
+        account_url_param_id: Optional[str] = None,
+        from_date: Optional[str] = None,
+        to_date: Optional[str] = None,
+        max_elements: int = 200,
+    ) -> Any:
+        """
+        Transaction history. Pass account_url_param_id for a single account,
+        or omit for all accounts.
+        """
+        if account_url_param_id:
+            path = f"/_api/account-transactions/transactions/details"
+            params: Dict[str, str] = {"maxElements": str(max_elements)}
+            if from_date:
+                params["from"] = from_date
+            if to_date:
+                params["to"] = to_date
+            return await self._get_auth(path, params=params)
+        # Fall back to the dividends / all-transactions feed
+        return await self._get_auth("/_api/transactions/dividends")
+
+    # ------------------------------------------------------------------
+    # Market data — anonymous
     # ------------------------------------------------------------------
 
     async def market_guide(self, instrument_type: str, orderbook_id: str) -> Dict[str, Any]:
-        instrument_type = _validate_instrument_type(instrument_type)
         return await self._get_anon(f"/_api/market-guide/{instrument_type}/{orderbook_id}")
 
     async def market_guide_details(self, instrument_type: str, orderbook_id: str) -> Dict[str, Any]:
-        instrument_type = _validate_instrument_type(instrument_type)
-        return await self._get_anon(
-            f"/_api/market-guide/{instrument_type}/{orderbook_id}/details"
-        )
-
-    async def etf_screener_data(self, orderbook_id: str) -> Dict[str, Any]:
-        return await self._get_anon(
-            f"/_api/market-etf-screener/etf-screener-additional-data/{orderbook_id}"
-        )
-
-    async def fund_guide(self, fund_id: str) -> Dict[str, Any]:
-        return await self._get_anon(f"/_api/fund-guide/guide/{fund_id}")
-
-    # ------------------------------------------------------------------
-    # §4.2 price/chart (anonymous)
-    # ------------------------------------------------------------------
+        return await self._get_anon(f"/_api/market-guide/{instrument_type}/{orderbook_id}/details")
 
     async def price_chart(
         self,
@@ -155,38 +187,11 @@ class AvanzaClient:
             params["resolution"] = resolution
         return await self._get_anon(f"/_api/price-chart/stock/{orderbook_id}", params=params)
 
-    # ------------------------------------------------------------------
-    # §4.3 order book / live quote (anonymous)
-    # ------------------------------------------------------------------
-
     async def order_book(self, orderbook_id: str) -> Dict[str, Any]:
         return await self._get_anon(f"/_api/order-book/{orderbook_id}")
 
     async def market_data(self, orderbook_id: str) -> Dict[str, Any]:
         return await self._get_anon(f"/_api/market-data/{orderbook_id}")
-
-    # ------------------------------------------------------------------
-    # §4.4 fundamentals (cookie/auth required)
-    # ------------------------------------------------------------------
-
-    async def key_ratios(self, orderbook_id: str) -> Dict[str, Any]:
-        return await self._get_auth(
-            f"/_api/market-stock-analysis/analysis/{orderbook_id}"
-        )
-
-    # ------------------------------------------------------------------
-    # §4.5 news / forum
-    # ------------------------------------------------------------------
-
-    async def news(self, orderbook_id: str) -> Dict[str, Any]:
-        return await self._get_anon(f"/_api/market-news/orderbook/{orderbook_id}")
-
-    async def forum_posts(self, orderbook_id: str) -> Dict[str, Any]:
-        return await self._get_anon(f"/_api/forum-api/forum/orderbooks/{orderbook_id}")
-
-    # ------------------------------------------------------------------
-    # §4.6 search
-    # ------------------------------------------------------------------
 
     async def search(
         self,
@@ -200,93 +205,154 @@ class AvanzaClient:
         }
         if instrument_types:
             body["searchFilter"] = {"types": [t.upper() for t in instrument_types]}
-        return await self._post_anon("/_api/search/filtered-search", body)
+        if not self._auth:
+            await self._throttle()
+            r = await self._anon.post("/_api/search/filtered-search", json=body)
+            return _parse(r, "/_api/search/filtered-search")
+        return await self._post_auth("/_api/search/filtered-search", body)
 
-    # ------------------------------------------------------------------
-    # §4.7 inspiration lists (anonymous)
-    # ------------------------------------------------------------------
+    async def news(self, orderbook_id: str) -> Dict[str, Any]:
+        return await self._get_anon(f"/_api/market-news/orderbook/{orderbook_id}")
 
-    async def inspiration_lists(self) -> Dict[str, Any]:
-        return await self._get_anon("/_api/marketing/inspiration-lists/")
+    async def key_ratios(self, orderbook_id: str) -> Dict[str, Any]:
+        return await self._get_auth(f"/_api/market-stock-analysis/analysis/{orderbook_id}")
 
-    async def inspiration_list(self, list_id: str) -> Dict[str, Any]:
-        return await self._get_anon(f"/_api/marketing/inspiration-lists/{list_id}")
-
-    # ------------------------------------------------------------------
-    # §4.8 account / portfolio (auth required)
-    # ------------------------------------------------------------------
-
-    async def account_overview(self) -> Dict[str, Any]:
-        return await self._get_auth("/_api/account-overview/overview/categorizedAccounts")
-
-    async def positions(self) -> Dict[str, Any]:
-        return await self._get_auth("/_api/positions")
+    async def get_price_alert(self, orderbook_id: str) -> Dict[str, Any]:
+        return await self._get_auth(f"/_api/alert/alerts")
 
     async def performance_chart(
         self,
-        scrambled_account_ids: List[str],
-        time_period: str = "one_year",
+        account_url_param_ids: List[str],
+        time_period: str = "ONE_YEAR",
     ) -> Dict[str, Any]:
+        """
+        Portfolio value / performance over time across one or more accounts.
+        timePeriod values seen in browser traffic:
+          ONE_WEEK, ONE_MONTH, THREE_MONTHS, THIS_YEAR, ONE_YEAR, THREE_YEARS, ALL_TIME
+        Returns: { valueSeries, absoluteSeries, relativeSeries, interval, ... }
+        Each series is a list of { performance: {value, unit, ...}, timestamp }.
+        """
         return await self._post_auth(
-            "/_api/performance-chart-api/account-performance-chart",
-            {"scrambledAccountIds": scrambled_account_ids, "timePeriod": time_period},
+            "/_api/account-performance/overview/chart/accounts/timeperiod",
+            {"scrambledAccountIds": account_url_param_ids, "timePeriod": time_period},
         )
 
-    async def credit_info(self, kind: str = "credited") -> Dict[str, Any]:
-        if kind not in ("credited", "uncredited"):
-            raise ValueError("kind must be 'credited' or 'uncredited'")
-        return await self._get_auth(f"/_api/account-credit/credit-info/{kind}")
-
-    async def watchlists(self) -> Dict[str, Any]:
-        return await self._get_auth("/_api/usercontent/watchlist")
-
-    async def add_to_watchlist(self, watchlist_id: str, instrument_id: str) -> Dict[str, Any]:
-        return await self._post_auth(
-            f"/_api/usercontent/watchlist/{watchlist_id}/orderbooks/{instrument_id}",
-        )
-
-    async def remove_from_watchlist(self, watchlist_id: str, instrument_id: str) -> Dict[str, Any]:
-        return await self._delete_auth(
-            f"/_api/usercontent/watchlist/{watchlist_id}/orderbooks/{instrument_id}",
-        )
-
-    async def insights_development(
-        self, account_ids: List[str], time_period: str = "one_year"
+    async def performance_totals(
+        self,
+        account_url_param_ids: List[str],
     ) -> Dict[str, Any]:
+        """
+        Current portfolio totals: totalValue, buyingPower, totalDevelopment (over multiple periods).
+        Request body is a plain JSON array of account urlParameterIds.
+        """
         return await self._post_auth(
-            "/_api/insights-development",
-            {"accountIds": account_ids, "timePeriod": time_period},
+            "/_api/account-performance/overview/total-values",
+            account_url_param_ids,  # type: ignore[arg-type]
         )
 
-    async def transactions(
+    async def performance_keyratios(
+        self,
+        account_url_param_ids: List[str],
+    ) -> Dict[str, Any]:
+        """Sharpe ratio, std deviation, CAGR for the given accounts."""
+        return await self._post_auth(
+            "/_api/account-performance/overview/keyratios",
+            account_url_param_ids,  # type: ignore[arg-type]
+        )
+
+    async def upcoming_dividends(self) -> Any:
+        return await self._get_auth("/_api/account-company-events/dividends/upcoming")
+
+    async def customer_calendar(self) -> Any:
+        return await self._get_auth("/_api/customer-calendar/")
+
+    async def transactions_list(
         self,
         from_date: Optional[str] = None,
         to_date: Optional[str] = None,
-        isin: Optional[str] = None,
-        transaction_types: Optional[List[str]] = None,
         max_elements: int = 1000,
     ) -> Dict[str, Any]:
-        params: Dict[str, str] = {"maxElements": str(max_elements)}
+        params: Dict[str, str] = {
+            "maxElements": str(max_elements),
+            "includeResult": "false",
+        }
         if from_date:
             params["from"] = from_date
         if to_date:
             params["to"] = to_date
-        if isin:
-            params["isin"] = isin
-        if transaction_types:
-            params["transactionTypes"] = ",".join(transaction_types)
-        return await self._get_auth(
-            "/_api/account-transactions/transactions/details", params=params
-        )
+        return await self._get_auth("/_api/transactions/list", params=params)
 
-    async def customer_offers(self) -> Dict[str, Any]:
-        return await self._get_auth("/_api/customer-offer-api/offers")
+    async def stock_quote(self, orderbook_id: str) -> Dict[str, Any]:
+        """Live-ish quote for a single instrument."""
+        return await self._get_auth(f"/_api/market-guide/stock/{orderbook_id}/quote")
 
-    async def get_price_alert(self, orderbook_id: str) -> Dict[str, Any]:
-        return await self._get_auth(f"/_api/price-alert/{orderbook_id}")
+    async def market_index(self, index_id: str) -> Dict[str, Any]:
+        """OMX, S&P 500 etc. by orderbook id."""
+        return await self._get_anon(f"/_api/market-index/{index_id}")
+
+    async def watchlist_data(
+        self,
+        watchlist_id: str,
+        orderbook_ids: List[str],
+        data_points: Optional[List[str]] = None,
+    ) -> Any:
+        """Fetch live quotes for all items in a watchlist."""
+        body = {
+            "watchListId": watchlist_id,
+            "orderbookIds": orderbook_ids,
+            "orderbookDataPoints": data_points or [
+                "LAST_PRICE", "CHANGE", "CHANGE_PERCENTAGE",
+                "BUY_PRICE", "SELL_PRICE", "HIGHEST_PRICE", "LOWEST_PRICE",
+                "VOLUME_TRADED", "INSTRUMENT_TYPE",
+            ],
+        }
+        return await self._post_auth("/_api/watchlist/data/by-id", body)
+
+    async def user_note(self, orderbook_id: str) -> Any:
+        return await self._get_auth(f"/_api/user-note/?orderbookId={orderbook_id}")
+
+    async def user_notes_search(self, query: str) -> Any:
+        return await self._get_auth(f"/_api/user-note/search?query={query}")
+
+    async def user_notes_available_orderbooks(self) -> Any:
+        """List of orderbooks that have user notes attached."""
+        return await self._get_auth("/_api/user-note/available-orderbooks")
+
+    async def market_overview_gainers(
+        self,
+        country_code: str = "SE",
+        marketplaces: str = "SE.XSTO",
+    ) -> Dict[str, Any]:
+        params = {"countryCode": country_code, "marketplaces": marketplaces}
+        return await self._get_anon("/_api/market-overview/data/gainers", params=params)
+
+    async def market_overview_losers(
+        self,
+        country_code: str = "SE",
+        marketplaces: str = "SE.XSTO",
+    ) -> Dict[str, Any]:
+        params = {"countryCode": country_code, "marketplaces": marketplaces}
+        return await self._get_anon("/_api/market-overview/data/losers", params=params)
+
+    async def market_overviews(self) -> Any:
+        """High-level configured overviews (indexes by region)."""
+        return await self._get_anon("/_api/market-overview/overviews")
+
+    async def account_overview_for(self, url_param_id: str) -> Dict[str, Any]:
+        """Single-account detail: balance, totalValue, performance breakdown."""
+        return await self._get_auth(f"/_api/account-overview/overview/account/{url_param_id}")
+
+    async def stock_orderdepth(self, orderbook_id: str) -> Dict[str, Any]:
+        return await self._get_auth(f"/_api/market-guide/stock/{orderbook_id}/orderdepth")
+
+    async def stock_trades(self, orderbook_id: str) -> Dict[str, Any]:
+        return await self._get_auth(f"/_api/market-guide/stock/{orderbook_id}/trades")
+
+    async def stock_holdings(self, orderbook_id: str) -> Dict[str, Any]:
+        return await self._get_auth(f"/_api/market-guide/stock/{orderbook_id}/holdings")
 
     # ------------------------------------------------------------------
-    # §4.9 trading (auth + enable_trading + confirm)
+    # Trading (auth + enable_trading + confirm)
     # ------------------------------------------------------------------
 
     async def place_order(self, order: Dict[str, Any], confirm: bool) -> Dict[str, Any]:
@@ -301,9 +367,6 @@ class AvanzaClient:
         self._trade_guard(confirm)
         return await self._post_auth("/_api/trading-critical/rest/order/delete", payload)
 
-    async def get_order(self, order_id: str) -> Dict[str, Any]:
-        return await self._get_auth(f"/_api/trading-critical/rest/order/{order_id}")
-
     async def buy_fund(self, payload: Dict[str, Any], confirm: bool) -> Dict[str, Any]:
         self._trade_guard(confirm)
         return await self._post_auth("/_api/trading-critical/rest/order/fund/buy", payload)
@@ -313,7 +376,7 @@ class AvanzaClient:
         return await self._post_auth("/_api/trading-critical/rest/order/fund/sell", payload)
 
     async def list_stoploss(self) -> Dict[str, Any]:
-        return await self._get_auth("/_api/trading-critical/rest/stoploss")
+        return await self._get_auth("/_api/trading/stoploss/")
 
     async def place_stoploss(self, payload: Dict[str, Any], confirm: bool) -> Dict[str, Any]:
         self._trade_guard(confirm)
@@ -325,9 +388,7 @@ class AvanzaClient:
             f"/_api/trading-critical/rest/stoploss/{account_id}/{stoploss_id}"
         )
 
-    async def set_price_alert(
-        self, orderbook_id: str, payload: Dict[str, Any], confirm: bool
-    ) -> Dict[str, Any]:
+    async def set_price_alert(self, orderbook_id: str, payload: Dict[str, Any], confirm: bool) -> Dict[str, Any]:
         self._trade_guard(confirm)
         return await self._post_auth(f"/_api/price-alert/{orderbook_id}", payload)
 
@@ -340,26 +401,18 @@ class AvanzaClient:
 # helpers
 # ---------------------------------------------------------------------------
 
-def _validate_instrument_type(t: str) -> str:
-    t = (t or "").strip().lower()
-    if t not in _INSTRUMENT_TYPES:
-        raise ValueError(
-            f"unknown instrument_type '{t}'; expected one of {sorted(_INSTRUMENT_TYPES)}"
-        )
-    return t
-
-
-def _json_or_raise(r: httpx.Response, path: str) -> Dict[str, Any]:
+def _parse(r: httpx.Response, path: str) -> Any:
     if r.status_code in (401, 403):
         raise AvanzaAuthError(f"{r.status_code} on {path}")
     if r.status_code >= 400:
         raise httpx.HTTPStatusError(
-            f"avanza {path} -> {r.status_code}: {r.text[:200]}", request=r.request, response=r
+            f"avanza {path} -> {r.status_code}: {r.text[:200]}",
+            request=r.request,
+            response=r,
         )
     if not r.content:
         return {}
     try:
-        data = r.json()
-        return data if isinstance(data, dict) else {"data": data}
+        return r.json()
     except Exception as e:
         raise RuntimeError(f"avanza {path}: invalid JSON ({e})") from e

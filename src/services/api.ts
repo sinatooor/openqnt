@@ -454,7 +454,7 @@ class ApiClient {
 // AI Chat SSE event types
 export type AiChatEvent =
     | { type: 'text_delta'; content: string }
-    | { type: 'tool_call'; tool: string; args: Record<string, any> }
+    | { type: 'tool_call'; tool: string; args: Record<string, any>; needs_approval?: boolean; tool_call_id?: string }
     | { type: 'tool_result'; tool: string; result: Record<string, any> }
     | { type: 'strategy_node'; node: any; index: number; total: number }
     | { type: 'strategy_edges'; edges: any[] }
