@@ -93,6 +93,7 @@ import { avanzaApi, type AvanzaPosition, type AvanzaTimePeriod } from '@/integra
 import { AvanzaInsights } from '@/integrations/avanza/AvanzaInsights';
 import { ibkrApi, type IbkrPosition } from '@/integrations/ibkr/api';
 import { IbkrInsights } from '@/integrations/ibkr/IbkrInsights';
+import { IbkrOptionsModal } from '@/integrations/ibkr/IbkrOptionsModal';
 import { AvanzaWatchlistsWidget } from '@/integrations/avanza/AvanzaWatchlistsWidget';
 import { api } from '@/services/api';
 
@@ -232,6 +233,7 @@ const Portfolio = () => {
   const ibkrStatus = useIntegrationsStore((s) => s.integrations.ibkr.status);
   const ibkrConnected = ibkrStatus === 'connected';
   const [syncingIbkr, setSyncingIbkr] = useState(false);
+  const [ibkrOptionsOpen, setIbkrOptionsOpen] = useState(false);
 
   const toggleLots = useCallback((id: string) => {
     setExpandedLots((prev) => {
@@ -702,6 +704,19 @@ const Portfolio = () => {
                       </button>
                     </TooltipTrigger>
                     <TooltipContent>Sync holdings from Interactive Brokers</TooltipContent>
+                  </Tooltip>
+                )}
+                {ibkrConnected && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setIbkrOptionsOpen(true)}
+                        className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-purple-500/15 text-purple-300 hover:bg-purple-500/25 transition-colors"
+                      >
+                        Options
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>Browse IBKR options chain · place buy/sell orders</TooltipContent>
                   </Tooltip>
                 )}
                 <Tooltip>
@@ -1562,6 +1577,12 @@ const Portfolio = () => {
               />
             )}
           </Dialog>
+
+          {/* ─── IBKR Options Modal ─── */}
+          <IbkrOptionsModal
+            open={ibkrOptionsOpen}
+            onOpenChange={setIbkrOptionsOpen}
+          />
         </div>
       </TooltipProvider>
     </ConfigProvider>

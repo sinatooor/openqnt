@@ -144,6 +144,37 @@ class IBKRManager:
             return None
         return await asyncio.to_thread(broker.quote, symbol)
 
+    async def option_chain(self, symbol: str) -> dict:
+        """List expirations + strikes for an underlying. Raises if not connected."""
+        broker = self._broker
+        if broker is None or not self.is_connected():
+            raise RuntimeError("IBKR not connected")
+        return await asyncio.to_thread(broker.option_chain, symbol)
+
+    async def place_option_order(
+        self,
+        symbol: str,
+        expiry: str,
+        strike: float,
+        right: str,
+        side: str,           # 'buy' or 'sell'
+        qty: float,
+        order_type: str = "market",
+        limit_price: Optional[float] = None,
+    ):
+        """Place an options order on TWS. Lazy-imports OrderSide/OrderType so
+        the manager module stays light."""
+        broker = self._broker
+        if broker is None or not self.is_connected():
+            raise RuntimeError("IBKR not connected")
+        from execution.schema import OrderSide, OrderType
+        side_enum = OrderSide.BUY if side.lower() == "buy" else OrderSide.SELL
+        type_enum = OrderType.LIMIT if order_type.lower() == "limit" else OrderType.MARKET
+        return await asyncio.to_thread(
+            broker.place_option_order,
+            symbol, expiry, strike, right, side_enum, qty, type_enum, limit_price,
+        )
+
     @property
     def broker(self) -> Optional[IBKRBroker]:
         return self._broker

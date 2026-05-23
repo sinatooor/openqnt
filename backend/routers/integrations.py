@@ -1140,3 +1140,78 @@ async def get_ibkr_quote(
             raise HTTPException(503, "IBKR is not connected")
     price = await manager.quote(symbol)
     return {"symbol": symbol.upper(), "last": price}
+
+
+# ── IBKR options ───────────────────────────────────────────────────────────
+
+@router.get("/ibkr/options/{symbol}/chain")
+async def get_ibkr_option_chain(
+    symbol: str,
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> Dict[str, Any]:
+    """
+    Returns expirations + strikes for an equity's options.
+    Response shape:
+      {
+        underlyingConId, underlyingSymbol, longName,
+        params: [{ exchange, expirations: ['YYYYMMDD',...], strikes: [n,...], multiplier }]
+      }
+    """
+    account_key = _account_key(x_account_key)
+    manager = get_ibkr_manager()
+    if not manager.is_connected():
+        if not await manager.ensure_connected_from_storage(account_key):
+            raise HTTPException(503, "IBKR is not connected — start TWS first.")
+    try:
+        return await manager.option_chain(symbol)
+    except Exception as e:
+        raise HTTPException(502, f"IBKR option chain failed: {e}")
+
+
+class IbkrOptionOrderRequest(BaseModel):
+    symbol: str               # underlying ticker, e.g. AAPL
+    expiry: str               # YYYYMMDD
+    strike: float
+    right: str                # 'C' or 'P'
+    side: str                 # 'buy' or 'sell'
+    qty: float                # number of contracts (each = 100 shares for std US listed)
+    orderType: str = "market" # 'market' or 'limit'
+    limitPrice: Optional[float] = None
+    confirmed: bool = False   # safety gate (mirrors Avanza trading endpoints)
+
+
+@router.post("/ibkr/options/order")
+async def place_ibkr_option_order(
+    body: IbkrOptionOrderRequest,
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> Dict[str, Any]:
+    """
+    Place an options order on TWS. Requires `confirmed: true` (mirrors the
+    Avanza trading endpoints and the AI chat approval pattern).
+    """
+    if not body.confirmed:
+        raise HTTPException(400, "set 'confirmed': true to send the option order")
+    if body.orderType.lower() == "limit" and body.limitPrice is None:
+        raise HTTPException(400, "limitPrice is required when orderType is 'limit'")
+
+    account_key = _account_key(x_account_key)
+    manager = get_ibkr_manager()
+    if not manager.is_connected():
+        if not await manager.ensure_connected_from_storage(account_key):
+            raise HTTPException(503, "IBKR is not connected — start TWS first.")
+
+    try:
+        order = await manager.place_option_order(
+            symbol=body.symbol,
+            expiry=body.expiry,
+            strike=body.strike,
+            right=body.right,
+            side=body.side,
+            qty=body.qty,
+            order_type=body.orderType,
+            limit_price=body.limitPrice,
+        )
+    except Exception as e:
+        raise HTTPException(502, f"IBKR option order failed: {e}")
+
+    return {"ok": True, "order": order.to_dict()}
