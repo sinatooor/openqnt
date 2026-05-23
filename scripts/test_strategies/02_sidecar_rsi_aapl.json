@@ -1,0 +1,144 @@
+{
+  "version": "1.0",
+  "name": "sidecar_run1",
+  "nodes": [
+    {
+      "id": "trig",
+      "type": "trigger",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "label": "Heartbeat",
+        "description": "Schedule-based trigger",
+        "triggerType": "heartbeatTrigger",
+        "intervalMinutes": 1440,
+        "atMarketOpen": false,
+        "atMarketClose": false,
+        "specificTime": "null"
+      }
+    },
+    {
+      "id": "data",
+      "type": "dataSource",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "label": "Yahoo Finance",
+        "description": "Free OHLCV from Yahoo Finance",
+        "provider": "yfinance",
+        "symbol": "AAPL",
+        "timeframe": "1d"
+      }
+    },
+    {
+      "id": "rsi",
+      "type": "indicator",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "label": "RSI",
+        "description": "Relative Strength Index",
+        "indicatorType": "rsi",
+        "timeframe": "1d",
+        "params": {
+          "period": 14
+        }
+      }
+    },
+    {
+      "id": "thresh",
+      "type": "math",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "label": "Number",
+        "description": "Constant value",
+        "mathType": "number",
+        "value": 30
+      }
+    },
+    {
+      "id": "cmp",
+      "type": "condition",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "label": "Compare",
+        "description": "Compare two values",
+        "conditionType": "compare",
+        "operator": "<"
+      }
+    },
+    {
+      "id": "buy",
+      "type": "action",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "label": "Place Order",
+        "description": "Execute a trade",
+        "actionType": "order",
+        "direction": "long",
+        "orderType": "market",
+        "size": 0.1,
+        "sizeType": "lots",
+        "broker": "paper"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1-3ky3",
+      "source": "trig",
+      "target": "rsi",
+      "sourceHandle": "output",
+      "targetHandle": "trigger",
+      "type": "bezier"
+    },
+    {
+      "id": "edge-2-qd71",
+      "source": "data",
+      "target": "rsi",
+      "sourceHandle": "candles",
+      "targetHandle": "data",
+      "type": "bezier"
+    },
+    {
+      "id": "edge-3-z1yg",
+      "source": "rsi",
+      "target": "cmp",
+      "sourceHandle": "value",
+      "targetHandle": "input-a",
+      "type": "bezier"
+    },
+    {
+      "id": "edge-4-r6ex",
+      "source": "thresh",
+      "target": "cmp",
+      "sourceHandle": "output",
+      "targetHandle": "input-b",
+      "type": "bezier"
+    },
+    {
+      "id": "edge-5-vhz6",
+      "source": "cmp",
+      "target": "buy",
+      "sourceHandle": "output",
+      "targetHandle": "trigger",
+      "type": "bezier"
+    }
+  ],
+  "settings": {}
+}

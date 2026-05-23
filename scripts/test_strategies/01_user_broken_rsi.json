@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "name": "Untitled Strategy",
+  "description": "",
+  "nodes": [
+    { "id": "start", "type": "trigger", "position": {"x": 80, "y": 480}, "data": {"label": "Start", "triggerType": "startTrigger", "portfolio": "paper-default", "tickers": ["AAPL"], "capital": 10000, "mode": "paper", "childTriggerType": "manualTrigger"}, "deletable": false, "draggable": false },
+    { "id": "rsi-14", "type": "indicator", "position": {"x": 80, "y": 320}, "data": {"label": "RSI(14)", "indicatorType": "rsi", "timeframe": "1440", "params": {"period": 14, "priceType": "close"}} },
+    { "id": "current-price", "type": "environment", "position": {"x": 80, "y": 160}, "data": {"label": "Current Price", "environmentType": "price", "priceType": "mid"} },
+    { "id": "position-sizing", "type": "risk", "position": {"x": 860, "y": 240}, "data": {"label": "Position Size 2% Risk", "riskType": "positionPercent", "percentage": 2} },
+    { "id": "entry-price", "type": "tradeInfo", "position": {"x": 340, "y": 240}, "data": {"label": "Entry Price", "tradeInfoType": "entryPrice"} },
+    { "id": "multiplier-095", "type": "math", "position": {"x": 340, "y": 80}, "data": {"label": "0.95 (5% Stop)", "mathType": "number", "value": 0.95} },
+    { "id": "rsi-oversold", "type": "condition", "position": {"x": 340, "y": 400}, "data": {"label": "RSI < 30 (Oversold)", "conditionType": "threshold", "operator": "<", "value": 30} },
+    { "id": "rsi-overbought", "type": "condition", "position": {"x": 340, "y": 560}, "data": {"label": "RSI > 70 (Overbought)", "conditionType": "threshold", "operator": ">", "value": 70} },
+    { "id": "stop-price-calc", "type": "math", "position": {"x": 600, "y": 240}, "data": {"label": "Stop Price = Entry * 0.95", "mathType": "multiply"} },
+    { "id": "buy-order", "type": "action", "position": {"x": 1120, "y": 320}, "data": {"label": "Buy Market (Long)", "actionType": "order", "direction": "long", "orderType": "market", "size": 100, "sizeType": "percent", "broker": "paper"} },
+    { "id": "sell-order", "type": "action", "position": {"x": 600, "y": 400}, "data": {"label": "Close Position", "actionType": "closePosition"} },
+    { "id": "stop-loss", "type": "action", "position": {"x": 860, "y": 400}, "data": {"label": "Stop Loss 5%", "actionType": "stopLoss", "stopPrice": 0} }
+  ],
+  "edges": [
+    { "id": "e-rsi-14-rsi-oversold", "source": "rsi-14", "target": "rsi-oversold", "sourceHandle": "value", "targetHandle": "input-a" },
+    { "id": "e-rsi-14-rsi-overbought", "source": "rsi-14", "target": "rsi-overbought", "sourceHandle": "value", "targetHandle": "input-a" },
+    { "id": "e-rsi-oversold-buy-order", "source": "rsi-oversold", "target": "buy-order", "sourceHandle": "output", "targetHandle": "trigger" },
+    { "id": "e-rsi-overbought-sell-order", "source": "rsi-overbought", "target": "sell-order", "sourceHandle": "output", "targetHandle": "trigger" },
+    { "id": "e-entry-price-stop-price-calc", "source": "entry-price", "target": "stop-price-calc", "sourceHandle": "output", "targetHandle": "input-a" },
+    { "id": "e-multiplier-095-stop-price-calc", "source": "multiplier-095", "target": "stop-price-calc", "sourceHandle": "output", "targetHandle": "input-b" },
+    { "id": "e-stop-price-calc-stop-loss", "source": "stop-price-calc", "target": "stop-loss", "sourceHandle": "output", "targetHandle": "trigger" },
+    { "id": "e-position-sizing-buy-order", "source": "position-sizing", "target": "buy-order", "sourceHandle": "size", "targetHandle": "size" }
+  ],
+  "settings": {}
+}

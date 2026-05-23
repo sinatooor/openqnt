@@ -1,0 +1,186 @@
+{
+  "version": "1.0",
+  "name": "sidecar_run2",
+  "nodes": [
+    {
+      "id": "trig",
+      "type": "trigger",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "label": "Heartbeat",
+        "description": "Schedule-based trigger",
+        "triggerType": "heartbeatTrigger",
+        "intervalMinutes": 5,
+        "atMarketOpen": false,
+        "atMarketClose": false,
+        "specificTime": "null"
+      }
+    },
+    {
+      "id": "data",
+      "type": "dataSource",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "label": "Yahoo Finance",
+        "description": "Free OHLCV from Yahoo Finance",
+        "provider": "yfinance",
+        "symbol": "TSLA",
+        "timeframe": "1d"
+      }
+    },
+    {
+      "id": "sma50",
+      "type": "indicator",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "label": "SMA",
+        "description": "Simple Moving Average",
+        "indicatorType": "sma",
+        "timeframe": "60",
+        "params": {
+          "period": 50,
+          "priceType": "close"
+        }
+      }
+    },
+    {
+      "id": "sma200",
+      "type": "indicator",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "label": "SMA",
+        "description": "Simple Moving Average",
+        "indicatorType": "sma",
+        "timeframe": "60",
+        "params": {
+          "period": 200,
+          "priceType": "close"
+        }
+      }
+    },
+    {
+      "id": "cross",
+      "type": "condition",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "label": "Crossover",
+        "description": "A crosses above B",
+        "conditionType": "crossover"
+      }
+    },
+    {
+      "id": "buy",
+      "type": "action",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "label": "Place Order",
+        "description": "Execute a trade",
+        "actionType": "order",
+        "direction": "long",
+        "orderType": "market",
+        "size": 0.1,
+        "sizeType": "lots",
+        "broker": "paper"
+      }
+    },
+    {
+      "id": "sl",
+      "type": "action",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "label": "Stop Loss",
+        "description": "Set exit on loss",
+        "actionType": "stopLoss",
+        "stopPrice": 3
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1-54lj",
+      "source": "trig",
+      "target": "sma50",
+      "sourceHandle": "output",
+      "targetHandle": "trigger",
+      "type": "bezier"
+    },
+    {
+      "id": "edge-2-89gb",
+      "source": "trig",
+      "target": "sma200",
+      "sourceHandle": "output",
+      "targetHandle": "trigger",
+      "type": "bezier"
+    },
+    {
+      "id": "edge-3-ggaz",
+      "source": "data",
+      "target": "sma50",
+      "sourceHandle": "candles",
+      "targetHandle": "data",
+      "type": "bezier"
+    },
+    {
+      "id": "edge-4-fudv",
+      "source": "data",
+      "target": "sma200",
+      "sourceHandle": "candles",
+      "targetHandle": "data",
+      "type": "bezier"
+    },
+    {
+      "id": "edge-5-zw74",
+      "source": "sma50",
+      "target": "cross",
+      "sourceHandle": "value",
+      "targetHandle": "input-a",
+      "type": "bezier"
+    },
+    {
+      "id": "edge-6-p81o",
+      "source": "sma200",
+      "target": "cross",
+      "sourceHandle": "value",
+      "targetHandle": "input-b",
+      "type": "bezier"
+    },
+    {
+      "id": "edge-7-3eku",
+      "source": "cross",
+      "target": "buy",
+      "sourceHandle": "output",
+      "targetHandle": "trigger",
+      "type": "bezier"
+    },
+    {
+      "id": "edge-8-svhg",
+      "source": "buy",
+      "target": "sl",
+      "sourceHandle": "next",
+      "targetHandle": "trigger",
+      "type": "bezier"
+    }
+  ],
+  "settings": {}
+}

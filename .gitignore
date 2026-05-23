@@ -108,3 +108,16 @@ fame.html
 nathenantony-line-ranges.txt
 .gitignore
 StrategyBuilderDemo.tsx
+
+# =============================================================================
+# Dev artifacts that should never be committed
+# =============================================================================
+# SQLite WAL/SHM sidecar files (generated alongside *.db)
+backend/strategies.db
+backend/*.db-shm
+backend/*.db-wal
+backend/*.db-journal
+# mitmproxy captured traffic (multi-MB binary-ish data, regenerable)
+scripts/avanza_capture.jsonl
+# Firecrawl scratch dir
+.firecrawl/
