@@ -129,4 +129,54 @@ export const ibkrApi = {
       {},
       signal,
     ),
+  optionChain: (symbol: string, signal?: AbortSignal) =>
+    call<IbkrOptionChain>(
+      `/api/integrations/ibkr/options/${encodeURIComponent(symbol)}/chain`,
+      {},
+      signal,
+    ),
+  placeOptionOrder: (body: IbkrOptionOrderInput, signal?: AbortSignal) =>
+    call<{ ok: true; order: IbkrOrderResult }>(
+      '/api/integrations/ibkr/options/order',
+      { method: 'POST', body: JSON.stringify(body) },
+      signal,
+    ),
 };
+
+export interface IbkrOptionChain {
+  underlyingConId: number;
+  underlyingSymbol: string;
+  longName?: string;
+  params: Array<{
+    exchange: string;
+    underlyingConId: number;
+    tradingClass: string;
+    multiplier: string;
+    expirations: string[]; // YYYYMMDD
+    strikes: number[];
+  }>;
+}
+
+export interface IbkrOptionOrderInput {
+  symbol: string;
+  expiry: string;    // YYYYMMDD
+  strike: number;
+  right: 'C' | 'P';
+  side: 'buy' | 'sell';
+  qty: number;
+  orderType?: 'market' | 'limit';
+  limitPrice?: number;
+  confirmed: true;
+}
+
+export interface IbkrOrderResult {
+  id: string;
+  symbol: string;
+  side: string;
+  qty: number;
+  status: string;
+  rejected_reason?: string;
+  fill_price?: number;
+  fill_qty?: number;
+  broker: string;
+}

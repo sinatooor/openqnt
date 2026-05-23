@@ -178,6 +178,35 @@ TOOL_DEFINITIONS = [
         }
     },
     {
+        "name": "get_ibkr_option_chain",
+        "description": "Discover available expirations and strikes for an underlying equity's options on IBKR. Use BEFORE place_ibkr_option_order so you can pick a valid expiry/strike. Returns a list of param-sets (one per exchange) each with expirations (YYYYMMDD) and strikes.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "symbol": {"type": "string", "description": "Underlying ticker, e.g. AAPL"},
+            },
+            "required": ["symbol"],
+        },
+    },
+    {
+        "name": "place_ibkr_option_order",
+        "description": "Place an options order on Interactive Brokers. SENSITIVE — the user will be shown an Accept/Reject card before this runs. Use only when the user has explicitly told you what option to trade (symbol, expiry, strike, call/put, side, qty). Call get_ibkr_option_chain first if you need to verify the strike/expiry exists.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "symbol":     {"type": "string", "description": "Underlying ticker (e.g. AAPL)"},
+                "expiry":     {"type": "string", "description": "YYYYMMDD format (e.g. 20260619)"},
+                "strike":     {"type": "number", "description": "Strike price"},
+                "right":      {"type": "string", "enum": ["C", "P"], "description": "C=call, P=put"},
+                "side":       {"type": "string", "enum": ["buy", "sell"]},
+                "qty":        {"type": "number", "description": "Number of contracts (1 contract = 100 shares for standard US listed)"},
+                "orderType":  {"type": "string", "enum": ["market", "limit"], "description": "Default market"},
+                "limitPrice": {"type": "number", "description": "Required when orderType is 'limit'"},
+            },
+            "required": ["symbol", "expiry", "strike", "right", "side", "qty"],
+        },
+    },
+    {
         "name": "get_stock_quote",
         "description": "Get a live stock quote (buy, sell, last, change %) from Avanza for one instrument. Accepts either an Avanza orderbook_id OR a free-form symbol/name (e.g. 'Apple', 'AAPL', 'Investor B') which is resolved automatically via Avanza search. Use when the user asks about a current stock price.",
         "parameters": {
@@ -411,7 +440,11 @@ ORCHESTRATOR_URL = os.getenv("ORCHESTRATOR_URL", "http://localhost:3000")
 # The chat-stream emits {needs_approval: true, tool_call_id} alongside the
 # tool_call event for these and then BLOCKS until the frontend POSTs to
 # /approve with the same tool_call_id.
-SENSITIVE_TOOLS = {"run_backtest", "run_monte_carlo"}
+SENSITIVE_TOOLS = {
+    "run_backtest",
+    "run_monte_carlo",
+    "place_ibkr_option_order",  # real trade — always require user accept
+}
 
 # Approval timeout: how long the chat stream waits before giving up.
 APPROVAL_TIMEOUT_SEC = float(os.getenv("AI_APPROVAL_TIMEOUT_SEC", "300"))  # 5 min
@@ -678,6 +711,74 @@ async def execute_tool(tool_name: str, args: Dict[str, Any]) -> Dict[str, Any]:
                     "realisedPnl": snap.realised_pnl,
                     "positions": [p.to_dict() for p in snap.positions if p.qty != 0],
                     "asOf": snap.as_of,
+                }
+            except Exception as e:
+                return {"success": False, "error": str(e)}
+
+        elif tool_name == "get_ibkr_option_chain":
+            try:
+                from integrations.ibkr.manager import get_ibkr_manager
+                mgr = get_ibkr_manager()
+                account_key = args.get("account_key") or "default"
+                if not mgr.is_connected():
+                    if not await mgr.ensure_connected_from_storage(account_key):
+                        return {
+                            "success": False,
+                            "connected": False,
+                            "message": "IBKR is not connected. Start TWS and connect first.",
+                        }
+                symbol = (args.get("symbol") or "").strip()
+                if not symbol:
+                    return {"success": False, "error": "symbol is required"}
+                chain = await mgr.option_chain(symbol)
+                # Compact the response — keep only the first param-set so the LLM
+                # has a reasonable token bill. The browser endpoint returns all.
+                params = chain.get("params", [])
+                primary = params[0] if params else {}
+                return {
+                    "success": True,
+                    "underlyingSymbol": chain.get("underlyingSymbol"),
+                    "underlyingConId": chain.get("underlyingConId"),
+                    "longName": chain.get("longName"),
+                    "exchange": primary.get("exchange"),
+                    "multiplier": primary.get("multiplier"),
+                    "expirations": primary.get("expirations", [])[:20],  # first 20
+                    "strikes": primary.get("strikes", []),
+                    "paramSetCount": len(params),
+                }
+            except Exception as e:
+                return {"success": False, "error": str(e)}
+
+        elif tool_name == "place_ibkr_option_order":
+            # Sensitive — the chat stream gates this behind the user approval card.
+            # By the time we reach this handler the user has clicked Accept.
+            try:
+                from integrations.ibkr.manager import get_ibkr_manager
+                mgr = get_ibkr_manager()
+                account_key = args.get("account_key") or "default"
+                if not mgr.is_connected():
+                    if not await mgr.ensure_connected_from_storage(account_key):
+                        return {"success": False, "error": "IBKR not connected. Start TWS first."}
+
+                # Validate required fields
+                required = ("symbol", "expiry", "strike", "right", "side", "qty")
+                missing = [k for k in required if args.get(k) in (None, "")]
+                if missing:
+                    return {"success": False, "error": f"missing fields: {', '.join(missing)}"}
+
+                order = await mgr.place_option_order(
+                    symbol=str(args["symbol"]),
+                    expiry=str(args["expiry"]),
+                    strike=float(args["strike"]),
+                    right=str(args["right"]),
+                    side=str(args["side"]),
+                    qty=float(args["qty"]),
+                    order_type=str(args.get("orderType", "market")),
+                    limit_price=(float(args["limitPrice"]) if args.get("limitPrice") is not None else None),
+                )
+                return {
+                    "success": order.status not in ("rejected",),
+                    "order": order.to_dict(),
                 }
             except Exception as e:
                 return {"success": False, "error": str(e)}

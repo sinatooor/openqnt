@@ -67,6 +67,49 @@ def _stock_contract(symbol: str, exchange: str = "SMART", currency: str = "USD")
     return c
 
 
+def _option_contract(
+    symbol: str,
+    expiry: str,
+    strike: float,
+    right: str,
+    exchange: str = "SMART",
+    currency: str = "USD",
+    multiplier: str = "100",
+) -> Contract:
+    """
+    Build an IBKR Contract for an equity option.
+
+    Args:
+        symbol:    Underlying ticker (e.g. "AAPL")
+        expiry:    YYYYMMDD format (e.g. "20260619")
+        strike:    Strike price (e.g. 150.0)
+        right:     "C" / "CALL" / "P" / "PUT"
+        exchange:  Defaults to SMART (lets IB pick the venue)
+        currency:  Defaults to USD
+        multiplier: Defaults to "100" (standard US listed options)
+    """
+    r = right.upper()
+    if r in ("CALL", "C"):
+        r = "C"
+    elif r in ("PUT", "P"):
+        r = "P"
+    else:
+        raise ValueError(f"option right must be C/P or CALL/PUT, got '{right}'")
+    if len(expiry) != 8 or not expiry.isdigit():
+        raise ValueError(f"expiry must be YYYYMMDD, got '{expiry}'")
+
+    c = Contract()
+    c.symbol = symbol.upper()
+    c.secType = "OPT"
+    c.exchange = exchange
+    c.currency = currency
+    c.lastTradeDateOrContractMonth = expiry
+    c.strike = float(strike)
+    c.right = r
+    c.multiplier = multiplier
+    return c
+
+
 # ── EWrapper implementation ─────────────────────────────────
 
 
@@ -99,6 +142,15 @@ class _IBApp(EWrapper, EClient):
         self._connect_done = threading.Event()
         self._connect_error: str | None = None
         self.next_req_id = 1000
+
+        # Contract details (used to resolve underlying conId for option chain).
+        self._contract_details: dict[int, list[dict]] = {}
+        self._contract_details_done: dict[int, threading.Event] = {}
+
+        # Option chain (reqSecDefOptParams).
+        # Each request accumulates {exchange, expirations, strikes, multiplier}.
+        self._option_params: dict[int, list[dict]] = {}
+        self._option_params_done: dict[int, threading.Event] = {}
 
     # ── connection ────────────────────────────────────────
 
@@ -143,6 +195,49 @@ class _IBApp(EWrapper, EClient):
     def tickSnapshotEnd(self, reqId):  # noqa: N802,N803
         if reqId in self._quote_locks:
             self._quote_locks[reqId].set()
+
+    # ── contract details (used to resolve conId for option chain) ──
+
+    def contractDetails(self, reqId, contractDetails):  # noqa: N802,N803
+        if reqId not in self._contract_details_done:
+            return
+        c = contractDetails.contract
+        self._contract_details.setdefault(reqId, []).append({
+            "conId": c.conId,
+            "symbol": c.symbol,
+            "secType": c.secType,
+            "exchange": c.exchange,
+            "primaryExchange": c.primaryExchange,
+            "currency": c.currency,
+            "marketName": getattr(contractDetails, "marketName", None),
+            "longName": getattr(contractDetails, "longName", None),
+        })
+
+    def contractDetailsEnd(self, reqId):  # noqa: N802,N803
+        ev = self._contract_details_done.get(reqId)
+        if ev:
+            ev.set()
+
+    # ── option chain (reqSecDefOptParams) ─────────────────
+
+    def securityDefinitionOptionParameter(  # noqa: N802
+        self, reqId, exchange, underlyingConId, tradingClass, multiplier, expirations, strikes,
+    ):
+        if reqId not in self._option_params_done:
+            return
+        self._option_params.setdefault(reqId, []).append({
+            "exchange": exchange,
+            "underlyingConId": int(underlyingConId),
+            "tradingClass": tradingClass,
+            "multiplier": multiplier,
+            "expirations": sorted(list(expirations)),
+            "strikes": sorted(list(strikes)),
+        })
+
+    def securityDefinitionOptionParameterEnd(self, reqId):  # noqa: N802
+        ev = self._option_params_done.get(reqId)
+        if ev:
+            ev.set()
 
     # ── account / positions ───────────────────────────────
 
@@ -284,7 +379,15 @@ class IBKRBroker:
         qty: float,
         type: OrderType = OrderType.MARKET,
         limit_price: Optional[float] = None,
+        *,
+        contract: Optional[Contract] = None,
     ) -> Order:
+        """
+        Place an order. By default builds a STK contract from `symbol`.
+        Pass `contract=` to override (e.g. an OPT contract from
+        `_option_contract()` for an options trade). The Order.symbol field
+        will reflect a human-readable description.
+        """
         order = Order(
             id=f"ib_{uuid.uuid4().hex[:10]}",
             symbol=symbol.upper(),
@@ -327,8 +430,9 @@ class IBKRBroker:
         ev = threading.Event()
         app._order_done[ib_order_id] = ev
 
+        ib_contract = contract if contract is not None else _stock_contract(symbol)
         try:
-            app.placeOrder(ib_order_id, _stock_contract(symbol), ib)
+            app.placeOrder(ib_order_id, ib_contract, ib)
             ev.wait(timeout=10.0)
             status = app._order_status.get(ib_order_id, {})
             err = status.get("error")
@@ -353,6 +457,103 @@ class IBKRBroker:
             return order
         finally:
             app._order_done.pop(ib_order_id, None)
+
+    # ── options ───────────────────────────────────────────
+
+    def place_option_order(
+        self,
+        symbol: str,
+        expiry: str,
+        strike: float,
+        right: str,
+        side: OrderSide,
+        qty: float,
+        type: OrderType = OrderType.MARKET,
+        limit_price: Optional[float] = None,
+        exchange: str = "SMART",
+        currency: str = "USD",
+    ) -> Order:
+        """
+        Place an options order. The Order.symbol carries an OCC-style
+        description so the audit log / UI shows what was bought.
+        """
+        contract = _option_contract(symbol, expiry, strike, right,
+                                    exchange=exchange, currency=currency)
+        # Build a human-readable symbol: "AAPL 20260619 C 150"
+        right_letter = "C" if right.upper() in ("C", "CALL") else "P"
+        display = f"{symbol.upper()} {expiry} {right_letter} {strike:g}"
+        return self.place_order(
+            symbol=display,
+            side=side,
+            qty=qty,
+            type=type,
+            limit_price=limit_price,
+            contract=contract,
+        )
+
+    def option_chain(self, symbol: str, exchange: str = "SMART") -> dict:
+        """
+        Discover available expirations + strikes for an equity's options.
+        Two-step IBKR flow:
+          1. reqContractDetails on the STK → resolve underlying conId
+          2. reqSecDefOptParams using that conId → expirations / strikes
+        Returns: {
+            "underlyingConId": int,
+            "underlyingSymbol": str,
+            "params": [{ exchange, expirations, strikes, multiplier, ... }],
+        }
+        Raises RuntimeError on timeout or if symbol is unknown.
+        """
+        self._ensure_connected()
+        app = self._app
+        assert app is not None
+
+        # ── Step 1: resolve conId ──
+        req_id_a = app.next_req_id
+        app.next_req_id += 1
+        ev_a = threading.Event()
+        app._contract_details_done[req_id_a] = ev_a
+        app._contract_details[req_id_a] = []
+        try:
+            app.reqContractDetails(req_id_a, _stock_contract(symbol, exchange=exchange))
+            ev_a.wait(timeout=8.0)
+            details = list(app._contract_details.get(req_id_a, []))
+        finally:
+            app._contract_details_done.pop(req_id_a, None)
+            app._contract_details.pop(req_id_a, None)
+
+        if not details:
+            raise RuntimeError(f"No contract details for symbol '{symbol}' (timeout or unknown ticker)")
+        # Prefer the row whose primaryExchange matches NYSE/NASDAQ/ARCA etc.
+        chosen = next((d for d in details if d.get("primaryExchange")), details[0])
+        underlying_con_id = int(chosen["conId"])
+
+        # ── Step 2: option params ──
+        req_id_b = app.next_req_id
+        app.next_req_id += 1
+        ev_b = threading.Event()
+        app._option_params_done[req_id_b] = ev_b
+        app._option_params[req_id_b] = []
+        try:
+            app.reqSecDefOptParams(
+                req_id_b,
+                symbol.upper(),
+                "",            # futFopExchange — empty for non-FOP
+                "STK",         # underlyingSecType
+                underlying_con_id,
+            )
+            ev_b.wait(timeout=10.0)
+            params = list(app._option_params.get(req_id_b, []))
+        finally:
+            app._option_params_done.pop(req_id_b, None)
+            app._option_params.pop(req_id_b, None)
+
+        return {
+            "underlyingConId": underlying_con_id,
+            "underlyingSymbol": symbol.upper(),
+            "longName": chosen.get("longName"),
+            "params": params,
+        }
 
     # ── account ───────────────────────────────────────────
 
