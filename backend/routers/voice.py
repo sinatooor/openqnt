@@ -374,6 +374,8 @@ class VoiceProfileResponse(BaseModel):
     user_id: str
     phone_number: Optional[str] = None
     voice_trading_enabled: bool = False
+    voice_passphrase_set: bool = False
+    telegram_chat_id: Optional[str] = None
     ios_devices: int = 0
 
 
@@ -400,6 +402,8 @@ async def get_voice_profile(user_id: str):
             user_id=user_id,
             phone_number=None,
             voice_trading_enabled=False,
+            voice_passphrase_set=False,
+            telegram_chat_id=None,
             ios_devices=0,
         )
     devices = voice_db.list_ios_devices(user_id)
@@ -407,6 +411,8 @@ async def get_voice_profile(user_id: str):
         user_id=user_id,
         phone_number=profile.get("phone_number"),
         voice_trading_enabled=bool(profile.get("voice_trading_enabled")),
+        voice_passphrase_set=bool((profile.get("voice_passphrase") or "").strip()),
+        telegram_chat_id=profile.get("telegram_chat_id"),
         ios_devices=len(devices),
     )
 
@@ -446,6 +452,25 @@ async def update_voice_passphrase(req: UpdateVoicePassphraseRequest):
     voice_db.set_voice_passphrase(req.user_id, req.passphrase)
     has = bool((req.passphrase or "").strip())
     return {"ok": True, "voice_passphrase_set": has}
+
+
+class UpdateTelegramChatIdRequest(BaseModel):
+    user_id: str
+    chat_id: Optional[str] = None  # numeric or '@channel'; None to clear
+
+
+@router.post("/profile/telegram-chat-id")
+async def update_telegram_chat_id(req: UpdateTelegramChatIdRequest):
+    """Where the `send_notification` voice tool sends Telegram messages.
+    Pass null/empty to clear. Negative IDs are valid (group chats)."""
+    voice_db.set_telegram_chat_id(req.user_id, req.chat_id)
+    return {"ok": True, "telegram_chat_id": (req.chat_id or "").strip() or None}
+
+
+@router.get("/profile/telegram-chat-id/{user_id}")
+async def get_telegram_chat_id_endpoint(user_id: str):
+    cid = voice_db.get_telegram_chat_id(user_id)
+    return {"user_id": user_id, "telegram_chat_id": cid}
 
 
 # ─────────────────────────────────────────────────────────────────────────

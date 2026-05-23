@@ -74,6 +74,78 @@ If no news is particularly significant, say so in the summary and return empty a
 """
 
 
+# ── Social-post → news-event adapter ─────────────────────────────
+# Strategies built with the `truthSocialPosts` data source (and similarly
+# X / Reddit / Twitter scrapers) feed in posts shaped like
+#   { content | text | message, createdAt | timestamp, author | username, url }
+# The LLM prompt above expects { headline, symbol, publishedAt, sourceName, body }.
+# These two helpers bridge the two shapes so a strategy can chain
+#   truthSocialPosts → newsAgentNode
+# without an explicit mapping step.
+
+
+def _looks_like_social(event: dict[str, Any]) -> bool:
+    """True if the event lacks a 'headline' but has a social-post text field."""
+    if not isinstance(event, dict):
+        return False
+    if event.get("headline"):
+        return False
+    return any(k in event for k in ("content", "text", "message", "post"))
+
+
+def _normalize_event(post: dict[str, Any]) -> dict[str, Any]:
+    """Map a social post (Truth Social / X / etc.) into the news-event shape."""
+    body = (
+        post.get("content")
+        or post.get("text")
+        or post.get("message")
+        or post.get("post")
+        or ""
+    )
+    # Trim a short "headline" off the body — first sentence or 100 chars
+    headline_seed = (str(body) or "").strip().replace("\n", " ")
+    if not headline_seed:
+        headline_seed = "(empty post)"
+    # cut at first period that's not in a URL
+    first_dot = headline_seed.find(". ")
+    if 0 < first_dot < 140:
+        headline = headline_seed[: first_dot + 1]
+    else:
+        headline = headline_seed[:120] + ("…" if len(headline_seed) > 120 else "")
+    return {
+        "headline": headline,
+        "symbol": post.get("symbol", "") or "",
+        "publishedAt": (
+            post.get("publishedAt")
+            or post.get("createdAt")
+            or post.get("timestamp")
+            or post.get("date")
+            or "recent"
+        ),
+        "sourceName": (
+            post.get("sourceName")
+            or post.get("source")
+            or (f"Truth Social @{post['author']}" if post.get("author") else None)
+            or (f"@{post['username']}" if post.get("username") else None)
+            or "Social"
+        ),
+        "url": post.get("url") or post.get("link") or "",
+        "body": str(body)[:1000],
+    }
+
+
+def _social_posts_to_news_events(posts: list[Any]) -> list[dict[str, Any]]:
+    """Coerce a list of social posts into news_events the analyst can consume."""
+    out: list[dict[str, Any]] = []
+    for p in posts:
+        if isinstance(p, dict):
+            out.append(_normalize_event(p))
+        elif isinstance(p, str):
+            # Bare string — treat the whole string as both headline and body
+            out.append(_normalize_event({"content": p}))
+    return out
+
+
 class NewsAnalystAgent(BaseAnalysisAgent):
     """Analyzes news events for portfolio impact and generates recommendations."""
 
@@ -101,6 +173,21 @@ class NewsAnalystAgent(BaseAnalysisAgent):
         news_events = context.get("news_events", []) or []
         per_symbol_limit = int(context.get("per_symbol_limit", 5))
         model = context.get("model", "gemini-2.5-flash")
+
+        # ── Normalize alternative input shapes ──────────────────
+        # Strategies can pipe Truth Social / X / Reddit posts into this agent
+        # via a `posts` field (or pass them already wrapped in `news_events`
+        # with a 'content' / 'text' field instead of 'headline'). Coerce both
+        # patterns into the headline/body shape the prompt expects.
+        social_posts = context.get("posts") or context.get("social_posts") or []
+        if social_posts and not news_events:
+            news_events = _social_posts_to_news_events(social_posts)
+        elif news_events:
+            # Some events may be raw social posts mixed with news. Normalize in place.
+            news_events = [
+                _normalize_event(ev) if _looks_like_social(ev) else ev
+                for ev in news_events
+            ]
 
         # ── Auto-fetch news when none supplied ───────────────────
         if not news_events and symbols:

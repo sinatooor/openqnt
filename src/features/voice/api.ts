@@ -14,6 +14,8 @@ export interface VoiceProfile {
     user_id: string;
     phone_number: string | null;
     voice_trading_enabled: boolean;
+    voice_passphrase_set: boolean;
+    telegram_chat_id: string | null;
     ios_devices: number;
 }
 
@@ -99,6 +101,18 @@ export const voiceApi = {
         req<{ ok: boolean; voice_trading_enabled: boolean }>(`/api/voice/profile/voice-trading`, {
             method: 'POST',
             body: JSON.stringify({ user_id: userId, enabled }),
+        }),
+
+    setVoicePassphrase: (userId: string, passphrase: string | null) =>
+        req<{ ok: boolean; voice_passphrase_set: boolean }>(`/api/voice/profile/voice-passphrase`, {
+            method: 'POST',
+            body: JSON.stringify({ user_id: userId, passphrase }),
+        }),
+
+    setTelegramChatId: (userId: string, chatId: string | null) =>
+        req<{ ok: boolean; telegram_chat_id: string | null }>(`/api/voice/profile/telegram-chat-id`, {
+            method: 'POST',
+            body: JSON.stringify({ user_id: userId, chat_id: chatId }),
         }),
 
     startCall: (params: StartCallParams) =>

@@ -384,6 +384,10 @@ def build_default_registry() -> ToolRegistry:
     # run_monte_carlo — call the MCPT router in-process (no HTTP hop).
     try:
         from routers.mcpt import run_mcpt, McptRequest
+        import base64 as _b64
+        import tempfile as _tempfile
+        import uuid as _uuid
+        from pathlib import Path as _Path
 
         async def _run_monte_carlo_adapter(
             symbol: str,
@@ -400,13 +404,32 @@ def build_default_registry() -> ToolRegistry:
                 permutations=permutations,
             )
             resp = await run_mcpt(req)
-            return resp.dict() if hasattr(resp, "dict") else dict(resp)
+            payload: Dict[str, Any] = resp.dict() if hasattr(resp, "dict") else dict(resp)
+
+            # The MCPT router returns plotImage as `data:image/png;base64,…`,
+            # but send_notification wants a file path. Decode the base64 to a
+            # tmp file once here so the next voice turn can attach it directly.
+            plot_data_url = payload.pop("plotImage", None)
+            if isinstance(plot_data_url, str) and plot_data_url.startswith("data:image/"):
+                try:
+                    header, b64data = plot_data_url.split(",", 1)
+                    ext = "png" if "png" in header else "jpg"
+                    tmp_dir = _Path(_tempfile.gettempdir()) / "openqwnt_plots"
+                    tmp_dir.mkdir(parents=True, exist_ok=True)
+                    plot_path = tmp_dir / f"mcpt_{symbol}_{_uuid.uuid4().hex[:8]}.{ext}"
+                    plot_path.write_bytes(_b64.b64decode(b64data))
+                    payload["plot_path"] = str(plot_path)
+                except Exception as _e:
+                    logger.warning("mcpt plot decode failed: %s", _e)
+            return payload
 
         reg.register(ToolSpec(
             name="run_monte_carlo",
             description=(
-                "Run a Monte Carlo permutation test on a symbol. Returns p-value and "
-                "robustness stats. Combine with send_notification to deliver the plot."
+                "Run a Monte Carlo permutation test on a symbol. Returns p-value, "
+                "robustness stats, and a `plot_path` (absolute file path) you can "
+                "pass directly to send_notification's attachment_path to deliver "
+                "the chart to Telegram."
             ),
             parameters={
                 "type": "object",

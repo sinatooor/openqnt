@@ -725,11 +725,11 @@ const Settings = () => {
                             </ul>
                         </Section>
 
-                        {/* Voice (Twilio phone + iOS pairing for voice trading) */}
+                        {/* Voice + notifications (phone, passphrase, Telegram chat ID, iOS pairing) */}
                         <Section
                             id="voice"
-                            title="Voice"
-                            description="Phone number, iOS pairing, and voice-trading toggle."
+                            title="Voice & Notifications"
+                            description="Phone, voice passphrase, Telegram chat ID, iOS pairing, voice-trading toggle."
                             innerRef={(el) => (sectionRefs.current.voice = el)}
                         >
                             <VoicePanel />
