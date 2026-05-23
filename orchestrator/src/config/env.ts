@@ -30,6 +30,10 @@ const envSchema = z.object({
     // CORS
     FRONTEND_URL: z.string().default('http://localhost:5173'),
 
+    // Shared token between Python backend and Node orchestrator for
+    // server-to-server calls (e.g. POST /api/notifications/dispatch).
+    INTERNAL_API_TOKEN: z.string().optional(),
+
     // Notifications
     TELEGRAM_BOT_TOKEN: z.string().optional(),
     TELEGRAM_DEFAULT_CHAT_ID: z.string().optional(),

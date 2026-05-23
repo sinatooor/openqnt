@@ -12,7 +12,7 @@ display past runs, statuses, and outputs.
 from collections import deque
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Any, Optional
 import uuid
 
@@ -21,6 +21,7 @@ from adk_agents.macro_analyst import macro_analyst
 from adk_agents.social_monitor import social_monitor
 from adk_agents.synthesis_agent import synthesis_agent
 from adk_agents.technical_analyst import technical_analyst
+from services import agent_runs_db
 
 router = APIRouter(prefix="/compute/agents", tags=["agents"])
 
@@ -84,15 +85,47 @@ class AgentRunResponse(BaseModel):
     agent_type: str
     output: dict[str, Any] | None = None
     error: str | None = None
+    run_id: Optional[str] = None  # row id in `agent_runs` (consumable by strategy nodes)
 
 
 # ── Endpoints ─────────────────────────────────────────────────
+
+def _persist_run(
+    *,
+    agent_type: str,
+    context: dict[str, Any],
+    output_dict: Optional[dict] = None,
+    error: Optional[str] = None,
+    schedule_id: Optional[str] = None,
+) -> Optional[str]:
+    """Best-effort write to the `agent_runs` table so the strategy-flow
+    `agentRunQuery` node can read it back. Never raises — failures here
+    must not break the agent run path."""
+    try:
+        symbols = context.get("symbols") if isinstance(context, dict) else []
+        return agent_runs_db.record_run(
+            agent_type=agent_type,
+            symbols=list(symbols) if symbols else [],
+            signal=(output_dict or {}).get("overall_signal"),
+            confidence=(output_dict or {}).get("overall_confidence"),
+            summary=(output_dict or {}).get("summary"),
+            output=output_dict,
+            error=error,
+            duration_ms=int((output_dict or {}).get("duration_ms") or 0),
+            tokens_used=int((output_dict or {}).get("tokens_used") or 0),
+            schedule_id=schedule_id,
+        )
+    except Exception:
+        return None
+
 
 @router.post("/run", response_model=AgentRunResponse)
 async def run_agent(req: AgentRunRequest):
     """
     Run a specialized analysis agent with the given context.
     Called by the orchestrator to delegate analysis to the compute service.
+    Successful runs are persisted into `agent_runs` so strategies and
+    the dashboard can replay them.
     """
     agent = AGENT_REGISTRY.get(req.agent_type)
     if not agent:
@@ -116,16 +149,29 @@ async def run_agent(req: AgentRunRequest):
         if output.error:
             _log_run(run_id, req.agent_type, "error",
                      duration_ms=output.duration_ms, output=output_dict, error=output.error)
+            persisted_id = _persist_run(
+                agent_type=req.agent_type, context=context,
+                output_dict=output_dict, error=output.error,
+            )
             return AgentRunResponse(success=False, agent_type=req.agent_type,
-                                   output=output_dict, error=output.error)
+                                   output=output_dict, error=output.error,
+                                   run_id=persisted_id)
 
         _log_run(run_id, req.agent_type, "success",
                  duration_ms=output.duration_ms, output=output_dict)
-        return AgentRunResponse(success=True, agent_type=req.agent_type, output=output_dict)
+        persisted_id = _persist_run(
+            agent_type=req.agent_type, context=context, output_dict=output_dict,
+        )
+        return AgentRunResponse(success=True, agent_type=req.agent_type,
+                               output=output_dict, run_id=persisted_id)
 
     except Exception as e:
         _log_run(run_id, req.agent_type, "error", error=str(e))
-        return AgentRunResponse(success=False, agent_type=req.agent_type, error=str(e))
+        persisted_id = _persist_run(
+            agent_type=req.agent_type, context=context, error=str(e),
+        )
+        return AgentRunResponse(success=False, agent_type=req.agent_type,
+                               error=str(e), run_id=persisted_id)
 
 
 @router.get("/types")
@@ -288,3 +334,84 @@ async def get_agent_log_stats():
         "total_runs": total,
         "by_agent": by_agent,
     }
+
+
+# ── Persisted run query (consumed by strategy-flow's agentRunQuery node) ─
+
+@router.get("/last-run")
+async def get_last_agent_run(
+    agent_type: str,
+    symbol: Optional[str] = None,
+    max_age_minutes: Optional[int] = None,
+):
+    """Latest persisted run for (agent_type, symbol). Returns 404 when no
+    matching row exists — the strategy node treats that as "no signal yet"."""
+    row = agent_runs_db.latest_run(
+        agent_type=agent_type, symbol=symbol, max_age_minutes=max_age_minutes,
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="no matching agent run")
+    return row
+
+
+@router.get("/history")
+async def get_agent_history(
+    agent_type: Optional[str] = None,
+    symbol: Optional[str] = None,
+    limit: int = 50,
+):
+    """Recent runs across all agent_types unless filtered. Used by the
+    Agents page to render a history timeline."""
+    return {"runs": agent_runs_db.list_history(
+        agent_type=agent_type, symbol=symbol, limit=limit,
+    )}
+
+
+# ── Scheduled-agent (cron) management ────────────────────────
+
+class ScheduleRequest(BaseModel):
+    agent_type: str
+    symbols: list[str] = Field(default_factory=list)
+    interval_minutes: int = Field(..., gt=0, le=24 * 60)
+    context: Optional[dict[str, Any]] = None
+
+
+@router.post("/schedule")
+async def create_schedule(req: ScheduleRequest):
+    """Cron a recurring run. The background agent scheduler picks it up
+    on its next poll and starts firing at `interval_minutes`. Output of
+    each fire lands in `agent_runs` (so strategy nodes see it)."""
+    agent = AGENT_REGISTRY.get(req.agent_type)
+    if not agent:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown agent type: {req.agent_type}. Available: {list(AGENT_REGISTRY.keys())}",
+        )
+    sched = agent_runs_db.create_schedule(
+        agent_type=req.agent_type,
+        symbols=req.symbols,
+        interval_minutes=req.interval_minutes,
+        context=req.context or {},
+    )
+    return {"schedule": sched}
+
+
+@router.get("/schedule")
+async def list_schedules(enabled_only: bool = False):
+    return {"schedules": agent_runs_db.list_schedules(enabled_only=enabled_only)}
+
+
+@router.patch("/schedule/{schedule_id}")
+async def toggle_schedule(schedule_id: str, enabled: bool):
+    row = agent_runs_db.set_schedule_enabled(schedule_id, enabled)
+    if not row:
+        raise HTTPException(status_code=404, detail="schedule not found")
+    return {"schedule": row}
+
+
+@router.delete("/schedule/{schedule_id}")
+async def delete_schedule(schedule_id: str):
+    ok = agent_runs_db.delete_schedule(schedule_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="schedule not found")
+    return {"deleted": True}

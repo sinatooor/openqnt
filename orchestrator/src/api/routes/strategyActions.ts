@@ -8,7 +8,12 @@ import { prisma } from '../../config/database.js';
 import { logger } from '../../utils/logger.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { compileFlowStrategy, validateFlowStrategy } from '../../engine/compiler.js';
-import { deployStrategy, removeStrategy } from '../../workers/heartbeat.js';
+import {
+    deployStrategy,
+    removeStrategy,
+    extractScheduleFromNodes,
+    type HeartbeatJobData,
+} from '../../workers/heartbeat.js';
 import { env } from '../../config/env.js';
 
 const router = Router();
@@ -85,28 +90,74 @@ router.post('/:id/deploy', async (req: Request, res: Response) => {
             return;
         }
 
-        // Get user's agent config for heartbeat interval
+        // Get user's agent config for heartbeat interval (fallback when the
+        // strategy has no `cronTrigger`/`heartbeatTrigger` node).
         const agentConfig = await prisma.agentConfig.findUnique({
             where: { userId: req.user!.userId },
         });
+        const fallbackInterval = agentConfig?.heartbeatIntervalSeconds ?? 300;
 
-        const intervalSeconds = agentConfig?.heartbeatIntervalSeconds ?? 300;
+        // Prefer the schedule declared on the strategy's trigger nodes.
+        const schedule = extractScheduleFromNodes(strategy.nodes as unknown);
 
-        // Deploy to BullMQ
-        await deployStrategy({
-            strategyId: strategy.id,
-            userId: req.user!.userId,
-            intervalSeconds,
-        });
+        let jobData: HeartbeatJobData;
+        if (schedule?.kind === 'cron' && schedule.cronExpression) {
+            // Validate the cron expression so we 400 instead of silently
+            // queueing something BullMQ will reject.
+            try {
+                // cron-parser is a transitive dep of BullMQ.
+                const cronParser = await import('cron-parser');
+                cronParser.parseExpression(schedule.cronExpression, {
+                    tz: schedule.timezone,
+                });
+            } catch (err) {
+                res.status(400).json({
+                    error: `invalid cronExpression: ${(err as Error).message}`,
+                });
+                return;
+            }
+            jobData = {
+                strategyId: strategy.id,
+                userId: req.user!.userId,
+                triggerKind: 'cron',
+                cronExpression: schedule.cronExpression,
+                timezone: schedule.timezone,
+                intervalSeconds: 0,
+            };
+        } else if (schedule?.kind === 'heartbeat' && schedule.intervalSeconds) {
+            jobData = {
+                strategyId: strategy.id,
+                userId: req.user!.userId,
+                triggerKind: 'heartbeat',
+                intervalSeconds: schedule.intervalSeconds,
+            };
+        } else {
+            jobData = {
+                strategyId: strategy.id,
+                userId: req.user!.userId,
+                triggerKind: 'heartbeat',
+                intervalSeconds: fallbackInterval,
+            };
+        }
 
-        // Update strategy status
+        await deployStrategy(jobData);
+
         await prisma.strategy.update({
             where: { id: strategy.id },
             data: { status: 'active' },
         });
 
-        logger.info({ strategyId: strategy.id, intervalSeconds }, 'Strategy deployed');
-        res.json({ message: 'Strategy deployed', intervalSeconds });
+        logger.info(
+            { strategyId: strategy.id, schedule: jobData },
+            'Strategy deployed'
+        );
+        res.json({
+            message: 'Strategy deployed',
+            triggerKind: jobData.triggerKind,
+            cronExpression: jobData.cronExpression,
+            timezone: jobData.timezone,
+            intervalSeconds: jobData.intervalSeconds,
+        });
     } catch (error) {
         logger.error({ error }, 'Deploy failed');
         res.status(500).json({ error: 'Deploy failed' });

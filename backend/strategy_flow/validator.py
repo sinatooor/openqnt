@@ -69,24 +69,50 @@ NODE_OUTPUT_TYPES = {
     "subStrategy": "any",
 }
 
-# Node type to expected input types
+# Node type to expected input types — the COARSE fallback used when the
+# target handle isn't recognised. Action/risk/math etc. legitimately accept
+# numbers on size/price handles, so this set is the union of everything the
+# node can plausibly receive. The fine-grained check below uses the catalog's
+# per-handle dataType to reject e.g. `number → action.trigger`.
 NODE_INPUT_TYPES = {
-    "indicator": {"number"},
+    "indicator": {"number", "candles", "any"},
     "condition": {"number", "boolean"},
-    "action": {"boolean", "signal"},
-    "control": {"boolean", "signal"},
+    "action": {"boolean", "signal", "number"},
+    "control": {"boolean", "signal", "number"},
     "math": {"number"},
-    "risk": {"number"},
+    "risk": {"number", "signal"},
+    "tradeInfo": {"signal", "number", "any"},
     "variable": {"any"},
     # start has no inputs (it IS the entry point); listing here for symmetry.
     "start": set(),
-    "trigger": set(),
+    "trigger": {"any"},
     "switch": {"any"},
     "merge": {"any"},
     "splitInBatches": {"any"},
     "wait": {"signal", "boolean", "any"},
     "httpRequest": {"any"},
     "subStrategy": {"any"},
+}
+
+# Per-(nodeType, handleId) override map. When a handle is in this map, we use
+# THIS dataType instead of the coarse node-type set above. Lets us flag
+# "number → action.trigger" while letting "number → action.size" through.
+HANDLE_INPUT_TYPES: Dict[Tuple[str, str], Set[str]] = {
+    # actions
+    ("action", "trigger"): {"signal", "boolean"},
+    ("action", "size"): {"number"},
+    ("action", "limitPrice"): {"number"},
+    ("action", "stopPrice"): {"number"},
+    ("action", "takeProfitPrice"): {"number"},
+    # indicator
+    ("indicator", "trigger"): {"signal", "boolean"},
+    ("indicator", "data"): {"candles", "ohlcv", "any"},
+    # risk / tradeInfo
+    ("risk", "trigger"): {"signal", "boolean"},
+    ("tradeInfo", "trigger"): {"signal", "boolean"},
+    # condition (input-a / input-b)
+    ("condition", "input-a"): {"number", "boolean"},
+    ("condition", "input-b"): {"number", "boolean"},
 }
 
 # Node types that satisfy the "data source" requirement: indicators, environment
@@ -184,8 +210,14 @@ def validate_flow(
         # Get output type from source
         source_output_type = get_output_type(source_node, edge.get("sourceHandle"))
 
-        # Get expected input type from target
-        target_input_types = NODE_INPUT_TYPES.get(target_type, {"any"})
+        # Prefer the per-handle dataType when we know it — that's how we
+        # distinguish e.g. action.trigger (must be signal) from action.size
+        # (must be number). Fall back to the coarse node-type set.
+        target_handle = edge.get("targetHandle") or ""
+        target_input_types = HANDLE_INPUT_TYPES.get(
+            (target_type, target_handle),
+            NODE_INPUT_TYPES.get(target_type, {"any"}),
+        )
 
         # Empty input set means this target accepts no inputs (e.g. start nodes).
         if not target_input_types:
@@ -227,17 +259,60 @@ def validate_flow(
                 "Renamed automatically on save."
             )
 
+    # Build outgoing-edge map alongside the incoming one — needed for the
+    # trigger / orphan checks below.
+    outgoing_edges: Dict[str, List[Dict[str, Any]]] = {}
+    for edge in edges:
+        src = edge.get("source")
+        if src:
+            outgoing_edges.setdefault(src, []).append(edge)
+
+    # Trigger-source subtypes whose `output` handle must connect to
+    # SOMETHING for the strategy to actually fire downstream. The full
+    # list mirrors `triggerNodes.ts` in the frontend catalog.
+    _TRIGGER_SUBTYPES = {
+        "startTrigger", "heartbeatTrigger", "cronTrigger", "webhookTrigger",
+        "manualTrigger", "priceAlertTrigger", "newsTrigger",
+        "brokerEventTrigger", "conditionTrigger",
+    }
+    # The exported reactflow JSON puts the schema-level type in
+    # `data.triggerType`, while `node.type` is the React component class
+    # (`trigger`). We need both to identify triggers correctly.
+    def _trigger_subtype(node: Dict[str, Any]) -> Optional[str]:
+        data = node.get("data") or {}
+        sub = data.get("triggerType") or node.get("type")
+        return sub if sub in _TRIGGER_SUBTYPES else None
+
     for node in nodes:
         node_type = node.get("type")
         node_id = node["id"]
         node_data = node.get("data", {})
 
-        # Action nodes should have at least one incoming edge
+        # Trigger source nodes MUST have outgoing edges when other nodes
+        # exist — otherwise the strategy can never fire. Promoted from
+        # silent pass to a hard error so the AI's `validate` tool sees it.
+        sub = _trigger_subtype(node)
+        if sub and len(nodes) > 1 and node_id not in outgoing_edges:
+            fail(
+                f"Trigger '{node_data.get('label', node_id)}' ({sub}) has no "
+                f"outgoing edges. Nothing downstream will fire.",
+                "trigger_no_outgoing",
+                node_id=node_id,
+            )
+
+        # Action nodes MUST have their `trigger` input wired — otherwise
+        # they never fire. Was a silent warning; now an error.
         if node_type == "action":
-            if node_id not in incoming_edges:
-                warnings.append(
-                    f"Action node '{node_data.get('label', node_id)}' has no input connections. "
-                    "It will always execute."
+            wired_targets = {
+                e.get("targetHandle") for e in incoming_edges.get(node_id, [])
+            }
+            if "trigger" not in wired_targets:
+                fail(
+                    f"Action '{node_data.get('label', node_id)}' has no `trigger` input "
+                    "wired. It will never fire.",
+                    "action_no_trigger",
+                    node_id=node_id,
+                    param_path="trigger",
                 )
 
         # Condition nodes should have inputs
@@ -251,7 +326,20 @@ def validate_flow(
                     f"Condition node '{node_data.get('label', node_id)}' needs {required_inputs} "
                     f"input(s) but only has {actual_inputs}."
                 )
-    
+
+        # Orphan check — no incoming AND no outgoing edges. Allowed for
+        # Start trigger (it's the seed) and not for anything else.
+        if (
+            node_id not in incoming_edges
+            and node_id not in outgoing_edges
+            and len(nodes) > 1
+            and sub != "startTrigger"
+        ):
+            warnings.append(
+                f"Node '{node_data.get('label', node_id)}' ({node_type}) is orphaned "
+                "— no edges in or out. Wire it or remove it."
+            )
+
     # Check 4: Cycle detection
     allow_cycles = (settings or {}).get("allowCycles", False)
     has_cycle, cycle_nodes = detect_cycles(nodes, edges)

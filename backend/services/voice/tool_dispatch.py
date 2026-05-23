@@ -44,6 +44,13 @@ class DispatchContext:
     voice_trading_enabled: bool = False
     pending_confirmations: Set[str] = field(default_factory=set)
     audit_log: List[Dict[str, Any]] = field(default_factory=list)
+    # When set, `risk="confirm"` tools require the user to speak the
+    # passphrase before the verbal "yes" gate runs. Empty/None disables it
+    # for back-compat. Plain text by design — Gemini Live STT delivers
+    # transcribed speech and we need a fuzzy match.
+    voice_passphrase: Optional[str] = None
+    passphrase_satisfied: bool = False
+    pending_passphrase: Set[str] = field(default_factory=set)
 
 
 class ToolRegistry:
@@ -75,6 +82,26 @@ def _confirmation_token_in_text(text: str) -> bool:
     }
 
 
+def _normalize_passphrase(s: Optional[str]) -> str:
+    """Casefold + collapse whitespace + strip punctuation for fuzzy match."""
+    if not s:
+        return ""
+    import re
+    cleaned = re.sub(r"[^\w\s]", "", s, flags=re.UNICODE).casefold()
+    return re.sub(r"\s+", " ", cleaned).strip()
+
+
+def _passphrase_in_text(transcript: str, passphrase: Optional[str]) -> bool:
+    """True if the normalized passphrase appears as a contiguous substring
+    of the normalized transcript. Gives the user some slack on punctuation
+    and capitalization without allowing trivial leaks."""
+    needle = _normalize_passphrase(passphrase)
+    if not needle:
+        return False
+    haystack = _normalize_passphrase(transcript)
+    return needle in haystack
+
+
 async def dispatch(
     spec: ToolSpec,
     args: Dict[str, Any],
@@ -103,6 +130,20 @@ async def dispatch(
                     "hint": "Tell the user to enable 'Voice trading' in Profile → Settings.",
                 }
             confirm_key = f"{spec.name}:{_stable_args_key(args)}"
+            # Stage 1: voice passphrase (only if user has one configured).
+            if ctx.voice_passphrase and not ctx.passphrase_satisfied:
+                ctx.pending_passphrase.add(confirm_key)
+                audit_entry["status"] = "needs_passphrase"
+                return {
+                    "needs_passphrase": True,
+                    "instruction": (
+                        "Before this action can proceed, ask the user to say "
+                        "their voice passphrase out loud. Do NOT say the "
+                        "passphrase yourself. After they say it, call this "
+                        "tool again with the exact same arguments."
+                    ),
+                }
+            # Stage 2: verbal confirmation ("yes / confirm").
             if confirm_key not in ctx.pending_confirmations:
                 ctx.pending_confirmations.add(confirm_key)
                 audit_entry["status"] = "needs_confirmation"
@@ -115,6 +156,7 @@ async def dispatch(
                     ),
                 }
             ctx.pending_confirmations.discard(confirm_key)
+            ctx.pending_passphrase.discard(confirm_key)
 
         # Execute. Async or sync.
         if inspect.iscoroutinefunction(spec.fn):
@@ -140,19 +182,36 @@ async def dispatch(
         ctx.audit_log.append(audit_entry)
 
 
+def note_user_text(text: str, ctx: DispatchContext) -> str:
+    """Call when user transcript arrives. Returns:
+      - "passphrase_satisfied" — the user just spoke the configured passphrase
+      - "confirmation_satisfied" — the user said "yes/confirm"; the model
+        should re-issue the previously-blocked tool call
+      - "" — neither
+
+    Order: passphrase first, then confirm. A single utterance like
+    "alpha bravo charlie yes" satisfies both in one shot."""
+    cleared_phrase = False
+    if ctx.voice_passphrase and not ctx.passphrase_satisfied and ctx.pending_passphrase:
+        if _passphrase_in_text(text, ctx.voice_passphrase):
+            ctx.passphrase_satisfied = True
+            ctx.pending_passphrase.clear()
+            cleared_phrase = True
+    if ctx.pending_confirmations and _confirmation_token_in_text(text):
+        return "confirmation_satisfied"
+    return "passphrase_satisfied" if cleared_phrase else ""
+
+
+# Back-compat shim — older call sites use the historical name and just want
+# a bool ("did anything clear?"). The new logic above is a superset.
 def note_user_text_for_confirmation(text: str, ctx: DispatchContext) -> bool:
-    """Call when user transcript arrives. Returns True if it cleared a pending
-    confirm — the model should then re-issue the previously-blocked tool call.
-    """
-    if not ctx.pending_confirmations:
-        return False
-    if _confirmation_token_in_text(text):
-        return True
-    return False
+    return bool(note_user_text(text, ctx))
 
 
 def clear_pending_confirmations(ctx: DispatchContext) -> None:
     ctx.pending_confirmations.clear()
+    ctx.pending_passphrase.clear()
+    ctx.passphrase_satisfied = False
 
 
 def _stable_args_key(args: Dict[str, Any]) -> str:
@@ -273,5 +332,115 @@ def build_default_registry() -> ToolRegistry:
         ))
     except Exception as e:  # pragma: no cover
         logger.warning("voice: broker mutate tools not available (%s)", e)
+
+    # ─── Widen the surface for "ask anything in chat-style during a call" ──
+    #
+    # These adapters wrap chat-grade tools so Gemini Live can run them
+    # mid-call. Order matters: keep all as read-tier; only mutating tools
+    # should be `risk="confirm"`.
+
+    # send_notification — emit Telegram/Slack/SMS via the orchestrator.
+    try:
+        from adk_agents.tools.notification_tools import send_notification
+
+        def _send_notification_adapter(
+            channel: str = "telegram",
+            body: str = "",
+            title: Optional[str] = None,
+            attachment_path: Optional[str] = None,
+            attachment_kind: str = "photo",
+        ) -> Dict[str, Any]:
+            return send_notification(
+                channel=channel,
+                body=body,
+                title=title,
+                attachment_path=attachment_path,
+                attachment_kind=attachment_kind,
+            )
+
+        reg.register(ToolSpec(
+            name="send_notification",
+            description=(
+                "Push a notification to the user via Telegram / Slack / SMS / email. "
+                "Use this to deliver charts, research summaries, or follow-ups after the call. "
+                "Pass attachment_path for a Monte Carlo plot or PDF."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "channel": {"type": "string", "enum": ["telegram", "slack", "sms", "email"], "default": "telegram"},
+                    "body": {"type": "string"},
+                    "title": {"type": "string"},
+                    "attachment_path": {"type": "string", "description": "Absolute file path to attach"},
+                    "attachment_kind": {"type": "string", "enum": ["photo", "document"], "default": "photo"},
+                },
+                "required": ["body"],
+            },
+            risk="read", fn=_send_notification_adapter,
+        ))
+    except Exception as e:  # pragma: no cover
+        logger.warning("voice: notification_tools not available (%s)", e)
+
+    # run_monte_carlo — call the MCPT router in-process (no HTTP hop).
+    try:
+        from routers.mcpt import run_mcpt, McptRequest
+
+        async def _run_monte_carlo_adapter(
+            symbol: str,
+            start_date: str,
+            end_date: str,
+            timeframe: str = "1d",
+            permutations: int = 1000,
+        ) -> Dict[str, Any]:
+            req = McptRequest(
+                symbol=symbol,
+                start_date=start_date,
+                end_date=end_date,
+                timeframe=timeframe,
+                permutations=permutations,
+            )
+            resp = await run_mcpt(req)
+            return resp.dict() if hasattr(resp, "dict") else dict(resp)
+
+        reg.register(ToolSpec(
+            name="run_monte_carlo",
+            description=(
+                "Run a Monte Carlo permutation test on a symbol. Returns p-value and "
+                "robustness stats. Combine with send_notification to deliver the plot."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "symbol": {"type": "string"},
+                    "start_date": {"type": "string", "description": "YYYY-MM-DD"},
+                    "end_date": {"type": "string", "description": "YYYY-MM-DD"},
+                    "timeframe": {"type": "string", "default": "1d"},
+                    "permutations": {"type": "integer", "default": 1000},
+                },
+                "required": ["symbol", "start_date", "end_date"],
+            },
+            risk="read", fn=_run_monte_carlo_adapter,
+        ))
+    except Exception as e:  # pragma: no cover
+        logger.warning("voice: mcpt router not available (%s)", e)
+
+    # get_market_news — pre-existing tool, register if available.
+    try:
+        from adk_agents.tools.search_tools import get_market_news as _get_news
+        reg.register(ToolSpec(
+            name="get_market_news",
+            description="Get the latest market news for a ticker symbol or topic.",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "symbol": {"type": "string"},
+                    "limit": {"type": "integer", "default": 5},
+                },
+                "required": ["symbol"],
+            },
+            risk="read", fn=_get_news,
+        ))
+    except Exception as e:  # pragma: no cover
+        logger.warning("voice: get_market_news not available (%s)", e)
 
     return reg

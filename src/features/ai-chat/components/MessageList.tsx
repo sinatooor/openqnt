@@ -7,7 +7,7 @@
 import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
-import { Loader2, Sparkles, User } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useAiChatStore } from '../state/aiChatStore';
 import { usePanelStore } from '../state/panelStore';
 import { getSkill, SKILLS_BY_ID } from '../skills/registry';
@@ -67,14 +67,8 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
-      className={`flex gap-3 py-2 px-2 ${isUser ? 'justify-end' : ''}`}
+      className={`flex py-2 px-2 ${isUser ? 'justify-end' : ''}`}
     >
-      {!isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/20 flex items-center justify-center mt-0.5">
-          <Sparkles className="w-4 h-4 text-purple-400" />
-        </div>
-      )}
-
       <div className={`max-w-[80%] min-w-0 ${isUser ? '' : 'flex-1'}`}>
         {isUser ? (
           <div className="rounded-2xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed bg-primary/20 text-foreground border border-primary/10">
@@ -150,12 +144,6 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
           </div>
         )}
       </div>
-
-      {isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center mt-0.5">
-          <User className="w-4 h-4 text-white/60" />
-        </div>
-      )}
     </motion.div>
   );
 }

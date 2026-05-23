@@ -48,6 +48,7 @@ from services.voice.gemini_live import (
 )
 from services.voice.tool_dispatch import (
     DispatchContext,
+    note_user_text,
     build_default_registry,
     clear_pending_confirmations,
     dispatch,
@@ -386,6 +387,11 @@ class UpdateVoiceTradingRequest(BaseModel):
     enabled: bool
 
 
+class UpdateVoicePassphraseRequest(BaseModel):
+    user_id: str
+    passphrase: Optional[str] = None  # None or "" clears the gate
+
+
 @router.get("/profile/{user_id}", response_model=VoiceProfileResponse)
 async def get_voice_profile(user_id: str):
     profile = voice_db.get_user_voice_profile(user_id)
@@ -433,6 +439,15 @@ async def update_voice_trading(req: UpdateVoiceTradingRequest):
     return {"ok": True, "voice_trading_enabled": req.enabled}
 
 
+@router.post("/profile/voice-passphrase")
+async def update_voice_passphrase(req: UpdateVoicePassphraseRequest):
+    """Set or clear the user's voice passphrase. Gates `risk='confirm'`
+    tools during a call when set; empty/null disables the gate (back-compat)."""
+    voice_db.set_voice_passphrase(req.user_id, req.passphrase)
+    has = bool((req.passphrase or "").strip())
+    return {"ok": True, "voice_passphrase_set": has}
+
+
 # ─────────────────────────────────────────────────────────────────────────
 # Bridge implementation — shared across transports
 # ─────────────────────────────────────────────────────────────────────────
@@ -450,14 +465,23 @@ async def _run_bridge(
     Browser/iOS path: input/output are raw PCM16 binary frames (the client
     handles its own resampling).
     """
-    # Filter the registry down to allowed tools for this call
-    allowed = set(pending.allowed_tools)
-    declarations: List[ToolDeclaration] = []
-    for spec in _REGISTRY.declarations():
-        if spec.name in allowed:
-            declarations.append(
-                ToolDeclaration(name=spec.name, description=spec.description, parameters=spec.parameters)
-            )
+    # Filter the registry down to allowed tools for this call. When the
+    # caller didn't restrict tools (`allowed_tools` empty/None), default to
+    # the full registry — that's what enables "ask anything in chat-style
+    # during a call". Trade-mutating tools are still gated by the
+    # passphrase + verbal-confirm flow in `tool_dispatch.dispatch()`.
+    if pending.allowed_tools:
+        allowed = set(pending.allowed_tools)
+        declarations: List[ToolDeclaration] = [
+            ToolDeclaration(name=spec.name, description=spec.description, parameters=spec.parameters)
+            for spec in _REGISTRY.declarations()
+            if spec.name in allowed
+        ]
+    else:
+        declarations = [
+            ToolDeclaration(name=spec.name, description=spec.description, parameters=spec.parameters)
+            for spec in _REGISTRY.declarations()
+        ]
 
     cfg = GeminiLiveConfig(
         system_instruction=pending.system_instruction,
@@ -470,6 +494,7 @@ async def _run_bridge(
         user_id=pending.user_id,
         call_id=pending.call_id,
         voice_trading_enabled=bool(profile.get("voice_trading_enabled")),
+        voice_passphrase=profile.get("voice_passphrase") or None,
     )
 
     voice_orch.write_transcript_event(pending.call_id, {"type": "session_open", "transport": pending.transport})
@@ -543,7 +568,13 @@ async def _run_bridge(
                         elif et == "transcript":
                             voice_orch.write_transcript_event(pending.call_id, ev)
                             if ev["role"] == "user":
-                                if note_user_text_for_confirmation(ev.get("text", ""), dctx):
+                                cleared = note_user_text(ev.get("text", ""), dctx)
+                                if cleared == "passphrase_satisfied":
+                                    voice_orch.write_transcript_event(
+                                        pending.call_id,
+                                        {"type": "passphrase_satisfied"},
+                                    )
+                                elif cleared == "confirmation_satisfied":
                                     voice_orch.write_transcript_event(
                                         pending.call_id,
                                         {"type": "confirmation_received"},

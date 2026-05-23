@@ -69,6 +69,16 @@ if os.environ.get("OPENQWNT_DESKTOP_MODE") != "true":
 else:
     print("[desktop] Market data scheduler disabled (OPENQWNT_DESKTOP_MODE=true)")
 
+# Agent cron scheduler — fires `scheduled_agents` rows on their interval
+# and persists results into `agent_runs` so the strategy-flow agentRunQuery
+# node and the Agents history page can read them.
+if os.environ.get("AGENT_SCHEDULER_DISABLED", "").lower() not in {"1", "true", "yes"}:
+    try:
+        from services.agent_scheduler import start_scheduler as _start_agent_scheduler
+        _start_agent_scheduler()
+    except Exception as e:
+        print(f"Warning: Agent scheduler failed to start: {e}")
+
 # ============================================================
 # LLM PROVIDER CONFIGURATION
 # ============================================================

@@ -74,6 +74,10 @@ def init_voice_schema() -> None:
             cur.execute("ALTER TABLE users ADD COLUMN phone_number TEXT")
         if not _has_column(conn, "users", "voice_trading_enabled"):
             cur.execute("ALTER TABLE users ADD COLUMN voice_trading_enabled INTEGER DEFAULT 0")
+        if not _has_column(conn, "users", "voice_passphrase"):
+            # Plain-text by design — must be matched against transcribed speech
+            # (Gemini Live STT). Hashing breaks fuzzy match. Encrypt the DB at rest.
+            cur.execute("ALTER TABLE users ADD COLUMN voice_passphrase TEXT")
         conn.commit()
     finally:
         conn.close()
@@ -148,6 +152,34 @@ def update_user_phone(user_id: str, phone_e164: Optional[str]) -> None:
         conn.close()
 
 
+def set_voice_passphrase(user_id: str, passphrase: Optional[str]) -> None:
+    """Store the user's voice passphrase in plain text. Pass None/'' to clear."""
+    cleaned = (passphrase or "").strip() or None
+    conn = _conn()
+    try:
+        conn.execute(
+            "UPDATE users SET voice_passphrase = ? WHERE id = ?",
+            (cleaned, user_id),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_voice_passphrase(user_id: str) -> Optional[str]:
+    conn = _conn()
+    try:
+        row = conn.execute(
+            "SELECT voice_passphrase FROM users WHERE id = ?", (user_id,),
+        ).fetchone()
+    finally:
+        conn.close()
+    if not row:
+        return None
+    val = row["voice_passphrase"] if hasattr(row, "keys") else row[0]
+    return val or None
+
+
 def set_voice_trading_enabled(user_id: str, enabled: bool) -> None:
     conn = _conn()
     try:
@@ -164,7 +196,7 @@ def get_user_voice_profile(user_id: str) -> Optional[Dict[str, Any]]:
     conn = _conn()
     try:
         row = conn.execute(
-            "SELECT id, name, email, phone_number, voice_trading_enabled FROM users WHERE id = ?",
+            "SELECT id, name, email, phone_number, voice_trading_enabled, voice_passphrase FROM users WHERE id = ?",
             (user_id,),
         ).fetchone()
         return dict(row) if row else None

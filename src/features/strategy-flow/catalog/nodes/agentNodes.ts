@@ -211,4 +211,56 @@ export const AGENT_NODES: NodeCatalogItem[] = [
             researchDepth: 'standard',
         },
     },
+    // =========================================================================
+    // Persisted-output query — reads the latest agent_runs row.
+    // Unlike the inline analysis nodes above, this one does NOT call an LLM.
+    // It returns the most recent persisted output for (agent_type, symbol)
+    // from the cron scheduler or any prior ad-hoc run. Lets a strategy
+    // consume yesterday's news_analyst output without re-running the agent.
+    // =========================================================================
+    {
+        type: 'agentRunQuery',
+        nodeType: 'agent',
+        label: 'Agent Run (Latest)',
+        description: 'Read the latest stored agent output',
+        tooltip: 'Reads the most recent persisted output of any agent (news_analyst, technical_analyst, etc.) from `agent_runs`. Cheap (no LLM call). Pair with a scheduled cron run so this node always has fresh data.',
+        inputs: ['Trigger'],
+        outputs: ['Signal', 'Confidence', 'Summary'],
+        category: 'agents',
+        subcategory: 'Persisted',
+        icon: 'History',
+        color: '#64748b',
+        backtestEligible: false,
+        defaultData: {
+            agentNodeType: 'agentRunQuery',
+            agentType: 'news_analyst',
+            symbol: '',
+            maxAgeMinutes: 60,
+        },
+    },
+    // Schedules a recurring agent run. The node itself does nothing at
+    // execute-time — its purpose is to declare "this strategy assumes
+    // news_analyst runs every 30 min" so the deploy step can register
+    // the schedule with /compute/agents/schedule.
+    {
+        type: 'scheduledAgentRun',
+        nodeType: 'agent',
+        label: 'Schedule Agent (Cron)',
+        description: 'Cron-fire an agent every N minutes',
+        tooltip: 'Declarative cron: registers the agent + symbols + interval into `scheduled_agents`. The backend scheduler thread fires it on schedule; each run lands in `agent_runs` for downstream nodes to read.',
+        inputs: [],
+        outputs: ['Signal'],
+        category: 'agents',
+        subcategory: 'Persisted',
+        icon: 'AlarmClock',
+        color: '#0ea5e9',
+        backtestEligible: false,
+        defaultData: {
+            agentNodeType: 'scheduledAgentRun',
+            agentType: 'news_analyst',
+            symbols: [],
+            intervalMinutes: 30,
+            enabled: true,
+        },
+    },
 ];
