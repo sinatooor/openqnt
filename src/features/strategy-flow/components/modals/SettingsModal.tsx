@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Settings, Palette, Grid3X3, Keyboard, Save, Eye, EyeOff, Brain, CheckCircle2, LineChart, Briefcase } from 'lucide-react';
 import { useStrategyFlowStore } from '../../store/strategyFlowStore';
@@ -51,7 +52,14 @@ export const getLLMApiKey = (provider: LLMModelProvider): string => {
 };
 
 export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) => {
-  const { showGrid, toggleGrid, pineScriptMode, togglePineScriptMode, livePortfolio, setLivePortfolio } = useStrategyFlowStore();
+  const {
+    showGrid,
+    toggleGrid,
+    pineScriptMode,
+    togglePineScriptMode,
+    livePortfolioSource,
+    setLivePortfolioSource,
+  } = useStrategyFlowStore();
 
   // LLM API Keys visibility states
   const [showOpenAIKey, setShowOpenAIKey] = useState(false);
@@ -143,28 +151,39 @@ export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) =
           />
         </div>
 
-        {/* Live Avanza Portfolio Toggle */}
-        <div className={`flex items-center justify-between p-3 rounded-lg border transition-all ${livePortfolio
+        {/* Live Portfolio Source */}
+        <div className={`flex items-center justify-between p-3 rounded-lg border transition-all ${livePortfolioSource !== 'off'
             ? 'bg-orange-500/10 border-orange-500/40'
             : 'bg-secondary/50 border-border/50'
           }`}>
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${livePortfolio ? 'bg-orange-500/20' : 'bg-secondary'}`}>
-              <Briefcase className={`w-5 h-5 ${livePortfolio ? 'text-orange-400' : 'text-muted-foreground'}`} />
+            <div className={`p-2 rounded-lg ${livePortfolioSource !== 'off' ? 'bg-orange-500/20' : 'bg-secondary'}`}>
+              <Briefcase className={`w-5 h-5 ${livePortfolioSource !== 'off' ? 'text-orange-400' : 'text-muted-foreground'}`} />
             </div>
-            <div>
-              <Label className="text-foreground font-medium">Use Live Avanza Portfolio</Label>
-              <p className="text-xs text-muted-foreground">
-                {livePortfolio
-                  ? 'Portfolio nodes read your actual Avanza positions on every tick (cached 30 s).'
-                  : 'Portfolio nodes use the backtest simulator. Enable to wire them to your live broker book.'}
+            <div className="min-w-0">
+              <Label className="text-foreground font-medium">Live Portfolio Source</Label>
+              <p className="text-xs text-muted-foreground max-w-[28rem]">
+                {livePortfolioSource === 'off'
+                  ? 'Portfolio nodes use the backtest simulator. Pick a broker to wire them to your live book.'
+                  : livePortfolioSource === 'avanza'
+                    ? 'portfolio_* nodes read live Avanza positions (SEK) on every tick (cached 30 s).'
+                    : livePortfolioSource === 'ibkr'
+                      ? 'portfolio_* nodes read live IBKR positions (USD) on every tick (cached 30 s). Requires TWS / IB Gateway running.'
+                      : 'Merged view of both brokers. Symbols prefixed AVA: / IBKR: to disambiguate.'}
               </p>
             </div>
           </div>
-          <Switch
-            checked={livePortfolio}
-            onCheckedChange={setLivePortfolio}
-          />
+          <Select value={livePortfolioSource} onValueChange={(v) => setLivePortfolioSource(v as 'off' | 'avanza' | 'ibkr' | 'all')}>
+            <SelectTrigger className="w-[160px] shrink-0">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="off">Off (backtest)</SelectItem>
+              <SelectItem value="avanza">Avanza</SelectItem>
+              <SelectItem value="ibkr">Interactive Brokers</SelectItem>
+              <SelectItem value="all">All connected</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <Tabs defaultValue="canvas" className="">

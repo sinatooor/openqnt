@@ -8,7 +8,8 @@ Tools available to the AI:
 - run_backtest: Run a backtest on a strategy
 - run_monte_carlo: Run Monte Carlo permutation test
 - navigate_to_page: Navigate user to a specific app page
-- get_portfolio_summary: Get portfolio overview
+- get_portfolio_summary: Get portfolio overview across Avanza + IBKR
+- get_ibkr_account: Interactive Brokers account snapshot (equity, cash, positions)
 - list_user_strategies: List user's saved strategies
 - get_execution_history: Get recent execution runs
 - get_market_news: Get latest market news
@@ -154,7 +155,22 @@ TOOL_DEFINITIONS = [
     },
     {
         "name": "get_portfolio_summary",
-        "description": "Get the user's LIVE portfolio summary from their connected Avanza broker account, including top holdings (sorted by market value), total value in SEK, period returns (1W/1M/3M/YTD/1Y/3Y), and risk metrics (Sharpe ratio, std-dev, CAGR). Use this whenever the user asks about their portfolio, positions, holdings, returns, or performance.",
+        "description": "Get the user's LIVE portfolio summary across one or both connected brokers (Avanza in SEK + Interactive Brokers in USD). Returns top holdings, total values, period returns (Avanza only), and risk metrics. Use whenever the user asks about their portfolio, positions, holdings, returns, or performance. Default returns BOTH brokers — pass broker='avanza' or 'ibkr' to scope to one.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "broker": {
+                    "type": "string",
+                    "enum": ["all", "avanza", "ibkr"],
+                    "description": "Which broker to summarize. 'all' (default) returns both side-by-side.",
+                }
+            },
+            "required": []
+        }
+    },
+    {
+        "name": "get_ibkr_account",
+        "description": "Get a live Interactive Brokers account snapshot — equity (USD), cash, buying power, unrealised/realised P&L, and the list of open positions with last prices. Use when the user specifically asks about their IBKR account, US holdings, or USD positions.",
         "parameters": {
             "type": "object",
             "properties": {},
@@ -511,100 +527,160 @@ async def execute_tool(tool_name: str, args: Dict[str, Any]) -> Dict[str, Any]:
             }
 
         elif tool_name == "get_portfolio_summary":
-            # Prefer the user's live Avanza book; fall back to the orchestrator
-            # stub when Avanza isn't connected (so demo / fresh installs still work).
-            try:
-                from integrations.avanza.manager import get_manager
-                from integrations.avanza.storage import get_storage
-                from integrations.avanza.normalize import positions_from_avanza
+            # Multi-broker: collect from Avanza and/or IBKR per the `broker` arg.
+            requested = (args.get("broker") or "all").lower()
+            account_key = args.get("account_key") or "default"
 
-                account_key = args.get("account_key") or "default"
-                storage = get_storage()
-                if not storage.load_credentials(account_key):
-                    raise RuntimeError("Avanza is not connected")
-
-                client_a = await get_manager().authed_client(account_key)
-                acc_list = await client_a.accounts_list()
-                acc_ids = [
-                    str(a.get("urlParameterId"))
-                    for a in (acc_list if isinstance(acc_list, list) else [])
-                    if a.get("urlParameterId")
-                ]
-
-                positions_payload = await client_a.positions()
-                positions = positions_from_avanza(positions_payload)
-                positions.sort(key=lambda p: p.get("market_value") or 0, reverse=True)
-                top_positions = [
-                    {
-                        "name": p.get("name"),
-                        "isin": p.get("isin"),
-                        "quantity": p.get("quantity"),
-                        "marketValueSek": p.get("market_value"),
-                        "averagePriceSek": p.get("average_price"),
-                        "lastPrice": p.get("last_price"),
-                        "currency": p.get("currency"),
-                    }
-                    for p in positions[:10]
-                ]
-
-                # Best-effort totals + ratios — if either fails, return what we have
-                totals: Dict[str, Any] = {}
-                key_ratios: Dict[str, Any] = {}
+            async def _avanza_section() -> Dict[str, Any]:
                 try:
-                    if acc_ids:
-                        totals_raw = await client_a.performance_totals(acc_ids)
-                        dev = totals_raw.get("totalDevelopment") or {}
-                        totals = {
-                            "totalValueSek": ((totals_raw.get("totalValue") or {}).get("totalValue") or {}).get("value"),
-                            "positionValueSek": ((totals_raw.get("totalValue") or {}).get("positionValue") or {}).get("value"),
-                            "cashSek": ((totals_raw.get("totalValue") or {}).get("balanceOnTradingAccounts") or {}).get("value"),
-                            "returns": {
-                                period: {
-                                    "absoluteSek": (dev.get(period, {}).get("absolute") or {}).get("value"),
-                                    "relativePct": (dev.get(period, {}).get("relative") or {}).get("value"),
-                                }
-                                for period in ("ONE_WEEK", "ONE_MONTH", "THREE_MONTHS", "THIS_YEAR", "ONE_YEAR", "THREE_YEARS")
-                            },
-                        }
-                except Exception as inner:
-                    totals = {"error": f"totals fetch failed: {inner}"}
+                    from integrations.avanza.manager import get_manager
+                    from integrations.avanza.storage import get_storage
+                    from integrations.avanza.normalize import positions_from_avanza
 
-                try:
-                    if acc_ids:
-                        kr = await client_a.performance_keyratios(acc_ids)
-                        key_ratios = {
-                            "sharpeRatio": (kr.get("sharpeRatio") or {}).get("value"),
-                            "standardDeviationPct": (kr.get("standardDeviation") or {}).get("value"),
-                            "cagrPct": (kr.get("compoundAnnualGrowthRate") or {}).get("value"),
-                        }
-                except Exception as inner:
-                    key_ratios = {"error": f"keyratios fetch failed: {inner}"}
+                    if not get_storage().load_credentials(account_key):
+                        return {"connected": False, "message": "Avanza is not connected."}
 
-                return {
-                    "success": True,
-                    "source": "avanza",
-                    "portfolio": {
+                    client_a = await get_manager().authed_client(account_key)
+                    acc_list = await client_a.accounts_list()
+                    acc_ids = [
+                        str(a.get("urlParameterId"))
+                        for a in (acc_list if isinstance(acc_list, list) else [])
+                        if a.get("urlParameterId")
+                    ]
+                    positions_payload = await client_a.positions()
+                    positions = positions_from_avanza(positions_payload)
+                    positions.sort(key=lambda p: p.get("market_value") or 0, reverse=True)
+                    top_positions = [
+                        {
+                            "name": p.get("name"),
+                            "isin": p.get("isin"),
+                            "quantity": p.get("quantity"),
+                            "marketValueSek": p.get("market_value"),
+                            "averagePriceSek": p.get("average_price"),
+                            "lastPrice": p.get("last_price"),
+                            "currency": p.get("currency"),
+                        }
+                        for p in positions[:10]
+                    ]
+
+                    totals: Dict[str, Any] = {}
+                    key_ratios: Dict[str, Any] = {}
+                    try:
+                        if acc_ids:
+                            totals_raw = await client_a.performance_totals(acc_ids)
+                            dev = totals_raw.get("totalDevelopment") or {}
+                            totals = {
+                                "totalValueSek": ((totals_raw.get("totalValue") or {}).get("totalValue") or {}).get("value"),
+                                "positionValueSek": ((totals_raw.get("totalValue") or {}).get("positionValue") or {}).get("value"),
+                                "cashSek": ((totals_raw.get("totalValue") or {}).get("balanceOnTradingAccounts") or {}).get("value"),
+                                "returns": {
+                                    period: {
+                                        "absoluteSek": (dev.get(period, {}).get("absolute") or {}).get("value"),
+                                        "relativePct": (dev.get(period, {}).get("relative") or {}).get("value"),
+                                    }
+                                    for period in ("ONE_WEEK", "ONE_MONTH", "THREE_MONTHS", "THIS_YEAR", "ONE_YEAR", "THREE_YEARS")
+                                },
+                            }
+                    except Exception as inner:
+                        totals = {"error": f"totals fetch failed: {inner}"}
+                    try:
+                        if acc_ids:
+                            kr = await client_a.performance_keyratios(acc_ids)
+                            key_ratios = {
+                                "sharpeRatio": (kr.get("sharpeRatio") or {}).get("value"),
+                                "standardDeviationPct": (kr.get("standardDeviation") or {}).get("value"),
+                                "cagrPct": (kr.get("compoundAnnualGrowthRate") or {}).get("value"),
+                            }
+                    except Exception as inner:
+                        key_ratios = {"error": f"keyratios fetch failed: {inner}"}
+
+                    return {
+                        "connected": True,
+                        "currency": "SEK",
                         "totals": totals,
                         "keyRatios": key_ratios,
                         "positionsCount": len(positions),
                         "topPositions": top_positions,
                         "accountsCount": len(acc_ids),
-                    },
-                }
-            except Exception:
-                # Fallback: legacy orchestrator stub
-                async with httpx.AsyncClient(timeout=15.0) as client:
-                    try:
-                        resp = await client.get(f"{ORCHESTRATOR_URL}/api/portfolio")
-                        data = resp.json()
-                        return {"success": True, "source": "orchestrator", "portfolio": data}
-                    except Exception:
+                    }
+                except Exception as e:
+                    return {"connected": False, "error": str(e)}
+
+            async def _ibkr_section() -> Dict[str, Any]:
+                try:
+                    from integrations.ibkr.manager import get_ibkr_manager
+                    mgr = get_ibkr_manager()
+                    if not mgr.is_connected():
+                        if not await mgr.ensure_connected_from_storage(account_key):
+                            return {
+                                "connected": False,
+                                "message": "IBKR is not connected — start TWS / IB Gateway and connect from Settings.",
+                            }
+                    snap = await mgr.get_account()
+                    top = sorted(
+                        [p for p in snap.positions if p.qty != 0],
+                        key=lambda p: abs(p.qty * p.last_price),
+                        reverse=True,
+                    )[:10]
+                    return {
+                        "connected": True,
+                        "currency": "USD",
+                        "equity": snap.equity,
+                        "cash": snap.cash,
+                        "buyingPower": snap.buying_power,
+                        "unrealisedPnl": snap.unrealised_pnl,
+                        "realisedPnl": snap.realised_pnl,
+                        "positionsCount": len(snap.positions),
+                        "topPositions": [
+                            {
+                                "symbol": p.symbol,
+                                "quantity": p.qty,
+                                "averagePrice": p.avg_price,
+                                "lastPrice": p.last_price,
+                                "marketValueUsd": p.qty * p.last_price,
+                                "unrealisedPnl": p.unrealised_pnl,
+                            }
+                            for p in top
+                        ],
+                    }
+                except Exception as e:
+                    return {"connected": False, "error": str(e)}
+
+            if requested == "avanza":
+                return {"success": True, "broker": "avanza", "avanza": await _avanza_section()}
+            if requested == "ibkr":
+                return {"success": True, "broker": "ibkr", "ibkr": await _ibkr_section()}
+            a_sec, i_sec = await asyncio.gather(_avanza_section(), _ibkr_section())
+            return {"success": True, "broker": "all", "avanza": a_sec, "ibkr": i_sec}
+
+        elif tool_name == "get_ibkr_account":
+            try:
+                from integrations.ibkr.manager import get_ibkr_manager
+                mgr = get_ibkr_manager()
+                account_key = args.get("account_key") or "default"
+                if not mgr.is_connected():
+                    if not await mgr.ensure_connected_from_storage(account_key):
                         return {
-                            "success": True,
-                            "portfolio": {"message": "Portfolio data unavailable. Connect Avanza in Settings or navigate to the Portfolio page."},
-                            "action": "navigate",
-                            "route": "/settings",
+                            "success": False,
+                            "connected": False,
+                            "message": "IBKR is not connected. Start TWS / IB Gateway and connect from Settings → Brokers.",
                         }
+                snap = await mgr.get_account()
+                return {
+                    "success": True,
+                    "connected": True,
+                    "broker": "ibkr",
+                    "currency": "USD",
+                    "equity": snap.equity,
+                    "cash": snap.cash,
+                    "buyingPower": snap.buying_power,
+                    "unrealisedPnl": snap.unrealised_pnl,
+                    "realisedPnl": snap.realised_pnl,
+                    "positions": [p.to_dict() for p in snap.positions if p.qty != 0],
+                    "asOf": snap.as_of,
+                }
+            except Exception as e:
+                return {"success": False, "error": str(e)}
 
         elif tool_name == "get_stock_quote":
             try:

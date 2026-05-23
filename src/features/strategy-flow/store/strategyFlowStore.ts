@@ -342,10 +342,12 @@ interface StrategyFlowState {
   // Pine Script Mode
   pineScriptMode: boolean;
 
-  // When true, portfolio_* nodes in this strategy will read from the user's
-  // live Avanza positions instead of the backtest simulator. Plumbs through
-  // to backend `settings.livePortfolio` in run/backtest requests.
-  livePortfolio: boolean;
+  // Which broker (if any) hydrates portfolio_* nodes with live positions.
+  // 'off' uses the backtest simulator. Plumbs through to backend
+  // `settings.livePortfolioSource` in run/backtest requests.
+  // Legacy: previously a Boolean `livePortfolio`; that field is migrated
+  // to 'avanza' on first load via the version-3 migration below.
+  livePortfolioSource: 'off' | 'avanza' | 'ibkr' | 'all';
 
   // When the canvas was loaded from a template that ships a canonical
   // backtest spec, BacktestModal uses this to call the canonical engine
@@ -449,7 +451,7 @@ interface StrategyFlowActions {
   togglePineScriptMode: () => void;
 
   // Live-portfolio mode toggle (Avanza hydration of portfolio nodes)
-  setLivePortfolio: (on: boolean) => void;
+  setLivePortfolioSource: (source: 'off' | 'avanza' | 'ibkr' | 'all') => void;
 
   // Template → canonical backtest hint
   setTemplateBacktestSpec: (spec: TemplateBacktestSpec | null) => void;
@@ -487,7 +489,7 @@ const initialState: StrategyFlowState = {
   searchQuery: '',
   contextMenu: null,
   pineScriptMode: false,
-  livePortfolio: false,
+  livePortfolioSource: 'off',
   templateBacktestSpec: null,
 };
 
@@ -1026,7 +1028,7 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
       // LIVE-PORTFOLIO MODE
       // =========================================================================
 
-      setLivePortfolio: (on: boolean) => set({ livePortfolio: on, isModified: true }),
+      setLivePortfolioSource: (source) => set({ livePortfolioSource: source, isModified: true }),
 
       // =========================================================================
       // PINE SCRIPT MODE
@@ -1075,6 +1077,7 @@ export const useStrategyFlowStore = create<StrategyFlowState & StrategyFlowActio
         leftSidebarWidth: state.leftSidebarWidth,
         rightPanelWidth: state.rightPanelWidth,
         pineScriptMode: state.pineScriptMode,
+        livePortfolioSource: state.livePortfolioSource,
       }),
     }
   )

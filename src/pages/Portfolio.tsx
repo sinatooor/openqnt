@@ -91,6 +91,8 @@ import { useAccountStore } from '@/stores/accountStore';
 import { useIntegrationsStore } from '@/stores/integrationsStore';
 import { avanzaApi, type AvanzaPosition, type AvanzaTimePeriod } from '@/integrations/avanza/api';
 import { AvanzaInsights } from '@/integrations/avanza/AvanzaInsights';
+import { ibkrApi, type IbkrPosition } from '@/integrations/ibkr/api';
+import { IbkrInsights } from '@/integrations/ibkr/IbkrInsights';
 import { AvanzaWatchlistsWidget } from '@/integrations/avanza/AvanzaWatchlistsWidget';
 import { api } from '@/services/api';
 
@@ -227,6 +229,9 @@ const Portfolio = () => {
 
   const avanzaStatus = useIntegrationsStore((s) => s.integrations.avanza.status);
   const avanzaConnected = avanzaStatus === 'connected';
+  const ibkrStatus = useIntegrationsStore((s) => s.integrations.ibkr.status);
+  const ibkrConnected = ibkrStatus === 'connected';
+  const [syncingIbkr, setSyncingIbkr] = useState(false);
 
   const toggleLots = useCallback((id: string) => {
     setExpandedLots((prev) => {
@@ -315,6 +320,7 @@ const Portfolio = () => {
           currency: 'SEK',
           addedAt: now,
           accountId: p.accountId ?? 'default',
+          broker: 'avanza' as const,
           lots: [{
             id: `avanza-lot-${p.orderbookId}-${now}`,
             qty: p.quantity ?? 0,
@@ -326,9 +332,9 @@ const Portfolio = () => {
         };
       });
 
-      // Merge: keep manual holdings, replace only Avanza-sourced ones
-      const manual = store.holdings.filter((h) => !h.id.startsWith('avanza-'));
-      store.importHoldings([...manual, ...imported]);
+      // Merge: keep all NON-Avanza holdings (manual + ibkr), replace only avanza ones
+      const others = store.holdings.filter((h) => h.broker !== 'avanza' && !h.id.startsWith('avanza-'));
+      store.importHoldings([...others, ...imported]);
       if (!silent) toast.success(`Synced ${imported.length} positions from Avanza.`);
     } catch (e) {
       if (!silent) toast.error(`Avanza import failed: ${e instanceof Error ? e.message : String(e)}`);
@@ -337,13 +343,76 @@ const Portfolio = () => {
     }
   }, [store]);
 
-  // Auto-import from Avanza when connected and portfolio is empty
+  const importFromIbkr = useCallback(async (silent = false) => {
+    setSyncingIbkr(true);
+    try {
+      // Try a fresh sync; if TWS is down, fall back to cached state via /positions
+      await ibkrApi.sync().catch(() => {/* TWS may not be running — surface via positions */});
+      const { positions, connected } = await ibkrApi.positions();
+      if (!connected) {
+        if (!silent) toast.info('IBKR is not connected (start TWS and connect from Settings).');
+        return;
+      }
+      if (!positions.length) {
+        if (!silent) toast.info('No positions found in your IBKR account.');
+        // Still clear any stale IBKR holdings if user closed all positions
+        const others = store.holdings.filter((h) => h.broker !== 'ibkr' && !h.id.startsWith('ibkr-'));
+        store.importHoldings(others);
+        return;
+      }
+
+      const now = Date.now();
+      const imported: PortfolioHolding[] = positions.map((p: IbkrPosition) => ({
+        id: `ibkr-${p.symbol}`,
+        symbol: p.symbol,
+        name: p.symbol,
+        assetType: 'stock' as AssetType,
+        inputMode: 'quantity' as HoldingInputMode,
+        quantity: p.qty,
+        targetPercentage: 0,
+        avgCost: p.avg_price,
+        currentPrice: p.last_price || p.avg_price,
+        previousClose: p.last_price || p.avg_price,
+        lastUpdated: now,
+        currency: 'USD',
+        addedAt: now,
+        accountId: 'ibkr',
+        broker: 'ibkr' as const,
+        lots: [{
+          id: `ibkr-lot-${p.symbol}-${now}`,
+          qty: p.qty,
+          price: p.avg_price,
+          fees: 0,
+          openedAt: now,
+          closedQty: 0,
+        }],
+      }));
+
+      const others = store.holdings.filter((h) => h.broker !== 'ibkr' && !h.id.startsWith('ibkr-'));
+      store.importHoldings([...others, ...imported]);
+      if (!silent) toast.success(`Synced ${imported.length} positions from IBKR.`);
+    } catch (e) {
+      if (!silent) toast.error(`IBKR import failed: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setSyncingIbkr(false);
+    }
+  }, [store]);
+
+  // Auto-import from Avanza when connected and we have no avanza holdings yet
   useEffect(() => {
-    if (avanzaConnected && store.holdings.length === 0) {
+    if (avanzaConnected && !store.holdings.some((h) => h.broker === 'avanza' || h.id.startsWith('avanza-'))) {
       void importFromAvanza(true);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [avanzaConnected]);
+
+  // Auto-import from IBKR when connected and we have no ibkr holdings yet
+  useEffect(() => {
+    if (ibkrConnected && !store.holdings.some((h) => h.broker === 'ibkr' || h.id.startsWith('ibkr-'))) {
+      void importFromIbkr(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ibkrConnected]);
 
   usePageContext({
     page: 'portfolio',
@@ -620,6 +689,21 @@ const Portfolio = () => {
                     <TooltipContent>Sync holdings from Avanza</TooltipContent>
                   </Tooltip>
                 )}
+                {ibkrConnected && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => void importFromIbkr(false)}
+                        disabled={syncingIbkr}
+                        className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 transition-colors ${syncingIbkr ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <RefreshCw className={`w-3 h-3 ${syncingIbkr ? 'animate-spin' : ''}`} />
+                        IBKR
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>Sync holdings from Interactive Brokers</TooltipContent>
+                  </Tooltip>
+                )}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
@@ -734,7 +818,34 @@ const Portfolio = () => {
 
               {/* ═══ OVERVIEW TAB ═══ */}
               <TabsContent value="overview" className="space-y-6">
-                <AvanzaInsights connected={avanzaConnected} />
+                {/* ─── Per-broker sections — Avanza first, IBKR after. Each
+                       renders its own pill and empty state so the user always
+                       knows which broker the figures come from. ─── */}
+                {(avanzaConnected || ibkrConnected) && (
+                  <div className="space-y-5">
+                    {avanzaConnected && (
+                      <section>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-sm font-semibold text-foreground">Avanza</span>
+                          <span className="text-[10px] text-muted-foreground">SEK · Swedish broker</span>
+                        </div>
+                        <AvanzaInsights connected={avanzaConnected} />
+                      </section>
+                    )}
+                    {(ibkrConnected || avanzaConnected) && (
+                      <section>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-sm font-semibold text-foreground">Interactive Brokers</span>
+                          <span className="text-[10px] text-muted-foreground">USD · Global markets</span>
+                        </div>
+                        <IbkrInsights connected={ibkrConnected} />
+                      </section>
+                    )}
+                  </div>
+                )}
+                {!avanzaConnected && !ibkrConnected && (
+                  <AvanzaInsights connected={avanzaConnected} />
+                )}
                 <AvanzaWatchlistsWidget connected={avanzaConnected} />
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
