@@ -12,6 +12,7 @@ import { useAuthStore } from '../stores/authStore';
 import { ConfigProvider, theme as antTheme } from 'antd';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import DashboardCanvas from '../features/dashboard/canvas/DashboardCanvas';
+import { LiveIndexTicker } from '../features/terminal/LiveIndexTicker';
 
 /**
  * Registry of supported Bloomberg-style mnemonics. New functions just add a
@@ -247,16 +248,7 @@ const Terminal = () => {
               </div>
             </div>
 
-            <div className="terminal-fkeybar flex items-center gap-1 overflow-x-auto px-2 py-1 no-scrollbar">
-              {['SPX', 'NDX', 'DJI', 'DAX', 'VIX', 'US10Y', 'GOLD', 'OIL', 'BTC'].map((sym) => (
-                <span
-                  key={sym}
-                  className="rounded-sm border border-zinc-800 bg-black px-2 py-0.5 text-[10px] text-zinc-400"
-                >
-                  {sym}
-                </span>
-              ))}
-            </div>
+            <LiveIndexTicker />
             <DashboardCanvas />
           </div>
         </div>

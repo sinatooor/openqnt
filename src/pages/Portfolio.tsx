@@ -108,6 +108,7 @@ import { RebalancePanel } from '@/features/portfolio/RebalancePanel';
 import { AccountSelector } from '@/features/portfolio/AccountSelector';
 import { AuditLogPanel } from '@/features/portfolio/AuditLogPanel';
 import { EarningsCalendar } from '@/features/portfolio/EarningsCalendar';
+import { NotesTab } from '@/features/portfolio/NotesTab';
 import { PerformancePanel } from '@/features/portfolio/PerformancePanel';
 import { ConcentrationAlerts } from '@/features/portfolio/ConcentrationAlerts';
 import { BondLab } from '@/features/portfolio/BondLab';
@@ -828,6 +829,9 @@ const Portfolio = () => {
                 </TabsTrigger>
                 <TabsTrigger value="analytics" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary text-xs">
                   Analytics
+                </TabsTrigger>
+                <TabsTrigger value="notes" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary text-xs">
+                  Notes
                 </TabsTrigger>
               </TabsList>
 
@@ -1564,6 +1568,11 @@ const Portfolio = () => {
                     </CardContent>
                   </Card>
                 </div>
+              </TabsContent>
+
+              {/* ═══ NOTES TAB ═══ */}
+              <TabsContent value="notes" className="space-y-6">
+                <NotesTab />
               </TabsContent>
             </Tabs>
           </div>
