@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { Phone, ShieldCheck, ShieldAlert, Smartphone, History, Loader2, Copy, Check } from 'lucide-react';
+import { Phone, ShieldCheck, ShieldAlert, Smartphone, History, Loader2, Copy, Check, KeyRound, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,6 +29,10 @@ export const VoiceTab = ({ userId }: VoiceTabProps) => {
     const [profile, setProfile] = useState<VoiceProfile | null>(null);
     const [phoneInput, setPhoneInput] = useState('');
     const [savingPhone, setSavingPhone] = useState(false);
+    const [passphraseInput, setPassphraseInput] = useState('');
+    const [savingPassphrase, setSavingPassphrase] = useState(false);
+    const [telegramInput, setTelegramInput] = useState('');
+    const [savingTelegram, setSavingTelegram] = useState(false);
     const [calls, setCalls] = useState<VoiceCall[]>([]);
     const [pairingToken, setPairingToken] = useState<string | null>(null);
     const [pairingExpiresAt, setPairingExpiresAt] = useState<string | null>(null);
@@ -56,6 +60,7 @@ export const VoiceTab = ({ userId }: VoiceTabProps) => {
                 if (cancelled) return;
                 setProfile(p);
                 setPhoneInput(p?.phone_number ?? '');
+                setTelegramInput(p?.telegram_chat_id ?? '');
                 setCalls(h.calls);
             } finally {
                 if (!cancelled) setLoading(false);
@@ -106,6 +111,35 @@ export const VoiceTab = ({ userId }: VoiceTabProps) => {
         } catch (e: any) {
             setProfile({ ...profile, voice_trading_enabled: previous });
             toast.error(`Toggle failed: ${e.message}`);
+        }
+    };
+
+    const handleSavePassphrase = async () => {
+        const v = passphraseInput.trim();
+        setSavingPassphrase(true);
+        try {
+            const res = await voiceApi.setVoicePassphrase(userId, v || null);
+            setProfile((prev) => (prev ? { ...prev, voice_passphrase_set: res.voice_passphrase_set } : prev));
+            setPassphraseInput(''); // clear the field so the secret isn't lingering
+            toast.success(v ? 'Voice passphrase saved' : 'Voice passphrase cleared');
+        } catch (e: any) {
+            toast.error(`Save failed: ${e.message}`);
+        } finally {
+            setSavingPassphrase(false);
+        }
+    };
+
+    const handleSaveTelegram = async () => {
+        const v = telegramInput.trim();
+        setSavingTelegram(true);
+        try {
+            const res = await voiceApi.setTelegramChatId(userId, v || null);
+            setProfile((prev) => (prev ? { ...prev, telegram_chat_id: res.telegram_chat_id } : prev));
+            toast.success(v ? 'Telegram chat ID saved' : 'Telegram chat ID cleared');
+        } catch (e: any) {
+            toast.error(`Save failed: ${e.message}`);
+        } finally {
+            setSavingTelegram(false);
         }
     };
 
@@ -183,7 +217,7 @@ export const VoiceTab = ({ userId }: VoiceTabProps) => {
                         </div>
                         <p className="text-[11px] text-muted-foreground mt-1">
                             When ON, the AI can place orders and pause strategies during a call after
-                            you say "yes" or "confirm". When OFF, mid-call mutations are blocked.
+                            you say your passphrase. When OFF, mid-call mutations are blocked.
                         </p>
                     </div>
                     <Switch
@@ -191,6 +225,72 @@ export const VoiceTab = ({ userId }: VoiceTabProps) => {
                         onCheckedChange={handleToggleVoiceTrading}
                         disabled={loading}
                     />
+                </CardContent>
+            </Card>
+
+            {/* Voice passphrase */}
+            <Card className="bg-card border-border/60">
+                <CardContent className="p-4 space-y-3">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                        <KeyRound className="w-3.5 h-3.5 text-amber-500" />
+                        Voice passphrase
+                        <Badge variant="outline" className="text-[10px] ml-auto">
+                            {profile?.voice_passphrase_set ? 'SET' : 'NOT SET'}
+                        </Badge>
+                    </h4>
+                    <p className="text-[11px] text-muted-foreground">
+                        Verbal codeword you must speak to confirm a mid-call trade
+                        (e.g. <code className="bg-muted px-1 rounded">blue thunder</code>). Without it set,
+                        the AI cannot place orders during a call even if Voice Trading is ON.
+                    </p>
+                    <div className="flex gap-2">
+                        <Input
+                            type="password"
+                            value={passphraseInput}
+                            onChange={(e) => setPassphraseInput(e.target.value)}
+                            placeholder={profile?.voice_passphrase_set ? '••••••••  (clear or replace)' : 'blue thunder'}
+                            className="flex-1"
+                            disabled={loading}
+                        />
+                        <Button onClick={handleSavePassphrase} disabled={savingPassphrase || loading} className="gap-1.5">
+                            {savingPassphrase && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                            Save
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Telegram chat ID */}
+            <Card className="bg-card border-border/60">
+                <CardContent className="p-4 space-y-3">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                        <Send className="w-3.5 h-3.5 text-sky-500" />
+                        Telegram chat ID
+                        <Badge variant="outline" className="text-[10px] ml-auto">
+                            {profile?.telegram_chat_id ? profile.telegram_chat_id.slice(0, 16) : 'NOT SET'}
+                        </Badge>
+                    </h4>
+                    <p className="text-[11px] text-muted-foreground">
+                        Where the <code className="bg-muted px-1 rounded">send_notification</code> voice tool delivers
+                        messages, plots, and research. Get yours by messaging{' '}
+                        <a className="underline" href="https://t.me/userinfobot" target="_blank" rel="noreferrer">
+                            @userinfobot
+                        </a>{' '}
+                        on Telegram. Group chats can have negative IDs (e.g. <code>-1001234567890</code>).
+                    </p>
+                    <div className="flex gap-2">
+                        <Input
+                            value={telegramInput}
+                            onChange={(e) => setTelegramInput(e.target.value)}
+                            placeholder="123456789"
+                            className="flex-1 font-mono"
+                            disabled={loading}
+                        />
+                        <Button onClick={handleSaveTelegram} disabled={savingTelegram || loading} className="gap-1.5">
+                            {savingTelegram && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                            Save
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
 

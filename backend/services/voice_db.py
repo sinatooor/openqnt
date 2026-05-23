@@ -78,6 +78,10 @@ def init_voice_schema() -> None:
             # Plain-text by design — must be matched against transcribed speech
             # (Gemini Live STT). Hashing breaks fuzzy match. Encrypt the DB at rest.
             cur.execute("ALTER TABLE users ADD COLUMN voice_passphrase TEXT")
+        if not _has_column(conn, "users", "telegram_chat_id"):
+            # Used by `send_notification` voice tool to route Telegram dispatches.
+            # Stored as text because Telegram chat IDs can be negative (group chats).
+            cur.execute("ALTER TABLE users ADD COLUMN telegram_chat_id TEXT")
         conn.commit()
     finally:
         conn.close()
@@ -192,11 +196,39 @@ def set_voice_trading_enabled(user_id: str, enabled: bool) -> None:
         conn.close()
 
 
+def set_telegram_chat_id(user_id: str, chat_id: Optional[str]) -> None:
+    """Store the user's Telegram chat ID. Pass None/'' to clear."""
+    cleaned = (chat_id or "").strip() or None
+    conn = _conn()
+    try:
+        conn.execute(
+            "UPDATE users SET telegram_chat_id = ? WHERE id = ?",
+            (cleaned, user_id),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_telegram_chat_id(user_id: str) -> Optional[str]:
+    conn = _conn()
+    try:
+        row = conn.execute(
+            "SELECT telegram_chat_id FROM users WHERE id = ?", (user_id,),
+        ).fetchone()
+    finally:
+        conn.close()
+    if not row:
+        return None
+    val = row["telegram_chat_id"] if hasattr(row, "keys") else row[0]
+    return val or None
+
+
 def get_user_voice_profile(user_id: str) -> Optional[Dict[str, Any]]:
     conn = _conn()
     try:
         row = conn.execute(
-            "SELECT id, name, email, phone_number, voice_trading_enabled, voice_passphrase FROM users WHERE id = ?",
+            "SELECT id, name, email, phone_number, voice_trading_enabled, voice_passphrase, telegram_chat_id FROM users WHERE id = ?",
             (user_id,),
         ).fetchone()
         return dict(row) if row else None

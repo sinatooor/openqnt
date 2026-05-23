@@ -92,6 +92,17 @@ def send_notification(
         logger.error(msg)
         return {"ok": False, "error": msg}
 
+    # Auto-resolve Telegram chat_id from the backend voice_db when the caller
+    # didn't pass one explicitly. Lets the user configure their chat id once
+    # via Settings → Voice & Notifications and have every send_notification
+    # call from a voice session / strategy / agent route to the right chat.
+    if channel == "telegram" and not chat_id:
+        try:
+            from services import voice_db as _vdb
+            chat_id = _vdb.get_telegram_chat_id(target_user)
+        except Exception:
+            pass
+
     # Decide whether to inline the file as base64 (cross-container) or pass a path.
     inline = os.getenv("NOTIFICATION_INLINE_ATTACHMENTS", "false").lower() in {"1", "true", "yes"}
     attachments: List[Dict[str, Any]] = []
