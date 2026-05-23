@@ -29,6 +29,8 @@ from integrations.avanza.normalize import (
     watchlists_from_avanza,
 )
 from integrations.avanza.storage import get_storage
+from integrations.ibkr.manager import get_ibkr_manager
+from integrations.ibkr.storage import get_ibkr_storage
 
 logger = logging.getLogger(__name__)
 
@@ -960,3 +962,181 @@ def _num(v: Any) -> Optional[float]:
         return float(v)
     except (TypeError, ValueError):
         return None
+
+
+# ===========================================================================
+# IBKR (Interactive Brokers) integration — parallel to Avanza
+# ===========================================================================
+#
+# Wraps `backend/execution/ibkr_broker.py::IBKRBroker` (the production-ready
+# ibapi wrapper used by /api/execution/* for trading) in the same HTTP shape
+# as Avanza, so the Portfolio page / AI chat / strategy builder can treat
+# both brokers uniformly.
+#
+# These endpoints work even when TWS is offline — `connect` returns 503
+# with a clear message, and `status` reports {connected: false} without
+# raising. The frontend renders a "Start TWS" empty state in that case.
+
+class IbkrConnectRequest(BaseModel):
+    host: str = "127.0.0.1"
+    port: int = 7497   # TWS paper default
+    clientId: int = Field(default=42, alias="clientId")
+    accountId: Optional[str] = Field(default=None, alias="accountId")
+
+    class Config:
+        populate_by_name = True
+
+
+class IbkrStatusResponse(BaseModel):
+    connected: bool
+    connectedAt: Optional[str] = None
+    lastSyncAt: Optional[str] = None
+    error: Optional[str] = None
+    host: Optional[str] = None
+    port: Optional[int] = None
+    clientId: Optional[int] = None
+    accountId: Optional[str] = None
+
+
+@router.post("/ibkr/connect", response_model=IbkrStatusResponse)
+async def connect_ibkr(
+    body: IbkrConnectRequest,
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> IbkrStatusResponse:
+    account_key = _account_key(x_account_key)
+    manager = get_ibkr_manager()
+    try:
+        await manager.connect(
+            host=body.host,
+            port=body.port,
+            client_id=body.clientId,
+            account_key=account_key,
+        )
+    except RuntimeError as e:
+        # Surface as 503 — service unavailable rather than 500 (server bug)
+        raise HTTPException(503, str(e))
+    return await _ibkr_build_status(account_key)
+
+
+@router.post("/ibkr/disconnect")
+async def disconnect_ibkr(
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> Dict[str, Any]:
+    account_key = _account_key(x_account_key)
+    await get_ibkr_manager().disconnect(account_key)
+    return {"ok": True}
+
+
+@router.get("/ibkr/status", response_model=IbkrStatusResponse)
+async def status_ibkr(
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> IbkrStatusResponse:
+    account_key = _account_key(x_account_key)
+    # Try a best-effort reconnect from stored creds so a backend restart
+    # doesn't force the user to re-click Connect.
+    await get_ibkr_manager().ensure_connected_from_storage(account_key)
+    return await _ibkr_build_status(account_key)
+
+
+async def _ibkr_build_status(account_key: str) -> IbkrStatusResponse:
+    storage = get_ibkr_storage()
+    manager = get_ibkr_manager()
+    row = storage.status_row(account_key)
+    creds = storage.load_credentials(account_key) or {}
+    return IbkrStatusResponse(
+        connected=manager.is_connected(),
+        connectedAt=row["connected_at"] if row else None,
+        lastSyncAt=row["last_sync_at"] if row else None,
+        error=row["last_error"] if row else None,
+        host=str(creds.get("host")) if creds else None,
+        port=int(creds["port"]) if creds.get("port") else None,
+        clientId=int(creds["clientId"]) if creds.get("clientId") else None,
+        accountId=row["last_account_id"] if row and row.get("last_account_id") else None,
+    )
+
+
+@router.post("/ibkr/sync")
+async def sync_ibkr(
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> Dict[str, Any]:
+    """
+    Forces a fresh account snapshot from TWS. Used by the Sync button.
+    Returns counts so the UI can show a toast.
+    """
+    account_key = _account_key(x_account_key)
+    manager = get_ibkr_manager()
+    storage = get_ibkr_storage()
+    if not manager.is_connected():
+        if not await manager.ensure_connected_from_storage(account_key):
+            raise HTTPException(503, "IBKR is not connected. Start TWS and connect first.")
+    try:
+        snap = await manager.get_account()
+    except Exception as e:
+        storage.mark_sync(account_key, error=str(e))
+        raise HTTPException(502, f"IBKR sync failed: {e}")
+    storage.mark_sync(account_key, error=None)
+    now = datetime.now(timezone.utc).isoformat()
+    return {
+        "positions": len(snap.positions),
+        "equity": snap.equity,
+        "syncedAt": now,
+    }
+
+
+@router.get("/ibkr/positions")
+async def get_ibkr_positions(
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> Dict[str, Any]:
+    account_key = _account_key(x_account_key)
+    manager = get_ibkr_manager()
+    if not manager.is_connected():
+        if not await manager.ensure_connected_from_storage(account_key):
+            return {"positions": [], "connected": False}
+    try:
+        snap = await manager.get_account()
+    except Exception as e:
+        raise HTTPException(502, f"IBKR positions failed: {e}")
+    return {
+        "positions": [p.to_dict() for p in snap.positions],
+        "connected": True,
+        "asOf": snap.as_of,
+    }
+
+
+@router.get("/ibkr/account")
+async def get_ibkr_account(
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> Dict[str, Any]:
+    account_key = _account_key(x_account_key)
+    manager = get_ibkr_manager()
+    if not manager.is_connected():
+        if not await manager.ensure_connected_from_storage(account_key):
+            return {
+                "connected": False,
+                "cash": 0.0,
+                "equity": 0.0,
+                "buying_power": 0.0,
+                "unrealised_pnl": 0.0,
+                "realised_pnl": 0.0,
+                "positions": [],
+                "broker": "ibkr",
+            }
+    try:
+        snap = await manager.get_account()
+    except Exception as e:
+        raise HTTPException(502, f"IBKR account failed: {e}")
+    return {**snap.to_dict(), "connected": True}
+
+
+@router.get("/ibkr/quote/{symbol}")
+async def get_ibkr_quote(
+    symbol: str,
+    x_account_key: Optional[str] = Header(default=None, alias="X-Account-Key"),
+) -> Dict[str, Any]:
+    account_key = _account_key(x_account_key)
+    manager = get_ibkr_manager()
+    if not manager.is_connected():
+        if not await manager.ensure_connected_from_storage(account_key):
+            raise HTTPException(503, "IBKR is not connected")
+    price = await manager.quote(symbol)
+    return {"symbol": symbol.upper(), "last": price}

@@ -38,6 +38,7 @@ export const TOOL_META: Record<string, { label: string; icon: React.ReactNode; c
   run_monte_carlo:       { label: 'Monte Carlo Test',      icon: <Dice5 className="w-3.5 h-3.5" />,         color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
   navigate_to_page:      { label: 'Navigating',            icon: <ArrowRight className="w-3.5 h-3.5" />,    color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
   get_portfolio_summary: { label: 'Fetching Portfolio',    icon: <Briefcase className="w-3.5 h-3.5" />,     color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
+  get_ibkr_account:      { label: 'Reading IBKR Account',  icon: <Briefcase className="w-3.5 h-3.5" />,     color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
   get_stock_quote:        { label: 'Fetching Quote',        icon: <Gauge className="w-3.5 h-3.5" />,         color: 'text-sky-400 bg-sky-500/10 border-sky-500/20' },
   get_market_index:       { label: 'Reading Index',         icon: <Activity className="w-3.5 h-3.5" />,      color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
   get_upcoming_dividends: { label: 'Fetching Dividends',    icon: <Calendar className="w-3.5 h-3.5" />,      color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },

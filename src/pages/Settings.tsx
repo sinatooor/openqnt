@@ -50,6 +50,8 @@ import { BrokerConnectionModal } from '@/features/strategy-flow/components/modal
 import { PAGE_CONTENT_CLASS } from '@/components/PageHeader';
 import { AvanzaConnectModal } from '@/integrations/avanza/AvanzaConnectModal';
 import { avanzaApi } from '@/integrations/avanza/api';
+import { IBKRConnectModal } from '@/integrations/ibkr/IBKRConnectModal';
+import { ibkrApi } from '@/integrations/ibkr/api';
 import { useIntegrationsStore } from '@/stores/integrationsStore';
 import {
     MARKET_DATA_SOURCES,
@@ -120,9 +122,12 @@ const Settings = () => {
     const [selectedBroker, setSelectedBroker] = useState<{ id: string; name: string } | null>(null);
     const [avanzaModalOpen, setAvanzaModalOpen] = useState(false);
     const [syncingAvanza, setSyncingAvanza] = useState(false);
+    const [ibkrModalOpen, setIbkrModalOpen] = useState(false);
+    const [syncingIbkr, setSyncingIbkr] = useState(false);
     const [accountManagerOpen, setAccountManagerOpen] = useState(false);
     const [activeSection, setActiveSection] = useState<string>('account');
     const avanzaState = useIntegrationsStore((s) => s.integrations.avanza);
+    const ibkrState = useIntegrationsStore((s) => s.integrations.ibkr);
     const setIntegrationStatus = useIntegrationsStore((s) => s.setStatus);
     const dataSource = useDataSourceStore((s) => s.source);
     const setDataSource = useDataSourceStore((s) => s.setSource);
@@ -177,6 +182,18 @@ const Settings = () => {
                 });
             })
             .catch(() => { /* leave whatever the bootstrap hook stored */ });
+        ibkrApi
+            .status()
+            .then((status) => {
+                if (cancelled) return;
+                setIntegrationStatus('ibkr', {
+                    status: status.connected ? 'connected' : 'disconnected',
+                    connectedAt: status.connectedAt ? Date.parse(status.connectedAt) : null,
+                    lastSyncAt: status.lastSyncAt ? Date.parse(status.lastSyncAt) : null,
+                    lastError: status.error,
+                });
+            })
+            .catch(() => { /* TWS likely offline */ });
         return () => { cancelled = true; };
     }, [setIntegrationStatus]);
 
@@ -187,8 +204,44 @@ const Settings = () => {
 
     const handleConnectBroker = (brokerId: string) => {
         if (brokerId === 'avanza') { setAvanzaModalOpen(true); return; }
+        if (brokerId === 'ibkr') { setIbkrModalOpen(true); return; }
         const broker = BROKERS.find((b) => b.id === brokerId);
         if (broker) setSelectedBroker({ id: broker.id, name: broker.name });
+    };
+
+    const handleIbkrSync = async () => {
+        setSyncingIbkr(true);
+        try {
+            const result = await ibkrApi.sync();
+            setIntegrationStatus('ibkr', {
+                lastSyncAt: Date.parse(result.syncedAt),
+                lastError: null,
+            });
+            toast.success(
+                `IBKR synced: ${result.positions} positions, equity ${result.equity.toFixed(0)} USD`,
+            );
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : 'Sync failed';
+            setIntegrationStatus('ibkr', { lastError: msg });
+            toast.error(msg);
+        } finally {
+            setSyncingIbkr(false);
+        }
+    };
+
+    const handleIbkrDisconnect = async () => {
+        try {
+            await ibkrApi.disconnect();
+            setIntegrationStatus('ibkr', {
+                status: 'disconnected',
+                connectedAt: null,
+                lastSyncAt: null,
+                lastError: null,
+            });
+            toast.success('Disconnected from IBKR');
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Disconnect failed');
+        }
     };
 
     const handleAvanzaSync = async () => {
@@ -509,13 +562,24 @@ const Settings = () => {
                             <ul className="divide-y divide-border/60 border border-border/60 rounded-md overflow-hidden">
                                 {BROKERS.map((broker) => {
                                     const isAvanza = broker.id === 'avanza';
+                                    const isIbkr = broker.id === 'ibkr';
                                     const avanzaConnected = avanzaState.status === 'connected';
+                                    const ibkrConnected = ibkrState.status === 'connected';
                                     const connected = isAvanza
                                         ? avanzaConnected
-                                        : !!brokerConnections[broker.id];
+                                        : isIbkr
+                                            ? ibkrConnected
+                                            : !!brokerConnections[broker.id];
                                     const lastSync = isAvanza && avanzaState.lastSyncAt
                                         ? new Date(avanzaState.lastSyncAt).toLocaleString()
-                                        : null;
+                                        : isIbkr && ibkrState.lastSyncAt
+                                            ? new Date(ibkrState.lastSyncAt).toLocaleString()
+                                            : null;
+                                    const brokerErr = isAvanza
+                                        ? avanzaState.lastError
+                                        : isIbkr
+                                            ? ibkrState.lastError
+                                            : null;
                                     return (
                                         <li key={broker.id} className="px-3 py-2 bg-white/[0.01]">
                                             <div className="flex items-center gap-3">
@@ -575,6 +639,40 @@ const Settings = () => {
                                                             variant="outline"
                                                             className="h-6 text-[10.5px] border-red-500/20 text-red-400 hover:bg-red-500/10"
                                                             onClick={handleAvanzaDisconnect}
+                                                        >
+                                                            Disconnect
+                                                        </Button>
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {isIbkr && ibkrConnected && (
+                                                <div className="mt-1.5 flex flex-wrap items-center gap-2 pl-9 text-[11px] text-muted-foreground">
+                                                    <span className="font-mono">
+                                                        {lastSync ? `last sync ${lastSync}` : 'never synced'}
+                                                    </span>
+                                                    {brokerErr && (
+                                                        <span className="text-red-400">· {brokerErr}</span>
+                                                    )}
+                                                    <span className="ml-auto flex gap-2">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            className="h-6 text-[10.5px] border-border/60"
+                                                            onClick={handleIbkrSync}
+                                                            disabled={syncingIbkr}
+                                                        >
+                                                            {syncingIbkr ? (
+                                                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                                            ) : (
+                                                                <RefreshCw className="w-3 h-3 mr-1" />
+                                                            )}
+                                                            Sync
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            className="h-6 text-[10.5px] border-red-500/20 text-red-400 hover:bg-red-500/10"
+                                                            onClick={handleIbkrDisconnect}
                                                         >
                                                             Disconnect
                                                         </Button>
@@ -678,6 +776,14 @@ const Settings = () => {
                 onOpenChange={setAvanzaModalOpen}
                 onConnected={() => {
                     void avanzaApi.sync().catch(() => { /* surfaced via toast */ });
+                }}
+            />
+
+            <IBKRConnectModal
+                open={ibkrModalOpen}
+                onOpenChange={setIbkrModalOpen}
+                onConnected={() => {
+                    void ibkrApi.sync().catch(() => { /* TWS may still be syncing — surfaced via toast */ });
                 }}
             />
 

@@ -153,42 +153,90 @@ class FlowInterpreter:
         self.inputs = compiled.get("inputs", {})
         self.node_order = compiled.get("node_order", [])
         self.settings = compiled.get("settings", {})
-        # When true, portfolio_* nodes read from the user's live Avanza
-        # positions instead of the backtest simulator's PortfolioState.
-        self.live_portfolio: bool = bool(self.settings.get("livePortfolio"))
+        # `livePortfolioSource` selects which broker's live positions populate
+        # portfolio_* nodes in this strategy run:
+        #   'off' (or unset / legacy false) → use the backtest simulator's state
+        #   'avanza'                        → live Avanza positions (SEK)
+        #   'ibkr'                          → live Interactive Brokers positions (USD)
+        #   'all'                           → merged view (symbols prefixed AVA:/IBKR:)
+        # Legacy boolean `livePortfolio: true` is migrated to 'avanza'.
+        legacy_bool = self.settings.get("livePortfolio")
+        source_raw = self.settings.get("livePortfolioSource")
+        if source_raw is None and legacy_bool is True:
+            source_raw = "avanza"
+        self.live_portfolio_source: str = str(source_raw or "off").lower()
         self.live_portfolio_account_key: str = str(self.settings.get("livePortfolioAccountKey") or "default")
 
     def _maybe_hydrate_live_portfolio(self, ctx: "StrategyContext") -> None:
         """
-        Replace ctx.portfolio.{positions,equity} with the user's live Avanza
-        snapshot. No-op when live_portfolio is False. Cached for 30s.
-        Raises if Avanza isn't connected — callers see a clear error rather
-        than the strategy silently degrading to empty portfolio.
+        Replace ctx.portfolio.{positions,equity} with live positions from the
+        configured broker(s). No-op when source is 'off'. Cached for 30 s
+        per (source, account_key) pair to avoid hammering brokers from a
+        loop of portfolio_* nodes within a single tick.
+
+        Raises if the requested broker isn't connected — the error bubbles up
+        as a strategy-execution failure with a clear message.
         """
-        if not self.live_portfolio:
+        if self.live_portfolio_source in ("", "off", "false", "0"):
             return
 
+        source = self.live_portfolio_source
         account_key = self.live_portfolio_account_key
+        cache_key = f"{source}:{account_key}"
         now = time.time()
-        cached = self._live_portfolio_cache.get(account_key)
+        cached = self._live_portfolio_cache.get(cache_key)
         if cached and (now - cached[0]) < self._LIVE_PORTFOLIO_TTL_SEC:
             _, positions, equity = cached
             ctx.portfolio.positions = positions
             ctx.portfolio.equity = equity
             return
 
-        # Lazy imports — avoid hard dep when livePortfolio is off
+        if source == "avanza":
+            positions, equity = self._fetch_avanza_portfolio(account_key)
+        elif source == "ibkr":
+            positions, equity = self._fetch_ibkr_portfolio(account_key)
+        elif source == "all":
+            positions, equity = self._fetch_all_portfolios(account_key)
+        else:
+            raise RuntimeError(
+                f"Unknown livePortfolioSource '{source}'. "
+                "Expected one of: off, avanza, ibkr, all."
+            )
+
+        self._live_portfolio_cache[cache_key] = (now, positions, equity)
+        ctx.portfolio.positions = positions
+        ctx.portfolio.equity = equity
+        logger.info(
+            "livePortfolio[%s] hydrated for '%s': %d positions, equity=%.2f",
+            source, account_key, len(positions), equity,
+        )
+
+    # ── broker-specific fetchers (sync wrappers around async clients) ──
+
+    def _run_async(self, coro):
+        """Run an async coroutine from this sync method, regardless of whether
+        we're already inside an asyncio loop."""
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                return asyncio.run_coroutine_threadsafe(coro, loop).result(timeout=20)
+            return loop.run_until_complete(coro)
+        except RuntimeError:
+            return asyncio.run(coro)
+
+    def _fetch_avanza_portfolio(self, account_key: str) -> tuple:
+        """Returns (positions_dict, equity_sek). Raises if not connected."""
         from integrations.avanza.manager import get_manager
         from integrations.avanza.normalize import positions_from_avanza
         from integrations.avanza.storage import get_storage
 
         if not get_storage().load_credentials(account_key):
             raise RuntimeError(
-                f"livePortfolio is on but Avanza is not connected for account '{account_key}'. "
-                "Connect Avanza in Settings or disable livePortfolio."
+                f"livePortfolioSource='avanza' but Avanza is not connected for account '{account_key}'. "
+                "Connect Avanza in Settings."
             )
 
-        async def _fetch() -> tuple:
+        async def _fetch():
             client = await get_manager().authed_client(account_key)
             acc_list = await client.accounts_list()
             ids = [
@@ -200,18 +248,7 @@ class FlowInterpreter:
             totals = await client.performance_totals(ids) if ids else {}
             return pos_payload, totals
 
-        # Run the async fetch in whatever loop we're in
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # We're inside an async context; schedule blocking call
-                pos_payload, totals = asyncio.run_coroutine_threadsafe(_fetch(), loop).result(timeout=20)
-            else:
-                pos_payload, totals = loop.run_until_complete(_fetch())
-        except RuntimeError:
-            # No current loop — start a fresh one
-            pos_payload, totals = asyncio.run(_fetch())
-
+        pos_payload, totals = self._run_async(_fetch())
         rows = positions_from_avanza(pos_payload)
         positions: Dict[str, Position] = {}
         for r in rows:
@@ -224,20 +261,65 @@ class FlowInterpreter:
                 entry_price=float(r.get("average_price") or 0.0),
                 entry_time=datetime.utcnow(),
             )
-
         equity_val = (
             (((totals or {}).get("totalValue") or {}).get("totalValue") or {}).get("value")
             if isinstance(totals, dict) else None
         )
         equity = float(equity_val or sum(float(r.get("market_value") or 0) for r in rows))
+        return positions, equity
 
-        self._live_portfolio_cache[account_key] = (now, positions, equity)
-        ctx.portfolio.positions = positions
-        ctx.portfolio.equity = equity
-        logger.info(
-            "livePortfolio hydrated for '%s': %d positions, equity=%.2f SEK",
-            account_key, len(positions), equity,
-        )
+    def _fetch_ibkr_portfolio(self, account_key: str) -> tuple:
+        """Returns (positions_dict, equity_usd). Raises if TWS is not connected."""
+        from integrations.ibkr.manager import get_ibkr_manager
+
+        mgr = get_ibkr_manager()
+
+        async def _fetch():
+            if not mgr.is_connected():
+                ok = await mgr.ensure_connected_from_storage(account_key)
+                if not ok:
+                    raise RuntimeError(
+                        "livePortfolioSource='ibkr' but TWS / IB Gateway is not reachable. "
+                        "Start TWS and connect from Settings → Brokers."
+                    )
+            return await mgr.get_account()
+
+        snap = self._run_async(_fetch())
+        positions: Dict[str, Position] = {}
+        for p in snap.positions:
+            if p.qty == 0:
+                continue
+            positions[p.symbol] = Position(
+                side="LONG" if p.qty > 0 else "SHORT",
+                size=float(p.qty),
+                entry_price=float(p.avg_price),
+                entry_time=datetime.utcnow(),
+            )
+        return positions, float(snap.equity)
+
+    def _fetch_all_portfolios(self, account_key: str) -> tuple:
+        """Merge both brokers. Symbols are prefixed AVA:/IBKR: so they never
+        collide. Equity is the sum (note: cross-currency, kept native)."""
+        a_positions: Dict[str, Position] = {}
+        i_positions: Dict[str, Position] = {}
+        a_equity = 0.0
+        i_equity = 0.0
+        try:
+            a_positions, a_equity = self._fetch_avanza_portfolio(account_key)
+        except Exception as e:
+            logger.warning("livePortfolio[all]: Avanza fetch failed: %s", e)
+        try:
+            i_positions, i_equity = self._fetch_ibkr_portfolio(account_key)
+        except Exception as e:
+            logger.warning("livePortfolio[all]: IBKR fetch failed: %s", e)
+        if not a_positions and not i_positions:
+            raise RuntimeError(
+                "livePortfolioSource='all' but neither Avanza nor IBKR is connected. "
+                "Connect at least one in Settings."
+            )
+        merged: Dict[str, Position] = {f"AVA:{k}": v for k, v in a_positions.items()}
+        merged.update({f"IBKR:{k}": v for k, v in i_positions.items()})
+        return merged, a_equity + i_equity
 
     def _get_inputs(self, node_id: str) -> Dict[str, Any]:
         return self.inputs.get(node_id, {})

@@ -101,6 +101,13 @@ export interface PortfolioHolding {
    * implicitly assigned to 'default' when the active-account filter applies.
    */
   accountId?: string;
+  /**
+   * Source broker for this holding. 'manual' = user-added in the UI.
+   * Optional for backward compat — undefined treated as 'manual'. Used to
+   * partition the Portfolio page into per-broker sections and to scope
+   * re-import / merge operations safely.
+   */
+  broker?: 'avanza' | 'ibkr' | 'manual';
 }
 
 export interface PortfolioSnapshot {
