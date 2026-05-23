@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+import asyncio
+import logging
+import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -136,12 +141,103 @@ class StrategyContext:
 
 
 class FlowInterpreter:
+    # Cache for live Avanza portfolio snapshots — keyed by account_key,
+    # value is (epoch_ts, positions_dict, equity). Avoids hammering Avanza
+    # when a strategy ticks at sub-minute intervals.
+    _live_portfolio_cache: Dict[str, tuple] = {}
+    _LIVE_PORTFOLIO_TTL_SEC = 30.0
+
     def __init__(self, compiled: Dict[str, Any]):
         self.compiled = compiled
         self.nodes_by_id = {n["id"]: n for n in compiled.get("nodes", [])}
         self.inputs = compiled.get("inputs", {})
         self.node_order = compiled.get("node_order", [])
         self.settings = compiled.get("settings", {})
+        # When true, portfolio_* nodes read from the user's live Avanza
+        # positions instead of the backtest simulator's PortfolioState.
+        self.live_portfolio: bool = bool(self.settings.get("livePortfolio"))
+        self.live_portfolio_account_key: str = str(self.settings.get("livePortfolioAccountKey") or "default")
+
+    def _maybe_hydrate_live_portfolio(self, ctx: "StrategyContext") -> None:
+        """
+        Replace ctx.portfolio.{positions,equity} with the user's live Avanza
+        snapshot. No-op when live_portfolio is False. Cached for 30s.
+        Raises if Avanza isn't connected — callers see a clear error rather
+        than the strategy silently degrading to empty portfolio.
+        """
+        if not self.live_portfolio:
+            return
+
+        account_key = self.live_portfolio_account_key
+        now = time.time()
+        cached = self._live_portfolio_cache.get(account_key)
+        if cached and (now - cached[0]) < self._LIVE_PORTFOLIO_TTL_SEC:
+            _, positions, equity = cached
+            ctx.portfolio.positions = positions
+            ctx.portfolio.equity = equity
+            return
+
+        # Lazy imports — avoid hard dep when livePortfolio is off
+        from integrations.avanza.manager import get_manager
+        from integrations.avanza.normalize import positions_from_avanza
+        from integrations.avanza.storage import get_storage
+
+        if not get_storage().load_credentials(account_key):
+            raise RuntimeError(
+                f"livePortfolio is on but Avanza is not connected for account '{account_key}'. "
+                "Connect Avanza in Settings or disable livePortfolio."
+            )
+
+        async def _fetch() -> tuple:
+            client = await get_manager().authed_client(account_key)
+            acc_list = await client.accounts_list()
+            ids = [
+                str(a.get("urlParameterId"))
+                for a in (acc_list if isinstance(acc_list, list) else [])
+                if a.get("urlParameterId")
+            ]
+            pos_payload = await client.positions()
+            totals = await client.performance_totals(ids) if ids else {}
+            return pos_payload, totals
+
+        # Run the async fetch in whatever loop we're in
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # We're inside an async context; schedule blocking call
+                pos_payload, totals = asyncio.run_coroutine_threadsafe(_fetch(), loop).result(timeout=20)
+            else:
+                pos_payload, totals = loop.run_until_complete(_fetch())
+        except RuntimeError:
+            # No current loop — start a fresh one
+            pos_payload, totals = asyncio.run(_fetch())
+
+        rows = positions_from_avanza(pos_payload)
+        positions: Dict[str, Position] = {}
+        for r in rows:
+            sym = r.get("symbol") or r.get("name") or r.get("orderbook_id")
+            if not sym or not r.get("quantity"):
+                continue
+            positions[str(sym)] = Position(
+                side="LONG",
+                size=float(r["quantity"]),
+                entry_price=float(r.get("average_price") or 0.0),
+                entry_time=datetime.utcnow(),
+            )
+
+        equity_val = (
+            (((totals or {}).get("totalValue") or {}).get("totalValue") or {}).get("value")
+            if isinstance(totals, dict) else None
+        )
+        equity = float(equity_val or sum(float(r.get("market_value") or 0) for r in rows))
+
+        self._live_portfolio_cache[account_key] = (now, positions, equity)
+        ctx.portfolio.positions = positions
+        ctx.portfolio.equity = equity
+        logger.info(
+            "livePortfolio hydrated for '%s': %d positions, equity=%.2f SEK",
+            account_key, len(positions), equity,
+        )
 
     def _get_inputs(self, node_id: str) -> Dict[str, Any]:
         return self.inputs.get(node_id, {})
@@ -154,6 +250,12 @@ class FlowInterpreter:
         return None
 
     def evaluate(self, ctx: StrategyContext) -> List[OrderIntent]:
+        # When `livePortfolio` is on in settings, fetch the user's actual
+        # Avanza positions and stamp them into ctx.portfolio before any
+        # portfolio_* node runs. Cached for 30s so high-frequency ticks
+        # don't spam the broker API.
+        self._maybe_hydrate_live_portfolio(ctx)
+
         outputs: Dict[str, Dict[str, Any]] = {}
         intents: List[OrderIntent] = []
 

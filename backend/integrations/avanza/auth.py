@@ -1,9 +1,13 @@
 """
 TOTP-based login flow against Avanza's `_api/authentication/sessions/*`
-endpoints. Implements Mode C from §2 of the reference.
+endpoints.
 
-Sessions cache the X-SecurityToken + the session/auth cookies so we don't
-re-login on every request. Re-auth happens automatically on 401.
+Key findings from browser traffic capture (2026-05-23):
+- Data requests are authenticated purely via cookies (csid, cstoken, AZACSRF).
+- X-SecurityToken is NOT sent by the browser for any data endpoint.
+- The server requires HTTP/2 (h2 package) — HTTP/1.1 gets a silent RST.
+- httpx's internal cookie jar must be used directly; manually passing the
+  cookie dict to each request caused the server to drop connections.
 """
 
 from __future__ import annotations
@@ -12,40 +16,40 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Dict, Optional
+from typing import Optional
 
 import httpx
 
 try:
     import pyotp
-except ImportError:  # pragma: no cover
+except ImportError:
     pyotp = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
 AVANZA_BASE = "https://www.avanza.se"
-USER_AGENT = "Mozilla/5.0 (compatible; OpenQwnt/1.0)"
+USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/148.0.0.0 Safari/537.36"
+)
+_BROWSER_HEADERS = {
+    "User-Agent": USER_AGENT,
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9",
+    "sec-fetch-site": "same-origin",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-dest": "empty",
+}
 
 
 @dataclass
 class AvanzaSession:
-    """In-memory session state for one Avanza account."""
-
-    security_token: str
-    push_subscription_id: Optional[str]
-    customer_id: Optional[str]
-    cookies: Dict[str, str] = field(default_factory=dict)
+    """Minimal session state — cookies live in the httpx client's jar."""
     issued_at: float = field(default_factory=time.time)
 
-    def is_fresh(self, ttl_seconds: int = 60 * 60) -> bool:
+    def is_fresh(self, ttl_seconds: int = 60 * 55) -> bool:
         return (time.time() - self.issued_at) < ttl_seconds
-
-    def header_dict(self) -> Dict[str, str]:
-        return {
-            "User-Agent": USER_AGENT,
-            "Accept": "application/json",
-            "X-SecurityToken": self.security_token,
-        }
 
 
 class AvanzaAuthError(RuntimeError):
@@ -54,8 +58,9 @@ class AvanzaAuthError(RuntimeError):
 
 class AvanzaAuth:
     """
-    Stateful authenticator. Holds a single in-flight session per credential
-    set; concurrent callers wait on the same login future.
+    Stateful authenticator using HTTP/2 and cookie-based session management.
+    The httpx AsyncClient cookie jar is the source of truth for session state;
+    no manual cookie extraction or X-SecurityToken injection is needed.
     """
 
     def __init__(
@@ -77,8 +82,10 @@ class AvanzaAuth:
         self._owned_client = client is None
         self._client = client or httpx.AsyncClient(
             base_url=AVANZA_BASE,
-            timeout=httpx.Timeout(15.0, connect=8.0),
-            headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
+            http2=True,
+            timeout=httpx.Timeout(20.0, connect=8.0),
+            headers=_BROWSER_HEADERS,
+            follow_redirects=True,
         )
 
     async def aclose(self) -> None:
@@ -98,31 +105,26 @@ class AvanzaAuth:
             "username": self._username,
             "password": self._password,
         }
-        r = await self._client.post(
+        r1 = await self._client.post(
             "/_api/authentication/sessions/usercredentials",
             json=payload,
-            headers={"Content-Type": "application/json"},
         )
-        if r.status_code != 200:
+        if r1.status_code != 200:
             raise AvanzaAuthError(
-                f"username/password rejected ({r.status_code}): {_safe_text(r)}"
+                f"username/password rejected ({r1.status_code}): {_safe_text(r1)}"
             )
-        body = r.json() if r.content else {}
-        two_factor = body.get("twoFactorLogin") or {}
+        body1 = r1.json() if r1.content else {}
+        two_factor = body1.get("twoFactorLogin") or {}
         method = two_factor.get("method")
         transaction_id = two_factor.get("transactionId")
         if method != "TOTP":
             raise AvanzaAuthError(
-                f"Avanza returned unsupported 2FA method '{method}'. Re-enable TOTP in your Avanza settings."
+                f"Avanza returned unsupported 2FA method '{method}'. "
+                "Re-enable TOTP in your Avanza settings."
             )
 
-        cookies: Dict[str, str] = {
-            k: v for k, v in r.cookies.items()
-        }
         totp_code = self._totp.now()
-        headers = {
-            "Content-Type": "application/json",
-        }
+        headers: dict = {}
         if transaction_id:
             headers["X-AZA-TransactionId"] = transaction_id
 
@@ -130,60 +132,67 @@ class AvanzaAuth:
             "/_api/authentication/sessions/totp",
             json={"method": "TOTP", "totpCode": totp_code},
             headers=headers,
-            cookies=cookies,
         )
         if r2.status_code != 200:
             raise AvanzaAuthError(
                 f"TOTP rejected ({r2.status_code}): {_safe_text(r2)}"
             )
-        token = r2.headers.get("X-SecurityToken") or r2.json().get("authenticationSession")
-        if not token:
-            raise AvanzaAuthError("Avanza response missing X-SecurityToken")
 
-        merged_cookies = {**cookies, **{k: v for k, v in r2.cookies.items()}}
-        body2 = r2.json() if r2.content else {}
-        return AvanzaSession(
-            security_token=token,
-            push_subscription_id=body2.get("pushSubscriptionId"),
-            customer_id=body2.get("customerId"),
-            cookies=merged_cookies,
-            issued_at=time.time(),
-        )
+        # Verify session cookies are now in the client's jar
+        if not self._client.cookies.get("csid"):
+            raise AvanzaAuthError(
+                "Login appeared to succeed but no session cookie received. "
+                "TOTP code may have been reused — wait 30 s and try again."
+            )
+
+        return AvanzaSession(issued_at=time.time())
 
     async def request(
         self,
         method: str,
         path: str,
         *,
-        params: Optional[Dict[str, str]] = None,
-        json_body: Optional[Dict[str, object]] = None,
+        params: Optional[dict] = None,
+        json_body: Optional[dict] = None,
         retry_on_401: bool = True,
     ) -> httpx.Response:
-        session = await self.session()
-        headers = session.header_dict()
+        await self.session()
+
+        extra: dict = {}
         if json_body is not None:
-            headers["Content-Type"] = "application/json"
-        r = await self._client.request(
-            method,
-            path,
-            params=params,
-            json=json_body,
-            headers=headers,
-            cookies=session.cookies,
-        )
-        if r.status_code == 401 and retry_on_401:
-            session = await self.session(force=True)
-            headers = session.header_dict()
-            if json_body is not None:
-                headers["Content-Type"] = "application/json"
-            r = await self._client.request(
-                method,
-                path,
-                params=params,
-                json=json_body,
-                headers=headers,
-                cookies=session.cookies,
+            extra["json"] = json_body
+
+        # CSRF: POST/PUT/PATCH/DELETE require X-SecurityToken set to the
+        # AZACSRF cookie value (verified via browser capture).
+        headers: dict = {}
+        if method.upper() in {"POST", "PUT", "PATCH", "DELETE"}:
+            csrf = self._client.cookies.get("AZACSRF")
+            if csrf:
+                headers["X-SecurityToken"] = csrf
+
+        async def _do() -> httpx.Response:
+            return await self._client.request(
+                method, path, params=params, headers=headers or None, **extra,
             )
+
+        try:
+            r = await _do()
+        except httpx.RemoteProtocolError:
+            r = await _do()
+
+        if r.status_code == 401 and retry_on_401:
+            self._session = None
+            await self.session(force=True)
+            # Refresh CSRF header from the new session
+            if method.upper() in {"POST", "PUT", "PATCH", "DELETE"}:
+                csrf = self._client.cookies.get("AZACSRF")
+                if csrf:
+                    headers["X-SecurityToken"] = csrf
+            try:
+                r = await _do()
+            except httpx.RemoteProtocolError:
+                r = await _do()
+
         return r
 
 

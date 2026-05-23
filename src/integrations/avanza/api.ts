@@ -117,6 +117,24 @@ export interface AvanzaFundOrderRequest {
   confirmed: true;
 }
 
+export type AvanzaTimePeriod =
+  | 'ONE_WEEK' | 'ONE_MONTH' | 'THREE_MONTHS'
+  | 'THIS_YEAR' | 'ONE_YEAR' | 'THREE_YEARS' | 'ALL_TIME';
+
+export interface AvanzaChartPoint {
+  timestamp: number;
+  totalValue: number | null;
+  performance: number | null;
+}
+
+export interface AvanzaChartResponse {
+  points: AvanzaChartPoint[];
+  timePeriod: AvanzaTimePeriod;
+  from: string | null;
+  to: string | null;
+  currency: string;
+}
+
 export const avanzaApi = {
   connect: (input: AvanzaConnectInput, signal?: AbortSignal) =>
     call<AvanzaStatus>(
@@ -147,6 +165,84 @@ export const avanzaApi = {
   watchlists: (signal?: AbortSignal) =>
     call<{ watchlists: AvanzaWatchlist[] }>(
       '/api/integrations/avanza/watchlists',
+      {},
+      signal,
+    ),
+  performanceChart: (timePeriod: AvanzaTimePeriod = 'ONE_YEAR', signal?: AbortSignal) =>
+    call<AvanzaChartResponse>(
+      `/api/integrations/avanza/performance/chart?timePeriod=${encodeURIComponent(timePeriod)}`,
+      {},
+      signal,
+    ),
+  performanceTotals: (signal?: AbortSignal) =>
+    call<Record<string, unknown>>(
+      '/api/integrations/avanza/performance/totals',
+      {},
+      signal,
+    ),
+  performanceKeyratios: (signal?: AbortSignal) =>
+    call<Record<string, unknown>>(
+      '/api/integrations/avanza/performance/keyratios',
+      {},
+      signal,
+    ),
+  upcomingDividends: (signal?: AbortSignal) =>
+    call<unknown>('/api/integrations/avanza/dividends/upcoming', {}, signal),
+  calendar: (signal?: AbortSignal) =>
+    call<unknown>('/api/integrations/avanza/calendar', {}, signal),
+  quote: (orderbookId: string, signal?: AbortSignal) =>
+    call<Record<string, unknown>>(
+      `/api/integrations/avanza/quote/${encodeURIComponent(orderbookId)}`,
+      {},
+      signal,
+    ),
+  marketIndex: (indexId: string, signal?: AbortSignal) =>
+    call<Record<string, unknown>>(
+      `/api/integrations/avanza/index/${encodeURIComponent(indexId)}`,
+      {},
+      signal,
+    ),
+  marketOverview: (signal?: AbortSignal) =>
+    call<{
+      gainers: { orderbooks: Array<Record<string, unknown>> };
+      losers: { orderbooks: Array<Record<string, unknown>> };
+      overviews: unknown;
+    }>('/api/integrations/avanza/market-overview', {}, signal),
+  stockDetail: (orderbookId: string, signal?: AbortSignal) =>
+    call<{
+      orderbookId: string;
+      info: Record<string, unknown>;
+      quote: Record<string, unknown>;
+      details: Record<string, unknown>;
+      orderdepth: Record<string, unknown>;
+      trades: Record<string, unknown>;
+      note: unknown;
+    }>(`/api/integrations/avanza/stock/${encodeURIComponent(orderbookId)}`, {}, signal),
+  accountDetail: (urlParameterId: string, signal?: AbortSignal) =>
+    call<{
+      urlParameterId: string;
+      overview: Record<string, unknown>;
+      positions: Record<string, unknown>;
+      totals: Record<string, unknown>;
+    }>(`/api/integrations/avanza/account/${encodeURIComponent(urlParameterId)}`, {}, signal),
+  watchlistQuotes: (
+    body: { watchlistId: string; orderbookIds: string[]; dataPoints?: string[] },
+    signal?: AbortSignal,
+  ) =>
+    call<Array<Record<string, unknown>>>(
+      '/api/integrations/avanza/watchlist/quotes',
+      { method: 'POST', body: JSON.stringify(body) },
+      signal,
+    ),
+  notesAll: (query?: string, signal?: AbortSignal) =>
+    call<unknown>(
+      `/api/integrations/avanza/notes/all${query ? `?query=${encodeURIComponent(query)}` : ''}`,
+      {},
+      signal,
+    ),
+  noteFor: (orderbookId: string, signal?: AbortSignal) =>
+    call<unknown>(
+      `/api/integrations/avanza/notes/${encodeURIComponent(orderbookId)}`,
       {},
       signal,
     ),

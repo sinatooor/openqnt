@@ -31,7 +31,14 @@ function adaptEvent(event: AiChatEvent): UnifiedEvent {
     case 'text_delta':
       return { kind: 'text_delta', text: event.content };
     case 'tool_call':
-      return { kind: 'tool_call', tool: event.tool, args: event.args, status: 'pending' };
+      return {
+        kind: 'tool_call',
+        tool: event.tool,
+        args: event.args,
+        status: event.needs_approval ? 'pending_approval' : 'pending',
+        needsApproval: event.needs_approval,
+        toolCallId: event.tool_call_id,
+      };
     case 'tool_result':
       return {
         kind: 'tool_result',

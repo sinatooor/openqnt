@@ -18,6 +18,7 @@ Tools available to the AI:
 
 import os
 import json
+import uuid
 import asyncio
 import traceback
 from typing import Optional, Dict, Any, List
@@ -153,11 +154,61 @@ TOOL_DEFINITIONS = [
     },
     {
         "name": "get_portfolio_summary",
-        "description": "Get the user's portfolio summary including holdings, total value, and performance metrics. Use when the user asks about their portfolio, positions, or holdings.",
+        "description": "Get the user's LIVE portfolio summary from their connected Avanza broker account, including top holdings (sorted by market value), total value in SEK, period returns (1W/1M/3M/YTD/1Y/3Y), and risk metrics (Sharpe ratio, std-dev, CAGR). Use this whenever the user asks about their portfolio, positions, holdings, returns, or performance.",
         "parameters": {
             "type": "object",
             "properties": {},
             "required": []
+        }
+    },
+    {
+        "name": "get_stock_quote",
+        "description": "Get a live stock quote (buy, sell, last, change %) from Avanza for one instrument. Accepts either an Avanza orderbook_id OR a free-form symbol/name (e.g. 'Apple', 'AAPL', 'Investor B') which is resolved automatically via Avanza search. Use when the user asks about a current stock price.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "symbol": {"type": "string", "description": "Ticker, name, or ISIN to resolve (e.g. 'Apple', 'AAPL', 'Investor B'). Optional if orderbook_id is given."},
+                "orderbook_id": {"type": "string", "description": "Avanza numeric orderbook id (e.g. '3323' for Apple). Optional if symbol is given."},
+                "instrument_type": {"type": "string", "description": "Optional hint: 'stock', 'fund', 'etf', etc."}
+            },
+            "required": []
+        }
+    },
+    {
+        "name": "get_market_index",
+        "description": "Get the current value and historical closings for a market index from Avanza. Accepts known aliases (OMX30, OMXS30, OMXSPI, SPX, SP500, NDX, NASDAQ100, DJI, DOW) or a numeric Avanza index id. Use when the user asks 'how is the market today' or about a specific index.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "index_id": {"type": "string", "description": "Either a friendly alias (OMX30, SPX, etc.) or a numeric Avanza id."}
+            },
+            "required": ["index_id"]
+        }
+    },
+    {
+        "name": "get_upcoming_dividends",
+        "description": "Get the list of upcoming dividend payouts for the user's Avanza holdings. Each entry has the instrument, ex-date, payout date, SEK amount, and per-share amount. Use when the user asks about expected dividends, income, or payout schedule.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "limit": {"type": "integer", "description": "Max dividends to return (default 20)."}
+            },
+            "required": []
+        }
+    },
+    {
+        "name": "get_portfolio_performance",
+        "description": "Get the user's portfolio value over time across one of seven periods: ONE_WEEK, ONE_MONTH, THREE_MONTHS, THIS_YEAR, ONE_YEAR, THREE_YEARS, ALL_TIME. Returns down-sampled value series + start/end values + total period return %. Use when the user asks about performance over a specific timeframe.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "time_period": {
+                    "type": "string",
+                    "enum": ["ONE_WEEK", "ONE_MONTH", "THREE_MONTHS", "THIS_YEAR", "ONE_YEAR", "THREE_YEARS", "ALL_TIME"],
+                    "description": "Time window for the performance chart."
+                }
+            },
+            "required": ["time_period"]
         }
     },
     {
@@ -340,6 +391,36 @@ SYSTEM_PROMPT = """You are the AI assistant for Fyer, a professional trading str
 BACKEND_URL = os.getenv("BACKEND_SELF_URL", "http://localhost:8000")
 ORCHESTRATOR_URL = os.getenv("ORCHESTRATOR_URL", "http://localhost:3000")
 
+# Tools the UI should gate behind explicit user approval before executing.
+# The chat-stream emits {needs_approval: true, tool_call_id} alongside the
+# tool_call event for these and then BLOCKS until the frontend POSTs to
+# /approve with the same tool_call_id.
+SENSITIVE_TOOLS = {"run_backtest", "run_monte_carlo"}
+
+# Approval timeout: how long the chat stream waits before giving up.
+APPROVAL_TIMEOUT_SEC = float(os.getenv("AI_APPROVAL_TIMEOUT_SEC", "300"))  # 5 min
+
+# In-memory approval state. Keyed by tool_call_id. Each entry is
+# (asyncio.Event, decision-dict). Decision dict is filled in by the
+# /approve endpoint before the event is set. Cleaned up after the stream
+# consumes it. Module-level dict is fine because the backend is a single
+# uvicorn worker; if we scale out we'd swap in Redis pub/sub.
+_pending_approvals: Dict[str, asyncio.Event] = {}
+_approval_decisions: Dict[str, Dict[str, Any]] = {}
+
+
+async def _await_approval(tool_call_id: str) -> Dict[str, Any]:
+    """Block until /approve is hit for this id, or timeout."""
+    event = asyncio.Event()
+    _pending_approvals[tool_call_id] = event
+    try:
+        await asyncio.wait_for(event.wait(), timeout=APPROVAL_TIMEOUT_SEC)
+        return _approval_decisions.pop(tool_call_id, {"approved": False, "note": "no decision recorded"})
+    except asyncio.TimeoutError:
+        return {"approved": False, "note": f"approval timed out after {APPROVAL_TIMEOUT_SEC:.0f}s"}
+    finally:
+        _pending_approvals.pop(tool_call_id, None)
+
 # Phase 4+ — TS sidecar (services/strategy-ai/) that runs the n8n-inspired
 # Builder agent. When `AI_BUILDER_VIA_SIDECAR` is on, `build_strategy` tool
 # calls stream events from the sidecar instead of the legacy one-shot
@@ -430,14 +511,242 @@ async def execute_tool(tool_name: str, args: Dict[str, Any]) -> Dict[str, Any]:
             }
 
         elif tool_name == "get_portfolio_summary":
-            # Call orchestrator for portfolio data
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            # Prefer the user's live Avanza book; fall back to the orchestrator
+            # stub when Avanza isn't connected (so demo / fresh installs still work).
+            try:
+                from integrations.avanza.manager import get_manager
+                from integrations.avanza.storage import get_storage
+                from integrations.avanza.normalize import positions_from_avanza
+
+                account_key = args.get("account_key") or "default"
+                storage = get_storage()
+                if not storage.load_credentials(account_key):
+                    raise RuntimeError("Avanza is not connected")
+
+                client_a = await get_manager().authed_client(account_key)
+                acc_list = await client_a.accounts_list()
+                acc_ids = [
+                    str(a.get("urlParameterId"))
+                    for a in (acc_list if isinstance(acc_list, list) else [])
+                    if a.get("urlParameterId")
+                ]
+
+                positions_payload = await client_a.positions()
+                positions = positions_from_avanza(positions_payload)
+                positions.sort(key=lambda p: p.get("market_value") or 0, reverse=True)
+                top_positions = [
+                    {
+                        "name": p.get("name"),
+                        "isin": p.get("isin"),
+                        "quantity": p.get("quantity"),
+                        "marketValueSek": p.get("market_value"),
+                        "averagePriceSek": p.get("average_price"),
+                        "lastPrice": p.get("last_price"),
+                        "currency": p.get("currency"),
+                    }
+                    for p in positions[:10]
+                ]
+
+                # Best-effort totals + ratios — if either fails, return what we have
+                totals: Dict[str, Any] = {}
+                key_ratios: Dict[str, Any] = {}
                 try:
-                    resp = await client.get(f"{ORCHESTRATOR_URL}/api/portfolio")
-                    data = resp.json()
-                    return {"success": True, "portfolio": data}
-                except Exception:
-                    return {"success": True, "portfolio": {"message": "Portfolio data unavailable. Navigate to the Portfolio page to see your holdings."}, "action": "navigate", "route": "/portfolio"}
+                    if acc_ids:
+                        totals_raw = await client_a.performance_totals(acc_ids)
+                        dev = totals_raw.get("totalDevelopment") or {}
+                        totals = {
+                            "totalValueSek": ((totals_raw.get("totalValue") or {}).get("totalValue") or {}).get("value"),
+                            "positionValueSek": ((totals_raw.get("totalValue") or {}).get("positionValue") or {}).get("value"),
+                            "cashSek": ((totals_raw.get("totalValue") or {}).get("balanceOnTradingAccounts") or {}).get("value"),
+                            "returns": {
+                                period: {
+                                    "absoluteSek": (dev.get(period, {}).get("absolute") or {}).get("value"),
+                                    "relativePct": (dev.get(period, {}).get("relative") or {}).get("value"),
+                                }
+                                for period in ("ONE_WEEK", "ONE_MONTH", "THREE_MONTHS", "THIS_YEAR", "ONE_YEAR", "THREE_YEARS")
+                            },
+                        }
+                except Exception as inner:
+                    totals = {"error": f"totals fetch failed: {inner}"}
+
+                try:
+                    if acc_ids:
+                        kr = await client_a.performance_keyratios(acc_ids)
+                        key_ratios = {
+                            "sharpeRatio": (kr.get("sharpeRatio") or {}).get("value"),
+                            "standardDeviationPct": (kr.get("standardDeviation") or {}).get("value"),
+                            "cagrPct": (kr.get("compoundAnnualGrowthRate") or {}).get("value"),
+                        }
+                except Exception as inner:
+                    key_ratios = {"error": f"keyratios fetch failed: {inner}"}
+
+                return {
+                    "success": True,
+                    "source": "avanza",
+                    "portfolio": {
+                        "totals": totals,
+                        "keyRatios": key_ratios,
+                        "positionsCount": len(positions),
+                        "topPositions": top_positions,
+                        "accountsCount": len(acc_ids),
+                    },
+                }
+            except Exception:
+                # Fallback: legacy orchestrator stub
+                async with httpx.AsyncClient(timeout=15.0) as client:
+                    try:
+                        resp = await client.get(f"{ORCHESTRATOR_URL}/api/portfolio")
+                        data = resp.json()
+                        return {"success": True, "source": "orchestrator", "portfolio": data}
+                    except Exception:
+                        return {
+                            "success": True,
+                            "portfolio": {"message": "Portfolio data unavailable. Connect Avanza in Settings or navigate to the Portfolio page."},
+                            "action": "navigate",
+                            "route": "/settings",
+                        }
+
+        elif tool_name == "get_stock_quote":
+            try:
+                from integrations.avanza.manager import get_manager
+                from integrations.avanza.instrument_resolver import InstrumentResolver
+
+                account_key = args.get("account_key") or "default"
+                client_a = await get_manager().authed_client(account_key)
+
+                orderbook_id = (args.get("orderbook_id") or "").strip()
+                if not orderbook_id:
+                    sym = (args.get("symbol") or "").strip()
+                    if not sym:
+                        return {"success": False, "message": "Provide orderbook_id or symbol."}
+                    resolver = InstrumentResolver(client_a)
+                    hit = await resolver.resolve(sym, instrument_type=args.get("instrument_type"))
+                    if not hit or not hit.get("orderbookId"):
+                        return {"success": False, "message": f"Could not resolve '{sym}' to an Avanza instrument."}
+                    orderbook_id = str(hit["orderbookId"])
+                    resolved = {"orderbookId": orderbook_id, "name": hit.get("name"), "isin": hit.get("isin")}
+                else:
+                    resolved = {"orderbookId": orderbook_id}
+
+                quote = await client_a.stock_quote(orderbook_id)
+                # Trim — quote can be ~50 fields; keep the ones an LLM actually needs
+                compact = {
+                    "buy": quote.get("buy"),
+                    "sell": quote.get("sell"),
+                    "last": quote.get("last"),
+                    "highest": quote.get("highest"),
+                    "lowest": quote.get("lowest"),
+                    "change": quote.get("change"),
+                    "changePercent": quote.get("changePercent"),
+                    "spread": quote.get("spread"),
+                    "timeOfLast": quote.get("timeOfLast"),
+                    "totalVolumeTraded": quote.get("totalVolumeTraded"),
+                    "isRealTime": quote.get("isRealTime"),
+                }
+                return {"success": True, "resolved": resolved, "quote": compact}
+            except Exception as e:
+                return {"success": False, "message": f"Quote failed: {e}"}
+
+        elif tool_name == "get_market_index":
+            try:
+                from integrations.avanza.manager import get_manager
+                # Friendly aliases — common indexes the LLM is likely to ask for
+                INDEX_ALIASES = {
+                    "OMX30": "19002", "OMXS30": "19002", "OMXSPI": "155458",
+                    "SPX": "19000", "SP500": "19000", "S&P500": "19000",
+                    "NDX": "18981", "NASDAQ100": "18981",
+                    "DJI": "18983", "DOW": "18983",
+                }
+                raw_id = (args.get("index_id") or args.get("symbol") or "").strip()
+                index_id = INDEX_ALIASES.get(raw_id.upper(), raw_id)
+                if not index_id:
+                    return {"success": False, "message": "Provide index_id or a known alias (OMX30, SPX, NDX, DJI)."}
+                client_a = await get_manager().authed_client(args.get("account_key") or "default")
+                data = await client_a.market_index(index_id)
+                compact = {
+                    "orderbookId": data.get("orderbookId"),
+                    "name": data.get("name"),
+                    "ticker": (data.get("listing") or {}).get("tickerSymbol"),
+                    "currency": (data.get("listing") or {}).get("currency"),
+                    "quote": data.get("quote"),
+                    "previousClosingPrice": data.get("previousClosingPrice"),
+                    "historicalClosingPrices": data.get("historicalClosingPrices"),
+                }
+                return {"success": True, "index": compact}
+            except Exception as e:
+                return {"success": False, "message": f"Index lookup failed: {e}"}
+
+        elif tool_name == "get_upcoming_dividends":
+            try:
+                from integrations.avanza.manager import get_manager
+                client_a = await get_manager().authed_client(args.get("account_key") or "default")
+                divs = await client_a.upcoming_dividends()
+                if not isinstance(divs, list):
+                    divs = []
+                items = [
+                    {
+                        "instrument": d.get("instrumentName"),
+                        "isin": d.get("isin"),
+                        "date": d.get("date"),
+                        "exDate": d.get("exDate"),
+                        "amountSek": d.get("amountInSek"),
+                        "amountPerShareSek": d.get("amountPerShareInSek"),
+                        "volume": d.get("volume"),
+                        "currency": (d.get("orderbook") or {}).get("currency"),
+                        "status": d.get("status"),
+                    }
+                    for d in divs
+                ]
+                items.sort(key=lambda x: x.get("date") or "")
+                total = sum((d.get("amountSek") or 0) for d in items)
+                return {"success": True, "count": len(items), "totalSek": total, "dividends": items[: args.get("limit", 20)]}
+            except Exception as e:
+                return {"success": False, "message": f"Dividends fetch failed: {e}"}
+
+        elif tool_name == "get_portfolio_performance":
+            try:
+                from integrations.avanza.manager import get_manager
+                tp = (args.get("time_period") or "ONE_YEAR").upper()
+                allowed = {"ONE_WEEK", "ONE_MONTH", "THREE_MONTHS", "THIS_YEAR", "ONE_YEAR", "THREE_YEARS", "ALL_TIME"}
+                if tp not in allowed:
+                    return {"success": False, "message": f"time_period must be one of {sorted(allowed)}."}
+
+                account_key = args.get("account_key") or "default"
+                client_a = await get_manager().authed_client(account_key)
+                acc_list = await client_a.accounts_list()
+                acc_ids = [str(a.get("urlParameterId")) for a in acc_list if a.get("urlParameterId")] if isinstance(acc_list, list) else []
+                if not acc_ids:
+                    return {"success": False, "message": "No Avanza accounts found."}
+
+                chart = await client_a.performance_chart(acc_ids, time_period=tp)
+                value_series = chart.get("valueSeries") or []
+                # Down-sample: LLM doesn't need 365 points; first, last, and 5 evenly-spaced
+                def _pt(p: Dict[str, Any]) -> Dict[str, Any]:
+                    return {"timestamp": p.get("timestamp"), "totalValue": (p.get("performance") or {}).get("value")}
+                if len(value_series) > 7:
+                    step = max(1, len(value_series) // 5)
+                    sampled = [value_series[0]] + value_series[step::step] + [value_series[-1]]
+                else:
+                    sampled = value_series
+                interval = chart.get("interval") or {}
+                first = _pt(value_series[0]) if value_series else None
+                last = _pt(value_series[-1]) if value_series else None
+                period_return_pct = None
+                if first and last and first.get("totalValue") and last.get("totalValue"):
+                    period_return_pct = (last["totalValue"] - first["totalValue"]) / first["totalValue"] * 100
+                return {
+                    "success": True,
+                    "timePeriod": tp,
+                    "from": interval.get("from"),
+                    "to": interval.get("to"),
+                    "startValueSek": first.get("totalValue") if first else None,
+                    "endValueSek": last.get("totalValue") if last else None,
+                    "periodReturnPct": period_return_pct,
+                    "samples": [_pt(p) for p in sampled],
+                    "totalPoints": len(value_series),
+                }
+            except Exception as e:
+                return {"success": False, "message": f"Performance fetch failed: {e}"}
 
         elif tool_name == "list_user_strategies":
             async with httpx.AsyncClient(timeout=15.0) as client:
@@ -863,8 +1172,35 @@ async def chat_stream(req: AssistantChatRequest):
                     tool_name = block.name
                     tool_args = dict(block.input) if block.input else {}
 
-                    yield f"data: {json.dumps({'type': 'tool_call', 'tool': tool_name, 'args': tool_args})}\n\n"
+                    tool_call_event: Dict[str, Any] = {"type": "tool_call", "tool": tool_name, "args": tool_args}
+                    tool_call_id: Optional[str] = None
+                    if tool_name in SENSITIVE_TOOLS:
+                        tool_call_id = uuid.uuid4().hex
+                        tool_call_event["needs_approval"] = True
+                        tool_call_event["tool_call_id"] = tool_call_id
+                    yield f"data: {json.dumps(tool_call_event)}\n\n"
                     await asyncio.sleep(0.1)
+
+                    # Gate sensitive tools — block here until the user clicks
+                    # Accept or Reject in the chat UI (or until APPROVAL_TIMEOUT).
+                    if tool_call_id is not None:
+                        decision = await _await_approval(tool_call_id)
+                        if not decision.get("approved"):
+                            rejected_result = {
+                                "success": False,
+                                "rejected": True,
+                                "message": decision.get("note") or "Rejected by user",
+                            }
+                            yield f"data: {json.dumps({'type': 'tool_result', 'tool': tool_name, 'result': rejected_result})}\n\n"
+                            # Feed the rejection back to the LLM as a tool_result so it
+                            # can adapt its next message rather than hanging.
+                            tool_result_blocks.append({
+                                "type": "tool_result",
+                                "tool_use_id": block.id,
+                                "content": json.dumps(rejected_result),
+                                "is_error": True,
+                            })
+                            continue
 
                     # Route build_strategy through the TS sidecar (Phase 4) when enabled.
                     # The sidecar streams its own progress events — we forward them
@@ -962,3 +1298,45 @@ async def list_tools():
             for t in TOOL_DEFINITIONS
         ]
     }
+
+
+class ToolCallRequest(BaseModel):
+    tool: str
+    args: Dict[str, Any] = Field(default_factory=dict)
+
+
+class ApprovalRequest(BaseModel):
+    tool_call_id: str
+    approved: bool
+    note: Optional[str] = None
+
+
+@router.post("/approve")
+async def approve_tool_call(req: ApprovalRequest):
+    """
+    Records an approve/reject decision for a pending sensitive tool call.
+    Wakes the chat-stream coroutine that's blocked on `_await_approval`.
+    Returns 404 if the tool_call_id isn't pending (e.g. already timed out
+    or the stream was cancelled).
+    """
+    event = _pending_approvals.get(req.tool_call_id)
+    if event is None:
+        raise HTTPException(404, "tool_call_id not pending (already decided, timed out, or unknown)")
+    _approval_decisions[req.tool_call_id] = {"approved": req.approved, "note": req.note}
+    event.set()
+    return {"ok": True, "tool_call_id": req.tool_call_id, "approved": req.approved}
+
+
+@router.post("/tool-call")
+async def call_tool_direct(req: ToolCallRequest):
+    """
+    Direct tool dispatch — bypasses the LLM. Useful for:
+      - smoke-testing new tool definitions
+      - the frontend invoking tools deterministically (e.g. from buttons)
+    Sensitive tools include `needs_approval: true` in the response so callers
+    can show an approval card before re-invoking with `approved: true` in args.
+    """
+    result = await execute_tool(req.tool, req.args)
+    if req.tool in SENSITIVE_TOOLS and not req.args.get("approved"):
+        result = {**result, "needs_approval": True}
+    return result

@@ -155,13 +155,21 @@ function handleEvent(sessionId: string, assistantId: string, event: UnifiedEvent
         id: `${event.tool}-${Date.now()}`,
         tool: event.tool,
         args: event.args,
-        status: 'pending',
+        status: event.needsApproval ? 'pending_approval' : 'pending',
+        needsApproval: event.needsApproval,
+        toolCallId: event.toolCallId,
       });
       break;
 
     case 'tool_result':
+      // A rejected sensitive tool returns success=false with rejected=true.
+      // We treat that as its own status so the card can show a distinct state.
       store.updateToolCall(sessionId, assistantId, event.tool, {
-        status: event.success ? 'done' : 'error',
+        status: event.success
+          ? 'done'
+          : (event.result && (event.result as Record<string, unknown>).rejected
+              ? 'rejected'
+              : 'error'),
         result: event.result,
       });
       break;

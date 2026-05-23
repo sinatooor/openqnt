@@ -15,6 +15,10 @@ import AgentConfig from "./pages/AgentConfig";
 import Research from "./pages/Research";
 import Settings from "./pages/Settings";
 import Portfolio from "./pages/Portfolio";
+import Market from "./pages/Market";
+import Notes from "./pages/Notes";
+import StockDetail from "./integrations/avanza/StockDetail";
+import AccountView from "./integrations/avanza/AccountView";
 import News from "./pages/News";
 import Terminal from "./pages/Terminal";
 import TerminalRmap from "./pages/TerminalRmap";
@@ -173,6 +177,10 @@ const AppRoutes = () => {
         <Route path="/improvement" element={<Improvement />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/portfolio" element={<Portfolio />} />
+        <Route path="/market" element={<Market />} />
+        <Route path="/notes" element={<Notes />} />
+        <Route path="/stock/:orderbookId" element={<StockDetail />} />
+        <Route path="/account/:urlParameterId" element={<AccountView />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />

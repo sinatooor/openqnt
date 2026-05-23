@@ -164,20 +164,31 @@ def news_from_avanza(orderbook_id: str, payload: Dict[str, Any]) -> Dict[str, An
 # ---------------------------------------------------------------------------
 
 def watchlists_from_avanza(payload: Any) -> List[Dict[str, Any]]:
-    if isinstance(payload, dict):
-        lists = payload.get("watchlists") or payload.get("data") or []
-    elif isinstance(payload, list):
+    """
+    Handles the new /_api/watchlist/watchlist response (list of objects with
+    watchListId/orderbookIds) as well as the old dict-based format.
+    """
+    if isinstance(payload, list):
         lists = payload
+    elif isinstance(payload, dict):
+        lists = payload.get("watchlists") or payload.get("data") or []
     else:
         lists = []
     out: List[Dict[str, Any]] = []
     for w in lists:
         if not isinstance(w, dict):
             continue
+        # New format uses watchListId; old used id
+        wid = str(w.get("watchListId") or w.get("id") or "")
+        # orderbookIds is a flat list in both old and new
+        ob_ids = w.get("orderbookIds") or [
+            str(item.get("orderbookId") or item)
+            for item in (w.get("watchListItems") or w.get("orderbooks") or [])
+        ]
         out.append({
-            "id": str(w.get("id") or w.get("watchlistId") or ""),
+            "id": wid,
             "name": w.get("name") or "Watchlist",
-            "orderbook_ids": [str(x) for x in (w.get("orderbookIds") or w.get("orderbooks") or [])],
+            "orderbook_ids": [str(x) for x in ob_ids],
         })
     return out
 
@@ -186,33 +197,74 @@ def watchlists_from_avanza(payload: Any) -> List[Dict[str, Any]]:
 # Positions
 # ---------------------------------------------------------------------------
 
-def positions_from_avanza(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
+def positions_from_avanza(payload: Any) -> List[Dict[str, Any]]:
+    """
+    Handles the new /_api/position-data/positions response:
+      { withOrderbook: [{account, instrument, volume, value, averageAcquiredPrice, ...}] }
+
+    Each item's nested structure:
+      account.id          → account_id
+      instrument.orderbook.id → orderbook_id
+      instrument.orderbook.quote.latest.value → last_price
+      instrument.currency → currency
+      volume.value        → quantity
+      value.value         → market_value (in SEK)
+      averageAcquiredPrice.value → average_price (in SEK)
+    """
     rows: List[Dict[str, Any]] = []
     sources: List[Dict[str, Any]] = []
+
     if isinstance(payload, dict):
-        # Newer endpoint groups by instrumentType
+        # New format: withOrderbook / withoutOrderbook / cashPositions
+        for p in payload.get("withOrderbook", []) or []:
+            sources.append(p)
+        for p in payload.get("withoutOrderbook", []) or []:
+            sources.append(p)
+        # Legacy formats
         for group in payload.get("instrumentPositions", []) or []:
             for p in group.get("positions", []) or []:
                 sources.append(p)
-        # Or flat list under 'positions'
         for p in payload.get("positions", []) or []:
             sources.append(p)
-        # Or grouped categorisation under 'withOrderbook'
-        for p in payload.get("withOrderbook", []) or []:
-            sources.append(p)
+    elif isinstance(payload, list):
+        sources = payload
 
     for p in sources:
-        ob = p.get("orderbook") or {}
+        account = p.get("account") or {}
+        instrument = p.get("instrument") or {}
+        orderbook = instrument.get("orderbook") or {}
+        quote = orderbook.get("quote") or {}
+
+        # Quantity
+        vol = p.get("volume")
+        quantity = _num(vol.get("value") if isinstance(vol, dict) else vol)
+
+        # Market value (SEK)
+        val = p.get("value")
+        market_value = _num(val.get("value") if isinstance(val, dict) else val)
+
+        # Average acquired price (SEK)
+        avg = p.get("averageAcquiredPrice")
+        average_price = _num(avg.get("value") if isinstance(avg, dict) else avg)
+
+        # Last price from quote.latest
+        last_raw = quote.get("latest") or quote.get("last")
+        last_price = _num(last_raw.get("value") if isinstance(last_raw, dict) else last_raw)
+
         rows.append({
-            "account_id": str(p.get("accountId") or p.get("account", {}).get("id") or ""),
-            "orderbook_id": str(ob.get("id") or p.get("orderbookId") or ""),
-            "symbol": ob.get("tickerSymbol") or p.get("tickerSymbol"),
-            "name": ob.get("name") or p.get("name"),
-            "quantity": _num(p.get("volume") or p.get("quantity")),
-            "average_price": _num(p.get("averageAcquiredPrice") or p.get("averagePrice")),
-            "last_price": _num(p.get("lastPrice") or ob.get("lastPrice")),
-            "market_value": _num(p.get("value") or p.get("marketValue")),
-            "currency": ob.get("currency") or p.get("currency"),
+            "account_id": str(account.get("id") or p.get("accountId") or ""),
+            "account_url_param_id": str(account.get("urlParameterId") or ""),
+            "orderbook_id": str(
+                orderbook.get("id") or instrument.get("id") or p.get("orderbookId") or ""
+            ),
+            "symbol": orderbook.get("tickerSymbol") or instrument.get("tickerSymbol"),
+            "name": orderbook.get("name") or instrument.get("name"),
+            "quantity": quantity,
+            "average_price": average_price,
+            "last_price": last_price,
+            "market_value": market_value,
+            "currency": instrument.get("currency") or orderbook.get("currency"),
+            "isin": instrument.get("isin"),
             "raw": p,
         })
     return rows

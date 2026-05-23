@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Palette, Grid3X3, Keyboard, Save, Eye, EyeOff, Brain, CheckCircle2, LineChart } from 'lucide-react';
+import { Settings, Palette, Grid3X3, Keyboard, Save, Eye, EyeOff, Brain, CheckCircle2, LineChart, Briefcase } from 'lucide-react';
 import { useStrategyFlowStore } from '../../store/strategyFlowStore';
 import { toast } from 'sonner';
 import { LLM_MODELS, LLMModelProvider } from '../../types';
@@ -51,7 +51,7 @@ export const getLLMApiKey = (provider: LLMModelProvider): string => {
 };
 
 export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) => {
-  const { showGrid, toggleGrid, pineScriptMode, togglePineScriptMode } = useStrategyFlowStore();
+  const { showGrid, toggleGrid, pineScriptMode, togglePineScriptMode, livePortfolio, setLivePortfolio } = useStrategyFlowStore();
 
   // LLM API Keys visibility states
   const [showOpenAIKey, setShowOpenAIKey] = useState(false);
@@ -140,6 +140,30 @@ export const SettingsModal = memo(({ open, onOpenChange }: SettingsModalProps) =
           <Switch
             checked={pineScriptMode}
             onCheckedChange={togglePineScriptMode}
+          />
+        </div>
+
+        {/* Live Avanza Portfolio Toggle */}
+        <div className={`flex items-center justify-between p-3 rounded-lg border transition-all ${livePortfolio
+            ? 'bg-orange-500/10 border-orange-500/40'
+            : 'bg-secondary/50 border-border/50'
+          }`}>
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${livePortfolio ? 'bg-orange-500/20' : 'bg-secondary'}`}>
+              <Briefcase className={`w-5 h-5 ${livePortfolio ? 'text-orange-400' : 'text-muted-foreground'}`} />
+            </div>
+            <div>
+              <Label className="text-foreground font-medium">Use Live Avanza Portfolio</Label>
+              <p className="text-xs text-muted-foreground">
+                {livePortfolio
+                  ? 'Portfolio nodes read your actual Avanza positions on every tick (cached 30 s).'
+                  : 'Portfolio nodes use the backtest simulator. Enable to wire them to your live broker book.'}
+              </p>
+            </div>
+          </div>
+          <Switch
+            checked={livePortfolio}
+            onCheckedChange={setLivePortfolio}
           />
         </div>
 

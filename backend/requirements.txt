@@ -6,7 +6,8 @@
 fastapi
 uvicorn[standard]
 python-dotenv
-httpx
+httpx[http2]
+h2
 pydantic
 
 # Data Processing

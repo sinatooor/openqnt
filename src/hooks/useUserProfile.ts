@@ -123,8 +123,9 @@ export const useUserProfile = () => {
         setUser(updatedUser);
     }, [user]);
 
-    // Save a strategy
-    const saveStrategy = useCallback(async (name: string, nodes: any[], edges: any[]) => {
+    // Save a strategy. The optional `settings` arg lets callers thread
+    // strategy-level config (e.g. livePortfolio) through to the backend runtime.
+    const saveStrategy = useCallback(async (name: string, nodes: any[], edges: any[], settings: Record<string, unknown> = {}) => {
         if (!isAuthenticated) {
             throw new Error("Not authenticated");
         }
@@ -134,7 +135,7 @@ export const useUserProfile = () => {
                 name,
                 nodes,
                 edges,
-                settings: {},
+                settings,
             });
             await fetchStrategies();
             return { id: response.strategy.id };

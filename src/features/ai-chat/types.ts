@@ -39,11 +39,20 @@ export type PageContext = {
 
 // ── Unified event stream ─────────────────────────────────────
 
-export type ToolStatus = 'pending' | 'done' | 'error';
+export type ToolStatus = 'pending' | 'pending_approval' | 'done' | 'error' | 'rejected';
 
 export type UnifiedEvent =
   | { kind: 'text_delta'; text: string }
-  | { kind: 'tool_call'; tool: string; args: Record<string, any>; status: ToolStatus }
+  | {
+      kind: 'tool_call';
+      tool: string;
+      args: Record<string, any>;
+      status: ToolStatus;
+      /** Set on sensitive tools that require explicit user approval. */
+      needsApproval?: boolean;
+      /** Server-generated id; pass back to /approve when accepting/rejecting. */
+      toolCallId?: string;
+    }
   | { kind: 'tool_result'; tool: string; result: Record<string, any>; success: boolean }
   | { kind: 'card'; cardType: string; cardId: string; payload: unknown }
   | { kind: 'mode_change'; from: ChatMode; to: ChatMode; at: number }
@@ -68,6 +77,10 @@ export interface StoredToolCall {
   args: Record<string, any>;
   status: ToolStatus;
   result?: Record<string, any>;
+  /** Server-generated id for sensitive tools, used by the approval card. */
+  toolCallId?: string;
+  /** True when the agent is awaiting user accept/reject. */
+  needsApproval?: boolean;
 }
 
 // ── Action event (stored) ────────────────────────────────────
