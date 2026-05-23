@@ -1,0 +1,197 @@
+{
+  "version": "1.0",
+  "name": "sidecar_run4",
+  "nodes": [
+    {
+      "id": "trig",
+      "type": "trigger",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "label": "Heartbeat",
+        "description": "Schedule-based trigger",
+        "triggerType": "heartbeatTrigger",
+        "intervalMinutes": 5,
+        "atMarketOpen": false,
+        "atMarketClose": false,
+        "specificTime": "null"
+      }
+    },
+    {
+      "id": "data",
+      "type": "dataSource",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "label": "Yahoo Finance",
+        "description": "Free OHLCV from Yahoo Finance",
+        "provider": "yfinance",
+        "symbol": "QQQ",
+        "timeframe": "1d"
+      }
+    },
+    {
+      "id": "macd",
+      "type": "indicator",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "label": "MACD",
+        "description": "Moving Average Convergence Divergence",
+        "indicatorType": "macd",
+        "timeframe": "60",
+        "params": {
+          "fastPeriod": 12,
+          "slowPeriod": 26,
+          "signalPeriod": 9
+        }
+      }
+    },
+    {
+      "id": "cross_above",
+      "type": "condition",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "label": "Crossover",
+        "description": "A crosses above B",
+        "conditionType": "crossover"
+      }
+    },
+    {
+      "id": "cross_below",
+      "type": "condition",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "label": "Crossunder",
+        "description": "A crosses below B",
+        "conditionType": "crossunder"
+      }
+    },
+    {
+      "id": "buy",
+      "type": "action",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "label": "Place Order",
+        "description": "Execute a trade",
+        "actionType": "order",
+        "direction": "long",
+        "orderType": "market",
+        "size": 0.1,
+        "sizeType": "lots",
+        "broker": "paper"
+      }
+    },
+    {
+      "id": "exit",
+      "type": "action",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "data": {
+        "label": "Close Position",
+        "description": "Exit current trade",
+        "actionType": "closePosition"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1-c0l5",
+      "source": "trig",
+      "target": "macd",
+      "sourceHandle": "output",
+      "targetHandle": "trigger",
+      "type": "bezier"
+    },
+    {
+      "id": "edge-2-qv91",
+      "source": "data",
+      "target": "macd",
+      "sourceHandle": "candles",
+      "targetHandle": "data",
+      "type": "bezier"
+    },
+    {
+      "id": "edge-3-sh2w",
+      "source": "macd",
+      "target": "cross_above",
+      "sourceHandle": "line",
+      "targetHandle": "input-a",
+      "type": "bezier"
+    },
+    {
+      "id": "edge-4-l11v",
+      "source": "macd",
+      "target": "cross_above",
+      "sourceHandle": "signal",
+      "targetHandle": "input-b",
+      "type": "bezier"
+    },
+    {
+      "id": "edge-5-3t5b",
+      "source": "macd",
+      "target": "cross_below",
+      "sourceHandle": "line",
+      "targetHandle": "input-a",
+      "type": "bezier"
+    },
+    {
+      "id": "edge-6-i4k6",
+      "source": "macd",
+      "target": "cross_below",
+      "sourceHandle": "signal",
+      "targetHandle": "input-b",
+      "type": "bezier"
+    },
+    {
+      "id": "edge-7-rrbr",
+      "source": "trig",
+      "target": "cross_above",
+      "sourceHandle": "output",
+      "targetHandle": "trigger",
+      "type": "bezier"
+    },
+    {
+      "id": "edge-8-dyel",
+      "source": "trig",
+      "target": "cross_below",
+      "sourceHandle": "output",
+      "targetHandle": "trigger",
+      "type": "bezier"
+    },
+    {
+      "id": "edge-9-4d3e",
+      "source": "cross_above",
+      "target": "buy",
+      "sourceHandle": "output",
+      "targetHandle": "trigger",
+      "type": "bezier"
+    },
+    {
+      "id": "edge-10-vus9",
+      "source": "cross_below",
+      "target": "exit",
+      "sourceHandle": "output",
+      "targetHandle": "trigger",
+      "type": "bezier"
+    }
+  ],
+  "settings": {}
+}
