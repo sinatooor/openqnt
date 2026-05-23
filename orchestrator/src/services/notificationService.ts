@@ -1,7 +1,12 @@
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { NotificationChannel, NotificationType } from '@prisma/client';
-import { sendTelegramMessage, TelegramOptions } from './channels/telegram.js';
+import {
+    sendTelegramMessage,
+    sendTelegramPhoto,
+    sendTelegramDocument,
+    TelegramOptions,
+} from './channels/telegram.js';
 import { sendSlackMessage, SlackOptions } from './channels/slack.js';
 import { sendSmsMessage, SmsOptions } from './channels/sms.js';
 import { sendEmailMessage, EmailOptions } from './channels/email.js';
@@ -12,6 +17,19 @@ export const notificationQueue = new Queue('notifications', {
     connection: getRedis() as any,
 });
 
+export interface DispatchAttachment {
+    /** `photo` is compressed by Telegram; `document` preserves the original file. */
+    kind: 'photo' | 'document';
+    /** Absolute path on disk readable by the orchestrator process. */
+    path?: string;
+    /** Or pass a Buffer (e.g. base64 → Buffer.from) if there's no shared FS. */
+    buffer?: Buffer;
+    /** Filename shown to recipient. Only used for documents. */
+    filename?: string;
+    /** Optional per-attachment caption. */
+    caption?: string;
+}
+
 export interface DispatchOptions {
     userId: string;
     channel: NotificationChannel;
@@ -20,6 +38,8 @@ export interface DispatchOptions {
     body: string;
     executionRunId?: string;
     metadata?: Record<string, any>;
+    /** Files to attach. First attachment carries the body as its caption. */
+    attachments?: DispatchAttachment[];
 
     // Channel-specific options (populated from user preferences or passed directly)
     telegram?: TelegramOptions;
@@ -53,10 +73,35 @@ export class NotificationService {
             // 2. Dispatch to the appropriate channel
             switch (options.channel) {
                 case 'telegram':
-                    if (options.telegram) {
-                        success = await sendTelegramMessage(options.body, options.telegram);
-                    } else {
+                    if (!options.telegram) {
                         throw new Error('Missing telegram options for dispatch');
+                    }
+                    if (options.attachments && options.attachments.length > 0) {
+                        // First attachment carries the body as its caption,
+                        // subsequent attachments stand alone.
+                        let first = true;
+                        let anySent = false;
+                        for (const att of options.attachments) {
+                            const source = att.path ?? att.buffer;
+                            if (!source) continue;
+                            const sendFn = att.kind === 'photo'
+                                ? sendTelegramPhoto
+                                : sendTelegramDocument;
+                            const caption = first
+                                ? (att.caption ?? options.body)
+                                : att.caption;
+                            const ok = await sendFn(source, {
+                                chatId: options.telegram.chatId,
+                                parseMode: options.telegram.parseMode,
+                                caption,
+                                filename: att.filename,
+                            });
+                            anySent = anySent || ok;
+                            first = false;
+                        }
+                        success = anySent;
+                    } else {
+                        success = await sendTelegramMessage(options.body, options.telegram);
                     }
                     break;
 

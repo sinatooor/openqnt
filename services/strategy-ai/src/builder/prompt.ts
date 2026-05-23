@@ -183,13 +183,53 @@ export const NODE_CONFIGURATION_RULE = `## Node configuration safety rules
 - Use string values directly for type/subtype fields (no TS-only syntax).`;
 
 export const SELF_CHECK_RULE = `## Self-check before submit
+
+Wiring discipline is the #1 source of broken strategies. The validator
+will reject a graph that's missing required edges — fix them first.
+
 Before calling \`submit\`, verify in your head:
-  1. Every node referenced by an edge exists (no dangling source/target ids).
-  2. Every action node has at least one incoming signal/boolean edge.
-  3. Every condition node has its required inputs connected.
-  4. No cycles unless the user explicitly asked for one (then set \`settings.allowCycles=true\`).
-  5. The last \`validate\` call returned \`valid: true\` (or you've hit the 3-attempt budget — in which case explain the warnings).
-Then call \`verify\` (compile check) before \`submit\`. If \`verify\` fails, do one repair pass and submit anyway with a warning in your final message.`;
+
+  1. **Every trigger has an outgoing edge.** \`startTrigger\`,
+     \`heartbeatTrigger\`, \`cronTrigger\`, \`webhookTrigger\`,
+     \`manualTrigger\`, \`priceAlertTrigger\`, \`newsTrigger\`,
+     \`brokerEventTrigger\` — each must connect to SOMETHING downstream,
+     or the strategy never fires.
+
+  2. **Every action node has its \`trigger\` input wired.** Including
+     \`stopLoss\`, \`takeProfit\`, \`trailingStop\`, \`closePosition\`. A
+     trigger normally chains from the previous action's \`next\` handle
+     (e.g. buy \`next\` → stopLoss \`trigger\`).
+
+  3. **Chain action scalar inputs go to the right handle.** If you have
+     a stop-price calculation feeding a \`stopLoss\` node, wire it to
+     \`stopPrice\` — NOT \`trigger\`. The \`trigger\` handle takes a
+     signal, not a number.
+
+  4. **Every condition has its required inputs.** \`crossover\`/\`crossunder\`/\`compare\` need 2 inputs (input-a, input-b). \`threshold\` needs 1.
+
+  5. **No orphan nodes.** A node with zero edges in AND zero out does
+     nothing — either wire it or delete it. (Start is the only exception
+     — its \`output\` must still be wired.)
+
+  6. **Every node referenced by an edge exists.** No dangling source/target ids.
+
+  7. **No cycles** unless the user explicitly asked for one (then set
+     \`settings.allowCycles=true\`).
+
+  8. **\`validate\` returned \`valid: true\`** (or you've hit the 3-attempt
+     budget — in which case explain the warnings in your final message).
+
+Then call \`verify\` (compile check) before \`submit\`. If \`verify\`
+fails, do one repair pass and submit anyway with a warning.
+
+### Wiring checklist by node type
+
+  - **indicator** (rsi, sma, macd, ...): \`trigger\` ← upstream trigger; \`data\` ← dataSource \`candles\` (or leave unwired to use the strategy's default dataSource)
+  - **condition** (threshold, compare, crossover): \`input-a\` ← indicator/number; \`input-b\` ← number/indicator (when applicable)
+  - **action / order**: \`trigger\` ← condition \`output\`; \`size\` ← risk node (optional if default size is set)
+  - **action / stopLoss / takeProfit / trailingStop**: \`trigger\` ← the order's \`next\` handle (so it fires after the order); \`stopPrice\` / \`takeProfitPrice\` ← number node
+  - **action / closePosition / closeAll**: \`trigger\` ← condition \`output\`
+  - **risk / position-sizing**: \`trigger\` ← upstream trigger`;
 
 export const BUILDER_AGENT_PROMPT = [
   `You are the Strategy Builder agent for Fyer — a trading-strategy builder embedded in the Strategy Flow canvas.`,

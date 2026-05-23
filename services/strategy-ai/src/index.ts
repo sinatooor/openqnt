@@ -117,6 +117,12 @@ const handleHealth = async (): Promise<Response> => {
 
 Bun.serve({
   port: PORT,
+  // SSE streams for `/agent/run` can sit quiet for >10s while the LLM
+  // thinks or while a Python /verify-mock call runs. Bun's default
+  // idleTimeout (10s) was killing those mid-stream. 240s gives long
+  // Claude Sonnet runs (~3-5 minutes total when many lookup_node_schema
+  // calls are needed) headroom.
+  idleTimeout: 240,
   async fetch(req) {
     const url = new URL(req.url);
     if (req.method === 'GET' && url.pathname === '/health') return handleHealth();

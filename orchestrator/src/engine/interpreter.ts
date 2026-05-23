@@ -71,8 +71,46 @@ export interface NodeLog {
     executionOrder: number;
 }
 
+/** A request to dispatch a notification (Telegram/Slack/SMS/email/etc).
+ *  The interpreter only declares intent; the executionService consumes
+ *  these after evaluation and pushes onto the BullMQ notificationQueue.
+ *  Mirrors how `orderIntents` works. */
+export interface NotificationIntent {
+    /** node id that produced the intent (audit/log) */
+    nodeId: string;
+    /** Lowercase channel: 'telegram' | 'slack' | 'sms' | 'email' | 'in_app' | 'push' */
+    channel: string;
+    title?: string;
+    body: string;
+    /** Override the user's saved chatId / phone / email; falls back to prefs. */
+    target?: string;
+    /** Optional file attachments (absolute paths or base64 buffers). */
+    attachments?: Array<{
+        kind: 'photo' | 'document';
+        path?: string;
+        bufferBase64?: string;
+        filename?: string;
+        caption?: string;
+    }>;
+}
+
+/** A request to place an outbound voice call from a strategy graph. */
+export interface VoiceCallIntent {
+    nodeId: string;
+    transport: 'twilio' | 'browser_webrtc' | 'ios_webrtc' | 'sip';
+    openingMessage: string;
+    voice?: string;
+    allowedActions?: string[];
+    urgencyLevel?: string;
+}
+
 export interface EvaluationResult {
     orderIntents: OrderIntent[];
+    /** Notifications declared by `notification` action or `telegramNode`
+     *  integration nodes during this evaluation. */
+    notificationIntents?: NotificationIntent[];
+    /** Outbound voice calls declared by `voiceCallNode` integration nodes. */
+    voiceCallIntents?: VoiceCallIntent[];
     outputs: Record<string, Record<string, any>>;
     nodeLogs: NodeLog[];
     nodesExecuted: number;
@@ -165,6 +203,8 @@ export class FlowInterpreter {
     ): Promise<EvaluationResult> {
         const outputs: Record<string, Record<string, any>> = { ...(preSeededOutputs ?? {}) };
         const orderIntents: OrderIntent[] = [];
+        const notificationIntents: NotificationIntent[] = [];
+        const voiceCallIntents: VoiceCallIntent[] = [];
         const nodeLogs: NodeLog[] = [];
         let nodesExecuted = 0;
         let nodesSkipped = 0;
@@ -466,6 +506,35 @@ export class FlowInterpreter {
                                 tag: nodeId,
                             });
                             nodeOutput = { output: true };
+                        } else if (actionType === 'notification') {
+                            // Pull body from upstream `message` handle if wired,
+                            // else from node data. Channel defaults to telegram.
+                            const upstreamMsg = this.resolveInput(outputs, nodeId, 'message');
+                            const body = String(upstreamMsg ?? data.message ?? '');
+                            const channel = String(data.channel ?? 'telegram').toLowerCase();
+                            // Allow agent nodes upstream to drop a `chartPath`
+                            // on their output — pick it up automatically.
+                            const attachments: NotificationIntent['attachments'] = [];
+                            const upstreamData = this.resolveInput(outputs, nodeId, 'data');
+                            const chartPath = (upstreamData && typeof upstreamData === 'object')
+                                ? (upstreamData.chartPath || upstreamData.plotPath || upstreamData.plotUrl)
+                                : data.chartPath;
+                            if (chartPath) {
+                                attachments.push({
+                                    kind: 'photo',
+                                    path: String(chartPath),
+                                    caption: body || undefined,
+                                });
+                            }
+                            notificationIntents.push({
+                                nodeId,
+                                channel,
+                                title: data.title,
+                                body,
+                                target: data.target,
+                                attachments: attachments.length > 0 ? attachments : undefined,
+                            });
+                            nodeOutput = { output: true, dispatched: 'notification' };
                         } else {
                             nodeOutput = { output: true };
                         }
@@ -485,6 +554,7 @@ export class FlowInterpreter {
                             break;
                         }
 
+                        const agentNodeType = data.agentNodeType;
                         const agentType = data.agentType ?? 'news_analyst';
                         const model = data.model ?? 'gemini-2.0-flash';
                         const symbols = data.symbols ?? [this.settings.symbol].filter(Boolean);
@@ -497,9 +567,72 @@ export class FlowInterpreter {
                             : symbols;
 
                         const computeUrl = env.COMPUTE_SERVICE_URL;
+
+                        // ── agentRunQuery: read latest persisted agent_runs row (no LLM call)
+                        if (agentNodeType === 'agentRunQuery') {
+                            if (!computeUrl) {
+                                nodeOutput = { output: null, signal: null, confidence: 0 };
+                                status = 'skipped';
+                                nodesSkipped++;
+                                break;
+                            }
+                            const querySymbol = data.symbol || resolvedSymbols[0] || '';
+                            const maxAge = Number(data.maxAgeMinutes ?? 60);
+                            const params = new URLSearchParams({ agent_type: agentType });
+                            if (querySymbol) params.set('symbol', String(querySymbol));
+                            if (maxAge > 0) params.set('max_age_minutes', String(maxAge));
+                            try {
+                                const r = await fetch(`${computeUrl}/compute/agents/last-run?${params.toString()}`);
+                                if (r.status === 404) {
+                                    nodeOutput = { output: null, signal: null, confidence: 0, summary: '' };
+                                } else if (!r.ok) {
+                                    throw new Error(`agent_runs query returned ${r.status}`);
+                                } else {
+                                    const row = await r.json() as any;
+                                    const signal = row?.signal ?? 'neutral';
+                                    const confidence = Number(row?.confidence ?? 0);
+                                    const meetsThreshold = confidence >= confidenceThreshold;
+                                    nodeOutput = {
+                                        output: meetsThreshold ? signal : null,
+                                        signal,
+                                        confidence,
+                                        summary: row?.summary ?? '',
+                                        runId: row?.id,
+                                        createdAt: row?.created_at,
+                                        meetsThreshold,
+                                    };
+                                }
+                            } catch (err) {
+                                logger.error({ nodeId, agentType, error: err }, 'agentRunQuery failed');
+                                nodeOutput = { output: null, signal: null, confidence: 0, error: String(err) };
+                            }
+                            status = 'delegated';
+                            pythonDelegations++;
+                            break;
+                        }
+
+                        // ── scheduledAgentRun: declarative cron registration (no per-bar work)
+                        if (agentNodeType === 'scheduledAgentRun') {
+                            // The strategy deploy path is responsible for calling
+                            // POST /compute/agents/schedule when this node ships
+                            // live. During execution it's a no-op signal source.
+                            nodeOutput = {
+                                output: null,
+                                signal: null,
+                                confidence: 0,
+                                scheduled: true,
+                                agentType,
+                                intervalMinutes: Number(data.intervalMinutes ?? 30),
+                            };
+                            status = 'skipped';
+                            nodesSkipped++;
+                            break;
+                        }
+
+                        // ── Inline LLM agent (newsAgentNode, technicalAgentNode, etc.)
                         if (computeUrl) {
                             try {
-                                const response = await fetch(`${computeUrl}/api/agent/run`, {
+                                const response = await fetch(`${computeUrl}/compute/agents/run`, {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({
@@ -516,7 +649,9 @@ export class FlowInterpreter {
                                     throw new Error(`Agent API returned ${response.status}`);
                                 }
 
-                                const agentResult = await response.json() as any;
+                                const wrapper = await response.json() as any;
+                                // /compute/agents/run wraps output in {success, output}.
+                                const agentResult = wrapper?.output ?? wrapper;
                                 const confidence = agentResult.overall_confidence ?? 0;
                                 const signal = agentResult.overall_signal ?? 'neutral';
 
@@ -591,6 +726,8 @@ export class FlowInterpreter {
                                 // Return early — execution is PAUSED at this node
                                 return {
                                     orderIntents,
+                                    notificationIntents,
+                                    voiceCallIntents,
                                     outputs,
                                     nodeLogs,
                                     nodesExecuted,
@@ -609,8 +746,58 @@ export class FlowInterpreter {
                             }
 
                             if (trigger) {
-                                nodeOutput = { output: true, dispatched: true };
-                                logger.info({ nodeId, integrationType: data.integrationType }, 'Integration node dispatched');
+                                const itype = data.integrationType;
+                                // Telegram integration — same shape as the
+                                // `notification` action but always Telegram.
+                                if (itype === 'telegramNode') {
+                                    const upstreamMsg = this.resolveInput(outputs, nodeId, 'message');
+                                    const upstreamData = this.resolveInput(outputs, nodeId, 'data');
+                                    const body = String(
+                                        upstreamMsg ?? data.message ??
+                                        (typeof upstreamData === 'string' ? upstreamData : '')
+                                    );
+                                    const attachments: NotificationIntent['attachments'] = [];
+                                    const chartPath = (upstreamData && typeof upstreamData === 'object')
+                                        ? (upstreamData.chartPath || upstreamData.plotPath || upstreamData.plotUrl)
+                                        : data.chartPath;
+                                    if (chartPath) {
+                                        attachments.push({
+                                            kind: 'photo',
+                                            path: String(chartPath),
+                                            caption: body || undefined,
+                                        });
+                                    }
+                                    notificationIntents.push({
+                                        nodeId,
+                                        channel: 'telegram',
+                                        title: data.title,
+                                        body,
+                                        target: data.chatId,
+                                        attachments: attachments.length > 0 ? attachments : undefined,
+                                    });
+                                    nodeOutput = { output: true, dispatched: 'telegram' };
+                                }
+                                // Outbound voice call — declare an intent that
+                                // executionService consumes after evaluation.
+                                else if (itype === 'voiceCall' || itype === 'voiceCallNode') {
+                                    const upstreamSummary = this.resolveInput(outputs, nodeId, 'message');
+                                    const opening =
+                                        String(upstreamSummary ?? '') ||
+                                        String(data.openingMessageTemplate ?? data.openingMessage ?? 'Strategy alert');
+                                    voiceCallIntents.push({
+                                        nodeId,
+                                        transport: (data.transport as VoiceCallIntent['transport']) ?? 'twilio',
+                                        openingMessage: opening,
+                                        voice: data.voice,
+                                        allowedActions: data.allowedActions,
+                                        urgencyLevel: data.urgencyLevel,
+                                    });
+                                    nodeOutput = { output: true, dispatched: 'voice_call' };
+                                }
+                                else {
+                                    nodeOutput = { output: true, dispatched: true };
+                                }
+                                logger.info({ nodeId, integrationType: itype }, 'Integration node dispatched');
                             } else {
                                 nodeOutput = { output: false };
                                 status = 'skipped';
@@ -646,6 +833,8 @@ export class FlowInterpreter {
 
         return {
             orderIntents,
+            notificationIntents,
+            voiceCallIntents,
             outputs,
             nodeLogs,
             nodesExecuted,

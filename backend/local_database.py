@@ -69,6 +69,14 @@ def init_db():
     except Exception as e:
         print(f"[DB] Voice schema init skipped: {e}")
 
+    # Agent run history + scheduled-agent cron tables. Closes the silo
+    # between ADK quant agents and the strategy-flow data nodes.
+    try:
+        from services import agent_runs_db
+        agent_runs_db.init_schema()
+    except Exception as e:
+        print(f"[DB] Agent runs schema init skipped: {e}")
+
 # --- User Actions ---
 
 def get_user_by_credentials(email, password):

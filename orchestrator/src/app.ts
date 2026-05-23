@@ -15,6 +15,7 @@ import agentRouter from './api/routes/agent.js';
 import executionsRouter from './api/routes/executions.js';
 import credentialsRouter from './api/routes/credentials.js';
 import notificationsRouter from './api/routes/notifications.js';
+import dispatchNotificationsRouter from './api/routes/dispatchNotifications.js';
 import portfolioRouter from './api/routes/portfolio.js';
 import aiRouter from './api/routes/ai.js';
 import aiAssistantRouter from './api/routes/aiAssistant.js';
@@ -77,6 +78,9 @@ export function createApp() {
     app.use('/api/agent', agentRouter);
     app.use('/api/executions', executionsRouter);
     app.use('/api/credentials', credentialsRouter);
+    // Internal dispatch (X-Internal-Token gated) must mount BEFORE the
+    // JWT-protected notifications router so its path isn't shadowed.
+    app.use('/api/notifications', dispatchNotificationsRouter);
     app.use('/api/notifications', notificationsRouter);
     app.use('/api/portfolio', portfolioRouter);
     app.use('/api/ai', aiRouter);

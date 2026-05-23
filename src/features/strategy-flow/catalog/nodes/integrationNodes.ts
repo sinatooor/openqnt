@@ -30,6 +30,35 @@ export const INTEGRATION_NODES: NodeCatalogItem[] = [
         },
     },
     {
+        // Cron-triggered AI voice call. Use as the dispatch leaf of a
+        // strategy graph — at fire time the orchestrator POSTs to the
+        // backend voice router which originates the call via Twilio /
+        // iOS WebRTC / browser WebRTC and connects Gemini Live with the
+        // full voice-tool registry. The user can ask anything they'd
+        // normally ask in chat (build a strategy, run MC, etc.) and any
+        // `risk="confirm"` action is gated by the voice passphrase.
+        type: 'voiceCallNode',
+        nodeType: 'integration',
+        label: 'Voice Call',
+        description: 'AI-initiated outbound voice call',
+        tooltip: 'Originate an outbound call (Twilio / iOS / browser WebRTC). Connects Gemini Live with the user — they can converse, ask questions, and approve trades by passphrase. Pair with a cronTrigger to schedule "call me every day at 16:00".',
+        inputs: ['Trigger', 'Message'],
+        outputs: ['Signal'],
+        category: 'integrations',
+        subcategory: 'Communication',
+        icon: 'PhoneOutgoing',
+        color: '#ef4444',
+        backtestEligible: false,
+        defaultData: {
+            integrationType: 'voiceCallNode',
+            transport: 'twilio',  // 'twilio' | 'browser_webrtc' | 'ios_webrtc'
+            voice: 'Aoede',       // Aoede | Charon | Kore | Fenrir | Puck
+            openingMessageTemplate: 'Strategy alert. I have an analysis for you.',
+            urgencyLevel: 'high',
+            allowedActions: ['read'],  // add 'trade' to allow place_order (still passphrase-gated)
+        },
+    },
+    {
         type: 'slackNode',
         nodeType: 'integration',
         label: 'Slack',

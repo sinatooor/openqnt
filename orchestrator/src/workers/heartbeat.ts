@@ -39,7 +39,59 @@ export function getQueue(name: string): Queue {
 export interface HeartbeatJobData {
     strategyId: string;
     userId: string;
+    /** Used only when triggerKind === 'heartbeat'. Ignored for 'cron'. */
     intervalSeconds: number;
+    /** 'cron' fires on a cron pattern; 'heartbeat' on a fixed interval. */
+    triggerKind?: 'heartbeat' | 'cron';
+    /** Required when triggerKind === 'cron'. Standard 5-field cron (BullMQ
+     *  uses node-cron syntax) e.g. "0 16 * * *". */
+    cronExpression?: string;
+    /** IANA timezone (e.g. "America/New_York"). Optional; defaults to UTC. */
+    timezone?: string;
+}
+
+/** A schedule extracted from a strategy's trigger nodes. The deploy path
+ *  uses this to decide how to queue the BullMQ repeatable. */
+export interface ExtractedSchedule {
+    kind: 'cron' | 'heartbeat';
+    cronExpression?: string;
+    timezone?: string;
+    intervalSeconds?: number;
+}
+
+/**
+ * Walk a strategy's nodes and return the first schedule we can act on.
+ *
+ *   Precedence: `cronTrigger` > `heartbeatTrigger` > caller's fallback.
+ *
+ * The fallback path (returning `null`) lets the deploy route fill in the
+ * global `AgentConfig.heartbeatIntervalSeconds` so legacy strategies
+ * keep working without a trigger node.
+ */
+export function extractScheduleFromNodes(nodes: unknown): ExtractedSchedule | null {
+    if (!Array.isArray(nodes)) return null;
+    // Prefer cron.
+    for (const n of nodes as Array<any>) {
+        const t = n?.data?.triggerType ?? n?.type;
+        if (t === 'cronTrigger') {
+            const expr = String(n?.data?.cronExpression ?? '').trim();
+            if (!expr) continue;
+            return {
+                kind: 'cron',
+                cronExpression: expr,
+                timezone: n?.data?.timezone || undefined,
+            };
+        }
+    }
+    for (const n of nodes as Array<any>) {
+        const t = n?.data?.triggerType ?? n?.type;
+        if (t === 'heartbeatTrigger') {
+            const mins = Number(n?.data?.intervalMinutes ?? 0);
+            if (!Number.isFinite(mins) || mins <= 0) continue;
+            return { kind: 'heartbeat', intervalSeconds: Math.round(mins * 60) };
+        }
+    }
+    return null;
 }
 
 export interface NotificationJobData {
@@ -102,16 +154,23 @@ export async function deployStrategy(data: HeartbeatJobData): Promise<string> {
     // Remove existing repeatable job for this strategy
     await removeStrategy(data.strategyId);
 
-    // Create repeatable job
-    await queue.add('heartbeat', data, {
-        repeat: {
-            every: data.intervalSeconds * 1000,
-        },
-        jobId,
-    });
+    const kind = data.triggerKind ?? 'heartbeat';
+    // BullMQ accepts `pattern` (5-field cron) for cron, `every` (ms) for interval.
+    const repeat: Record<string, any> =
+        kind === 'cron' && data.cronExpression
+            ? { pattern: data.cronExpression, ...(data.timezone ? { tz: data.timezone } : {}) }
+            : { every: data.intervalSeconds * 1000 };
+
+    await queue.add('heartbeat', data, { repeat, jobId });
 
     logger.info(
-        { strategyId: data.strategyId, intervalSeconds: data.intervalSeconds },
+        {
+            strategyId: data.strategyId,
+            triggerKind: kind,
+            cronExpression: data.cronExpression,
+            timezone: data.timezone,
+            intervalSeconds: data.intervalSeconds,
+        },
         'Strategy deployed to heartbeat'
     );
 

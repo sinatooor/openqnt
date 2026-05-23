@@ -406,6 +406,11 @@ export async function executeStrategy(input: ExecuteStrategyInput): Promise<Exec
     // 9. Process order dispatch based on operational mode
     await processOrderIntents(result, agentConfig, input, executionRun.id, strategy.name);
 
+    // 10. Dispatch any notification + voice-call intents produced by the
+    //     graph (telegramNode, notification action, voiceCallNode).
+    await processNotificationIntents(result, agentConfig, input, executionRun.id, strategy.name);
+    await processVoiceCallIntents(result, agentConfig, input, executionRun.id);
+
     return {
         executionRunId: executionRun.id,
         result,
@@ -717,4 +722,116 @@ export async function resumeExecution(executionRunId: string): Promise<void> {
         nodesResumed: remainingNodes.length,
         orderIntents: allOrderIntents.length,
     }, 'Execution resumed and completed after HITL approval');
+}
+
+
+// ─── Notification / voice-call dispatch helpers ──────────────────
+
+import { env as appEnv } from '../config/env.js';
+
+async function processNotificationIntents(
+    result: EvaluationResult,
+    agentConfig: any,
+    input: { userId: string; strategyId: string },
+    executionRunId: string,
+    strategyName: string,
+) {
+    const intents = result.notificationIntents ?? [];
+    if (intents.length === 0) return;
+
+    const prefs = (agentConfig?.user?.preferences as any) ?? {};
+    const tgChatId = prefs.telegramChatId ?? '';
+
+    for (const intent of intents) {
+        const channel = intent.channel.toLowerCase();
+        // Skip telegram dispatch when the user has no chatId configured (graceful).
+        if (channel === 'telegram' && !(intent.target || tgChatId)) {
+            logger.warn(
+                { nodeId: intent.nodeId, userId: input.userId },
+                'telegramNode skipped — user has no telegramChatId configured',
+            );
+            continue;
+        }
+        try {
+            await notificationQueue.add('strategy-notification', {
+                userId: input.userId,
+                executionRunId,
+                channel,
+                type: 'alert',
+                title: intent.title ?? `Strategy alert: ${strategyName}`,
+                body: intent.body,
+                metadata: { nodeId: intent.nodeId, strategyId: input.strategyId },
+                telegram: channel === 'telegram'
+                    ? { chatId: intent.target ?? tgChatId }
+                    : undefined,
+                attachments: intent.attachments?.map((a) => ({
+                    kind: a.kind,
+                    path: a.path,
+                    buffer: a.bufferBase64 ? Buffer.from(a.bufferBase64, 'base64') : undefined,
+                    filename: a.filename,
+                    caption: a.caption,
+                })),
+            });
+        } catch (err) {
+            logger.error(
+                { err, nodeId: intent.nodeId },
+                'Failed to enqueue notification intent',
+            );
+        }
+    }
+}
+
+async function processVoiceCallIntents(
+    result: EvaluationResult,
+    _agentConfig: any,
+    input: { userId: string; strategyId: string },
+    executionRunId: string,
+) {
+    const intents = result.voiceCallIntents ?? [];
+    if (intents.length === 0) return;
+
+    // Backend voice router lives on the Python compute service.
+    const computeUrl = appEnv.COMPUTE_SERVICE_URL;
+    if (!computeUrl) {
+        logger.warn('voiceCallNode skipped — COMPUTE_SERVICE_URL is not set');
+        return;
+    }
+
+    for (const intent of intents) {
+        try {
+            const body = {
+                user_id: input.userId,
+                transport: intent.transport,
+                voice: intent.voice,
+                opening_message: intent.openingMessage,
+                trigger_source: 'strategy',
+                allowed_tools: undefined as string[] | undefined,
+                metadata: {
+                    executionRunId,
+                    strategyId: input.strategyId,
+                    nodeId: intent.nodeId,
+                    urgencyLevel: intent.urgencyLevel,
+                    allowedActions: intent.allowedActions,
+                },
+            };
+            const response = await fetch(`${computeUrl}/api/voice/call`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(appEnv.INTERNAL_API_TOKEN
+                        ? { 'X-Internal-Token': appEnv.INTERNAL_API_TOKEN }
+                        : {}),
+                },
+                body: JSON.stringify(body),
+            });
+            if (!response.ok) {
+                throw new Error(`voice call returned ${response.status}`);
+            }
+        } catch (err) {
+            logger.error(
+                { err, nodeId: intent.nodeId },
+                'Failed to dispatch voiceCallNode',
+            );
+        }
+    }
 }

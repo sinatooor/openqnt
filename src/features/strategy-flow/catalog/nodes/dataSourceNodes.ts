@@ -149,4 +149,33 @@ export const DATA_SOURCE_NODES: NodeCatalogItem[] = [
       paramOverrides: { symbol: 'AAPL' },
     },
   },
+  // Pre-configured Apify Truth Social fetcher — same backend as
+  // `apiDataSource` (manifest-driven) but spares the user from typing the
+  // provider/endpoint. Pairs nicely with a Cron Trigger ("0 16 * * *") +
+  // newsAgentNode for the "Trump moved markets" use case.
+  {
+    type: 'truthSocialPosts',
+    nodeType: 'dataSource',
+    label: 'Truth Social',
+    description: 'Latest posts from Donald Trump (or any Truth Social user)',
+    tooltip:
+      "Scrapes the latest Truth Social posts via the Apify actor sTDLfdZAmte0aYlxg. Defaults to @realDonaldTrump; change `username` for any handle. Run-sync (~5–15s). Requires APIFY_API_TOKEN. Pipe into a News Analyst agent to score impact on your portfolio.",
+    inputs: [],
+    outputs: ['JSON'],
+    category: 'dataSources',
+    subcategory: 'Social',
+    icon: 'MessageSquare',
+    color: '#dc2626',
+    backtestEligible: false,
+    defaultData: {
+      dataSourceType: 'apiDataSource',
+      provider: 'apify',
+      endpoint: 'truth-social-trump',
+      paramOverrides: {
+        username: 'realDonaldTrump',
+        maxPosts: 20,
+        cleanContent: true,
+      },
+    },
+  },
 ];
