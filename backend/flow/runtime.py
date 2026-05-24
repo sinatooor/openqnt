@@ -702,10 +702,20 @@ class FlowInterpreter:
                             profile = voice_db.get_user_voice_profile(user_id) or {}
                             phone = data.get("phoneNumber") or profile.get("phone_number")
                             transport = data.get("transport", "twilio")
-                            allowed = list(["get_positions", "get_account_info", "get_market_price",
-                                            "search_market_news", "calculate_portfolio_beta"])
+                            # Tool surface: when the node explicitly opts into "trade",
+                            # expose the full registry (confirm-tier tools are still
+                            # gated by passphrase + verbal "yes" at dispatch time).
+                            # Otherwise restrict to read-tier names pulled from the
+                            # registry, so adding new read tools doesn't require
+                            # editing this file.
                             if "trade" in (data.get("allowedActions") or []):
-                                allowed.extend(["place_order", "close_position"])
+                                allowed = None  # full registry
+                            else:
+                                try:
+                                    from services.voice.tool_dispatch import build_default_registry
+                                    allowed = build_default_registry().names_for_risk("read")
+                                except Exception:
+                                    allowed = None
 
                             def _kick():
                                 try:

@@ -409,14 +409,15 @@ async def run_backtest_endpoint(req: BacktestRequest):
 async def start_live_trading(req: LiveTradingRequest, background_tasks: BackgroundTasks):
     """
     Start live trading with a broker.
-    
-    Currently supports Binance (spot and futures).
-    Use testnet=True for paper trading.
+
+    NOTE: The Binance path in `live_executor.start_live_execution` is currently
+    a stub (signal evaluation returns no signals). It refuses up-front so we
+    don't leak credentials to a half-built path. Use /api/execution/signal or
+    /api/live/start (the IG/Nordnet router) for working live execution.
     """
     try:
         from .live_executor import start_live_execution
-        
-        # Start live trading in background
+
         result = await start_live_execution(
             nodes=req.nodes,
             edges=req.edges,
@@ -424,20 +425,28 @@ async def start_live_trading(req: LiveTradingRequest, background_tasks: Backgrou
             api_key=req.apiKey,
             api_secret=req.apiSecret,
             testnet=req.testnet,
-            position_size=req.positionSize
+            position_size=req.positionSize,
         )
-        
+
+        # The previous version ignored `result` and always reported "running".
+        # Surface whatever start_live_execution actually returned.
+        if not result.get("success"):
+            return LiveTradingResponse(
+                success=False,
+                status=result.get("status", "error"),
+                message=result.get("error") or "live execution refused",
+            )
         return LiveTradingResponse(
             success=True,
-            status="running",
-            message=f"Live trading started for {req.symbol}"
+            status=result.get("status", "running"),
+            message=f"Live trading started for {req.symbol}",
         )
-        
+
     except Exception as e:
         return LiveTradingResponse(
             success=False,
             status="error",
-            message=str(e)
+            message=str(e),
         )
 
 
@@ -534,9 +543,32 @@ async def get_catalog():
         catalog = load_catalog_from_typescript() or _load_catalog()
     except Exception:
         catalog = _load_catalog()
+
+    # Coerce the fallback `{nodes: {...}, version: ...}` shape into category
+    # arrays (the format the agent expects). The previous code set
+    # `catalog = {}` here — silently leaving the Builder agent with NO
+    # catalog when the TS source path was unreachable.
     if isinstance(catalog, dict) and "nodes" in catalog and "catalog" not in catalog:
-        # Fallback cache uses {nodes: {...}} shape; coerce to category arrays.
-        catalog = {}
+        nodes = catalog.get("nodes") or {}
+        if isinstance(nodes, dict):
+            # nodes is keyed by type → entry; group by category
+            grouped: Dict[str, List[Dict[str, Any]]] = {}
+            for ntype, entry in nodes.items():
+                if not isinstance(entry, dict):
+                    continue
+                cat = entry.get("category") or "uncategorized"
+                grouped.setdefault(cat, []).append({"type": ntype, **entry})
+            catalog = grouped
+        elif isinstance(nodes, list):
+            grouped = {}
+            for entry in nodes:
+                if not isinstance(entry, dict):
+                    continue
+                cat = entry.get("category") or "uncategorized"
+                grouped.setdefault(cat, []).append(entry)
+            catalog = grouped
+        else:
+            catalog = {}
     total = sum(len(v) for v in catalog.values() if isinstance(v, list))
     return {
         "catalog": catalog,
@@ -568,10 +600,17 @@ async def validate_dry_run(req: DryRunRequest):
             ],
         )
     except Exception as e:
+        # Each crash gets its own signature so the agent's loop guard doesn't
+        # mistake two different internal errors for "the same failure I
+        # already tried to fix". Previously every crash collapsed to
+        # "validator_crash", triggering false-positive loop-guard escalations.
+        import hashlib
+        sig_payload = f"validator_crash:{type(e).__name__}:{e}"
+        crash_sig = "vc_" + hashlib.sha256(sig_payload.encode()).hexdigest()[:13]
         return DryRunResponse(
             valid=False,
-            errors=[f"validator_crash: {e}"],
-            failureSignature="validator_crash",
+            errors=[f"validator_crash: {type(e).__name__}: {e}"],
+            failureSignature=crash_sig,
         )
 
 

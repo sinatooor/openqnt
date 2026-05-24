@@ -16,11 +16,9 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_VOICE_READ_TOOLS = [
-    "get_positions", "get_account_info", "get_market_price",
-    "search_market_news", "calculate_portfolio_beta",
-]
-DEFAULT_VOICE_TRADE_TOOLS = ["place_order", "close_position"]
+# None / empty → router exposes the full registry (read-tier tools are safe;
+# confirm-tier ones still require passphrase + verbal "yes" at dispatch time).
+DEFAULT_VOICE_TRADE_TOOLS = ["place_order"]
 
 
 def _current_user_id() -> Optional[str]:
@@ -64,9 +62,18 @@ def call_user(
     if transport == "twilio" and not phone:
         return "ERROR: user has no phone number on file. Suggest they add one in Profile."
 
-    allowed = list(DEFAULT_VOICE_READ_TOOLS)
+    # When include_trade_tools=True: full registry (read + confirm-tier).
+    # When False: restrict to read-tier tools so the LLM doesn't even see
+    # place_order. We resolve the read-tier names from the registry at
+    # call time, so adding new tools doesn't require updating this file.
     if include_trade_tools:
-        allowed.extend(DEFAULT_VOICE_TRADE_TOOLS)
+        allowed = None
+    else:
+        try:
+            from services.voice.tool_dispatch import build_default_registry
+            allowed = build_default_registry().names_for_risk("read")
+        except Exception:
+            allowed = None  # fall through to full registry if registry build fails
 
     try:
         result = voice_orch.initiate_call(

@@ -1,8 +1,18 @@
 """
-Broker Tools for ADK Trading Agent
+Broker Tools for ADK Trading Agent — IG Trading API.
 
-Execute trades and manage positions through broker APIs.
-Currently supports IG Trading API.
+⚠ DEPRECATED for the voice + Anthropic chat paths.
+
+  - Voice agent (services/voice/tool_dispatch.py) → now uses Avanza/IBKR
+    managers directly. The `get_positions` / `get_account_info` /
+    `get_market_price` / `execute_trade` here are NO LONGER called from
+    the Gemini Live tool registry.
+  - Chat agent (routers/ai_assistant.py) → uses
+    `get_portfolio_summary(broker='all'|...)` which talks to Avanza/IBKR.
+
+This module is still imported by `adk_agents/trading_agent.py` (the
+legacy Google-ADK trading agent reachable from `routers/agent_chat.py`).
+If/when that ADK path is retired, this whole file can be deleted.
 """
 
 import os

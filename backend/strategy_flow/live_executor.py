@@ -344,57 +344,28 @@ async def start_live_execution(
     position_size: float = 1.0
 ) -> Dict[str, Any]:
     """
-    Start live trading execution.
-    
-    Args:
-        nodes: Flow nodes
-        edges: Flow edges  
-        symbol: Trading symbol (e.g., "BTCUSDT")
-        api_key: Binance API key
-        api_secret: Binance API secret
-        testnet: Use testnet for paper trading
-        position_size: Position size as % of balance
-    
-    Returns:
-        Status dictionary
+    DISABLED — strategy-flow Binance live execution is not implemented.
+
+    `FlowLiveExecutor._evaluate_signals` currently returns (False, False)
+    unconditionally — the loop would run forever without ever evaluating the
+    user's nodes or placing a trade. Worse, this path takes raw Binance API
+    credentials and connects to a live exchange, giving the impression of
+    working when nothing happens. Refusing here means we never leak the
+    credentials to a half-built path.
+
+    Use one of the working live-trading paths instead:
+      - POST /api/execution/signal      (paper, IBKR, Alpaca, Avanza — risk-gated)
+      - POST /api/live/start            (IG Markets, Nordnet — via strategy_runner)
     """
-    global _live_trading_state
-    
-    # Stop any existing execution
-    if _live_trading_state["running"]:
-        await stop_live_execution()
-    
-    # Create executor
-    executor = FlowLiveExecutor(
-        api_key=api_key,
-        api_secret=api_secret,
-        testnet=testnet,
-        position_size=position_size
-    )
-    
-    # Connect
-    connected = await executor.connect()
-    if not connected:
-        return {
-            "success": False,
-            "error": "Failed to connect to Binance"
-        }
-    
-    # Update state
-    _live_trading_state["running"] = True
-    _live_trading_state["symbol"] = symbol
-    _live_trading_state["client"] = executor
-    
-    # Start strategy execution in background
-    _live_trading_state["strategy_task"] = asyncio.create_task(
-        executor.execute_strategy(nodes, edges, symbol)
-    )
-    
     return {
-        "success": True,
-        "status": "running",
-        "symbol": symbol,
-        "testnet": testnet
+        "success": False,
+        "status": "error",
+        "error": (
+            "Strategy-Flow Binance live execution is not implemented. "
+            "The signal-evaluation path is a stub (returns no signals). "
+            "Use /api/execution/signal for risk-gated paper/IBKR/Avanza/Alpaca "
+            "execution, or /api/live/start for IG/Nordnet via strategy_runner."
+        ),
     }
 
 
