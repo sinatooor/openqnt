@@ -121,3 +121,8 @@ backend/*.db-journal
 scripts/avanza_capture.jsonl
 # Firecrawl scratch dir
 .firecrawl/
+# Voice call transcripts (per-call JSONL, contains user PII)
+backend/voice_transcripts/
+# Mattpocock skills installer cache + lockfile (per-developer tooling)
+.agents/
+skills-lock.json
