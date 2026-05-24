@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Gemini Live — Isolation Test</title>
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0; padding: 24px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0a0a0a; color: #e4e4e7; min-height: 100vh;
+  }
+  h1 { margin: 0 0 4px 0; font-size: 20px; color: #fafafa; }
+  .sub { color: #71717a; font-size: 12px; margin-bottom: 24px; }
+
+  .controls { display: flex; gap: 8px; margin-bottom: 16px; }
+  button {
+    padding: 8px 16px; border-radius: 6px; cursor: pointer;
+    border: 1px solid #3f3f46; background: #18181b; color: #fafafa; font: inherit;
+  }
+  button:hover:not(:disabled) { background: #27272a; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.primary { background: #2563eb; border-color: #1d4ed8; }
+  button.primary:hover:not(:disabled) { background: #1d4ed8; }
+  button.danger { background: #7f1d1d; border-color: #991b1b; }
+
+  .status {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 999px;
+    background: #18181b; border: 1px solid #27272a; font-size: 12px;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #71717a; }
+  .dot.live { background: #22c55e; animation: pulse 1.6s infinite; }
+  .dot.connecting { background: #f59e0b; animation: pulse 0.6s infinite; }
+  .dot.error { background: #ef4444; }
+  @keyframes pulse { 50% { opacity: 0.4; } }
+
+  .meter {
+    height: 8px; background: #18181b; border-radius: 4px; overflow: hidden;
+    margin: 12px 0; border: 1px solid #27272a;
+  }
+  .meter-fill {
+    height: 100%; background: linear-gradient(90deg, #22c55e, #eab308, #ef4444);
+    width: 0%; transition: width 0.05s linear;
+  }
+  .speaking-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em;
+    background: #18181b; color: #71717a;
+  }
+  .speaking-badge.on { background: #14532d; color: #4ade80; }
+
+  .config {
+    display: grid; grid-template-columns: 120px 1fr; gap: 6px 12px;
+    margin: 16px 0; font-size: 12px;
+  }
+  .config label { color: #a1a1aa; align-self: center; }
+  .config input {
+    padding: 6px 8px; background: #18181b; border: 1px solid #27272a;
+    color: #fafafa; border-radius: 4px; font: inherit; font-size: 12px;
+  }
+
+  pre.log {
+    background: #09090b; border: 1px solid #18181b; border-radius: 4px;
+    padding: 12px; font-size: 11px; font-family: 'SF Mono', Menlo, monospace;
+    color: #a1a1aa; white-space: pre-wrap; word-break: break-all;
+    max-height: 320px; overflow: auto; margin: 0;
+  }
+  .log .info  { color: #93c5fd; }
+  .log .ok    { color: #4ade80; }
+  .log .warn  { color: #fbbf24; }
+  .log .err   { color: #f87171; }
+  .log .dim   { color: #52525b; }
+</style>
+</head>
+<body>
+
+<h1>Gemini Live — Isolation Test</h1>
+<div class="sub">
+  Direct browser ↔ <code>/api/voice/browser-stream</code> bridge. No Twilio. No nav UI.
+  Use this to confirm the audio + Gemini Live pipeline works on its own.
+</div>
+
+<div class="config">
+  <label>Backend URL</label>
+  <input id="backend" value="http://localhost:8000" />
+  <label>User ID</label>
+  <input id="userId" value="3d74127c-2e5f-4e27-8278-8836427c6117" />
+  <label>Opening msg</label>
+  <input id="opening" value="Hi Sina, your trading agent here. What would you like to do?" />
+</div>
+
+<div class="controls">
+  <button id="start" class="primary">Start</button>
+  <button id="stop" class="danger" disabled>Stop</button>
+  <button id="mute" disabled>Mute</button>
+  <div class="status">
+    <span class="dot" id="dot"></span>
+    <span id="state">idle</span>
+  </div>
+  <span class="speaking-badge" id="speaking">agent silent</span>
+</div>
+
+<div>
+  <div style="font-size:11px;color:#71717a;margin-bottom:4px;">your mic level</div>
+  <div class="meter"><div class="meter-fill" id="meter"></div></div>
+</div>
+
+<pre class="log" id="log"></pre>
+
+<script>
+const INPUT_RATE = 16000;
+const OUTPUT_RATE = 24000;
+
+const $ = (id) => document.getElementById(id);
+const els = {
+  backend: $('backend'),
+  userId: $('userId'),
+  opening: $('opening'),
+  start: $('start'),
+  stop: $('stop'),
+  mute: $('mute'),
+  dot: $('dot'),
+  state: $('state'),
+  speaking: $('speaking'),
+  meter: $('meter'),
+  log: $('log'),
+};
+
+function log(msg, cls = 'info') {
+  const ts = new Date().toISOString().slice(11, 23);
+  const line = document.createElement('span');
+  line.className = cls;
+  line.textContent = `[${ts}] ${msg}\n`;
+  els.log.appendChild(line);
+  els.log.scrollTop = els.log.scrollHeight;
+}
+
+function setStatus(text, cls = '') {
+  els.state.textContent = text;
+  els.dot.className = `dot ${cls}`;
+}
+
+// Note: AudioWorklet can't load Blob-URL modules from file:// origins, so we
+// use ScriptProcessorNode here. Deprecated but universal; for a single voice
+// session running on the main thread the latency / cost is fine.
+const FRAME_SIZE = 320; // 20 ms @ 16 kHz
+
+function createPcmFramer(ctx, onFrame) {
+  // 4096 sample buffer @ 48k = ~85 ms; we'll repack into 20 ms 16 kHz frames.
+  const node = ctx.createScriptProcessor(4096, 1, 1);
+  const ratio = ctx.sampleRate / INPUT_RATE;
+  let leftover = new Float32Array(0);
+  node.onaudioprocess = (e) => {
+    const input = e.inputBuffer.getChannelData(0);
+    const merged = new Float32Array(leftover.length + input.length);
+    merged.set(leftover, 0);
+    merged.set(input, leftover.length);
+    const outLen = Math.floor(merged.length / ratio);
+    const out = new Float32Array(outLen);
+    for (let i = 0; i < outLen; i++) {
+      const src = i * ratio;
+      const lo = Math.floor(src);
+      const hi = Math.min(lo + 1, merged.length - 1);
+      const f = src - lo;
+      out[i] = merged[lo] * (1 - f) + merged[hi] * f;
+    }
+    const consumed = Math.floor(outLen * ratio);
+    leftover = merged.slice(consumed);
+    let off = 0;
+    while (off + FRAME_SIZE <= out.length) {
+      const slice = out.subarray(off, off + FRAME_SIZE);
+      const pcm = new Int16Array(slice.length);
+      let level = 0;
+      for (let i = 0; i < slice.length; i++) {
+        const s = Math.max(-1, Math.min(1, slice[i]));
+        pcm[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+        level += Math.abs(s);
+      }
+      level /= slice.length;
+      onFrame(pcm.buffer, level);
+      off += FRAME_SIZE;
+    }
+  };
+  return node;
+}
+
+let ws = null;
+let ctx = null;
+let stream = null;
+let workletNode = null;
+let playhead = 0;
+let muted = false;
+let bytesIn = 0;
+let bytesOut = 0;
+let statsTimer = null;
+let speakingTimer = null;
+
+function cleanup() {
+  if (statsTimer)  { clearInterval(statsTimer); statsTimer = null; }
+  if (speakingTimer) { clearTimeout(speakingTimer); speakingTimer = null; }
+  try { workletNode?.disconnect(); } catch {}
+  workletNode = null;
+  try { stream?.getTracks().forEach(t => t.stop()); } catch {}
+  stream = null;
+  try { ws?.close(); } catch {}
+  ws = null;
+  try { ctx?.close(); } catch {}
+  ctx = null;
+  playhead = 0;
+  bytesIn = 0; bytesOut = 0;
+  els.meter.style.width = '0%';
+  els.speaking.classList.remove('on');
+  els.speaking.textContent = 'agent silent';
+  els.start.disabled = false;
+  els.stop.disabled = true;
+  els.mute.disabled = true;
+}
+
+function playPcm24k(buf) {
+  if (!ctx) return;
+  const view = new Int16Array(buf);
+  if (view.length === 0) return;
+  const ab = ctx.createBuffer(1, view.length, OUTPUT_RATE);
+  const ch = ab.getChannelData(0);
+  for (let i = 0; i < view.length; i++) ch[i] = view[i] / 0x8000;
+  const src = ctx.createBufferSource();
+  src.buffer = ab;
+  src.connect(ctx.destination);
+  const now = ctx.currentTime;
+  const startAt = Math.max(now, playhead);
+  src.start(startAt);
+  playhead = startAt + ab.duration;
+  els.speaking.classList.add('on');
+  els.speaking.textContent = 'agent speaking';
+  if (speakingTimer) clearTimeout(speakingTimer);
+  speakingTimer = setTimeout(() => {
+    els.speaking.classList.remove('on');
+    els.speaking.textContent = 'agent silent';
+  }, (ab.duration + 0.1) * 1000);
+}
+
+async function start() {
+  cleanup();
+  els.log.innerHTML = '';
+  els.start.disabled = true;
+  setStatus('requesting mic', 'connecting');
+
+  const backend = els.backend.value.trim().replace(/\/$/, '');
+  const userId = els.userId.value.trim();
+  const opening = els.opening.value.trim();
+
+  try {
+    // 1. Get mic
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 },
+    });
+    log(`mic acquired (track: ${stream.getAudioTracks()[0]?.label || '?'})`, 'ok');
+
+    // 2. AudioContext (ScriptProcessor-based framer — no module load needed)
+    ctx = new AudioContext();
+    log(`audio context @ ${ctx.sampleRate} Hz`, 'dim');
+
+    // 3. Mint session
+    setStatus('minting session', 'connecting');
+    const sessRes = await fetch(`${backend}/api/voice/web-session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, opening_message: opening }),
+    });
+    if (!sessRes.ok) {
+      const detail = await sessRes.text();
+      throw new Error(`mint session: HTTP ${sessRes.status} ${detail.slice(0, 200)}`);
+    }
+    const session = await sessRes.json();
+    log(`session: call_id=${session.call_id} input=${session.input_rate}Hz output=${session.output_rate}Hz`, 'ok');
+
+    // 4. WS connect
+    setStatus('connecting WS', 'connecting');
+    const wsBase = backend.replace(/^http/, 'ws');
+    const wsUrl = `${wsBase}${session.ws_url}`;
+    log(`opening ${wsUrl}`, 'dim');
+    ws = new WebSocket(wsUrl);
+    ws.binaryType = 'arraybuffer';
+
+    await new Promise((resolve, reject) => {
+      const t = setTimeout(() => reject(new Error('WS timeout (5s)')), 5000);
+      ws.onopen = () => { clearTimeout(t); resolve(); };
+      ws.onerror = () => { clearTimeout(t); reject(new Error('WS error')); };
+    });
+    log('WS open', 'ok');
+
+    // 5. Wire mic → WS (ScriptProcessor path)
+    workletNode = createPcmFramer(ctx, (pcm, level) => {
+      els.meter.style.width = `${Math.min(100, level * 600)}%`;
+      if (muted) return;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(pcm);
+        bytesOut += pcm.byteLength;
+      }
+    });
+    const src = ctx.createMediaStreamSource(stream);
+    src.connect(workletNode);
+    // ScriptProcessorNode only fires onaudioprocess while connected to the
+    // destination. Wire to a muted gain so we don't echo the mic to speakers.
+    const sink = ctx.createGain();
+    sink.gain.value = 0;
+    workletNode.connect(sink);
+    sink.connect(ctx.destination);
+
+    // 6. WS → speaker / messages
+    ws.onmessage = (ev) => {
+      if (ev.data instanceof ArrayBuffer) {
+        bytesIn += ev.data.byteLength;
+        playPcm24k(ev.data);
+        return;
+      }
+      try {
+        const msg = JSON.parse(ev.data);
+        // The bridge can emit JSON envelopes (transcripts, tool events).
+        if (msg.kind === 'input_transcript' || msg.kind === 'transcript_in') {
+          log(`👤 ${msg.text || JSON.stringify(msg)}`, 'info');
+        } else if (msg.kind === 'output_transcript' || msg.kind === 'transcript_out') {
+          log(`🤖 ${msg.text || JSON.stringify(msg)}`, 'ok');
+        } else if (msg.kind === 'tool_call') {
+          log(`🔧 tool_call: ${msg.name} ${JSON.stringify(msg.args || {}).slice(0, 200)}`, 'warn');
+        } else if (msg.kind === 'tool_result') {
+          log(`✓ tool_result: ${msg.name}`, 'ok');
+        } else if (msg.kind === 'error' || msg.error) {
+          log(`server error: ${msg.message || msg.error}`, 'err');
+        } else {
+          log(`recv json: ${ev.data.slice(0, 200)}`, 'dim');
+        }
+      } catch {
+        log(`recv text: ${String(ev.data).slice(0, 200)}`, 'dim');
+      }
+    };
+    ws.onclose = (e) => {
+      log(`WS closed (code=${e.code} reason=${e.reason || ''})`, e.code === 1000 ? 'dim' : 'err');
+      setStatus('closed', 'error');
+      cleanup();
+    };
+    ws.onerror = () => log('WS error event', 'err');
+
+    setStatus('live', 'live');
+    els.stop.disabled = false;
+    els.mute.disabled = false;
+    log('live — speak now (Gemini should greet you)', 'ok');
+
+    statsTimer = setInterval(() => {
+      log(`stats: in ${(bytesIn/1024).toFixed(1)} KB · out ${(bytesOut/1024).toFixed(1)} KB`, 'dim');
+    }, 5000);
+  } catch (e) {
+    log(`start failed: ${e.message || e}`, 'err');
+    setStatus('error', 'error');
+    cleanup();
+  }
+}
+
+function stop() {
+  setStatus('stopping', 'connecting');
+  log('stopping', 'dim');
+  cleanup();
+  setStatus('idle');
+}
+
+function toggleMute() {
+  muted = !muted;
+  els.mute.textContent = muted ? 'Unmute' : 'Mute';
+  log(muted ? 'muted' : 'unmuted', 'dim');
+}
+
+els.start.onclick = start;
+els.stop.onclick = stop;
+els.mute.onclick = toggleMute;
+</script>
+
+</body>
+</html>

@@ -179,16 +179,31 @@ class TALibIndicator(bt.Indicator):
         pass
 
 
+# Wilder's smoothing (RSI/ATR) and EMA-based indicators (MACD) need much more
+# history than `period` data points to converge. Feeding TA-Lib only N+1 bars
+# produces values that don't match TradingView / standard charting tools.
+# Empirically, 10× the longest period covers convergence to within float
+# rounding; that's what `_history_window` returns. We cap at the actual buffer
+# length available to backtrader (it pre-loads `minperiod` bars).
+def _history_window(min_needed: int, available: int) -> int:
+    """How many recent bars to feed TA-Lib so its smoothing has converged."""
+    target = max(min_needed * 10, min_needed + 50)
+    return min(target, max(available, min_needed))
+
+
 class TALibRSI(bt.Indicator):
-    """RSI using TA-Lib."""
+    """RSI using TA-Lib (Wilder's smoothing needs 10× period for convergence)."""
     lines = ('rsi',)
     params = (('period', 14),)
-    
+
     def __init__(self):
-        self.addminperiod(self.p.period + 1)
-    
+        # Tell backtrader to buffer 10× period of history so TA-Lib's smoothing
+        # has room to converge to TradingView-equivalent values.
+        self.addminperiod(self.p.period * 10)
+
     def next(self):
-        data = np.array([self.data.close[i] for i in range(-self.p.period - 1, 1)])
+        size = _history_window(self.p.period, len(self.data))
+        data = np.array([self.data.close[-i] for i in range(size, -1, -1)])
         rsi = talib.RSI(data, timeperiod=self.p.period)
         self.lines.rsi[0] = rsi[-1] if not np.isnan(rsi[-1]) else 50
 
@@ -197,13 +212,16 @@ class TALibMACD(bt.Indicator):
     """MACD using TA-Lib."""
     lines = ('macd', 'signal', 'histogram')
     params = (('fast', 12), ('slow', 26), ('signal', 9))
-    
+
     def __init__(self):
-        self.addminperiod(self.p.slow + self.p.signal)
-    
+        # MACD's signal line is an EMA of the EMA-difference; convergence needs
+        # ~10× slow period in practice.
+        self.addminperiod(self.p.slow * 10 + self.p.signal)
+
     def next(self):
-        size = self.p.slow + self.p.signal + 10
-        data = np.array([self.data.close[i] for i in range(-size, 1)])
+        min_needed = self.p.slow + self.p.signal
+        size = _history_window(min_needed, len(self.data))
+        data = np.array([self.data.close[-i] for i in range(size, -1, -1)])
         macd, signal, hist = talib.MACD(data, self.p.fast, self.p.slow, self.p.signal)
         self.lines.macd[0] = macd[-1] if not np.isnan(macd[-1]) else 0
         self.lines.signal[0] = signal[-1] if not np.isnan(signal[-1]) else 0
@@ -211,21 +229,21 @@ class TALibMACD(bt.Indicator):
 
 
 class TALibBB(bt.Indicator):
-    """Bollinger Bands using TA-Lib."""
+    """Bollinger Bands using TA-Lib (SMA-based — needs `period`, not 10×)."""
     lines = ('upper', 'middle', 'lower')
     params = (('period', 20), ('devfactor', 2.0))
-    
+
     def __init__(self):
         self.addminperiod(self.p.period)
-    
+
     def next(self):
-        size = self.p.period + 5
-        data = np.array([self.data.close[i] for i in range(-size, 1)])
+        size = _history_window(self.p.period, len(self.data))
+        data = np.array([self.data.close[-i] for i in range(size, -1, -1)])
         upper, middle, lower = talib.BBANDS(
-            data, 
-            timeperiod=self.p.period, 
-            nbdevup=self.p.devfactor, 
-            nbdevdn=self.p.devfactor
+            data,
+            timeperiod=self.p.period,
+            nbdevup=self.p.devfactor,
+            nbdevdn=self.p.devfactor,
         )
         self.lines.upper[0] = upper[-1] if not np.isnan(upper[-1]) else self.data.close[0]
         self.lines.middle[0] = middle[-1] if not np.isnan(middle[-1]) else self.data.close[0]
@@ -233,18 +251,18 @@ class TALibBB(bt.Indicator):
 
 
 class TALibATR(bt.Indicator):
-    """ATR using TA-Lib."""
+    """ATR using TA-Lib (Wilder's smoothing — needs 10× period)."""
     lines = ('atr',)
     params = (('period', 14),)
-    
+
     def __init__(self):
-        self.addminperiod(self.p.period + 1)
-    
+        self.addminperiod(self.p.period * 10)
+
     def next(self):
-        size = self.p.period + 5
-        high = np.array([self.data.high[i] for i in range(-size, 1)])
-        low = np.array([self.data.low[i] for i in range(-size, 1)])
-        close = np.array([self.data.close[i] for i in range(-size, 1)])
+        size = _history_window(self.p.period, len(self.data))
+        high = np.array([self.data.high[-i] for i in range(size, -1, -1)])
+        low = np.array([self.data.low[-i] for i in range(size, -1, -1)])
+        close = np.array([self.data.close[-i] for i in range(size, -1, -1)])
         atr = talib.ATR(high, low, close, timeperiod=self.p.period)
         self.lines.atr[0] = atr[-1] if not np.isnan(atr[-1]) else 0
 
@@ -253,20 +271,21 @@ class TALibStochastic(bt.Indicator):
     """Stochastic using TA-Lib."""
     lines = ('k', 'd')
     params = (('fastk_period', 14), ('slowk_period', 3), ('slowd_period', 3))
-    
+
     def __init__(self):
-        self.addminperiod(self.p.fastk_period + self.p.slowk_period)
-    
+        self.addminperiod((self.p.fastk_period + self.p.slowk_period) * 5)
+
     def next(self):
-        size = self.p.fastk_period + self.p.slowk_period + 5
-        high = np.array([self.data.high[i] for i in range(-size, 1)])
-        low = np.array([self.data.low[i] for i in range(-size, 1)])
-        close = np.array([self.data.close[i] for i in range(-size, 1)])
+        min_needed = self.p.fastk_period + self.p.slowk_period
+        size = _history_window(min_needed, len(self.data))
+        high = np.array([self.data.high[-i] for i in range(size, -1, -1)])
+        low = np.array([self.data.low[-i] for i in range(size, -1, -1)])
+        close = np.array([self.data.close[-i] for i in range(size, -1, -1)])
         slowk, slowd = talib.STOCH(
             high, low, close,
             fastk_period=self.p.fastk_period,
             slowk_period=self.p.slowk_period,
-            slowd_period=self.p.slowd_period
+            slowd_period=self.p.slowd_period,
         )
         self.lines.k[0] = slowk[-1] if not np.isnan(slowk[-1]) else 50
         self.lines.d[0] = slowd[-1] if not np.isnan(slowd[-1]) else 50

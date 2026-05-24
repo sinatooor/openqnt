@@ -67,11 +67,23 @@ class InstrumentResolver:
             logger.warning("avanza search failed for %s: %s", key, e)
             return None
 
-        hits = search_payload.get("hits") or []
-        if not hits and "resultGroups" in search_payload:
-            for group in search_payload.get("resultGroups", []):
-                for hit in group.get("hits", []) or []:
-                    hits.append(hit)
+        # Avanza's search response shape varies between endpoints / API versions.
+        # Collect hits from every shape we've seen in captures:
+        hits: list = []
+        hits.extend(search_payload.get("hits") or [])
+        hits.extend(search_payload.get("data") or [])
+        for group in search_payload.get("resultGroups", []) or []:
+            hits.extend(group.get("hits", []) or [])
+        for group in search_payload.get("subResultGroups", []) or []:
+            hits.extend(group.get("hits", []) or [])
+        for k in ("instruments", "orderbooks", "stocks"):
+            section = search_payload.get(k)
+            if isinstance(section, list):
+                hits.extend(section)
+        # Also peek into nested top-hit lists
+        for h in list(hits):
+            if isinstance(h, dict) and "topHits" in h and isinstance(h["topHits"], list):
+                hits.extend(h["topHits"])
         if not hits:
             return None
 

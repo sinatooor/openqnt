@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import json
 import logging
 import time
 from dataclasses import dataclass, field
@@ -71,15 +72,37 @@ class ToolRegistry:
     def names(self) -> List[str]:
         return sorted(self._tools.keys())
 
+    def names_for_risk(self, *risks: str) -> List[str]:
+        """Tool names matching any of the given risk tiers ("read"/"confirm"/"block")."""
+        allowed = set(risks)
+        return sorted(name for name, spec in self._tools.items() if spec.risk in allowed)
+
+
+_CONFIRMATION_TOKENS = (
+    "yes", "yep", "yeah", "confirm", "confirmed", "do it", "go ahead",
+    "okay", "affirmative", "approved", "proceed",
+)
+
 
 def _confirmation_token_in_text(text: str) -> bool:
+    """True if any confirmation phrase appears as a whole word/phrase in the
+    transcript. "yes, do it" and "okay, proceed" should both count; "yesterday"
+    and "approximately" should not.
+    """
     if not text:
         return False
-    t = text.lower().strip().rstrip(".!?")
-    return t in {
-        "yes", "yes.", "yep", "confirm", "confirmed", "do it", "go ahead",
-        "ok", "okay", "sure", "affirmative", "approved", "proceed",
-    }
+    import re
+    normalized = re.sub(r"[^\w\s]", " ", text.lower())
+    normalized = f" {re.sub(r'\s+', ' ', normalized).strip()} "
+    for token in _CONFIRMATION_TOKENS:
+        if f" {token} " in normalized:
+            return True
+    # Bare "ok"/"sure" — handled separately so we don't false-positive on
+    # words like "okra" or "surely". Require they appear as standalone words.
+    for short in ("ok", "sure"):
+        if re.search(rf"\b{short}\b", normalized):
+            return True
+    return False
 
 
 def _normalize_passphrase(s: Optional[str]) -> str:
@@ -215,8 +238,6 @@ def clear_pending_confirmations(ctx: DispatchContext) -> None:
 
 
 def _stable_args_key(args: Dict[str, Any]) -> str:
-    import json
-
     try:
         return json.dumps(args, sort_keys=True, default=str)
     except Exception:
@@ -231,107 +252,383 @@ def _stable_args_key(args: Dict[str, Any]) -> str:
 def build_default_registry() -> ToolRegistry:
     reg = ToolRegistry()
 
-    # ─── Read tier ──────────────────────────────────────────────────────
+    # ─── Read tier — Avanza + IBKR live data ────────────────────────────
+    # Same managers the chat agent uses; no HTTP hop, in-process.
+
     try:
-        from adk_agents.tools.broker_tools import (
-            get_positions, get_account_info, get_market_price,
-        )
+        from integrations.avanza.manager import get_manager as _avz_mgr
+        from integrations.avanza.storage import get_storage as _avz_storage
+        from integrations.avanza.normalize import positions_from_avanza
+        from integrations.ibkr.manager import get_ibkr_manager
+
+        async def _get_portfolio_summary(broker: str = "all") -> Dict[str, Any]:
+            """Returns live Avanza + IBKR portfolio (or one of them)."""
+            broker = (broker or "all").lower()
+            if broker not in ("all", "avanza", "ibkr"):
+                return {
+                    "success": False,
+                    "error": f"Unknown broker '{broker}'. Use 'all', 'avanza', or 'ibkr'.",
+                }
+            out: Dict[str, Any] = {"broker": broker}
+
+            if broker in ("all", "avanza"):
+                try:
+                    if not _avz_storage().load_credentials("default"):
+                        out["avanza"] = {"connected": False, "message": "Avanza not connected"}
+                    else:
+                        c = await _avz_mgr().authed_client("default")
+                        acc = await c.accounts_list()
+                        ids = [str(a.get("urlParameterId")) for a in (acc or []) if a.get("urlParameterId")]
+                        positions = positions_from_avanza(await c.positions())
+                        positions.sort(key=lambda p: p.get("market_value") or 0, reverse=True)
+                        top = [
+                            {"name": p.get("name"), "qty": p.get("quantity"),
+                             "marketValueSek": p.get("market_value"),
+                             "currency": p.get("currency")}
+                            for p in positions[:8]
+                        ]
+                        totals = await c.performance_totals(ids) if ids else {}
+                        out["avanza"] = {
+                            "connected": True, "currency": "SEK",
+                            "totalValueSek": ((totals.get("totalValue") or {}).get("totalValue") or {}).get("value"),
+                            "positionsCount": len(positions),
+                            "topPositions": top,
+                        }
+                except Exception as ex:
+                    out["avanza"] = {"connected": False, "error": str(ex)}
+
+            if broker in ("all", "ibkr"):
+                try:
+                    mgr = get_ibkr_manager()
+                    if not mgr.is_connected():
+                        if not await mgr.ensure_connected_from_storage("default"):
+                            out["ibkr"] = {"connected": False, "message": "IBKR not connected — start TWS"}
+                        else:
+                            snap = await mgr.get_account()
+                            out["ibkr"] = _snap_to_dict(snap)
+                    else:
+                        snap = await mgr.get_account()
+                        out["ibkr"] = _snap_to_dict(snap)
+                except Exception as ex:
+                    out["ibkr"] = {"connected": False, "error": str(ex)}
+            return out
+
+        def _snap_to_dict(snap) -> Dict[str, Any]:
+            top = sorted(
+                [p for p in snap.positions if p.qty != 0],
+                key=lambda p: abs(p.qty * p.last_price),
+                reverse=True,
+            )[:8]
+            return {
+                "connected": True, "currency": "USD",
+                "equity": snap.equity, "cash": snap.cash, "buyingPower": snap.buying_power,
+                "unrealisedPnl": snap.unrealised_pnl,
+                "positionsCount": len(snap.positions),
+                "topPositions": [
+                    {"symbol": p.symbol, "qty": p.qty,
+                     "avgPrice": p.avg_price, "lastPrice": p.last_price}
+                    for p in top
+                ],
+            }
+
+        reg.register(ToolSpec(
+            name="get_portfolio_summary",
+            description=(
+                "Live portfolio across the user's connected brokers (Avanza in SEK, "
+                "IBKR in USD). Default returns BOTH side-by-side. Use whenever the "
+                "user asks about their portfolio, positions, holdings, or balance."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "broker": {"type": "string", "enum": ["all", "avanza", "ibkr"]},
+                },
+                "required": [],
+            },
+            risk="read", fn=_get_portfolio_summary,
+        ))
+
+        # Friendly aliases — the LLM might ask either name.
+        async def _get_positions() -> Dict[str, Any]:
+            return await _get_portfolio_summary("all")
         reg.register(ToolSpec(
             name="get_positions",
-            description="Return the user's current open positions across all linked brokers.",
+            description="Alias of get_portfolio_summary — returns live positions across all connected brokers.",
             parameters={"type": "object", "properties": {}, "required": []},
-            risk="read", fn=get_positions,
+            risk="read", fn=_get_positions,
         ))
+
+        async def _get_account_info() -> Dict[str, Any]:
+            return await _get_portfolio_summary("all")
         reg.register(ToolSpec(
             name="get_account_info",
-            description="Return account cash, equity, buying power.",
+            description="Live account cash, equity, and buying power across all connected brokers.",
             parameters={"type": "object", "properties": {}, "required": []},
-            risk="read", fn=get_account_info,
+            risk="read", fn=_get_account_info,
         ))
+
+        async def _get_ibkr_account() -> Dict[str, Any]:
+            return await _get_portfolio_summary("ibkr")
         reg.register(ToolSpec(
-            name="get_market_price",
-            description="Get the current market price for a ticker symbol.",
+            name="get_ibkr_account",
+            description="IBKR account snapshot — equity (USD), cash, buying power, and open positions.",
+            parameters={"type": "object", "properties": {}, "required": []},
+            risk="read", fn=_get_ibkr_account,
+        ))
+
+    except Exception as e:  # pragma: no cover
+        logger.warning("voice: portfolio adapters not available (%s)", e)
+
+    # get_stock_quote — Avanza search → quote
+    try:
+        from integrations.avanza.manager import get_manager as _avz_mgr2
+        from integrations.avanza.instrument_resolver import InstrumentResolver
+
+        async def _get_stock_quote(symbol: str) -> Dict[str, Any]:
+            try:
+                client = await _avz_mgr2().authed_client("default")
+                resolver = InstrumentResolver(client)
+                resolved = await resolver.resolve(symbol)
+                if not resolved or not resolved.get("orderbookId"):
+                    return {"success": False, "error": f"Could not resolve symbol '{symbol}'"}
+                q = await client.stock_quote(resolved["orderbookId"])
+                return {
+                    "success": True,
+                    "symbol": symbol.upper(),
+                    "name": resolved.get("name"),
+                    "last": q.get("last"),
+                    "buy": q.get("buy"),
+                    "sell": q.get("sell"),
+                    "changePercent": q.get("changePercent"),
+                    "currency": resolved.get("currency"),
+                }
+            except Exception as ex:
+                return {"success": False, "error": str(ex)}
+
+        reg.register(ToolSpec(
+            name="get_stock_quote",
+            description=(
+                "Get a live stock quote (last, buy, sell, change %) for any symbol or "
+                "company name. Resolves via Avanza search — works for 'Apple', 'AAPL', "
+                "'Investor B', etc."
+            ),
             parameters={
                 "type": "object",
-                "properties": {"symbol": {"type": "string", "description": "e.g. AAPL"}},
+                "properties": {
+                    "symbol": {"type": "string", "description": "Ticker or company name"},
+                },
                 "required": ["symbol"],
             },
-            risk="read", fn=get_market_price,
+            risk="read", fn=_get_stock_quote,
+        ))
+
+        # Kept the old name as alias for backward LLM familiarity.
+        reg.register(ToolSpec(
+            name="get_market_price",
+            description="Alias of get_stock_quote.",
+            parameters={
+                "type": "object",
+                "properties": {"symbol": {"type": "string"}},
+                "required": ["symbol"],
+            },
+            risk="read", fn=_get_stock_quote,
         ))
     except Exception as e:  # pragma: no cover
-        logger.warning("voice: broker_tools not available (%s)", e)
+        logger.warning("voice: stock-quote adapter not available (%s)", e)
 
+    # get_market_index — OMX30 / SPX / NDX / DJI
     try:
-        from adk_agents.tools.search_tools import search_market_news
+        from integrations.avanza.manager import get_manager as _avz_mgr3
+        _INDEX_MAP = {
+            "OMX30": "19002", "OMX": "19002", "OMXS30": "19002",
+            "SPX": "19000", "S&P 500": "19000", "SP500": "19000",
+            "NDX": "18981", "NASDAQ": "18981", "NASDAQ 100": "18981",
+            "DJI": "18983", "DOW": "18983", "DOW JONES": "18983",
+        }
+
+        async def _get_market_index(name: str) -> Dict[str, Any]:
+            key = (name or "").strip().upper()
+            ob_id = _INDEX_MAP.get(key)
+            if not ob_id:
+                return {"success": False, "error": f"Unknown index '{name}'. Supported: OMX30, SPX, NDX, DJI."}
+            try:
+                c = await _avz_mgr3().anon_client()
+                r = await c.market_index(ob_id)
+                q = r.get("quote") or {}
+                return {
+                    "success": True,
+                    "name": r.get("name"),
+                    "last": q.get("last"),
+                    "changePercent": q.get("changePercent"),
+                    "change": q.get("change"),
+                }
+            except Exception as ex:
+                return {"success": False, "error": str(ex)}
+
+        reg.register(ToolSpec(
+            name="get_market_index",
+            description="Live index quote (OMX30, S&P 500, Nasdaq 100, Dow Jones).",
+            parameters={
+                "type": "object",
+                "properties": {"name": {"type": "string", "description": "Index name"}},
+                "required": ["name"],
+            },
+            risk="read", fn=_get_market_index,
+        ))
+    except Exception as e:  # pragma: no cover
+        logger.warning("voice: market-index adapter not available (%s)", e)
+
+    # get_market_news — Avanza per-stock news after resolving symbol
+    try:
+        from integrations.avanza.manager import get_manager as _avz_mgr4
+        from integrations.avanza.instrument_resolver import InstrumentResolver as _Resolver2
+
+        async def _get_market_news(symbol: str) -> Dict[str, Any]:
+            try:
+                client = await _avz_mgr4().authed_client("default")
+                resolver = _Resolver2(client)
+                resolved = await resolver.resolve(symbol)
+                if not resolved or not resolved.get("orderbookId"):
+                    return {"success": False, "error": f"Could not resolve symbol '{symbol}'"}
+                payload = await client.news(resolved["orderbookId"])
+                items = (payload.get("items") or payload.get("articles") or [])[:10]
+                return {
+                    "success": True,
+                    "symbol": symbol.upper(),
+                    "name": resolved.get("name"),
+                    "count": len(items),
+                    "items": [
+                        {
+                            "headline": it.get("headline") or it.get("title"),
+                            "summary": (it.get("summary") or it.get("preamble") or "")[:200],
+                            "source": it.get("source"),
+                            "timestamp": it.get("timestamp") or it.get("publishedDate"),
+                        }
+                        for it in items
+                    ],
+                }
+            except Exception as ex:
+                return {"success": False, "error": str(ex)}
+
+        reg.register(ToolSpec(
+            name="get_market_news",
+            description="Recent news headlines for a stock symbol or company name (via Avanza).",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "symbol": {"type": "string", "description": "Ticker or company name"},
+                },
+                "required": ["symbol"],
+            },
+            risk="read", fn=_get_market_news,
+        ))
+        async def _search_market_news(query: str) -> Dict[str, Any]:
+            return await _get_market_news(query)
+
         reg.register(ToolSpec(
             name="search_market_news",
-            description="Search recent market news for a topic or ticker.",
+            description="Alias of get_market_news.",
             parameters={
                 "type": "object",
-                "properties": {
-                    "query": {"type": "string"},
-                    "limit": {"type": "integer", "default": 5},
-                },
+                "properties": {"query": {"type": "string"}},
                 "required": ["query"],
             },
-            risk="read", fn=search_market_news,
+            risk="read",
+            fn=_search_market_news,
         ))
     except Exception as e:  # pragma: no cover
-        logger.warning("voice: search_tools not available (%s)", e)
+        logger.warning("voice: market-news adapter not available (%s)", e)
 
+    # get_upcoming_dividends — list across user's positions
     try:
-        from adk_agents.tools.portfolio_tools import calculate_portfolio_beta
+        from integrations.avanza.manager import get_manager as _avz_mgr5
+
+        async def _get_upcoming_dividends() -> Dict[str, Any]:
+            try:
+                c = await _avz_mgr5().authed_client("default")
+                payload = await c.upcoming_dividends()
+                items = payload if isinstance(payload, list) else (payload or {}).get("items", [])
+                items = sorted(items, key=lambda d: d.get("date", ""))[:15]
+                total_sek = sum(d.get("amountInSek") or 0 for d in items)
+                return {
+                    "success": True,
+                    "count": len(items),
+                    "totalSek": total_sek,
+                    "items": [
+                        {
+                            "instrument": d.get("instrumentName"),
+                            "date": d.get("date"),
+                            "amountInSek": d.get("amountInSek"),
+                            "status": d.get("status"),
+                        }
+                        for d in items
+                    ],
+                }
+            except Exception as ex:
+                return {"success": False, "error": str(ex)}
+
         reg.register(ToolSpec(
-            name="calculate_portfolio_beta",
-            description="Compute weighted beta of a portfolio against a benchmark.",
-            parameters={
-                "type": "object",
-                "properties": {
-                    "holdings": {
-                        "type": "object",
-                        "additionalProperties": {"type": "number"},
-                        "description": "Symbol → weight, weights summing to ~1.0",
-                    },
-                    "benchmark": {"type": "string", "default": "SPY"},
-                },
-                "required": ["holdings"],
-            },
-            risk="read", fn=calculate_portfolio_beta,
+            name="get_upcoming_dividends",
+            description="Upcoming dividend payments across the user's Avanza positions.",
+            parameters={"type": "object", "properties": {}, "required": []},
+            risk="read", fn=_get_upcoming_dividends,
         ))
     except Exception as e:  # pragma: no cover
-        logger.warning("voice: portfolio_tools not available (%s)", e)
+        logger.warning("voice: dividends adapter not available (%s)", e)
 
-    # ─── Confirm tier ───────────────────────────────────────────────────
+    # ─── Confirm tier — live broker trades ──────────────────────────────
+    # Routes to the executionService via /api/execution/signal so we go
+    # through the SAME path as strategy-generated orders (risk gate +
+    # broker selector). Defaults to paper for safety.
     try:
-        from adk_agents.tools.broker_tools import execute_trade, close_position
+        import httpx
+
+        async def _place_order(
+            symbol: str,
+            side: str,
+            quantity: float,
+            order_type: str = "market",
+            limit_price: Optional[float] = None,
+            broker: str = "paper",
+        ) -> Dict[str, Any]:
+            payload = {
+                "symbol": symbol.upper(),
+                "side": side.lower(),
+                "qty": float(quantity),
+                "type": order_type.lower(),
+            }
+            if limit_price is not None:
+                payload["limit_price"] = float(limit_price)
+            url = f"http://localhost:8000/api/execution/signal?broker={broker}"
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                r = await client.post(url, json=payload)
+                if r.status_code >= 400:
+                    return {"success": False, "error": f"HTTP {r.status_code}: {r.text[:200]}"}
+                return {"success": True, "order": r.json()}
+
         reg.register(ToolSpec(
             name="place_order",
-            description="Place a market or limit order. Requires verbal confirmation.",
+            description=(
+                "Place a real broker order. The user must speak the voice passphrase "
+                "verbally before this runs. Default broker is 'paper' for safety; "
+                "ask the user explicitly before using 'avanza' or 'ibkr'."
+            ),
             parameters={
                 "type": "object",
                 "properties": {
                     "symbol": {"type": "string"},
                     "side": {"type": "string", "enum": ["buy", "sell"]},
                     "quantity": {"type": "number"},
-                    "order_type": {"type": "string", "enum": ["market", "limit"], "default": "market"},
+                    "order_type": {"type": "string", "enum": ["market", "limit"]},
                     "limit_price": {"type": "number"},
+                    "broker": {"type": "string", "enum": ["paper", "avanza", "ibkr", "alpaca"]},
                 },
                 "required": ["symbol", "side", "quantity"],
             },
-            risk="confirm", fn=execute_trade,
-        ))
-        reg.register(ToolSpec(
-            name="close_position",
-            description="Flatten an open position. Requires verbal confirmation.",
-            parameters={
-                "type": "object",
-                "properties": {"symbol": {"type": "string"}},
-                "required": ["symbol"],
-            },
-            risk="confirm", fn=close_position,
+            risk="confirm", fn=_place_order,
         ))
     except Exception as e:  # pragma: no cover
-        logger.warning("voice: broker mutate tools not available (%s)", e)
+        logger.warning("voice: place_order adapter not available (%s)", e)
 
     # ─── Widen the surface for "ask anything in chat-style during a call" ──
     #
@@ -368,11 +665,11 @@ def build_default_registry() -> ToolRegistry:
             parameters={
                 "type": "object",
                 "properties": {
-                    "channel": {"type": "string", "enum": ["telegram", "slack", "sms", "email"], "default": "telegram"},
+                    "channel": {"type": "string", "enum": ["telegram", "slack", "sms", "email"], "description": "Notification channel (default: telegram)"},
                     "body": {"type": "string"},
                     "title": {"type": "string"},
                     "attachment_path": {"type": "string", "description": "Absolute file path to attach"},
-                    "attachment_kind": {"type": "string", "enum": ["photo", "document"], "default": "photo"},
+                    "attachment_kind": {"type": "string", "enum": ["photo", "document"], "description": "Attachment kind (default: photo)"},
                 },
                 "required": ["body"],
             },
@@ -437,8 +734,8 @@ def build_default_registry() -> ToolRegistry:
                     "symbol": {"type": "string"},
                     "start_date": {"type": "string", "description": "YYYY-MM-DD"},
                     "end_date": {"type": "string", "description": "YYYY-MM-DD"},
-                    "timeframe": {"type": "string", "default": "1d"},
-                    "permutations": {"type": "integer", "default": 1000},
+                    "timeframe": {"type": "string", "description": "Bar timeframe (default: 1d)"},
+                    "permutations": {"type": "integer", "description": "Number of permutations (default: 1000)"},
                 },
                 "required": ["symbol", "start_date", "end_date"],
             },
@@ -447,23 +744,88 @@ def build_default_registry() -> ToolRegistry:
     except Exception as e:  # pragma: no cover
         logger.warning("voice: mcpt router not available (%s)", e)
 
-    # get_market_news — pre-existing tool, register if available.
+    # (get_market_news / search_market_news are registered higher up by the
+    # Avanza-backed adapter; the old legacy search_tools fallback is dropped.)
+
+    # ─── Cross-agent: Gemini → Anthropic (Claude) delegation ────────────
+    # When the user asks for deep multi-step research mid-call ("dig into
+    # NVDA earnings impact on my portfolio"), Gemini Live can hand off to
+    # the Claude chat agent which has stronger long-form reasoning, more
+    # tools (build_strategy, run_backtest, etc.), and can chain calls.
+    # We do this in-process by streaming /api/ai-assistant/chat/stream and
+    # collecting the final text. The two agents share the SAME data
+    # sources (Avanza/IBKR managers, agent_runs db) so Claude reads the
+    # same live portfolio Gemini does.
     try:
-        from adk_agents.tools.search_tools import get_market_news as _get_news
+        import httpx as _httpx
+
+        async def _delegate_to_chat_agent(prompt: str, timeout_s: float = 60.0) -> Dict[str, Any]:
+            """Send `prompt` to the Anthropic-backed chat agent and return
+            the assistant's final answer as plain text.
+
+            The chat stream emits text_delta + tool_call/tool_result events;
+            we accumulate the text_deltas and surface a compact transcript of
+            any tools Claude ran (so Gemini can mention them when reading the
+            answer aloud)."""
+            url = "http://localhost:8000/api/ai-assistant/chat/stream"
+            body = {"message": prompt, "history": []}
+            accumulated_text = ""
+            tools_used: list = []
+            try:
+                async with _httpx.AsyncClient(timeout=timeout_s) as client:
+                    async with client.stream("POST", url, json=body) as resp:
+                        if resp.status_code >= 400:
+                            return {"success": False, "error": f"HTTP {resp.status_code}: {await resp.aread()!r}"}
+                        async for raw_line in resp.aiter_lines():
+                            line = (raw_line or "").strip()
+                            if not line.startswith("data:"):
+                                continue
+                            payload = line[5:].strip()
+                            try:
+                                ev = json.loads(payload)
+                            except Exception:
+                                continue
+                            t = ev.get("type")
+                            if t == "text_delta":
+                                accumulated_text += ev.get("content", "")
+                            elif t == "tool_call":
+                                tools_used.append(ev.get("tool"))
+                            elif t == "done":
+                                break
+                            elif t == "error":
+                                return {"success": False, "error": ev.get("message", "agent error")}
+                return {
+                    "success": True,
+                    "answer": accumulated_text.strip() or "(Claude returned no text — only tool output)",
+                    "tools_used": tools_used,
+                }
+            except Exception as ex:
+                return {"success": False, "error": str(ex)}
+
         reg.register(ToolSpec(
-            name="get_market_news",
-            description="Get the latest market news for a ticker symbol or topic.",
+            name="delegate_to_chat_agent",
+            description=(
+                "Hand a complex / multi-step research question to the Claude "
+                "chat agent. Use this for deep reasoning tasks — strategy "
+                "building, multi-tool research, backtest interpretation, "
+                "anything where Claude's longer reasoning beats your real-time "
+                "voice answer. The result comes back as a text answer you can "
+                "read aloud or pass to send_notification. Both agents share "
+                "the same Avanza/IBKR live data."
+            ),
             parameters={
                 "type": "object",
                 "properties": {
-                    "symbol": {"type": "string"},
-                    "limit": {"type": "integer", "default": 5},
+                    "prompt": {
+                        "type": "string",
+                        "description": "The full research question, e.g. 'Compare my Avanza Apple position to the QQQ trend over the last 90 days and tell me if I should hedge'",
+                    },
                 },
-                "required": ["symbol"],
+                "required": ["prompt"],
             },
-            risk="read", fn=_get_news,
+            risk="read", fn=_delegate_to_chat_agent,
         ))
     except Exception as e:  # pragma: no cover
-        logger.warning("voice: get_market_news not available (%s)", e)
+        logger.warning("voice: delegate_to_chat_agent not available (%s)", e)
 
     return reg

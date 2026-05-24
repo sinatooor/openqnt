@@ -102,6 +102,13 @@ class RiskGate:
 
     def evaluate(self, order: Order, account: AccountSnapshot,
                  price_estimate: Optional[float] = None) -> RiskDecision:
+        # Pull equity from the snapshot we already have — this is the one
+        # place that triggers daily-anchor rollover, peak tracking, and
+        # drawdown-based halt detection. Doing it here (instead of relying
+        # on the runner to call update_equity post-FILL) means brokers that
+        # stay PENDING (Avanza is async-fill) still get drawdown protection.
+        self.update_equity(account.equity)
+
         decision = RiskDecision(allowed=True, rules_checked=[])
 
         # 1. Panic
@@ -150,23 +157,11 @@ class RiskGate:
                     rules_checked=decision.rules_checked,
                 )
 
-        # 5/6. Drawdown + daily loss (already encoded in halt state via
-        # update_equity, but recheck cheaply against the freshest snapshot).
+        # 5/6. Drawdown + daily-loss are enforced by update_equity (run at the
+        # top of this method) — if either breached, _halted was set and rule 2
+        # above would have returned. Marking them checked for the audit trail.
         decision.rules_checked.append("drawdown")
-        dd = self._drawdown_pct(account.equity)
-        if dd > self.config.max_drawdown_pct:
-            self._halted = True
-            self._halt_reason = f"max-drawdown breach: {dd:.2f}%"
-            return RiskDecision(allowed=False, reason=self._halt_reason,
-                                rules_checked=decision.rules_checked)
-
         decision.rules_checked.append("daily_loss")
-        dl = self._daily_loss_pct(account.equity)
-        if dl > self.config.max_daily_loss_pct:
-            self._halted = True
-            self._halt_reason = f"max-daily-loss breach: {dl:.2f}%"
-            return RiskDecision(allowed=False, reason=self._halt_reason,
-                                rules_checked=decision.rules_checked)
 
         return decision
 

@@ -64,21 +64,29 @@ def _transcript_path(call_id: str) -> Path:
 def _build_system_instruction(
     user_name: str,
     opening_message: str,
-    allowed_tool_names: List[str],
+    allowed_tool_names: Optional[List[str]],
     voice_trading_enabled: bool,
 ) -> str:
     confirm_block = (
-        "When you call a tool tagged 'requires confirmation' (place_order, "
-        "close_position, pause/resume strategy), you MUST first read the action "
-        "back verbatim — symbol, side, quantity, price — and ask the user to say "
-        "'yes' or 'confirm'. Only after they say yes, call the tool again with "
-        "identical arguments. If the user says 'no' or anything else, do not call "
-        "the tool again and acknowledge."
+        "When you call a tool that requires confirmation (currently: place_order), "
+        "you MUST first read the action back verbatim — symbol, side, quantity, "
+        "price — and ask the user to say 'yes' or 'confirm'. Only after they say "
+        "yes, call the tool again with identical arguments. If the user says 'no' "
+        "or anything else, do not call the tool again and acknowledge."
         if voice_trading_enabled
         else "Trade-execution tools are disabled for this user. If they ask you to "
              "place or modify orders, tell them they need to enable 'Voice trading' "
              "in their profile."
     )
+    if allowed_tool_names:
+        tools_line = f"Available tools: {', '.join(allowed_tool_names)}."
+    else:
+        tools_line = (
+            "You have the full chat-assistant tool surface available — portfolio "
+            "summary, stock quotes, market news, index quotes, dividends, Monte "
+            "Carlo permutation tests, notifications, and delegation to the Claude "
+            "research agent for deep questions."
+        )
     return (
         f"You are OpenQnt, an AI quant assistant calling {user_name}. "
         f"You speak conversationally — short sentences, plain English, no "
@@ -86,7 +94,7 @@ def _build_system_instruction(
         f"hundred dollars', not '$12,400').\n\n"
         f"This call was initiated because: {opening_message}\n\n"
         f"Open by greeting the user and stating that reason in one sentence.\n\n"
-        f"Available tools: {', '.join(allowed_tool_names) or '(none)'}.\n\n"
+        f"{tools_line}\n\n"
         f"{confirm_block}\n\n"
         f"If the user wants to end the call, acknowledge and stop talking — "
         f"do not call any tools afterward."
@@ -111,12 +119,12 @@ def initiate_call(
     Returns: {call_id, transport, twilio_call_sid?, browser_session_url?}
     """
     call_id = uuid.uuid4().hex
-    if allowed_tools is None:
-        # Default to read-only tools — caller must opt into confirm-tier ones
-        allowed_tools = [
-            "get_positions", "get_account_info", "get_market_price",
-            "search_market_news", "calculate_portfolio_beta",
-        ]
+    # allowed_tools=None means "use the full registry" — the router does that
+    # filtering. Trade-mutating tools are still gated by the passphrase +
+    # verbal-confirm flow in tool_dispatch.dispatch(), so opening the surface
+    # to read-tier tools by default is safe and lets the AI actually use the
+    # adapters added in this diff (get_portfolio_summary, run_monte_carlo,
+    # delegate_to_chat_agent, etc.).
 
     system_instruction = _build_system_instruction(
         user_name=user_name,
@@ -132,7 +140,7 @@ def initiate_call(
         trigger_source=trigger_source,
         opening_message=opening_message,
         system_instruction=system_instruction,
-        allowed_tools=allowed_tools,
+        allowed_tools=allowed_tools or [],  # empty list → router exposes full registry
         voice=voice,
         extra=extra or {},
     )
@@ -215,14 +223,24 @@ def _start_twilio_call(call_id: str, to_phone: str) -> str:
     token = os.environ["TWILIO_AUTH_TOKEN"]
     from_phone = os.environ["TWILIO_PHONE_NUMBER"]
 
-    twiml_url = f"{PUBLIC_BACKEND_URL.rstrip('/')}/api/voice/twiml?call_id={call_id}"
-    status_url = f"{PUBLIC_BACKEND_URL.rstrip('/')}/api/voice/status"
+    # Re-read PUBLIC_BACKEND_URL at call-time (not at import) so an env reload
+    # doesn't strand us with a stale empty value. Also strip after appending so
+    # we never accidentally send a relative URL to Twilio.
+    public_url = (os.getenv("PUBLIC_BACKEND_URL") or PUBLIC_BACKEND_URL).rstrip("/")
+    if not public_url.startswith(("http://", "https://")):
+        raise RuntimeError(
+            f"PUBLIC_BACKEND_URL must be an absolute http(s) URL; got {public_url!r}"
+        )
+    twiml_url = f"{public_url}/api/voice/twiml?call_id={call_id}"
+    status_url = f"{public_url}/api/voice/status"
+    logger.info("Twilio call URLs: twiml=%s status=%s", twiml_url, status_url)
 
     client = Client(sid, token)
     call = client.calls.create(
         to=to_phone,
         from_=from_phone,
         url=twiml_url,
+        method="POST",
         status_callback=status_url,
         status_callback_event=["initiated", "ringing", "answered", "completed"],
         status_callback_method="POST",

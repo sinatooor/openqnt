@@ -505,16 +505,82 @@ async def execute_tool(tool_name: str, args: Dict[str, Any]) -> Dict[str, Any]:
                 return {"success": False, "error": data.get("errors", ["Generation failed"])}
 
         elif tool_name == "run_backtest":
-            # First generate strategy, then backtest
-            return {
-                "success": True,
-                "action": "open_backtest_modal",
-                "symbol": args.get("symbol", "SPY"),
-                "start_date": args.get("start_date", "2024-01-01"),
-                "end_date": args.get("end_date", "2024-12-31"),
-                "initial_cash": args.get("initial_cash", 100000),
-                "message": f"Ready to backtest on {args.get('symbol', 'SPY')}. I'll open the backtest panel for you."
-            }
+            # Two-step real backtest:
+            #   1. /api/strategy-flow/generate  →  flow nodes from NL description
+            #   2. /api/strategy-flow/backtest  →  backtrader run on those nodes
+            # Previously this tool returned a hardcoded "open the modal" stub —
+            # the LLM thought it had results, the user got nothing real.
+            description = (args.get("strategy_description") or "").strip()
+            if not description:
+                return {"success": False, "error": "strategy_description is required"}
+            symbol = (args.get("symbol") or "SPY").upper()
+            start_date = args.get("start_date") or "2024-01-01"
+            end_date = args.get("end_date") or "2024-12-31"
+            initial_cash = float(args.get("initial_cash") or 100_000)
+
+            async with httpx.AsyncClient(timeout=180.0) as client:
+                gen_resp = await client.post(
+                    f"{BACKEND_URL}/api/strategy-flow/generate",
+                    json={
+                        "message": description,
+                        "currentNodes": None,
+                        "currentEdges": None,
+                        "mode": "fast",
+                    },
+                )
+                if gen_resp.status_code >= 400:
+                    return {"success": False, "error": f"strategy generation HTTP {gen_resp.status_code}: {gen_resp.text[:200]}"}
+                gen_data = gen_resp.json()
+                if not gen_data.get("success") or not gen_data.get("nodes"):
+                    return {
+                        "success": False,
+                        "error": "strategy generation failed",
+                        "details": gen_data.get("errors") or gen_data.get("message") or "no nodes produced",
+                    }
+
+                nodes = gen_data["nodes"]
+                edges = gen_data.get("edges", []) or []
+
+                bt_resp = await client.post(
+                    f"{BACKEND_URL}/api/strategy-flow/backtest",
+                    json={
+                        "nodes": nodes,
+                        "edges": edges,
+                        "symbol": symbol,
+                        "startDate": start_date,
+                        "endDate": end_date,
+                        "initialCapital": initial_cash,
+                    },
+                )
+                if bt_resp.status_code >= 400:
+                    return {"success": False, "error": f"backtest HTTP {bt_resp.status_code}: {bt_resp.text[:200]}"}
+                bt_data = bt_resp.json()
+                if not bt_data.get("success"):
+                    return {
+                        "success": False,
+                        "error": bt_data.get("error") or "backtest failed",
+                        "nodes_generated": len(nodes),
+                    }
+
+                metrics = bt_data.get("metrics") or {}
+                trades = bt_data.get("trades") or []
+                ret = metrics.get("totalReturn") or metrics.get("return_pct") or 0
+                sharpe = metrics.get("sharpeRatio") or metrics.get("sharpe") or 0
+                dd = metrics.get("maxDrawdown") or metrics.get("max_drawdown_pct") or 0
+                return {
+                    "success": True,
+                    "symbol": symbol,
+                    "period": f"{start_date} → {end_date}",
+                    "initial_capital": initial_cash,
+                    "metrics": metrics,
+                    "trade_count": len(trades),
+                    "nodes_generated": len(nodes),
+                    "message": (
+                        f"Backtest on {symbol} ({start_date} → {end_date}): "
+                        f"return {ret:.1f}%, sharpe {sharpe:.2f}, max DD {dd:.1f}%, "
+                        f"{len(trades)} trades."
+                    ),
+                }
 
         elif tool_name == "run_monte_carlo":
             async with httpx.AsyncClient(timeout=120.0) as client:
@@ -525,7 +591,9 @@ async def execute_tool(tool_name: str, args: Dict[str, Any]) -> Dict[str, Any]:
                         "startDate": args.get("start_date"),
                         "endDate": args.get("end_date"),
                         "timeframe": args.get("timeframe", "1d"),
-                        "permutations": args.get("permutations", 100),
+                        # Keep in sync with TOOL_DEFINITIONS schema default (1000).
+                        # Lower defaults silently shipped 10× less statistical power.
+                        "permutations": args.get("permutations", 1000),
                     }
                 )
                 data = resp.json()
@@ -1281,7 +1349,11 @@ async def chat_stream(req: AssistantChatRequest):
 
     async def event_stream():
         try:
-            client = anthropic.Anthropic(api_key=api_key)
+            # AsyncAnthropic + .messages.stream() — the SYNC client was blocking
+            # the uvicorn worker for the full LLM call (5-60 s with tool use).
+            # The fake "stream the response 12 chars at a time" path is gone:
+            # real token deltas are now forwarded as they arrive.
+            client = anthropic.AsyncAnthropic(api_key=api_key)
 
             # Build conversation history (Anthropic shape — string content for
             # plain history turns; the agent loop later appends structured
@@ -1305,25 +1377,23 @@ async def chat_stream(req: AssistantChatRequest):
                 # effort knob is GA on the wire but not yet in this SDK
                 # version's typed kwargs; the API default (effort=high) is
                 # already the right choice for this orchestrator.
-                response = client.messages.create(
+                async with client.messages.stream(
                     model=model_id,
                     max_tokens=16000,
                     system=SYSTEM_PROMPT + context_str,
                     tools=anthropic_tools,
                     messages=messages,
                     thinking={"type": "adaptive"},
-                )
-
-                # Stream any text blocks the model emitted this round (these
-                # may appear before, between, or after tool_use blocks).
-                for block in response.content:
-                    if block.type == "text":
-                        text = block.text or ""
-                        chunk_size = 12
-                        for i in range(0, len(text), chunk_size):
-                            chunk = text[i:i + chunk_size]
-                            yield f"data: {json.dumps({'type': 'text_delta', 'content': chunk})}\n\n"
-                            await asyncio.sleep(0.02)
+                ) as stream:
+                    async for event in stream:
+                        # Forward real text deltas as they're generated. Tool
+                        # use, thinking, and other block types are captured in
+                        # the final message below — we only stream text here.
+                        if event.type == "content_block_delta" and getattr(event.delta, "type", None) == "text_delta":
+                            chunk = event.delta.text or ""
+                            if chunk:
+                                yield f"data: {json.dumps({'type': 'text_delta', 'content': chunk})}\n\n"
+                    response = await stream.get_final_message()
 
                 stop_reason = response.stop_reason
 

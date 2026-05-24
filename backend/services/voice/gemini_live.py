@@ -27,7 +27,7 @@ from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-GEMINI_LIVE_MODEL = os.getenv("GEMINI_LIVE_MODEL", "gemini-2.5-flash-preview-native-audio-dialog")
+GEMINI_LIVE_MODEL = os.getenv("GEMINI_LIVE_MODEL", "gemini-3.1-flash-live-preview")
 GEMINI_INPUT_RATE = 16000
 GEMINI_OUTPUT_RATE = 24000
 
@@ -37,6 +37,47 @@ class ToolDeclaration:
     name: str
     description: str
     parameters: Dict[str, Any]  # JSON Schema
+
+
+# Gemini Live's function-declaration schema accepts only a strict subset of
+# JSON Schema. Keys outside this set make the setup message fail with
+# `1007 invalid frame payload data` and the call drops. Documented allowed
+# keys: type, properties, required, items, enum, description, format, nullable.
+# Notably **not** allowed: additionalProperties, default, exclusiveMinimum,
+# exclusiveMaximum, $ref, $schema, oneOf, anyOf, patternProperties, etc.
+_GEMINI_ALLOWED_KEYS = {
+    "type", "properties", "required", "items", "enum",
+    "description", "format", "nullable",
+    "minimum", "maximum", "minLength", "maxLength", "minItems", "maxItems",
+}
+
+
+def _sanitize_for_gemini(schema: Any) -> Any:
+    """Recursively strip JSON-schema keys Gemini Live rejects.
+
+    Without this, a single tool with `additionalProperties` (or `default`,
+    `oneOf`, etc.) takes down the entire voice session at setup time.
+
+    `properties` is a dict whose KEYS are property names (arbitrary), not
+    schema keywords — its values are themselves schemas. Same for the
+    `definitions`/`$defs`-style maps. Recurse into the values, keep the
+    keys as-is.
+    """
+    if isinstance(schema, dict):
+        out: Dict[str, Any] = {}
+        for k, v in schema.items():
+            if k not in _GEMINI_ALLOWED_KEYS:
+                continue
+            if k == "properties" and isinstance(v, dict):
+                # Property names are arbitrary user keys — preserve them,
+                # recurse only into the per-property schemas.
+                out[k] = {pname: _sanitize_for_gemini(pschema) for pname, pschema in v.items()}
+            else:
+                out[k] = _sanitize_for_gemini(v)
+        return out
+    if isinstance(schema, list):
+        return [_sanitize_for_gemini(x) for x in schema]
+    return schema
 
 
 @dataclass
@@ -84,7 +125,7 @@ class GeminiLiveSession:
                         types.FunctionDeclaration(
                             name=t.name,
                             description=t.description,
-                            parameters=t.parameters,
+                            parameters=_sanitize_for_gemini(t.parameters),
                         )
                         for t in self.config.tools
                     ]
@@ -148,13 +189,26 @@ class GeminiLiveSession:
         )
 
     async def events(self) -> AsyncIterator[Dict[str, Any]]:
-        """Async iterator over normalized session events."""
+        """Async iterator over normalized session events.
+
+        `session.receive()` in google-genai 1.60+ yields ONE complete model
+        turn and then ends — so for a continuous conversation we wrap it in
+        an outer loop that calls receive() again after each turn ends.
+        Without this, the bridge tears down right after the opening message.
+        """
         if self._session is None:
             return
         try:
-            async for response in self._session.receive():
-                async for ev in self._normalize_response(response):
-                    yield ev
+            while True:
+                got_any = False
+                async for response in self._session.receive():
+                    got_any = True
+                    async for ev in self._normalize_response(response):
+                        yield ev
+                # If receive() returned immediately without yielding anything,
+                # the session is closed; bail out instead of spinning.
+                if not got_any:
+                    break
         except asyncio.CancelledError:
             raise
         except Exception:
