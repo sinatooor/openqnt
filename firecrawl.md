@@ -207,16 +207,16 @@ parameters, and SDKs:
 
 ---
 
-## Session-specific auth
+## Auth
 
-Use this API key for this onboarding session:
+Set your Firecrawl API key (get one free at https://firecrawl.dev):
 
 ```dotenv
-FIRECRAWL_API_KEY=***REMOVED***
+FIRECRAWL_API_KEY=fc-YOUR_FIRECRAWL_API_KEY
 ```
 
 If you want the Firecrawl CLI and skills installed without browser auth, run:
 
 ```bash
-npx -y firecrawl-cli@latest init --all -k ***REMOVED***
+npx -y firecrawl-cli@latest init --all -k "$FIRECRAWL_API_KEY"
 ```

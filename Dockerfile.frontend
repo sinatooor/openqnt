@@ -45,7 +45,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ARG VITE_BACKEND_URL=http://localhost:8000
-ARG VITE_MAPBOX_TOKEN=***REMOVED***
+ARG VITE_MAPBOX_TOKEN=
 ENV VITE_BACKEND_URL=$VITE_BACKEND_URL \
     VITE_MAPBOX_TOKEN=$VITE_MAPBOX_TOKEN
 RUN npm run build

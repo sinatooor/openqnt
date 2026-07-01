@@ -1,116 +1,61 @@
-# openqwnt
+<div align="center">
 
-A hierarchical multi-agent quant research & execution platform — a
-visual strategy builder, a canonical backtest engine, agents that can
-write their own tools, a paper/live execution path with a kill
-switch, and a self-improvement loop that mutates strategy params and
-keeps what wins.
+# OpenQnt
+
+**An autonomous, agentic quant platform — research, backtest, and trade from one place.**
+
+Visually snap together strategies, let AI agents research and stress-test them,
+backtest against a canonical engine, and route orders to paper or live brokers —
+with a kill switch and a self-improvement loop that keeps what wins.
 
 ![Frontend](https://img.shields.io/badge/frontend-React%20%2B%20Vite-61DAFB)
 ![Backend](https://img.shields.io/badge/backend-FastAPI%20%2B%20Python%203.12-3776AB)
 ![Agents](https://img.shields.io/badge/agents-Google%20ADK%20%2B%20Gemini-4285F4)
 ![Backtest](https://img.shields.io/badge/backtest-backtesting.py-purple)
-![License](https://img.shields.io/badge/license-MIT-blue)
+![License](https://img.shields.io/badge/license-OQCL%20(source--available)-orange)
+
+</div>
+
+> [!WARNING]
+> **Trading involves substantial risk of loss.** OpenQnt is software only and
+> does **not** provide financial advice. Paper-trade first. You alone are
+> responsible for every order it places and for your regulatory compliance.
+> Past performance never guarantees future results.
 
 ---
 
-## What this is
+## What is OpenQnt?
 
-The platform sequenced through Phases A–J (see [PLAN.md](PLAN.md))
-and each phase has a `PHASE_<X>_RESULT.md` that documents what
-shipped + the exit criterion. The short version, in dependency order:
+Manual trading forces one brain to juggle thousands of news articles, policy
+shifts, whale movements, and technical signals — under pressure, and with
+research living in a different tool than execution. OpenQnt collapses that into
+a single agentic platform:
 
-| Phase | Theme | Surface |
-| --- | --- | --- |
-| **A** | Audit & gap analysis | [AUDIT.md](AUDIT.md) |
-| **B** | Agent runtime — events, artifacts, WebSocket | [`backend/agent_runtime/`](backend/agent_runtime/) · `/api/agent/*` |
-| **C** | Boss orchestration | [`backend/routers/boss.py`](backend/routers/boss.py) · `/boss` |
-| **D** | Canonical backtest engine | [`backend/backtest/`](backend/backtest/) · `/api/backtest/*` · `/backtest` |
-| **E** | RSI mean-reversion strategy template | [`src/features/strategy-flow/templates/`](src/features/strategy-flow/templates/strategyTemplates.ts) |
-| **F** | Bloomberg-style terminal (real data) | [`backend/routers/terminal_data.py`](backend/routers/terminal_data.py) · `/terminal/*` · ⌘K palette |
-| **G** | Sandbox + dynamic tool creation | [`backend/sandbox/`](backend/sandbox/) · [`backend/dynamic_tools/`](backend/dynamic_tools/) · `/tools` |
-| **H** | Paper / live execution path | [`backend/execution/`](backend/execution/) · `/api/execution/*` · `/execution` |
-| **I** | Self-improvement loop | [`backend/improvement/`](backend/improvement/) · `/api/improvement/*` · `/improvement` |
-| **J** | Hardening — CI, E2E, telemetry, docs | `.github/workflows/ci.yml` · `e2e/` · `/api/telemetry/*` · this file |
+- **🧩 Visual Strategy Builder** — a drag-and-drop, n8n-style canvas. Fuse
+  indicators, conditions, actions, and AI agents into a strategy without
+  writing code.
+- **🤖 Agentic research** — a hierarchical "boss" dispatches specialist agents
+  (via Google ADK + Gemini) that can pull market data, debate a thesis, and
+  even **author their own tools** in a sandbox.
+- **📈 Canonical backtest engine** — every strategy runs through one deterministic
+  engine (built on `backtesting.py`), so a human and an agent get byte-for-byte
+  identical numbers, with an equity/drawdown chart out of the box.
+- **⚡ Paper & live execution** — a broker abstraction over a built-in PaperBroker,
+  **Alpaca**, and **Interactive Brokers (TWS/Gateway)**, gated by a risk engine
+  and a hard kill switch (`panic.lock`).
+- **🔁 Self-improvement loop** — mutates strategy parameters, re-backtests, and
+  keeps the survivors — demonstrating the core value of AI in quant.
+- **🖥️ Bloomberg-style terminal** — real-data screens (DES, GIP, HDS, RMAP, …)
+  behind a ⌘K command palette.
 
-Pages mounted under `/`:
-
-```
-/                  Strategy Flow canvas (visual builder)
-/backtest          BacktestPanel (Phase D engine)
-/improvement       Self-improvement loop (Phase I)
-/tools             Sandbox + dynamic tool registry (Phase G)
-/execution         Live paper/Alpaca execution (Phase H)
-/boss              Boss-run tree
-/terminal/{des,gip,hds,rmap,splc,bmap}   Bloomberg-style screens (Phase F)
-/dashboard         Widget canvas (incl. Telemetry + Agent Activity)
-```
+It runs in the browser, as a **desktop app** (Electron), and the whole thing is
+Docker-composable.
 
 ---
 
-## Architecture
+## Screenshots
 
-```
-                   ┌─────────────────────────┐
-                   │  React + Vite frontend  │
-                   │  /backtest, /execution, │
-                   │  /improvement, /tools,  │
-                   │  /terminal, /boss, ...  │
-                   └────────────┬────────────┘
-                                │ REST + WebSocket
-                                ▼
-        ┌───────────────────────────────────────────────┐
-        │           FastAPI backend (uvicorn)           │
-        │                                               │
-        │  routers/  ── /api/{backtest, execution,      │
-        │                     improvement, tools,       │
-        │                     terminal_data, agent_*,   │
-        │                     boss, telemetry, ...}     │
-        │                                               │
-        │  agent_runtime/   AgentRunContext + EventBus  │
-        │  backtest/        canonical engine            │
-        │  execution/       PaperBroker, RiskGate, ...  │
-        │  improvement/     Objective / Mutator / Tree  │
-        │  sandbox/         subprocess + setrlimit      │
-        │  dynamic_tools/   agent-authored tools        │
-        │  telemetry/       counters + flush            │
-        │  adk_agents/      Google ADK agents + tools   │
-        └───────────────────────┬───────────────────────┘
-                                │
-                                ▼
-              On-disk under  agents/
-                ├── boss/runs/<run_id>/        boss + improvement trees
-                ├── _backtests/<run_id>/       canonical engine artefacts
-                ├── _execution/<session>/      order journal + panic.lock
-                ├── _telemetry/counters.json   J3 telemetry snapshot
-                ├── tools/dynamic/             agent-authored Python tools
-                └── _cache/bars/               yfinance parquet cache
-```
-
-The Node.js orchestrator and TypeScript broker clients (under
-`orchestrator/`) predate Phase B; they're left in place but the agent
-runtime, backtest engine, sandbox, execution, and self-improvement
-loop are all Python and don't depend on them.
-
-### Data flow — a typical user gesture
-
-```
-user clicks "Run backtest" on /backtest
-    → fetch POST /api/backtest/run
-        → backend/routers/backtest.py
-        → backend/backtest/engine.py:run_backtest(spec)
-            → backtesting.py executes the strategy on the bars
-            → backend/backtest/plot.py renders equity+drawdown PNG
-            → result.json + equity.png persisted under
-              agents/_backtests/<run_id>/
-        → response includes inline plot_b64 + metrics + trades
-    → BacktestPanel renders the chart from the data URL
-```
-
-Same code path serves the agent tool — `run_backtest_tool()` in
-[`adk_agents/tools/backtest_tools.py`](backend/adk_agents/tools/backtest_tools.py)
-calls the same `run_backtest()` with the same `BacktestSpec`, so an
-agent reports byte-for-byte identical numbers.
+> _Coming soon._ Drop UI captures into `docs/screenshots/` and link them here.
 
 ---
 
@@ -121,259 +66,229 @@ Three flavours — pick the one that matches your environment.
 ### A. Local (no Docker)
 
 ```bash
-# Backend (Python 3.12)
+# 1. Configure your keys (all optional — the app degrades gracefully)
+cp .env.example .env         # then fill in what you have
+
+# 2. Backend (Python 3.12)
 cd backend
 pip install -r requirements.txt
 uvicorn main:app --port 8000
 
-# Frontend
+# 3. Frontend (in a second terminal)
 npm install
-npm run dev      # http://localhost:5173
-
-# Run the test suites
-cd backend && pytest tests/ -q
-npm test         # vitest, frontend unit tests
-npm run e2e      # Playwright (needs backend on :8000 + chromium)
+npm run dev                  # http://localhost:5173
 ```
 
-Or use the bundled launcher (uses the `fyer` conda env at
-`/opt/miniconda3/envs/fyer/bin/python` — override with `FYER_PY=...`):
+Or use the bundled launcher (override the interpreter with `FYER_PY=...`):
 
 ```bash
-scripts/start-all.sh paper        # PaperBroker (no creds needed)
+scripts/start-all.sh paper        # PaperBroker (no broker creds needed)
 scripts/start-all.sh ibkr         # routes orders to TWS on 127.0.0.1:7497
 scripts/start-all.sh alpaca       # needs ALPACA_API_{KEY,SECRET}
 ```
 
 ### B. Docker
 
-Three compose stacks for three needs:
-
 | Goal | Command | Services up |
 | --- | --- | --- |
-| Just the agents + backtest engine + dashboards | `make docker-up` | `backend` (8000) + `frontend` (5173) |
-| Same + the visual builder's compile/execute path | `make docker-full-up` | adds `orchestrator` (3000) + `postgres` (5432) + `redis` (6379) |
+| Agents + backtest engine + dashboards | `make docker-up` | `backend` (8000) + `frontend` (5173) |
+| Same + the visual builder's compile/execute path | `make docker-full-up` | adds `orchestrator` (3000) + `postgres` + `redis` |
 | Closer-to-prod build (frontend on :80, no source mounts) | `make docker-prod-up` | `backend` + `frontend` (nginx) |
 
 ```bash
 make docker-up           # minimal — most users want this
-make docker-full-up      # everything (the original n8n-style stack + agents)
-make docker-logs         # tail (full stack: docker-full-logs)
-make docker-down         # stop (volumes preserved; full stack: docker-full-down)
-make docker-test         # run pytest inside the backend container
+make docker-full-up      # everything (the n8n-style stack + agents)
+make docker-logs         # tail logs
+make docker-down         # stop (named volumes preserved)
 ```
 
-Behind the scenes:
-- [`docker-compose.yml`](docker-compose.yml) — the slim default (backend + frontend, persists `agents/`).
-- [`docker-compose.full.yml`](docker-compose.full.yml) — overlay that adds the orchestrator + Postgres + Redis. The orchestrator is the Node.js workflow engine that powers the strategy-flow canvas's compile + execute path and the legacy broker connectors. The Phase B-J Python backend doesn't need it; the visual-builder UI does.
-- [`docker-compose.prod.yml`](docker-compose.prod.yml) — overlay flipping both targets to `prod` (no source mounts, frontend served by nginx on :80).
-
-Persistence: every state path lives under the `openqwnt-agents` named volume so dynamic tools, order journals, telemetry counters, and backtest artefacts survive `docker compose down`. Postgres + Redis have their own named volumes (`openqwnt-postgres-data`, `openqwnt-redis-data`).
-
-**IBKR from inside the container.** TWS / IB Gateway runs on the
-*host*, the backend in the *container*. Compose maps
-`host.docker.internal:7497` (auto on Docker Desktop, explicit
-`extra_hosts: host-gateway` for Linux). Set `EXECUTION_BROKER=ibkr` in
-`.env` and the broker selector picks it up:
+**IBKR from inside the container:** TWS / IB Gateway runs on the *host*, the
+backend in the *container*. Compose maps `host.docker.internal:7497`. Set
+`EXECUTION_BROKER=ibkr` in `.env` and probe it:
 
 ```bash
-echo 'EXECUTION_BROKER=ibkr' >> .env
-make docker-up
+echo 'EXECUTION_BROKER=ibkr' >> .env && make docker-up
 curl localhost:8000/api/execution/broker/probe   # → {"broker":"ibkr",...}
 ```
 
-### State that persists across restarts
+### C. Desktop app
 
-The `agents/` directory and its subfolders are **gitignored** —
-they're per-user state. In Docker mode they live in the
-`openqwnt-agents` named volume, in local mode they sit in the repo
-under `agents/`. Created on demand. Wiped only by `make
-docker-clean` (which prompts).
+```bash
+npm run electron:dev          # dev (Vite + Electron, hot reload)
+npm run electron:dist         # packaged desktop app in release/
+```
 
-### Environment variables
+---
+
+## Pages
+
+Mounted under `/` once the frontend is running:
+
+```
+/                  Strategy Flow canvas (visual builder)
+/backtest          Backtest panel (canonical engine)
+/execution         Live paper / Alpaca / IBKR execution
+/improvement       Self-improvement loop
+/tools             Sandbox + agent-authored tool registry
+/boss              Boss-run tree
+/terminal/{des,gip,hds,rmap,splc,bmap}   Bloomberg-style screens
+/dashboard         Widget canvas (Telemetry + Agent Activity)
+```
+
+---
+
+## Architecture
+
+```
+                   ┌─────────────────────────┐
+                   │  React + Vite frontend  │
+                   │  (browser or Electron)  │
+                   └────────────┬────────────┘
+                                │ REST + WebSocket
+                                ▼
+        ┌───────────────────────────────────────────────┐
+        │           FastAPI backend (uvicorn)            │
+        │                                                │
+        │  routers/         /api/{backtest, execution,   │
+        │                        improvement, tools,     │
+        │                        terminal_data, boss,…}  │
+        │  agent_runtime/   AgentRunContext + EventBus    │
+        │  backtest/        canonical engine             │
+        │  execution/       PaperBroker, Alpaca, IBKR,   │
+        │                   RiskGate, kill switch        │
+        │  improvement/     Objective / Mutator / Tree   │
+        │  sandbox/         subprocess + setrlimit       │
+        │  dynamic_tools/   agent-authored tools         │
+        │  adk_agents/      Google ADK agents + tools    │
+        └───────────────────────┬────────────────────────┘
+                                │
+                                ▼
+              On-disk under  agents/   (per-user state, gitignored)
+                ├── boss/runs/<run_id>/     boss + improvement trees
+                ├── _backtests/<run_id>/    engine artefacts
+                ├── _execution/<session>/   order journal + panic.lock
+                └── tools/dynamic/          agent-authored Python tools
+```
+
+The Node.js **orchestrator** (`orchestrator/`) powers the visual builder's
+compile/execute path and legacy broker connectors. The Python backend (agent
+runtime, backtest engine, sandbox, execution, self-improvement) is independent
+of it — you only need the orchestrator for the full visual-builder stack.
+
+### One gesture, end to end
+
+```
+click "Run backtest" on /backtest
+  → POST /api/backtest/run
+    → backend/backtest/engine.py:run_backtest(spec)
+        → backtesting.py runs the strategy over the bars
+        → equity/drawdown PNG rendered, result.json persisted
+    → response carries inline plot + metrics + trades
+  → the panel renders the chart from the data URL
+```
+
+The **same** `run_backtest()` backs the agent tool
+(`adk_agents/tools/backtest_tools.py`), so an agent reports identical numbers.
+
+---
+
+## Configuration
+
+Copy `.env.example` → `.env` and fill in what you have. Everything is optional;
+missing keys degrade gracefully (e.g. no `GEMINI_API_KEY` → heuristic fallback,
+no broker creds → PaperBroker). Highlights:
 
 | Var | Used for | Default |
 | --- | --- | --- |
-| `EXECUTION_BROKER` | Force a specific broker (`paper` / `ibkr` / `alpaca`) | infer from creds → `paper` |
-| `IB_HOST` / `IB_PORT` / `IB_CLIENT_ID` | TWS connection (Phase H IBKR) | `127.0.0.1` / `7497` / `42` |
-| `ALPACA_API_KEY` / `ALPACA_API_SECRET` | Live broker (Phase H) | unset → PaperBroker |
-| `GEMINI_API_KEY` | Boss + synthesis + LLM mutator (optional) | unset → heuristic fallback |
-| `PAPER_CASH` | Paper-broker starting cash + risk gate's `initial_equity` | 100 000 |
-| `RISK_MAX_ORDER_QTY` | Hard order-size cap | 1 000 |
-| `RISK_MAX_POSITION_NOTIONAL` | Per-symbol notional cap | 50 000 |
-| `RISK_MAX_DRAWDOWN_PCT` | Halt threshold vs peak equity | 20 |
-| `RISK_MAX_DAILY_LOSS_PCT` | Halt threshold vs day-open equity | 5 |
-| `FMP_API_KEY` | RMAP peers + DES fundamentals | optional |
-| `VITE_BACKEND_URL` | Frontend base URL (compiled into the bundle) | `http://localhost:8000` |
+| `EXECUTION_BROKER` | Force a broker (`paper` / `ibkr` / `alpaca`) | infer → `paper` |
+| `ALPACA_API_KEY` / `ALPACA_API_SECRET` | Live/paper Alpaca | unset → PaperBroker |
+| `IB_HOST` / `IB_PORT` / `IB_CLIENT_ID` | TWS / IB Gateway | `127.0.0.1` / `7497` / `42` |
+| `GEMINI_API_KEY` | Boss, synthesis, LLM mutator | unset → heuristic |
+| `PAPER_CASH` | Paper starting cash + risk baseline | `100000` |
+| `RISK_MAX_ORDER_QTY` | Hard order-size cap | `1000` |
+| `RISK_MAX_DRAWDOWN_PCT` | Halt vs peak equity | `20` |
+| `RISK_MAX_DAILY_LOSS_PCT` | Halt vs day-open equity | `5` |
+| `FMP_API_KEY` | Terminal fundamentals + peers | optional |
+| `VITE_MAPBOX_TOKEN` | Map screens (BMAP/RMAP) | optional |
+
+> **Never commit your `.env`.** It is gitignored. Rotate any key you think may
+> have been exposed.
 
 ---
 
-## How to add an agent
+## Extending it
 
-A new agent is a class that subclasses
-[`BaseAnalysisAgent`](backend/adk_agents/base_agent.py), wraps a
-Gemini model with a system prompt + the tools it should have access
-to, and returns a structured `AgentOutput`.
+**Add an agent** — subclass `BaseAnalysisAgent`
+(`backend/adk_agents/base_agent.py`), give it a system prompt + tools, and
+return a structured `AgentOutput`. Telemetry is wired automatically; register it
+in `backend/routers/boss.py` so the boss can dispatch it.
 
-```python
-# backend/adk_agents/my_new_agent.py
-from .base_agent import BaseAnalysisAgent, AgentOutput
-from .tools.market_data_tools import get_market_quote
-from .tools.backtest_tools import run_backtest_tool
-
-class MyNewAgent(BaseAnalysisAgent):
-    name = "my_new"
-    description = "What this agent does, in one sentence."
-    tools = [get_market_quote, run_backtest_tool]
-    system_prompt = """You are a …. Use the tools to ….
-                      Return your conclusion as JSON matching AgentOutput."""
-
-    async def analyze(self, context, ctx):
-        # `ctx` is an AgentRunContext (Phase B).
-        # Anything you do with it shows up live on the agent stream:
-        ctx.status("Pulling market data…")
-        with ctx.tool_call("market_data.quote", {"symbol": context.symbol}) as h:
-            quote = get_market_quote(context.symbol)
-            h.result(f"price={quote['price']}")
-        ctx.thought("Quote looks normal; running a quick backtest.")
-        # …
-        return AgentOutput(...)
-```
-
-Telemetry (`agent_runs`, `tool_calls`) is wired automatically because
-Phase J3 monkey-patches `AgentRunContext` at backend startup —
-`backend/main.py` calls `telemetry.hook_into_context()` once.
-
-To dispatch the new agent from the Boss, add it to the registry the
-boss reads when planning subtasks; see
-[`backend/routers/boss.py`](backend/routers/boss.py).
-
-## How to add a node to the visual builder
-
-A node has three pieces: catalogue metadata, a renderer, and (if it
-needs to compute something at backtest time) a hook into the
-canonical engine.
-
-1. **Catalogue entry** — add the node type to
-   [`src/features/strategy-flow/catalog/nodeCatalog.ts`](src/features/strategy-flow/catalog/nodeCatalog.ts)
-   so it appears in the palette and the validator knows its inputs +
-   outputs.
-2. **Backend mirror** — add the same shape to
-   [`backend/strategy_flow/node_catalog_cache.json`](backend/strategy_flow/node_catalog_cache.json)
-   so the Python validator (`strategy_flow/validator.py`) and the
-   template tests (Phase E) can reason about it.
-3. **Renderer** (if it needs custom UI) — add a React component under
-   [`src/features/strategy-flow/components/nodes/`](src/features/strategy-flow/components/nodes/)
-   and wire it into the renderer map.
-4. **Backtest behaviour** — for indicators / conditions / actions,
-   add the implementation to
-   [`backend/backtest/builtins.py`](backend/backtest/builtins.py) (or
-   reference an existing `backtesting.py` helper). Templates that
-   want to route through the canonical engine ship a `backtestSpec`
-   (see Phase E doc) instead of hitting the legacy code-gen path.
-
-If you're adding a *strategy* not a node, the simpler path is:
-register it in `STRATEGIES` in `backend/backtest/builtins.py`, then
-either add a template that points to it via `backtestSpec.strategy`,
-or pass `strategy: "<your_name>"` in any `POST /api/backtest/run`.
+**Add a node to the visual builder** — four pieces:
+1. Catalogue entry in `src/features/strategy-flow/catalog/nodeCatalog.ts`
+2. Backend mirror in `backend/strategy_flow/node_catalog_cache.json`
+3. Renderer (if it needs custom UI) under `src/features/strategy-flow/components/nodes/`
+4. Backtest behaviour in `backend/backtest/builtins.py`
 
 ---
 
-## Hardening (Phase J)
-
-- **CI** — [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs
-  lint + typecheck + vitest + pytest (incl. the canonical-backtest
-  reference test) on every PR.
-- **E2E** — [`e2e/phase-e-rsi-template.spec.ts`](e2e/phase-e-rsi-template.spec.ts)
-  walks the Phase E flow in a real browser (Playwright + Chromium):
-  open `/backtest`, pick the RSI strategy, run it, assert the inline
-  PNG and metric tiles appear.
-- **Telemetry** — every `AgentRunContext` start/finish + every
-  `tool_call/tool_result` increments counters in
-  [`backend/telemetry/`](backend/telemetry/) which flush to
-  `agents/_telemetry/counters.json`. The dashboard's **Telemetry**
-  widget polls `/api/telemetry/summary` every 5 s.
-- **Reference test** —
-  [`backend/tests/test_backtest_reference.py`](backend/tests/test_backtest_reference.py)
-  pins SMA(50/200) on SPY 2010-2023; if the engine drifts, CI fails.
-
----
-
-## Phase test suites at a glance
+## Tests
 
 ```bash
-# All in backend/, run with the project's Python env (pytest).
-tests/test_backtest_reference.py      # Phase D · canonical engine
-tests/test_rsi_template.py            # Phase E · template + validator
-tests/test_dynamic_tools.py           # Phase G · sandbox + tool authoring
-tests/test_execution.py               # Phase H · paper broker + risk gate
-tests/test_improvement.py             # Phase I · self-improvement loop
-tests/test_telemetry.py               # Phase J · counters + AgentRunContext hook
-```
+# Backend (pytest)
+cd backend && pytest tests/ -q
+#   test_backtest_reference.py   canonical engine (SMA 50/200 on SPY, pinned)
+#   test_rsi_template.py         template + validator
+#   test_dynamic_tools.py        sandbox + tool authoring
+#   test_execution.py            paper broker + risk gate
+#   test_improvement.py          self-improvement loop
 
-```bash
 # Frontend
-npm test                              # vitest (unit)
-npm run e2e                           # Playwright (E2E)
+npm test                 # vitest (unit)
+npm run e2e              # Playwright (needs backend on :8000 + chromium)
 ```
+
+CI (`.github/workflows/ci.yml`) runs lint + typecheck + vitest + pytest on every PR.
 
 ---
 
 ## Repository layout
 
 ```
-backend/
-  main.py                  # FastAPI app, mounts every router
-  agent_runtime/           # Phase B: AgentRunContext, EventBus, storage
-  backtest/                # Phase D: canonical engine, builtins, plot
-  execution/               # Phase H: PaperBroker, AlpacaBroker, RiskGate
-  improvement/             # Phase I: Objective, Mutator, Tree, Runner
-  sandbox/                 # Phase G: subprocess + setrlimit runner
-  dynamic_tools/           # Phase G: agent-authored tool registry
-  telemetry/               # Phase J3: counters + AgentRunContext hook
-  adk_agents/              # Google-ADK agents + their Python tools
-  routers/                 # FastAPI routers per concern
-  tests/                   # pytest, one file per phase
-  strategy_flow/           # node catalogue + validator (mirrors frontend)
-
-src/
-  pages/                   # React Router pages
-  features/
-    backtest/              # /backtest panel
-    execution-viewer/      # /execution panel + LiveExecutionPanel
-    improvement/           # /improvement panel
-    tools/                 # /tools sandbox + dynamic-tool UI
-    strategy-flow/         # / canvas (templates, BacktestModal, ...)
-    terminal/              # Bloomberg-style screens + ⌘K palette
-    dashboard/             # widget grid + AgentActivity + Telemetry
-    boss/                  # boss-run tree
-  stores/                  # Zustand state (auth, terminal symbol, ...)
-
-orchestrator/              # legacy Node.js orchestrator (pre-Phase-B)
-e2e/                       # Playwright E2E specs (Phase J2)
-docs/templates/            # template docs (Phase E onward)
+backend/          FastAPI app — agents, backtest, execution, improvement, sandbox
+src/              React frontend — strategy-flow, backtest, execution, terminal, …
+orchestrator/     Node.js workflow engine for the visual builder + legacy brokers
+electron/         desktop app shell
+e2e/              Playwright specs
+docs/             architecture, data-provider, and how-to-run notes
+scripts/          start-all.sh and helpers
 ```
 
 ---
 
-## Phase result docs
+## Roadmap
 
-Each phase shipped with a result document — what was built, the exit
-criterion proof, and how to run it.
-
-- [PHASE_B_RESULT.md](PHASE_B_RESULT.md)
-- [PHASE_D_RESULT.md](PHASE_D_RESULT.md)
-- [PHASE_F_RESULT.md](PHASE_F_RESULT.md)
-- [PHASE_G_RESULT.md](PHASE_G_RESULT.md)
-- [PHASE_H_RESULT.md](PHASE_H_RESULT.md)
-- [PHASE_I_RESULT.md](PHASE_I_RESULT.md)
-- [PHASE_J_RESULT.md](PHASE_J_RESULT.md)
-
-(Phases A, C, E shipped without dedicated docs; their work is
-captured in [PLAN.md](PLAN.md) and the relevant code paths.)
+A functional MVP exists today: visual builder, canonical backtesting, agentic
+research, paper/live execution against Alpaca + IBKR, and a working
+self-improvement loop. Next up: broader broker coverage, richer terminal
+screens, and per-institution custom workflows.
 
 ---
 
 ## License
 
-MIT.
+**OpenQnt is source-available, not open source.** It is licensed under the
+[OpenQnt Community License (OQCL) v1.0](LICENSE) — free for personal,
+educational, research, and internal-evaluation use. **Commercial and production
+use requires a Commercial License.** See the [LICENSE](LICENSE) for the full
+terms, and contact **s_i_n_a@icloud.com** for commercial licensing.
+
+By contributing, you agree to the contribution terms in the LICENSE.
+
+---
+
+## Author
+
+**Sina Rajaeeian** — Founder & sole developer.
+Double M.Sc. at KTH Royal Institute of Technology (Industrial Engineering &
+Management + Machine Learning), building at the intersection of AI/ML,
+full-stack, and quantitative finance.
