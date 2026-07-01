@@ -1,0 +1,305 @@
+# OpenQnt Community License (OQCL) v1.0
+
+**Copyright © 2026 Sinalytica (Sina Rajaeeian). All rights reserved.**
+
+OpenQnt is **source-available software**, not open source. This License lets
+you read, run, learn from, and privately modify the software for
+non-commercial purposes. Commercial and production use requires a separate
+Commercial License from Sinalytica. This is **not** an Open Source Initiative
+(OSI) approved license.
+
+---
+
+## License Grant Overview
+
+Portions of this software are licensed as follows:
+
+1. Source code contained in directories named `enterprise`, `ee`, or any file
+   whose name contains `.ee.` is **not** licensed under this License. Those
+   components require a separate OpenQnt Enterprise License.
+
+2. Third-party software included with OpenQnt remains licensed under its
+   respective license. Nothing in this License changes or replaces the rights
+   granted by those third-party licenses.
+
+3. All remaining source code is licensed under the **OpenQnt Community License
+   (OQCL) v1.0** set out below.
+
+---
+
+## 1. Acceptance
+
+By downloading, copying, installing, modifying, compiling, running,
+distributing, or otherwise using the Software, you agree to be bound by this
+License. If you do not agree to these terms, you may not use the Software.
+
+---
+
+## 2. Purpose
+
+OpenQnt is made available under a source-available license intended to
+encourage learning, research, experimentation, community contributions, and
+internal evaluation, while protecting the commercial value of the OpenQnt
+platform.
+
+---
+
+## 3. Copyright License
+
+Subject to your continuous compliance with this License, the Licensor grants
+you a worldwide, non-exclusive, non-transferable, non-sublicensable, revocable,
+royalty-free license to:
+
+* view the source code;
+* download and compile the Software;
+* use the Software for the Permitted Uses in Section 4;
+* modify the Software for your own internal, non-commercial use;
+* create derivative works for your own internal, non-commercial use;
+* redistribute **unmodified** copies of the Community Edition for
+  non-commercial purposes, subject to Section 8.
+
+All rights not expressly granted are reserved. This License grants no rights
+for any commercial or production use except under a separate Commercial
+License.
+
+---
+
+## 4. Permitted Use
+
+You may use the Software without purchasing a Commercial License only for:
+
+* personal use;
+* educational use;
+* academic research;
+* non-commercial research;
+* home laboratories;
+* proof-of-concept projects;
+* internal technical evaluation.
+
+**Evaluation limit.** An organization may evaluate the Software internally for
+a single, non-continuous period of up to **thirty (30) days**. Any use beyond
+that period, or any use that is not purely evaluative, requires a Commercial
+License.
+
+---
+
+## 5. Commercial Restrictions
+
+Unless you have a valid Commercial License issued by Sinalytica, you may
+**not**:
+
+* use the Software to provide services to paying customers;
+* offer the Software as a hosted service or as Software-as-a-Service (SaaS);
+* operate the Software on behalf of third parties or provide managed services
+  using the Software;
+* embed, bundle, or integrate the Software into a commercial product;
+* white-label, rebrand, resell, sublicense, rent, or lease the Software;
+* sell support, consulting, or hosting whose primary value is the Software;
+* use the Software to build or operate a competing product or hosted service;
+* use the Software as part of a commercial trading platform offered to
+  customers;
+* use the Software inside an exchange, brokerage, hedge fund, proprietary
+  trading firm, asset manager, family office, financial institution, or other
+  commercial investment operation.
+
+Any commercial or production deployment requires a Commercial License unless
+explicitly authorized in writing by Sinalytica.
+
+---
+
+## 6. Network Service Restriction
+
+You may not make the Software available over a network where third parties
+interact with it as a service without a Commercial License. This restriction
+applies whether or not the Software has been modified. Running the Software for
+customers, subscribers, clients, tenants, or the general public constitutes
+commercial use under this License.
+
+---
+
+## 7. Competition Restriction
+
+You may not use the Software, any modified version of the Software, or any
+substantial portion of its source code to create, market, operate, train
+against, or support a competing commercial product or hosted service.
+
+---
+
+## 8. Redistribution
+
+You may redistribute the **unmodified** Community Edition only if **all** of
+the following are true:
+
+* the redistribution is non-commercial and no fee is charged for the Software
+  itself;
+* this License accompanies every copy;
+* all copyright, trademark, and attribution notices remain intact and
+  unobscured;
+* you retain visible attribution to OpenQnt and a link to the official source
+  repository.
+
+**Modified versions may not be publicly distributed** in any form without prior
+written permission from Sinalytica.
+
+---
+
+## 9. Modifications
+
+You may modify the Software for your own internal, non-commercial use. Modified
+copies must clearly state that they have been modified and must identify the
+date of modification. This License does not grant permission to distribute
+modified versions publicly or commercially.
+
+---
+
+## 10. Trademarks
+
+"OpenQnt", "Sinalytica", associated logos, product names, and branding are
+trademarks of Sinalytica. This License grants no rights to use those trademarks
+except as reasonably necessary to provide the attribution required by Section
+8. You may not remove OpenQnt branding from redistributed copies, nor use the
+marks in a way that suggests endorsement or affiliation without written
+permission.
+
+---
+
+## 11. Patents
+
+Subject to this License, the Licensor grants a non-exclusive, worldwide,
+royalty-free patent license covering patent claims owned or controlled by the
+Licensor that are necessarily infringed by the unmodified Software. This patent
+license terminates immediately if you or your affiliated organization initiates
+a patent infringement claim alleging that the Software infringes your patents.
+
+---
+
+## 12. Contributions
+
+Unless otherwise agreed in writing, any contribution intentionally submitted
+for inclusion in OpenQnt grants Sinalytica a perpetual, worldwide, irrevocable,
+royalty-free license to use, reproduce, modify, distribute, sublicense,
+commercialize, and relicense that contribution under any terms. You represent
+that you have the necessary rights to submit your contribution.
+
+---
+
+## 13. Enterprise Components
+
+Enterprise-only source code is identified by directory name, filename,
+repository structure, or accompanying notices. Enterprise components are
+excluded from this License and require a separate commercial agreement.
+
+---
+
+## 14. Compliance
+
+You may not remove, disable, or obscure any copyright notice, license notice,
+trademark notice, attribution notice, or license-key / usage-metering mechanism
+included with the Software.
+
+---
+
+## 15. Termination
+
+Any violation of this License automatically terminates the rights granted under
+it. If you receive written notice of a violation and fully cure it within
+thirty (30) days, your rights may be reinstated at the Licensor's sole
+discretion. Repeated or intentional violations may result in permanent
+termination. Upon termination you must cease all use and distribution of the
+Software and destroy or remove all copies in your possession or control.
+
+---
+
+## 16. No Warranty
+
+THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTIES OF ANY KIND, WHETHER
+EXPRESS, IMPLIED, STATUTORY, OR OTHERWISE, INCLUDING MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE, TITLE, NON-INFRINGEMENT, OR PERFORMANCE. YOU ASSUME
+ALL RISK ARISING FROM ITS USE.
+
+---
+
+## 17. Limitation of Liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE LICENSOR SHALL NOT BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE, OR
+CONSEQUENTIAL DAMAGES, INCLUDING LOSS OF PROFITS, LOSS OF DATA, BUSINESS
+INTERRUPTION, TRADING LOSSES, OR FINANCIAL LOSS ARISING FROM OR RELATED TO THE
+SOFTWARE.
+
+---
+
+## 18. Trading Disclaimer
+
+OpenQnt is a software platform only. The Software does not provide financial,
+investment, legal, tax, or regulatory advice. Trading and investing carry
+substantial risk of loss. Users remain solely responsible for their trading and
+investment decisions, regulatory compliance, taxation, financial losses, and
+the operation of any automated strategies. **Past performance does not
+guarantee future results.**
+
+---
+
+## 19. Governing Law
+
+This License is governed by the laws of Sweden, without regard to its conflict
+of law provisions. The courts located in Stockholm, Sweden shall have exclusive
+jurisdiction over any dispute arising out of or relating to this License, to the
+extent permitted by applicable law.
+
+---
+
+## 20. Severability & Entire Agreement
+
+If any provision of this License is held unenforceable, that provision shall be
+limited or eliminated to the minimum extent necessary and the remaining
+provisions shall remain in full force. This License, together with any separate
+Commercial License you may hold, constitutes the entire agreement between you
+and the Licensor concerning the Software and supersedes any prior
+understandings. You may not assign this License without the Licensor's prior
+written consent.
+
+---
+
+## 21. Definitions
+
+**Licensor** means Sinalytica (Sina Rajaeeian) or the entity that owns the
+copyright in the Software.
+
+**Software** / **Community Edition** means the OpenQnt Community Edition source
+code, binaries, documentation, examples, and associated materials distributed
+under this License.
+
+**Commercial Use** means any use intended or reasonably likely to generate
+revenue, provide paid services, support customer-facing operations, or
+otherwise create commercial value for an organization.
+
+**Enterprise Components** means source code specifically designated as requiring
+an Enterprise License.
+
+**You** means the individual or legal entity exercising rights under this
+License, and its Affiliates.
+
+**Affiliate** means any entity controlling, controlled by, or under common
+control with another entity.
+
+**Use** means any activity requiring permission under copyright law, including
+copying, running, modifying, compiling, distributing, hosting, or making
+available over a network.
+
+---
+
+## 22. Commercial Licensing
+
+Commercial licenses are available for production deployments, SaaS providers,
+managed service providers, OEM partners, embedded integrations, white-label
+deployments, financial institutions, and enterprise organizations.
+
+For commercial licensing, contact:
+
+**Sinalytica** — Sina Rajaeeian
+Email: [s_i_n_a@icloud.com](mailto:s_i_n_a@icloud.com)
+
+---
+
+**Copyright © 2026 Sinalytica (Sina Rajaeeian). All rights reserved.**
