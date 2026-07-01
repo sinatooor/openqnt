@@ -49,6 +49,9 @@ backend/venv/
 # (was accidentally tracked before; cleaned up via `git rm --cached`)
 # =============================================================================
 agents/
+# Copilot memory brain (runtime, per-user state). Root-anchored so it does NOT
+# match the backend/memory/ SOURCE package.
+/memory/
 
 # =============================================================================
 # Databases

@@ -101,9 +101,10 @@ def _persist_run(
     """Best-effort write to the `agent_runs` table so the strategy-flow
     `agentRunQuery` node can read it back. Never raises — failures here
     must not break the agent run path."""
+    persisted_id = None
     try:
         symbols = context.get("symbols") if isinstance(context, dict) else []
-        return agent_runs_db.record_run(
+        persisted_id = agent_runs_db.record_run(
             agent_type=agent_type,
             symbols=list(symbols) if symbols else [],
             signal=(output_dict or {}).get("overall_signal"),
@@ -116,7 +117,23 @@ def _persist_run(
             schedule_id=schedule_id,
         )
     except Exception:
-        return None
+        persisted_id = None
+
+    # ── Learning phase ────────────────────────────────────────────────
+    # After every cron/manual run, let the copilot reflect and update its
+    # long-term memory. Best-effort and fail-soft — never breaks the run.
+    try:
+        from memory import curator
+        curator.curate_from_run(
+            agent_type=agent_type,
+            context=context if isinstance(context, dict) else {},
+            output_dict=output_dict,
+            error=error,
+        )
+    except Exception:
+        pass
+
+    return persisted_id
 
 
 @router.post("/run", response_model=AgentRunResponse)

@@ -1,12 +1,39 @@
 # OpenQnt Community License (OQCL) v1.0
 
-**Copyright © 2026 Sinalytica (Sina Rajaeeian). All rights reserved.**
+**Copyright © 2026 Sina Rajaeeian. All rights reserved.**
 
 OpenQnt is **source-available software**, not open source. This License lets
 you read, run, learn from, and privately modify the software for
 non-commercial purposes. Commercial and production use requires a separate
-Commercial License from Sinalytica. This is **not** an Open Source Initiative
-(OSI) approved license.
+Commercial License from Sina Rajaeeian. This is **not** an Open Source
+Initiative (OSI) approved license.
+
+---
+
+## Ownership & Intellectual Property
+
+**Sina Rajaeeian is the sole and exclusive owner of OpenQnt** (the "Product")
+and of all associated intellectual property, worldwide. This includes, without
+limitation, all:
+
+* copyrights and moral rights in the source code, binaries, documentation,
+  designs, and content;
+* patents, patent applications, and all patentable inventions, methods, and
+  processes embodied in or arising from the Product;
+* trademarks, service marks, trade names, logos, and branding (including
+  "OpenQnt" and "Sinalytica");
+* trade secrets, know-how, algorithms, models, and confidential information;
+* database rights, design rights, and any other intellectual property rights;
+
+whether registered or unregistered and whether now existing or created in the
+future. "Sinalytica" is a trade name of Sina Rajaeeian; all rights in it belong
+to Sina Rajaeeian.
+
+This License grants you only the **limited, revocable license** expressly set
+out below. **It transfers no ownership.** No title, right, or interest in the
+Product or any of the intellectual property above passes to you under this
+License. Sina Rajaeeian reserves all rights not expressly granted here, and any
+goodwill arising from use of the marks inures solely to Sina Rajaeeian.
 
 ---
 
@@ -155,31 +182,36 @@ modified versions publicly or commercially.
 ## 10. Trademarks
 
 "OpenQnt", "Sinalytica", associated logos, product names, and branding are
-trademarks of Sinalytica. This License grants no rights to use those trademarks
-except as reasonably necessary to provide the attribution required by Section
-8. You may not remove OpenQnt branding from redistributed copies, nor use the
-marks in a way that suggests endorsement or affiliation without written
-permission.
+trademarks owned by Sina Rajaeeian. This License grants no rights to use those
+trademarks except as reasonably necessary to provide the attribution required
+by Section 8. You may not remove OpenQnt branding from redistributed copies, nor
+use the marks in a way that suggests endorsement or affiliation without written
+permission from Sina Rajaeeian.
 
 ---
 
 ## 11. Patents
 
-Subject to this License, the Licensor grants a non-exclusive, worldwide,
-royalty-free patent license covering patent claims owned or controlled by the
-Licensor that are necessarily infringed by the unmodified Software. This patent
-license terminates immediately if you or your affiliated organization initiates
-a patent infringement claim alleging that the Software infringes your patents.
+All patents, patent applications, and patentable inventions embodied in or
+arising from the Software are owned exclusively by Sina Rajaeeian. Subject to
+this License, Sina Rajaeeian grants you a non-exclusive, worldwide, royalty-free
+patent license covering only those patent claims he owns or controls that are
+necessarily infringed by the unmodified Software. No other patent rights are
+granted. This patent license terminates immediately if you or your affiliated
+organization initiates a patent infringement claim alleging that the Software
+infringes your patents.
 
 ---
 
 ## 12. Contributions
 
 Unless otherwise agreed in writing, any contribution intentionally submitted
-for inclusion in OpenQnt grants Sinalytica a perpetual, worldwide, irrevocable,
-royalty-free license to use, reproduce, modify, distribute, sublicense,
-commercialize, and relicense that contribution under any terms. You represent
-that you have the necessary rights to submit your contribution.
+for inclusion in OpenQnt grants Sina Rajaeeian a perpetual, worldwide,
+irrevocable, royalty-free license to use, reproduce, modify, distribute,
+sublicense, commercialize, and relicense that contribution under any terms, and
+you assign to Sina Rajaeeian all intellectual property rights in that
+contribution to the maximum extent permitted by law. You represent that you
+have the necessary rights to submit your contribution.
 
 ---
 
@@ -263,8 +295,9 @@ written consent.
 
 ## 21. Definitions
 
-**Licensor** means Sinalytica (Sina Rajaeeian) or the entity that owns the
-copyright in the Software.
+**Licensor** / **Owner** means **Sina Rajaeeian**, the sole and exclusive owner
+of the Software, the Product, and all related intellectual property.
+"Sinalytica" is a trade name of Sina Rajaeeian.
 
 **Software** / **Community Edition** means the OpenQnt Community Edition source
 code, binaries, documentation, examples, and associated materials distributed
@@ -295,11 +328,12 @@ Commercial licenses are available for production deployments, SaaS providers,
 managed service providers, OEM partners, embedded integrations, white-label
 deployments, financial institutions, and enterprise organizations.
 
-For commercial licensing, contact:
+For commercial licensing, contact the owner:
 
-**Sinalytica** — Sina Rajaeeian
+**Sina Rajaeeian** (Sinalytica)
 Email: [s_i_n_a@icloud.com](mailto:s_i_n_a@icloud.com)
 
 ---
 
-**Copyright © 2026 Sinalytica (Sina Rajaeeian). All rights reserved.**
+**Copyright © 2026 Sina Rajaeeian. Sole owner of OpenQnt and all related
+intellectual property. All rights reserved.**
