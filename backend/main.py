@@ -79,6 +79,14 @@ if os.environ.get("AGENT_SCHEDULER_DISABLED", "").lower() not in {"1", "true", "
     except Exception as e:
         print(f"Warning: Agent scheduler failed to start: {e}")
 
+# Seed the copilot's memory brain (soul.md, user.md, …) on first boot so the
+# files exist for the memory browser and the learning phase.
+try:
+    from memory import store as _memory_store
+    _memory_store.ensure_seeded()
+except Exception as e:
+    print(f"Warning: memory seed failed: {e}")
+
 # ============================================================
 # LLM PROVIDER CONFIGURATION
 # ============================================================
@@ -238,6 +246,8 @@ from routers import symbols
 app.include_router(symbols.router)
 from routers import agent_chat
 app.include_router(agent_chat.router)
+from routers import memory as memory_router
+app.include_router(memory_router.router)
 from routers import strategies_v2
 from routers import strategies_v2
 app.include_router(strategies_v2.router)

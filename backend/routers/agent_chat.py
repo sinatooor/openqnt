@@ -44,16 +44,18 @@ class ChatResponse(BaseModel):
     response: str
     tool_calls: Optional[List[Dict[str, Any]]] = None
 
-async def chat_with_gemini(message: str, context: Optional[str] = None) -> str:
+async def chat_with_gemini(message: str, context: Optional[str] = None, memory: Optional[str] = None) -> str:
     """Fallback chat using Gemini GenAI SDK"""
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
-    
+
     client = genai.Client(api_key=api_key)
-    
+
     # Build prompt
     full_prompt = f"{CHAT_SYSTEM_PROMPT}\n\n"
+    if memory:
+        full_prompt += f"{memory}\n\n"
     if context:
         full_prompt += f"Current workspace context: {context[:500]}...\n\n"
     full_prompt += f"User: {message}\n\nAssistant:"
@@ -79,17 +81,28 @@ async def chat_with_agent(req: ChatRequest):
     Send a message to the AI Trading Assistant.
     Uses ADK if available, falls back to Gemini GenAI SDK.
     """
+    # ── Retrieval: load the copilot's scoped memory into context ──────
+    memory_block = ""
+    scope_symbols: list[str] = []
     try:
+        from memory import retrieval
+        scope_symbols = retrieval.scope_symbols(text=req.message)
+        memory_block = retrieval.build_context(symbols=scope_symbols)
+    except Exception:
+        memory_block = ""
+
+    try:
+        response_text = ""
         # Try ADK first if available
         if ADK_AVAILABLE:
             try:
                 runner = get_agent_runner()
+                input_text = f"{memory_block}\n\n{req.message}" if memory_block else req.message
                 result = runner.run(
-                    input_text=req.message,
+                    input_text=input_text,
                     session_id=req.session_id
                 )
-                
-                response_text = ""
+
                 if hasattr(result, "text"):
                     response_text = result.text
                 elif isinstance(result, str):
@@ -98,24 +111,40 @@ async def chat_with_agent(req: ChatRequest):
                     response_text = result["text"]
                 else:
                     response_text = str(result)
-                    
-                return ChatResponse(response=response_text, tool_calls=[])
             except Exception as e:
                 print(f"ADK failed, falling back to GenAI: {e}")
-        
+
         # Fallback to Gemini GenAI SDK
-        if GENAI_AVAILABLE:
+        if not response_text and GENAI_AVAILABLE:
             response_text = await chat_with_gemini(
-                req.message, 
-                req.current_workspace
+                req.message,
+                req.current_workspace,
+                memory=memory_block or None,
             )
-            return ChatResponse(response=response_text, tool_calls=[])
-        
-        raise HTTPException(
-            status_code=500, 
-            detail="No AI backend available. Install google-genai or google-adk."
-        )
-        
+
+        if not response_text:
+            raise HTTPException(
+                status_code=500,
+                detail="No AI backend available. Install google-genai or google-adk."
+            )
+
+        # ── Learning phase: reflect on this exchange, off the event loop ──
+        try:
+            from memory import curator
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(
+                None,
+                lambda: curator.curate_from_chat(
+                    message=req.message,
+                    response=response_text,
+                    symbols=scope_symbols,
+                ),
+            )
+        except Exception as e:
+            print(f"[memory] chat curation skipped: {e}")
+
+        return ChatResponse(response=response_text, tool_calls=[])
+
     except HTTPException:
         raise
     except Exception as e:

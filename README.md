@@ -282,6 +282,11 @@ educational, research, and internal-evaluation use. **Commercial and production
 use requires a Commercial License.** See the [LICENSE](LICENSE) for the full
 terms, and contact **s_i_n_a@icloud.com** for commercial licensing.
 
+**Sina Rajaeeian is the sole and exclusive owner of OpenQnt and all related
+intellectual property** — copyrights, patents, trademarks, and trade secrets,
+worldwide. All rights reserved. The license grants a limited right to use; it
+transfers no ownership.
+
 By contributing, you agree to the contribution terms in the LICENSE.
 
 ---
