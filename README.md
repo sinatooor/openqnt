@@ -98,6 +98,47 @@ validated by the template test suite.
 
 ---
 
+## A tour of the platform
+
+### Agent monitor — watch your AI team think
+
+Every agent on the canvas is a live employee. Open the Agents page and watch
+its stream in real time: status updates, tool calls
+(`context.fetch(symbol=AAPL)`, `reason.check(hypothesis=…)`), inline chart
+artifacts, and a final conclusion with an explicit confidence score. Full run
+history and a per-agent notebook included.
+
+![Agent monitor with live runs streaming](docs/screenshots/agents-monitor.png)
+
+### The Copilot Brain — memory you can read and edit
+
+The copilot's long-term memory is not a black-box vector store — it's plain
+markdown you can open, edit, and version: `soul.md` (its personality — yours
+to change), `user.md` (what it knows about you), `portfolio.md`, `market.md`,
+`lessons.md` (its playbook), and one note per asset. After every run and chat
+a learning phase updates them, so the copilot compounds knowledge like a real
+analyst.
+
+![Copilot Brain memory browser](docs/screenshots/copilot-brain.png)
+
+### Mission-control dashboard
+
+Your whole operation at a glance: agents on staff, live strategies, success
+rate, pending signals, today's AI briefing — and a kill-all button.
+
+![Dashboard](docs/screenshots/dashboard.png)
+
+### Bloomberg-style terminal
+
+Real-data terminal screens behind a ⌘K command palette — world indices, GICS
+sector heatmap, market news with sentiment tags, top movers, market pulse,
+and your portfolio summary. Function codes (`DES`, `GIP`, `RMAP`, `BMAP`,
+`HDS`, …) like the real thing.
+
+![Terminal](docs/screenshots/terminal.png)
+
+---
+
 ## Quick start
 
 Three flavours — pick the one that matches your environment.
