@@ -21,6 +21,8 @@ from adk_agents.macro_analyst import macro_analyst
 from adk_agents.social_monitor import social_monitor
 from adk_agents.synthesis_agent import synthesis_agent
 from adk_agents.technical_analyst import technical_analyst
+from adk_agents.fundamentals_agent import fundamentals_analyst
+from adk_agents.sentiment_agent import sentiment_analyst
 from services import agent_runs_db
 
 router = APIRouter(prefix="/compute/agents", tags=["agents"])
@@ -33,6 +35,10 @@ AGENT_REGISTRY = {
     "social_monitor": social_monitor,
     "synthesis": synthesis_agent,
     "technical_analyst": technical_analyst,
+    # These two existed as agents but were never registered — templates using
+    # fundamentalsAgentNode / sentimentAgentNode could only run simulated.
+    "fundamentals_analyst": fundamentals_analyst,
+    "sentiment_analyst": sentiment_analyst,
 }
 
 # ── In-memory run log (last 200 runs) ────────────────────────
