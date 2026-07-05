@@ -949,4 +949,271 @@ export const AGENTIC_STRATEGY_TEMPLATES: StrategyTemplate[] = [
       { id: 'm28', source: 'risk-off', sourceHandle: 'output', target: 'close4', targetHandle: 'trigger' },
     ],
   },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TEMPLATE 5: Buy the Rumor, Sell the News — Portfolio Sentinel
+  // ═══════════════════════════════════════════════════════════════════════════
+  //
+  // Advisory-only. Encodes the oldest playbook on the street:
+  //   1. Rumor Desk reads the raw Truth Social feed (chained straight from the
+  //      truthSocialPosts data source) — policy rumors move markets before
+  //      journalists finish typing.
+  //   2. News Desk + Social Pulse measure whether the story is still a rumor
+  //      or already front-page news (news momentum).
+  //   3. The Chartist checks if the move is already priced in (RSI/volume) —
+  //      buying a story the market has already bought is exit liquidity.
+  //   4. Valuation asks whether the story changes fair value at all.
+  //   5. The PM (Synthesis) issues a verdict with confidence.
+  //
+  // Three Telegram outcomes — the machine presents, YOU decide:
+  //   - Fresh rumor + room to run  → "buy-the-rumor candidate" with an explicit
+  //     speculation budget (≤2% position sizing guidance).
+  //   - Story priced in            → "sell-the-news warning" (late chasers
+  //     historically provide the exit).
+  //   - Bearish confluence         → portfolio risk alert with de-risk options.
+  //
+  // There is deliberately NO order node in this graph. It never trades.
+  //
+  {
+    id: 'buy-rumor-sell-news-sentinel',
+    name: 'Buy the Rumor, Sell the News',
+    description:
+      'Advisory-only portfolio sentinel. A Rumor Desk reads the raw Truth Social feed, News Desk + Social Pulse gauge news momentum, the Chartist checks whether the move is already priced in (RSI), and Valuation asks if the story changes fair value. A PM synthesis issues a verdict, then Telegram tells you one of three things: fresh rumor worth a bounded speculation (≤2% budget), story already priced in (sell-the-news warning), or portfolio risk alert. Presents the data — you make the final call. No auto-trading. Set each agent\'s symbols to your holdings.',
+    category: 'agentic',
+    difficulty: 'intermediate',
+    indicators: ['Truth Social Feed', 'News Agent', 'Social Monitor', 'Technical Agent', 'Fundamentals', 'Synthesis', 'RSI'],
+    featured: true,
+    nodes: [
+      // ── Triggers & raw feed ───────────────────────────────────────────
+      {
+        id: 'sentinel-hb',
+        type: 'trigger',
+        position: { x: 0, y: 430 },
+        data: {
+          label: 'Market Hours (15 min)',
+          triggerType: 'heartbeatTrigger',
+          intervalMinutes: 15,
+          atMarketOpen: true,
+          atMarketClose: true,
+          specificTime: null,
+        },
+      },
+      {
+        id: 'truth-feed',
+        type: 'dataSource',
+        position: { x: 0, y: 60 },
+        data: {
+          label: 'Truth Social Feed',
+          dataSourceType: 'apiDataSource',
+          provider: 'apify',
+          endpoint: 'truth-social-trump',
+          paramOverrides: {
+            username: 'realDonaldTrump',
+            maxPosts: 20,
+            cleanContent: true,
+          },
+        },
+      },
+
+      // ── The desk (5 analyst agents) ───────────────────────────────────
+      {
+        id: 'rumor-desk',
+        type: 'agent',
+        position: { x: 320, y: 20 },
+        data: {
+          label: 'Rumor Desk (Truth Social)',
+          agentNodeType: 'newsAgentNode',
+          agentType: 'news_analyst',
+          model: 'gemini-2.0-flash',
+          symbols: ['AAPL', 'NVDA', 'TSLA'],
+          confidenceThreshold: 0.5,
+          newsSources: ['newsapi', 'finnhub'],
+          newsKeywords: ['tariff', 'China', 'trade deal', 'executive order', 'sanctions', 'tech', 'chips'],
+          newsMaxAge: 2,
+        },
+      },
+      {
+        id: 'news-desk5',
+        type: 'agent',
+        position: { x: 320, y: 190 },
+        data: {
+          label: 'News Momentum Desk',
+          agentNodeType: 'newsAgentNode',
+          agentType: 'news_analyst',
+          model: 'gemini-2.0-flash',
+          symbols: ['AAPL', 'NVDA', 'TSLA'],
+          confidenceThreshold: 0.5,
+          newsSources: ['newsapi', 'sec', 'finnhub'],
+          newsKeywords: ['breaking', 'guidance', 'upgrade', 'downgrade', 'acquisition', 'earnings'],
+          newsMaxAge: 2,
+        },
+      },
+      {
+        id: 'social-pulse',
+        type: 'agent',
+        position: { x: 320, y: 360 },
+        data: {
+          label: 'Social Pulse',
+          agentNodeType: 'socialAgentNode',
+          agentType: 'social_monitor',
+          model: 'gemini-2.0-flash',
+          symbols: ['AAPL', 'NVDA', 'TSLA'],
+          confidenceThreshold: 0.5,
+          socialPlatforms: ['twitter', 'truthsocial', 'reddit'],
+          socialAccounts: ['@realDonaldTrump', '@POTUS', '@WhiteHouse'],
+          socialKeywords: ['tariff', 'China', 'tech', 'regulation', 'antitrust', '$AAPL', '$NVDA', '$TSLA'],
+        },
+      },
+      {
+        id: 'chartist',
+        type: 'agent',
+        position: { x: 320, y: 530 },
+        data: {
+          label: 'Chartist (Priced In?)',
+          agentNodeType: 'technicalAgentNode',
+          agentType: 'technical_analyst',
+          model: 'gemini-2.0-flash',
+          symbols: ['AAPL', 'NVDA', 'TSLA'],
+          confidenceThreshold: 0.5,
+          technicalTimeframes: ['15m', '1H', '1D'],
+          technicalIndicators: ['rsi', 'macd', 'volume', 'support_resistance'],
+        },
+      },
+      {
+        id: 'valuation',
+        type: 'agent',
+        position: { x: 320, y: 700 },
+        data: {
+          label: 'Valuation Desk',
+          agentNodeType: 'fundamentalsAgentNode',
+          agentType: 'fundamentals_analyst',
+          model: 'gemini-2.0-flash',
+          symbols: ['AAPL', 'NVDA', 'TSLA'],
+          confidenceThreshold: 0.5,
+          reportTypes: ['10-K', '10-Q', 'earnings', 'guidance'],
+          analystSources: ['wallstreet', 'institutional'],
+          lookbackQuarters: 4,
+        },
+      },
+
+      // ── PM verdict (synthesis) ────────────────────────────────────────
+      {
+        id: 'pm-synth',
+        type: 'agent',
+        position: { x: 690, y: 320 },
+        data: {
+          label: 'PM: Rumor vs News Verdict',
+          agentNodeType: 'synthesisAgentNode',
+          agentType: 'synthesis',
+          model: 'gemini-2.5-pro',
+          symbols: ['AAPL', 'NVDA', 'TSLA'],
+          confidenceThreshold: 0.6,
+        },
+      },
+
+      // ── Priced-in check (algo) ────────────────────────────────────────
+      {
+        id: 'rsi5',
+        type: 'indicator',
+        position: { x: 690, y: 660 },
+        data: { label: 'RSI (14) 1H', indicatorType: 'rsi', timeframe: '60', params: { period: 14 } },
+      },
+
+      // ── Thresholds ────────────────────────────────────────────────────
+      { id: 'k065', type: 'math', position: { x: 980, y: 300 }, data: { label: '0.65', mathType: 'number', value: 0.65 } },
+      { id: 'k035', type: 'math', position: { x: 980, y: 160 }, data: { label: '0.35', mathType: 'number', value: 0.35 } },
+      { id: 'k70', type: 'math', position: { x: 980, y: 660 }, data: { label: '70', mathType: 'number', value: 70 } },
+
+      // ── Conditions ────────────────────────────────────────────────────
+      { id: 'risk-flag', type: 'condition', position: { x: 1150, y: 170 }, data: { label: 'Bearish (<0.35)', conditionType: 'compare', operator: '<' } },
+      { id: 'conviction', type: 'condition', position: { x: 1150, y: 320 }, data: { label: 'Conviction (>0.65)', conditionType: 'compare', operator: '>' } },
+      { id: 'priced-in', type: 'condition', position: { x: 1150, y: 560 }, data: { label: 'Priced In (RSI > 70)', conditionType: 'compare', operator: '>' } },
+      { id: 'room-to-run', type: 'condition', position: { x: 1150, y: 720 }, data: { label: 'Room to Run (RSI < 70)', conditionType: 'compare', operator: '<' } },
+
+      // ── Verdict gates ─────────────────────────────────────────────────
+      { id: 'late-crowd', type: 'condition', position: { x: 1400, y: 430 }, data: { label: 'Rumor Already Priced In', conditionType: 'and' } },
+      { id: 'fresh-rumor', type: 'condition', position: { x: 1400, y: 590 }, data: { label: 'Fresh Rumor + Momentum', conditionType: 'and' } },
+
+      // ── Speculation budget (sizing guidance, not an order) ────────────
+      { id: 'spec-budget', type: 'risk', position: { x: 1620, y: 590 }, data: { label: 'Speculation Budget 2%', riskType: 'positionPercent', maxPositionPercent: 2 } },
+
+      // ── Telegram: present the data, user makes the call ──────────────
+      {
+        id: 'tg-risk',
+        type: 'action',
+        position: { x: 1850, y: 140 },
+        data: {
+          label: 'Telegram: Risk Alert',
+          actionType: 'notification',
+          message:
+            'PORTFOLIO RISK: bearish confluence across news/social/technical desks on your holdings. Review the agent findings on the dashboard — options: trim, hedge, or hold. Your call; nothing was traded.',
+          channel: 'telegram',
+        },
+      },
+      {
+        id: 'tg-late',
+        type: 'action',
+        position: { x: 1850, y: 430 },
+        data: {
+          label: 'Telegram: Sell-the-News',
+          actionType: 'notification',
+          message:
+            'SELL-THE-NEWS WARNING: the story is bullish but momentum says it is already priced in (RSI > 70). Chasing here has historically provided the exit for early money. Consider taking profit into strength — your call; nothing was traded.',
+          channel: 'telegram',
+        },
+      },
+      {
+        id: 'tg-opp',
+        type: 'action',
+        position: { x: 1850, y: 590 },
+        data: {
+          label: 'Telegram: Buy-the-Rumor',
+          actionType: 'notification',
+          message:
+            'BUY-THE-RUMOR CANDIDATE: high-conviction story with room to run (RSI < 70). Speculation budget: max 2% of portfolio, expect full loss if the rumor dies. Findings + risk breakdown on the dashboard. You make the final call — nothing was traded.',
+          channel: 'telegram',
+        },
+      },
+      { id: 'log5', type: 'action', position: { x: 1850, y: 750 }, data: { label: 'Log Verdicts', actionType: 'log', message: 'Sentinel cycle complete — PM verdict logged.' } },
+    ],
+    edges: [
+      // Heartbeat → desks
+      { id: 'r1', source: 'sentinel-hb', sourceHandle: 'output', target: 'news-desk5', targetHandle: 'trigger' },
+      { id: 'r2', source: 'sentinel-hb', sourceHandle: 'output', target: 'social-pulse', targetHandle: 'trigger' },
+      { id: 'r3', source: 'sentinel-hb', sourceHandle: 'output', target: 'chartist', targetHandle: 'trigger' },
+      { id: 'r4', source: 'sentinel-hb', sourceHandle: 'output', target: 'valuation', targetHandle: 'trigger' },
+      // Raw Truth Social posts → Rumor Desk (documented chain: truthSocialPosts → newsAgentNode).
+      // Note: dataSource nodes expose their payload on the 'candles' handle.
+      { id: 'r5', source: 'truth-feed', sourceHandle: 'candles', target: 'rumor-desk', targetHandle: 'trigger' },
+      // Desks → PM synthesis
+      { id: 'r6', source: 'rumor-desk', sourceHandle: 'findings', target: 'pm-synth', targetHandle: 'agentData' },
+      { id: 'r7', source: 'news-desk5', sourceHandle: 'findings', target: 'pm-synth', targetHandle: 'agentData' },
+      { id: 'r8', source: 'social-pulse', sourceHandle: 'findings', target: 'pm-synth', targetHandle: 'agentData' },
+      { id: 'r9', source: 'chartist', sourceHandle: 'findings', target: 'pm-synth', targetHandle: 'agentData' },
+      { id: 'r10', source: 'valuation', sourceHandle: 'findings', target: 'pm-synth', targetHandle: 'agentData' },
+      // PM confidence → conviction / risk gates
+      { id: 'r11', source: 'pm-synth', sourceHandle: 'confidence', target: 'conviction', targetHandle: 'input-a' },
+      { id: 'r12', source: 'k065', sourceHandle: 'output', target: 'conviction', targetHandle: 'input-b' },
+      { id: 'r13', source: 'pm-synth', sourceHandle: 'confidence', target: 'risk-flag', targetHandle: 'input-a' },
+      { id: 'r14', source: 'k035', sourceHandle: 'output', target: 'risk-flag', targetHandle: 'input-b' },
+      // Priced-in check (same RSI + threshold, both directions)
+      { id: 'r15', source: 'rsi5', sourceHandle: 'value', target: 'priced-in', targetHandle: 'input-a' },
+      { id: 'r16', source: 'k70', sourceHandle: 'output', target: 'priced-in', targetHandle: 'input-b' },
+      { id: 'r17', source: 'rsi5', sourceHandle: 'value', target: 'room-to-run', targetHandle: 'input-a' },
+      { id: 'r18', source: 'k70', sourceHandle: 'output', target: 'room-to-run', targetHandle: 'input-b' },
+      // Verdict gates
+      { id: 'r19', source: 'conviction', sourceHandle: 'output', target: 'late-crowd', targetHandle: 'input-a' },
+      { id: 'r20', source: 'priced-in', sourceHandle: 'output', target: 'late-crowd', targetHandle: 'input-b' },
+      { id: 'r21', source: 'conviction', sourceHandle: 'output', target: 'fresh-rumor', targetHandle: 'input-a' },
+      { id: 'r22', source: 'room-to-run', sourceHandle: 'output', target: 'fresh-rumor', targetHandle: 'input-b' },
+      // Outcomes → Telegram (through the speculation budget on the opportunity path)
+      { id: 'r23', source: 'fresh-rumor', sourceHandle: 'output', target: 'spec-budget', targetHandle: 'trigger' },
+      // Risk nodes emit their computed sizing on the 'size' handle.
+      { id: 'r24', source: 'spec-budget', sourceHandle: 'size', target: 'tg-opp', targetHandle: 'trigger' },
+      { id: 'r25', source: 'late-crowd', sourceHandle: 'output', target: 'tg-late', targetHandle: 'trigger' },
+      { id: 'r26', source: 'risk-flag', sourceHandle: 'output', target: 'tg-risk', targetHandle: 'trigger' },
+      // Audit trail
+      { id: 'r27', source: 'pm-synth', sourceHandle: 'signal', target: 'log5', targetHandle: 'trigger' },
+    ],
+  },
 ];

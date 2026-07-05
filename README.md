@@ -2,11 +2,14 @@
 
 # OpenQnt
 
-**An autonomous, agentic quant platform — research, backtest, and trade from one place.**
+**The world's first open, source-available agentic asset manager — full transparency, full control.**
 
-Visually snap together strategies, let AI agents research and stress-test them,
-backtest against a canonical engine, and route orders to paper or live brokers —
-with a kill switch and a self-improvement loop that keeps what wins.
+Wall Street runs on closed black boxes. OpenQnt is the opposite: an autonomous
+AI asset-management team whose every agent, every prompt, and every decision
+path is code you can read, edit, and own. Visually snap together strategies,
+let AI agents research and stress-test them 24/7, backtest against a canonical
+engine, and route orders to paper or live brokers — with a kill switch, a risk
+gate, and a copilot that **learns your portfolio over time**.
 
 ![Frontend](https://img.shields.io/badge/frontend-React%20%2B%20Vite-61DAFB)
 ![Backend](https://img.shields.io/badge/backend-FastAPI%20%2B%20Python%203.12-3776AB)
@@ -35,8 +38,17 @@ a single agentic platform:
   indicators, conditions, actions, and AI agents into a strategy without
   writing code.
 - **🤖 Agentic research** — a hierarchical "boss" dispatches specialist agents
-  (via Google ADK + Gemini) that can pull market data, debate a thesis, and
-  even **author their own tools** in a sandbox.
+  (news, social/political, technical, fundamentals, macro, synthesis) that pull
+  market data, debate a thesis, and even **author their own tools** in a
+  sandbox. Every agent you drop on the canvas is live-monitored on the Agents
+  page — its thoughts, tool calls, and run history in the open.
+- **🧠 A quant copilot that gets better with time** — the AI Quant keeps a
+  persistent, human-readable memory brain (`soul.md`, `user.md`,
+  `portfolio.md`, one note per asset you hold or watch). After **every** run
+  and every chat, a learning phase reflects on what happened and updates what
+  it knows — about AAPL, about your book, about *you*. It compounds knowledge
+  like a real analyst, and you can open and edit every memory file it keeps.
+  Powered by frontier LLMs (Claude, Gemini, GPT — provider-pluggable).
 - **📈 Canonical backtest engine** — every strategy runs through one deterministic
   engine (built on `backtesting.py`), so a human and an agent get byte-for-byte
   identical numbers, with an equity/drawdown chart out of the box.
@@ -53,9 +65,36 @@ Docker-composable.
 
 ---
 
-## Screenshots
+## Featured template: "Buy the Rumor, Sell the News"
 
-> _Coming soon._ Drop UI captures into `docs/screenshots/` and link them here.
+One click in the strategy builder deploys an entire trading desk that works
+the oldest playbook on the street — around the clock, on **your** portfolio:
+
+![Buy the Rumor, Sell the News template on the strategy canvas](docs/screenshots/template-buy-rumor-sell-news.png)
+
+- **Rumor Desk** reads the raw **Truth Social feed** — policy rumors move
+  markets before journalists finish typing.
+- **News Momentum Desk + Social Pulse** measure whether the story is still a
+  rumor or already front-page news.
+- **The Chartist** checks if the move is already priced in (RSI, volume) —
+  buying a story the market has already bought is exit liquidity.
+- **Valuation Desk** asks whether the story changes fair value at all.
+- **The PM (synthesis agent)** weighs all five desks and issues a verdict
+  with an explicit confidence score.
+
+Then it **messages you on Telegram** with one of three verdicts:
+
+| Verdict | What it tells you |
+| --- | --- |
+| 🟢 **Buy-the-rumor candidate** | High-conviction story with room to run — plus an explicit **speculation budget (≤2% of portfolio)** and the risk you're taking |
+| 🟡 **Sell-the-news warning** | The story is bullish but already priced in (RSI > 70) — late chasers historically provide the exit |
+| 🔴 **Portfolio risk alert** | Bearish confluence across desks on your holdings, with de-risk options |
+
+**It never trades on its own.** The graph deliberately contains no order
+node — it presents the data, quantifies the risk, and *you* make the final
+call. Every agent in the template appears live on the Agents page, and the
+graph ships with automated integrity tests — every node, edge, and handle is
+validated by the template test suite.
 
 ---
 
@@ -138,6 +177,57 @@ Mounted under `/` once the frontend is running:
 ---
 
 ## Architecture
+
+### High-level design
+
+```mermaid
+flowchart TB
+    User(("You — final call<br/>on every trade"))
+
+    subgraph Clients["Clients"]
+        Web["React web app"]
+        Desktop["Electron desktop"]
+        Mobile["iOS app"]
+    end
+
+    subgraph Backend["FastAPI compute backend"]
+        AgentRT["Agent runtime<br/>news · social · technical<br/>fundamentals · macro · synthesis"]
+        Brain[("Copilot Brain<br/>soul.md · user.md · portfolio.md<br/>assets/&lt;TICKER&gt;.md")]
+        Curator["Learning curator<br/>reflects after every run & chat"]
+        BT["Canonical backtest engine"]
+        Exec["Execution<br/>risk gate + kill switch"]
+        Sandbox["Tool sandbox<br/>agents author their own tools"]
+    end
+
+    subgraph Orchestrator["Node.js orchestrator"]
+        Flow["Strategy-flow compiler<br/>& executor"]
+        Notify["Notifications<br/>Telegram · voice call · email"]
+    end
+
+    Market[("Market signals<br/>news · Truth Social · prices<br/>filings · macro")]
+    Brokers[("Brokers<br/>Alpaca · IBKR · Paper")]
+
+    Clients --> Backend
+    Clients --> Orchestrator
+    Market --> AgentRT
+    AgentRT <--> Brain
+    AgentRT --> Curator
+    Curator --> Brain
+    AgentRT --> Sandbox
+    Flow --> AgentRT
+    Flow --> Notify
+    Notify --> User
+    User --> Exec
+    Exec --> Brokers
+    BT --- AgentRT
+```
+
+The loop that makes it feel alive: agents read market signals **through** the
+memory brain (so they already know your book), act, and then the learning
+curator writes back what was worth remembering — so the next run starts
+smarter than the last.
+
+### Runtime detail
 
 ```
                    ┌─────────────────────────┐
