@@ -46,10 +46,15 @@ async def read_memory_file(name: str):
 
 @router.put("/file")
 async def write_memory_file(body: MemoryFile):
-    """Overwrite one memory file (human edit — no agent write restrictions)."""
+    """Overwrite one memory file (human edit — no agent write restrictions).
+
+    Returns the canonical content as stored — the store enforces a hard size
+    cap, so what lands on disk may differ from what was sent. Clients must
+    render the returned content, not their local draft.
+    """
     try:
         canonical = store.write(body.name, body.content)  # actor=user: unrestricted
-        return {"name": canonical, "ok": True}
+        return {"name": canonical, "content": store.read(canonical), "ok": True}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

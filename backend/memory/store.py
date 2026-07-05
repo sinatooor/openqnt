@@ -237,7 +237,9 @@ def list_assets() -> list[str]:
     d = MEMORY_ROOT / _ASSETS_SUBDIR
     if not d.exists():
         return []
-    return sorted(f.stem.upper() for f in d.glob("*.md"))
+    # Filter by ticker validity so we never advertise a name (e.g. a stray
+    # hand-dropped "foo bar.md") that read()/normalize_name() would reject.
+    return sorted(f.stem.upper() for f in d.glob("*.md") if is_valid_ticker(f.stem))
 
 
 def list_files() -> list[dict[str, Any]]:

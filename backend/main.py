@@ -436,6 +436,7 @@ ALLOWED_ORIGINS = [
     "http://openqwnt-orchestrator:3000",   # Docker internal
     "http://orchestrator:3000",            # Docker service name
     "http://localhost:5173",               # Allow frontend in dev for backwards compat
+    "http://localhost",                    # nginx prod-web build (frontend on :80)
     "app://localhost",                     # Electron custom protocol
     "null",                                # file:// renderer
 ]
