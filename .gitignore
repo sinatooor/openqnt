@@ -48,7 +48,9 @@ backend/venv/
 # Per-user state — written by the platform, never committed
 # (was accidentally tracked before; cleaned up via `git rm --cached`)
 # =============================================================================
-agents/
+# Root-anchored: the runtime state dir only — NOT src/features/agents/ (an
+# unanchored `agents/` silently ignored any new frontend file under it).
+/agents/
 # Copilot memory brain (runtime, per-user state). Root-anchored so it does NOT
 # match the backend/memory/ SOURCE package.
 /memory/

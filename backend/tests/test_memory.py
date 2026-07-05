@@ -98,6 +98,26 @@ def test_journal_appends_and_rolls(mem):
     assert "entry 0" not in text  # oldest rolled off
 
 
+def test_write_over_hard_cap_truncates_and_read_returns_canonical(mem):
+    big = "x" * (store.HARD_CAP_CHARS + 500)
+    store.write("portfolio.md", big)
+    stored = store.read("portfolio.md")
+    assert len(stored) < len(big)
+    assert "truncated: exceeded memory size cap" in stored
+    # Clients must render read-back (canonical) content, not their draft —
+    # the PUT route returns store.read() for exactly this reason.
+
+
+def test_list_assets_excludes_invalid_ticker_files(mem):
+    store.ensure_asset("AAPL")
+    # A stray hand-dropped file whose stem is not a valid ticker.
+    (mem / "assets" / "foo bar.md").write_text("junk", encoding="utf-8")
+    assert store.list_assets() == ["AAPL"]
+    advertised = [f["name"] for f in store.list_files()]
+    assert "assets/AAPL.md" in advertised
+    assert all("foo bar" not in n for n in advertised)
+
+
 # ── reset to default ──────────────────────────────────────────────────
 
 def test_reset_to_default(mem):
