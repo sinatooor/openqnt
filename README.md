@@ -12,6 +12,7 @@ them on a canonical engine and send orders to paper or live brokers. A kill
 switch and a risk gate stay in front of every order, and the copilot **learns
 your portfolio over time**.
 
+[![CI](https://github.com/sinatooor/openqnt/actions/workflows/ci.yml/badge.svg)](https://github.com/sinatooor/openqnt/actions/workflows/ci.yml)
 ![Frontend](https://img.shields.io/badge/frontend-React%20%2B%20Vite-61DAFB)
 ![Backend](https://img.shields.io/badge/backend-FastAPI%20%2B%20Python%203.12-3776AB)
 ![Agents](https://img.shields.io/badge/agents-Google%20ADK%20%2B%20Gemini-4285F4)
@@ -346,6 +347,13 @@ no broker creds → PaperBroker). Highlights:
 > **Never commit your `.env`.** It is gitignored. Rotate any key you think may
 > have been exposed.
 
+### Local market data (optional)
+
+Backtests pull prices from Yahoo Finance by default, so no data download is
+needed to get started. If you have your own OHLCV CSV exports (for example from
+Databento), drop them into a `stock-data/` folder at the repo root and load them
+with `python backend/import_stock_data.py`. The folder is gitignored.
+
 ---
 
 ## Extending it
@@ -394,6 +402,14 @@ e2e/              Playwright specs
 docs/             architecture, data-provider, and how-to-run notes
 scripts/          start-all.sh and helpers
 ```
+
+---
+
+## Contributing
+
+Issues and pull requests are welcome. Start with
+[CONTRIBUTING.md](CONTRIBUTING.md). Report security problems privately as
+described in [SECURITY.md](SECURITY.md).
 
 ---
 
