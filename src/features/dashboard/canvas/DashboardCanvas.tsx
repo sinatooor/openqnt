@@ -32,8 +32,12 @@ export default function DashboardCanvas() {
   // `h`, etc. Older code here used `Layout` as if it were a single cell
   // — fixed by importing `LayoutItem` for the cell-level operations.
   const handleLayoutChange = useCallback(
-    (currentLayout: Layout, _allLayouts: ResponsiveLayouts) => {
-      updateLayout(currentLayout);
+    (currentLayout: Layout, allLayouts: ResponsiveLayouts) => {
+      // Persist only the 12-column (lg) layout. Narrower breakpoints are
+      // derived from it; saving their reflowed positions would overwrite the
+      // canonical layout (this happened on first paint, when the grid briefly
+      // renders at the 1200px placeholder width and picks the md breakpoint).
+      updateLayout(allLayouts.lg ?? currentLayout);
     },
     [updateLayout],
   );
@@ -94,6 +98,10 @@ export default function DashboardCanvas() {
         <div ref={containerRef}>
           {mounted && (
             <ResponsiveGridLayout
+              // Remount when the breakpoint changes so the grid lays out from
+              // the stored layout instead of keeping positions it reflowed for
+              // a narrower breakpoint (e.g. the 1200px placeholder on first paint).
+              key={width > 1200 ? 'lg' : width > 996 ? 'md' : width > 768 ? 'sm' : 'xs'}
               className="dashboard-grid"
               width={width}
               layouts={layouts}
@@ -166,7 +174,7 @@ export default function DashboardCanvas() {
 
       {/* Footer */}
       <div className="terminal-footerbar flex items-center justify-between px-3 py-1.5 text-[10px] text-zinc-500">
-        <span>FINCEPT TERMINAL v1.0.0</span>
+        <span>OPENQNT TERMINAL v0.1.0</span>
         <span className="text-emerald-400">FEEDS: CONNECTED</span>
         <span>LAT: 120ms</span>
       </div>
