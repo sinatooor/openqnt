@@ -413,10 +413,10 @@ educational, research, and internal-evaluation use. **Commercial and production
 use requires a Commercial License.** See the [LICENSE](LICENSE) for the full
 terms, and contact **s_i_n_a@icloud.com** for commercial licensing.
 
-**Sina Rajaeeian is the sole and exclusive owner of OpenQnt and all related
-intellectual property** — copyrights, patents, trademarks, and trade secrets,
-worldwide. All rights reserved. The license grants a limited right to use; it
-transfers no ownership.
+**OpenQnt and all related intellectual property** (copyrights, patents,
+trademarks, and trade secrets, worldwide) **are owned by its co-founders, Sina
+Rajaeeian and Nathen Antony.** All rights reserved. The license grants a limited
+right to use; it transfers no ownership.
 
 By contributing, you agree to the contribution terms in the LICENSE.
 
@@ -439,5 +439,5 @@ covers the core approach behind OpenQnt.
 
 We met at SSE Business Lab, where we built this idea as
 [Aruval.com](https://aruval.com), a closed-source startup venture being built
-out of Antler VC's office in Stockholm. We then decided to open source it as
+out of Antler VC's office in Stockholm. We then decided to make it source-available as
 OpenQnt, with the goal of democratizing retail trading.
