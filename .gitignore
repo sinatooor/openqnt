@@ -136,3 +136,9 @@ skills-lock.json
 .last_prompt
 .last_ai_response
 .playwright-mcp/
+
+# Market data: download your own (see README > Configuration)
+stock-data/
+
+# npm is the package manager for the web app (package-lock.json)
+bun.lockb
