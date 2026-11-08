@@ -19,6 +19,9 @@ your portfolio over time**.
 ![Backtest](https://img.shields.io/badge/backtest-backtesting.py-purple)
 ![License](https://img.shields.io/badge/license-OQCL%20(source--available)-orange)
 
+
+![OpenQnt demo: loading the "Buy the Rumor, Sell the News" agent template into the strategy builder](docs/screenshots/demo.gif)
+
 </div>
 
 > [!WARNING]
