@@ -422,9 +422,22 @@ By contributing, you agree to the contribution terms in the LICENSE.
 
 ---
 
-## Author
+## Authors
 
-**Sina Rajaeeian** — Founder & sole developer.
+**Sina Rajaeeian** — Co-founder & lead developer.
 Double M.Sc. at KTH Royal Institute of Technology (Industrial Engineering &
 Management + Machine Learning), building at the intersection of AI/ML,
-full-stack, and quantitative finance.
+full-stack development, and quantitative finance.
+
+**Nathen Antony** — Co-founder.
+BSc, Stockholm School of Economics. Lead author of the provisional patent
+*System for Generating Executable Quantitative Trading Strategies from
+Block-Based Intermediate Representations of Natural Language Input*, which
+covers the core approach behind OpenQnt.
+
+### Origin
+
+We met at SSE Business Lab, where we built this idea as
+[Aruval.com](https://aruval.com), a closed-source startup venture being built
+out of Antler VC's office in Stockholm. We then decided to open source it as
+OpenQnt, with the goal of democratizing retail trading.
