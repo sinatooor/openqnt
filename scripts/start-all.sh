@@ -2,7 +2,7 @@
 # start-all.sh — boot every service the app needs.
 #
 # What this starts (in this order):
-#   1. FastAPI backend  (uvicorn main:app, port 8000) — fyer conda env
+#   1. FastAPI backend  (uvicorn main:app, port 8000) — openqnt conda env
 #   2. Vite dev server  (npm run dev, port 5173)
 #
 # What this does NOT start (you start these yourself):
@@ -52,11 +52,11 @@ case "$BROKER" in
     ;;
 esac
 
-# ── locate the fyer conda interpreter ──────────────────────────────────
-FYER_PY="${FYER_PY:-/opt/miniconda3/envs/fyer/bin/python}"
-if [[ ! -x "$FYER_PY" ]]; then
-  echo "fyer python not found at $FYER_PY" >&2
-  echo "set FYER_PY=/path/to/miniconda3/envs/fyer/bin/python and retry" >&2
+# ── locate the openqnt conda interpreter ──────────────────────────────────
+OPENQNT_PY="${OPENQNT_PY:-/opt/miniconda3/envs/openqnt/bin/python}"
+if [[ ! -x "$OPENQNT_PY" ]]; then
+  echo "openqnt python not found at $OPENQNT_PY" >&2
+  echo "set OPENQNT_PY=/path/to/miniconda3/envs/openqnt/bin/python and retry" >&2
   exit 1
 fi
 
@@ -73,8 +73,8 @@ shutdown() {
 trap shutdown EXIT INT TERM
 
 # ── 1. backend ─────────────────────────────────────────────────────────
-echo "→ backend  python=$FYER_PY  port=8000"
-( cd "$REPO/backend" && exec "$FYER_PY" -m uvicorn main:app --port 8000 --reload ) &
+echo "→ backend  python=$OPENQNT_PY  port=8000"
+( cd "$REPO/backend" && exec "$OPENQNT_PY" -m uvicorn main:app --port 8000 --reload ) &
 PIDS+=($!)
 
 # Give it a couple seconds so the frontend's first requests don't 404.

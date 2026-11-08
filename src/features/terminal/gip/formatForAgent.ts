@@ -79,7 +79,7 @@ export function formatGipForAgent(data: GipData): string {
   out.push(`# GIP — Intraday Price | ${center.ticker}`);
   out.push(`> Generated: ${new Date().toISOString()}`);
   out.push(`> Trading date: ${tradingDate} · Interval: ${interval} · Extended hours: ${extendedHours ? 'on' : 'off'}`);
-  out.push('> Source: fyer-terminal mock (deterministic). Replace with BPIPE/Polygon/IEX feed when available.');
+  out.push('> Source: openqnt-terminal mock (deterministic). Replace with BPIPE/Polygon/IEX feed when available.');
   out.push('');
 
   out.push('## Focal Instrument');

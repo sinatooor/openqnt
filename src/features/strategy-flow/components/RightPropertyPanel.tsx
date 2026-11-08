@@ -2996,7 +2996,7 @@ const TriggerProperties = memo(({ nodeId, data }: TriggerPropertiesProps) => {
                   checked={(data.sources ?? []).includes(src)}
                   onChange={(e) => {
                     const current = new Set(data.sources ?? []);
-                    e.target.checked ? current.add(src) : current.delete(src);
+                    if (e.target.checked) current.add(src); else current.delete(src);
                     updateNodeData(nodeId, { sources: Array.from(current) });
                   }}
                   className="w-4 h-4 accent-primary"
@@ -3028,7 +3028,7 @@ const TriggerProperties = memo(({ nodeId, data }: TriggerPropertiesProps) => {
                   checked={(data.eventTypes ?? []).includes(ev)}
                   onChange={(e) => {
                     const current = new Set(data.eventTypes ?? []);
-                    e.target.checked ? current.add(ev) : current.delete(ev);
+                    if (e.target.checked) current.add(ev); else current.delete(ev);
                     updateNodeData(nodeId, { eventTypes: Array.from(current) });
                   }}
                   className="w-4 h-4 accent-primary"

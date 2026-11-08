@@ -336,7 +336,7 @@ export const useAiChatStore = create<AiChatState>()(
       },
     }),
     {
-      name: 'fyer-ai-chat-v2',
+      name: 'openqnt-ai-chat-v2',
       storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => ({
         sessions: state.sessions,

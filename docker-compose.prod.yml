@@ -8,10 +8,10 @@ services:
   backend:
     build:
       target: prod
-    image: openqwnt-backend:prod
+    image: openqnt-backend:prod
     # Drop the source mount; the prod image carries its own copy.
     volumes:
-      - openqwnt-agents:/app/agents
+      - openqnt-agents:/app/agents
 
   frontend:
     build:
@@ -21,7 +21,7 @@ services:
         # reach this host. For a real deployment, set this to your public
         # backend URL via the .env file.
         VITE_BACKEND_URL: ${VITE_BACKEND_URL:-http://localhost:8000}
-    image: openqwnt-frontend:prod
+    image: openqnt-frontend:prod
     ports:
       - "80:80"
     volumes: []

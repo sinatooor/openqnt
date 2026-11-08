@@ -167,7 +167,7 @@ export function parsePortfolioCsv(text: string): {
     if (!Number.isFinite(qty) || qty <= 0) errors.push('invalid quantity');
 
     const costRaw = get('avgCost');
-    const cleanedCost = costRaw ? costRaw.replace(/[^\d.\-]/g, '') : '';
+    const cleanedCost = costRaw ? costRaw.replace(/[^\d.-]/g, '') : '';
     const avgCost = cleanedCost ? parseFloat(cleanedCost) : NaN;
     if (!Number.isFinite(avgCost) || avgCost < 0) errors.push('invalid avg cost');
 
@@ -182,7 +182,7 @@ export function parsePortfolioCsv(text: string): {
     }
 
     const feesRaw = get('fees');
-    const fees = feesRaw ? parseFloat(feesRaw.replace(/[^\d.\-]/g, '')) : undefined;
+    const fees = feesRaw ? parseFloat(feesRaw.replace(/[^\d.-]/g, '')) : undefined;
 
     rows.push({
       symbol,

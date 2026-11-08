@@ -23,9 +23,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/realtime", tags=["realtime"])
 
 
-USGS_USER_AGENT = os.getenv("USGS_USER_AGENT", "OpenQwnt/1.0")
+USGS_USER_AGENT = os.getenv("USGS_USER_AGENT", "OpenQnt/1.0")
 NOAA_USER_AGENT = os.getenv(
-    "NOAA_USER_AGENT", "OpenQwnt/1.0 (support@openqwnt.com)"
+    "NOAA_USER_AGENT", "OpenQnt/1.0 (hello@sinalytica.com)"
 )
 EIA_API_KEY = os.getenv("EIA_API_KEY")
 OPENAQ_API_KEY = os.getenv("OPENAQ_API_KEY")

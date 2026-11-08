@@ -201,14 +201,14 @@ def _resolve_adk_cmd() -> Optional[str]:
     """
     Find the `adk` executable in the active Python environment.
 
-    When the backend is started with `conda activate fyer && uvicorn main:app`,
-    sys.executable points to the fyer env's Python binary, e.g.:
-        /opt/anaconda3/envs/fyer/bin/python
+    When the backend is started with `conda activate openqnt && uvicorn main:app`,
+    sys.executable points to the openqnt env's Python binary, e.g.:
+        /opt/anaconda3/envs/openqnt/bin/python
     So `adk` lives right next to it:
-        /opt/anaconda3/envs/fyer/bin/adk
+        /opt/anaconda3/envs/openqnt/bin/adk
 
     This means the spawned `adk web` process automatically inherits the full
-    conda fyer environment — no extra activation step needed.
+    conda openqnt environment — no extra activation step needed.
     """
     import shutil
 

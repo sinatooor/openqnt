@@ -36,13 +36,17 @@ const MODE_FILTERS: { id: ChatMode; label: string }[] = [
   { id: 'boss', label: 'Boss' },
 ];
 
-const FILTER_LABEL: Record<Filter, string> = {
+const MODE_LABEL: Record<'all' | ChatMode, string> = {
   all: 'All',
   ask: 'Ask',
   strategy: 'Strategy',
   code: 'Code',
   boss: 'Boss',
 };
+
+function filterLabel(f: Filter): string {
+  return (MODE_LABEL as Record<string, string>)[f] ?? SKILLS_BY_ID[f as SkillId]?.label ?? f;
+}
 
 export function ConversationHistorySidebar() {
   const sessions = useAiChatStore((s) => s.sessions);
@@ -101,7 +105,7 @@ export function ConversationHistorySidebar() {
         </span>
         {filter !== 'all' && (
           <span className="text-[9.5px] text-purple-300/80 font-medium">
-            · {FILTER_LABEL[filter]}
+            · {filterLabel(filter)}
           </span>
         )}
         <Popover open={filterOpen} onOpenChange={setFilterOpen}>
@@ -179,7 +183,7 @@ function FilterRow({
           : 'text-foreground/75 hover:bg-white/[0.04] hover:text-foreground',
       )}
     >
-      <span className="flex-1">{FILTER_LABEL[id]}</span>
+      <span className="flex-1">{filterLabel(id)}</span>
       {active && <Check className="w-3 h-3 text-purple-300" />}
     </button>
   );

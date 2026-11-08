@@ -1,4 +1,4 @@
-# openqwnt — architecture
+# openqnt — architecture
 
 This document is the architectural reference for the platform as it
 exists at the end of Phase J (see [PLAN.md](../PLAN.md) and the

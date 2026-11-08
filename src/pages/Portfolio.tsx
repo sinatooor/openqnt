@@ -257,7 +257,7 @@ const Portfolio = () => {
     }
     const csv = realizedGainLossCsv(store.realizedSales);
     const yyyy = new Date().getFullYear();
-    downloadCsv(`openqwnt-realized-${yyyy}.csv`, csv);
+    downloadCsv(`openqnt-realized-${yyyy}.csv`, csv);
     toast.success(`Exported ${store.realizedSales.length} realized sales.`);
   }, [store.realizedSales]);
 
@@ -267,7 +267,7 @@ const Portfolio = () => {
       return;
     }
     const csv = holdingsSnapshotCsv(store.holdings);
-    downloadCsv(`openqwnt-holdings-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+    downloadCsv(`openqnt-holdings-${new Date().toISOString().slice(0, 10)}.csv`, csv);
     toast.success(`Exported ${store.holdings.length} holdings.`);
   }, [store.holdings]);
 

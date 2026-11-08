@@ -37,7 +37,7 @@ const Login = () => {
             <div style={styles.card}>
                 <div style={styles.logo}>
                     <span style={styles.logoIcon}>⚡</span>
-                    <h1 style={styles.title}>OpenQwnt</h1>
+                    <h1 style={styles.title}>OpenQnt</h1>
                     <p style={styles.subtitle}>AI-Powered Trading Automation</p>
                 </div>
 

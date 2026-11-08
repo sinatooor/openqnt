@@ -16,9 +16,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 import traceback
 
-# Log directory. In desktop builds OPENQWNT_DATA_DIR is the user-data path; the
+# Log directory. In desktop builds OPENQNT_DATA_DIR is the user-data path; the
 # in-tree default keeps `scripts/start-all.sh` behavior unchanged.
-_DATA_DIR = Path(os.environ.get("OPENQWNT_DATA_DIR", str(Path(__file__).parent)))
+_DATA_DIR = Path(os.environ.get("OPENQNT_DATA_DIR", str(Path(__file__).parent)))
 LOG_DIR = _DATA_DIR / "logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 

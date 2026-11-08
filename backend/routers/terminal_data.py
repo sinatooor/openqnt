@@ -44,7 +44,7 @@ router = APIRouter(prefix="/api/terminal", tags=["terminal-data"])
 
 SEC_USER_AGENT = os.getenv(
     "SEC_USER_AGENT",
-    "OpenQwnt/1.0 (support@openqwnt.com)",
+    "OpenQnt/1.0 (hello@sinalytica.com)",
 )
 FMP_API_KEY = os.getenv("FMP_API_KEY")
 

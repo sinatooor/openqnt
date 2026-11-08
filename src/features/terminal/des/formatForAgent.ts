@@ -53,7 +53,7 @@ export function formatDesForAgent(data: DesData): string {
 
   out.push(`# DES — Company Description | ${c.ticker} (${c.name})`);
   out.push(`> Generated: ${new Date().toISOString()}`);
-  out.push('> Source: fyer-terminal mock (deterministic). Replace with live fundamentals feed when available.');
+  out.push('> Source: openqnt-terminal mock (deterministic). Replace with live fundamentals feed when available.');
   out.push('');
 
   // --- Identification ----------------------------------------------------

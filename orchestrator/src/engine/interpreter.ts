@@ -367,7 +367,7 @@ export class FlowInterpreter {
                             const right = Boolean(this.resolveInput(outputs, nodeId, 'input-b'));
                             result = condType === 'and' ? left && right : left || right;
                         } else if (condType === 'not') {
-                            result = !Boolean(this.resolveInput(outputs, nodeId, 'input'));
+                            result = !this.resolveInput(outputs, nodeId, 'input');
                         } else if (condType === 'crossover' || condType === 'crossunder') {
                             const left = Number(this.resolveInput(outputs, nodeId, 'input-a') ?? 0);
                             const right = Number(this.resolveInput(outputs, nodeId, 'input-b') ?? 0);

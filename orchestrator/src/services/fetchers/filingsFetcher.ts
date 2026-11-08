@@ -22,7 +22,7 @@ interface FilingsConfig {
 
 const EDGAR_SEARCH = 'https://efts.sec.gov/LATEST/search-index';
 const EDGAR_FILINGS = 'https://data.sec.gov/submissions';
-const SEC_USER_AGENT = 'OpenQwnt/1.0 (support@openqwnt.com)';
+const SEC_USER_AGENT = 'OpenQnt/1.0 (hello@sinalytica.com)';
 
 // CIK lookup cache
 const cikCache = new Map<string, string>();

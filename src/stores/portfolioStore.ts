@@ -613,7 +613,7 @@ export const usePortfolioStore = create<PortfolioState>()(
       setCostBasisMethod: (method) => set({ costBasisMethod: method }),
     }),
     {
-      name: 'openqwnt-portfolio',
+      name: 'openqnt-portfolio',
       storage: createJSONStorage(() => localStorage),
       version: 3,
       migrate: (persisted: unknown, version) => {

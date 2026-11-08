@@ -87,7 +87,7 @@ export function formatHdsForAgent(data: HdsData): string {
   out.push(`# HDS — Holders Detail | ${center.ticker}`);
   out.push(`> Generated: ${new Date().toISOString()}`);
   out.push(`> As-of: ${asOf}`);
-  out.push(`> Source: fyer-terminal mock (deterministic). Replace with live 13F/NPORT feed when available.`);
+  out.push(`> Source: openqnt-terminal mock (deterministic). Replace with live 13F/NPORT feed when available.`);
   out.push('');
 
   // Focal summary

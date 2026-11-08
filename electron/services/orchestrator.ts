@@ -82,7 +82,7 @@ export async function startOrchestrator(opts: OrchestratorOptions): Promise<Orch
     ...process.env,
     PORT: String(port),
     NODE_ENV: 'production',
-    OPENQWNT_DESKTOP_MODE: 'true',
+    OPENQNT_DESKTOP_MODE: 'true',
     DATABASE_URL: opts.databaseUrl,
     REDIS_HOST: opts.redisHost,
     REDIS_PORT: String(opts.redisPort),

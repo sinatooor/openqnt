@@ -814,7 +814,7 @@ const Onboarding = () => {
           }}
         >
           <Typography sx={{ fontWeight: 700, fontSize: 17, color: 'grey.200', letterSpacing: -0.3 }}>
-            ⚡ OpenQwnt
+            ⚡ OpenQnt
           </Typography>
           <Button
             size="small"

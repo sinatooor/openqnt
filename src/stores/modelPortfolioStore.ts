@@ -140,7 +140,7 @@ export const useModelPortfolioStore = create<ModelState>()(
       },
     }),
     {
-      name: 'openqwnt-model-portfolios',
+      name: 'openqnt-model-portfolios',
       storage: createJSONStorage(() => localStorage),
     }
   )

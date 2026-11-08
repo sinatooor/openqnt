@@ -129,7 +129,7 @@ export const useAccountStore = create<AccountState>()(
       defaultTaxStatusFor: (type) => TAX_STATUS_BY_TYPE[type] ?? 'taxable',
     }),
     {
-      name: 'openqwnt-accounts',
+      name: 'openqnt-accounts',
       storage: createJSONStorage(() => localStorage),
     }
   )

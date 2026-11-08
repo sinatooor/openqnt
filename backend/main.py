@@ -60,14 +60,14 @@ except Exception as e:
 # Start Market Data Scheduler (auto-refresh every 5 minutes).
 # Skip in desktop mode — many users on residential IPs hammering yfinance every
 # 5 min trips rate limits and isn't useful for a single-user desktop session.
-if os.environ.get("OPENQWNT_DESKTOP_MODE") != "true":
+if os.environ.get("OPENQNT_DESKTOP_MODE") != "true":
     try:
         from market_data_scheduler import start_scheduler
         start_scheduler()
     except Exception as e:
         print(f"Warning: Market data scheduler failed to start: {e}")
 else:
-    print("[desktop] Market data scheduler disabled (OPENQWNT_DESKTOP_MODE=true)")
+    print("[desktop] Market data scheduler disabled (OPENQNT_DESKTOP_MODE=true)")
 
 # Agent cron scheduler — fires `scheduled_agents` rows on their interval
 # and persists results into `agent_runs` so the strategy-flow agentRunQuery
@@ -433,7 +433,7 @@ async def export_strategy(req: ExportRequest):
 # and the backend binds 127.0.0.1, so allow-all is safe there.
 ALLOWED_ORIGINS = [
     os.getenv("ORCHESTRATOR_URL", "http://localhost:3000"),
-    "http://openqwnt-orchestrator:3000",   # Docker internal
+    "http://openqnt-orchestrator:3000",   # Docker internal
     "http://orchestrator:3000",            # Docker service name
     "http://localhost:5173",               # Allow frontend in dev for backwards compat
     "http://localhost",                    # nginx prod-web build (frontend on :80)
@@ -441,7 +441,7 @@ ALLOWED_ORIGINS = [
     "null",                                # file:// renderer
 ]
 
-if os.environ.get("OPENQWNT_DESKTOP_MODE") == "true":
+if os.environ.get("OPENQNT_DESKTOP_MODE") == "true":
     _cors_kwargs = dict(allow_origins=["*"], allow_credentials=False)
 else:
     _cors_kwargs = dict(allow_origins=ALLOWED_ORIGINS, allow_credentials=True)

@@ -39,7 +39,7 @@ export async function fetchSocial(source: DataSource): Promise<RawEvent[]> {
             try {
                 const url = `https://www.reddit.com/r/${subreddit}/hot.json?limit=${limit}`;
                 const response = await fetch(url, {
-                    headers: { 'User-Agent': 'OpenQwnt/1.0 (investment research)' },
+                    headers: { 'User-Agent': 'OpenQnt/1.0 (investment research)' },
                 });
 
                 if (!response.ok) {
@@ -154,7 +154,7 @@ async function fetchTruthSocialPosts(handle: string, limit: number): Promise<Tru
         // Truth Social uses Mastodon API under the hood
         const url = `https://truthsocial.com/api/v1/accounts/lookup?acct=${handle}`;
         const lookupResponse = await fetch(url, {
-            headers: { 'User-Agent': 'OpenQwnt/1.0' },
+            headers: { 'User-Agent': 'OpenQnt/1.0' },
         });
 
         if (!lookupResponse.ok) {
@@ -169,7 +169,7 @@ async function fetchTruthSocialPosts(handle: string, limit: number): Promise<Tru
 
         const statusesUrl = `https://truthsocial.com/api/v1/accounts/${accountId}/statuses?limit=${limit}&exclude_replies=true`;
         const statusesResponse = await fetch(statusesUrl, {
-            headers: { 'User-Agent': 'OpenQwnt/1.0' },
+            headers: { 'User-Agent': 'OpenQnt/1.0' },
         });
 
         if (!statusesResponse.ok) {

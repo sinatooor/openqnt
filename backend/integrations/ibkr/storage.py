@@ -42,7 +42,7 @@ def _fernet() -> "Fernet":
         )
     raw = os.getenv("ENCRYPTION_KEY") or os.getenv("AVANZA_ENCRYPTION_KEY")
     if not raw:
-        raw = os.getenv("JWT_SECRET") or "openqwnt-dev-key-change-me"
+        raw = os.getenv("JWT_SECRET") or "openqnt-dev-key-change-me"
     return Fernet(urlsafe_b64encode(sha256(raw.encode("utf-8")).digest()))
 
 

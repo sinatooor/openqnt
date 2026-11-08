@@ -31,7 +31,7 @@ export const useAppModeStore = create<AppModeState>()(
       isReal: () => get().mode === 'real',
     }),
     {
-      name: 'openqwnt-app-mode',
+      name: 'openqnt-app-mode',
       storage: createJSONStorage(() => localStorage),
     }
   )

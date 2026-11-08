@@ -390,7 +390,7 @@ TOOL_DEFINITIONS = [
 # System Prompt
 # ============================================================
 
-SYSTEM_PROMPT = """You are the AI assistant for Fyer, a professional trading strategy platform. You help users with everything in the app:
+SYSTEM_PROMPT = """You are the AI assistant for OpenQnt, a professional trading strategy platform. You help users with everything in the app:
 
 **Your Capabilities:**
 1. **Build Strategies** - You can generate visual trading strategies using flow nodes. When a user asks you to build a strategy, use the `build_strategy` tool. The strategy will appear as nodes on the visual canvas.

@@ -4,7 +4,7 @@ SEC EDGAR proxy router.
 EDGAR is free and public, but browser CORS blocks the data.sec.gov / www.sec.gov
 endpoints. We proxy from this service so the frontend can call /api/edgar/*.
 SEC asks all callers to identify themselves; set EDGAR_USER_AGENT env var:
-    "OpenQwnt Research <ops@example.com>"
+    "OpenQnt Research <ops@example.com>"
 
 Routes:
   • GET /api/edgar/lookup/{ticker}            → ticker → CIK
@@ -24,7 +24,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 router = APIRouter(prefix="/api/edgar", tags=["edgar"])
 
-UA = os.environ.get("EDGAR_USER_AGENT", "OpenQwnt Research example@example.com")
+UA = os.environ.get("EDGAR_USER_AGENT", "OpenQnt Research example@example.com")
 HEADERS = {"User-Agent": UA, "Accept": "application/json"}
 
 _TICKER_CACHE: dict[str, dict[str, Any]] | None = None

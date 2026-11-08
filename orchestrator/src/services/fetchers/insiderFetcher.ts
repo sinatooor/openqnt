@@ -113,7 +113,7 @@ async function fetchOpenInsiderData(symbol: string, limit: number): Promise<Insi
         // Use the SEC EDGAR full-text search API for Form 4 filings
         const url = `https://efts.sec.gov/LATEST/search-index?q=%22${symbol}%22&dateRange=custom&startdt=${getDateNDaysAgo(90)}&enddt=${getTodayDate()}&forms=4&from=0&size=${limit}`;
         const response = await fetch(url, {
-            headers: { 'User-Agent': 'OpenQwnt research@openqwnt.com' },
+            headers: { 'User-Agent': 'OpenQnt hello@sinalytica.com' },
         });
 
         if (!response.ok) {

@@ -1,5 +1,5 @@
 """
-Base Agent Framework for OpenQwnt Specialized Agents
+Base Agent Framework for OpenQnt Specialized Agents
 
 Every specialized agent (news_analyst, macro_analyst, social_monitor, etc.)
 inherits from BaseAnalysisAgent. This provides:
@@ -99,7 +99,7 @@ class AgentOutput:
 
 class BaseAnalysisAgent(ABC):
     """
-    Base class for all OpenQwnt analysis agents.
+    Base class for all OpenQnt analysis agents.
 
     Subclasses must implement:
     - agent_type: The unique identifier for this agent

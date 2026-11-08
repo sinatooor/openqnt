@@ -40,13 +40,14 @@ function pushRing(tagged: string): void {
 
 export function log(service: string, line: string): void {
   // Strip ANSI codes — they'd confuse the splash plain-text panel.
+  // eslint-disable-next-line no-control-regex -- strip ANSI colour codes
   const clean = line.replace(/\x1b\[[0-9;]*m/g, '').trimEnd();
   if (!clean) return;
   const ts = new Date().toISOString();
   const tagged = `[${ts}] [${service}] ${clean}`;
   // appendFileSync because the supervisor can SIGKILL children mid-write
   // and we MUST persist crash diagnostics; buffered streams lose tails.
-  try { fs.appendFileSync(fileFor(service), tagged + '\n'); } catch {}
+  try { fs.appendFileSync(fileFor(service), tagged + '\n'); } catch { /* best effort */ }
   pushRing(tagged);
 }
 

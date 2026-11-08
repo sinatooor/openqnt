@@ -16,25 +16,25 @@ It also needs **Redis** and **PostgreSQL** running for the orchestrator to work 
 
 ## Running locally (4 terminals)
 
-Since you use `conda activate fyer` for your Python environment, here's the full breakdown:
+All commands run from the repo root (`openqnt/`). The examples use a conda env named `openqnt` (see `setup_conda_env.sh`).
 
 **Terminal 1 — Python backend**
 ```bash
-conda activate fyer
-cd /Users/sina/project-fire/fyer/backend
+conda activate openqnt
+cd openqnt/backend
 uvicorn main:app --reload --port 8000
 ```
 
 **Terminal 2 — Frontend**
 ```bash
-cd /Users/sina/project-fire/fyer
+cd openqnt
 bun run dev
 ```
 Opens at `http://localhost:5173`
 
 **Terminal 3 — Orchestrator**
 ```bash
-cd /Users/sina/project-fire/fyer/orchestrator
+cd openqnt/orchestrator
 bun run dev
 ```
 
@@ -49,7 +49,7 @@ redis-server
 
 If you prefer not juggling 4 terminals:
 ```bash
-cd /Users/sina/project-fire/fyer
+cd openqnt
 docker-compose up --build
 ```
 
@@ -59,7 +59,7 @@ This spins up the Python API, orchestrator, Postgres, and Redis together. Add `-
 
 ## First-time setup notes
 
-- **Python deps:** if you haven't installed them in your `fyer` conda env yet: `pip install -r backend/requirements.txt`
+- **Python deps:** if you haven't installed them in your `openqnt` conda env yet: `pip install -r backend/requirements.txt`
 - **Backend env:** `cp backend/.env.example backend/.env` then fill in your API keys (Gemini, DeepSeek, broker creds, etc.)
 - **Orchestrator deps:** `cd orchestrator && bun install`
 - **DB migration:** `cd orchestrator && bun run db:migrate`

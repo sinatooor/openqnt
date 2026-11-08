@@ -2,14 +2,15 @@
 
 # OpenQnt
 
-**The world's first open, source-available agentic asset manager — full transparency, full control.**
+**An open, source-available agentic asset manager. Every agent, prompt and decision is code you can read.**
 
-Wall Street runs on closed black boxes. OpenQnt is the opposite: an autonomous
-AI asset-management team whose every agent, every prompt, and every decision
-path is code you can read, edit, and own. Visually snap together strategies,
-let AI agents research and stress-test them 24/7, backtest against a canonical
-engine, and route orders to paper or live brokers — with a kill switch, a risk
-gate, and a copilot that **learns your portfolio over time**.
+Most of Wall Street runs on closed black boxes. OpenQnt goes the other way: it is
+a team of AI agents for asset management where every agent, every prompt and
+every decision path is code you can read, edit and own. You build strategies
+visually, let agents research and stress-test them around the clock, backtest
+them on a canonical engine and send orders to paper or live brokers. A kill
+switch and a risk gate stay in front of every order, and the copilot **learns
+your portfolio over time**.
 
 ![Frontend](https://img.shields.io/badge/frontend-React%20%2B%20Vite-61DAFB)
 ![Backend](https://img.shields.io/badge/backend-FastAPI%20%2B%20Python%203.12-3776AB)
@@ -159,7 +160,7 @@ npm install
 npm run dev                  # http://localhost:5173
 ```
 
-Or use the bundled launcher (override the interpreter with `FYER_PY=...`):
+Or use the bundled launcher (override the interpreter with `OPENQNT_PY=...`):
 
 ```bash
 scripts/start-all.sh paper        # PaperBroker (no broker creds needed)
@@ -411,7 +412,7 @@ screens, and per-institution custom workflows.
 [OpenQnt Community License (OQCL) v1.0](LICENSE) — free for personal,
 educational, research, and internal-evaluation use. **Commercial and production
 use requires a Commercial License.** See the [LICENSE](LICENSE) for the full
-terms, and contact **s_i_n_a@icloud.com** for commercial licensing.
+terms, and contact **hello@sinalytica.com** for commercial licensing.
 
 **OpenQnt and all related intellectual property** (copyrights, patents,
 trademarks, and trade secrets, worldwide) **are owned by its co-founders, Sina

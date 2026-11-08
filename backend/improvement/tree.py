@@ -23,7 +23,7 @@ from typing import Any, Optional
 
 import os
 REPO_ROOT = Path(__file__).resolve().parents[2]
-_DATA_DIR = Path(os.environ.get("OPENQWNT_DATA_DIR", str(REPO_ROOT)))
+_DATA_DIR = Path(os.environ.get("OPENQNT_DATA_DIR", str(REPO_ROOT)))
 RUNS_ROOT = _DATA_DIR / "agents" / "boss" / "runs"
 
 

@@ -6,7 +6,7 @@ const pct = (v: number | null) =>
   v == null ? '' : `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
 
 export default function WatchView() {
-  const data = useTerminalData<{}, WatchData>(
+  const data = useTerminalData<Record<string, never>, WatchData>(
     watchTool,
     {},
     () => ({ source: 'mock' as const, watchlists: [] }),

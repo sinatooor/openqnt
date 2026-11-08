@@ -60,7 +60,7 @@ function formatSplcForAgent(data: SplcData): string {
   const out: string[] = [];
   out.push(`# SPLC — Supply Chain Analysis | ${center.ticker}`);
   out.push(`> Generated: ${new Date().toISOString()}`);
-  out.push('> Source: fyer-terminal mock (deterministic). Replace with live Bloomberg / FactSet / Sayari feeds when available.');
+  out.push('> Source: openqnt-terminal mock (deterministic). Replace with live Bloomberg / FactSet / Sayari feeds when available.');
   out.push('');
 
   out.push('## Focal Company');

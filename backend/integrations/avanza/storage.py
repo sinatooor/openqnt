@@ -47,7 +47,7 @@ def _fernet() -> "Fernet":
     if not raw:
         # Derive a stable key from the JWT secret as a last resort. Not
         # great, but lets dev mode boot without manual setup.
-        raw = os.getenv("JWT_SECRET") or "openqwnt-dev-key-change-me"
+        raw = os.getenv("JWT_SECRET") or "openqnt-dev-key-change-me"
     digest = sha256(raw.encode("utf-8")).digest()
     return Fernet(urlsafe_b64encode(digest))
 

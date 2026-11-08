@@ -127,7 +127,7 @@ export const useConcentrationLimitsStore = create<ConcentrationState>()(
       },
     }),
     {
-      name: 'openqwnt-concentration-limits',
+      name: 'openqnt-concentration-limits',
       storage: createJSONStorage(() => localStorage),
     }
   )

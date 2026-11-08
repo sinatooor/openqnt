@@ -19,7 +19,7 @@ help:	## show this menu
 
 # ── local (no docker) ─────────────────────────────────────────────────
 .PHONY: dev
-dev:	## start backend + frontend locally (uses fyer conda env)
+dev:	## start backend + frontend locally (uses openqnt conda env)
 	scripts/start-all.sh paper
 
 .PHONY: dev-ibkr
@@ -28,7 +28,7 @@ dev-ibkr:	## same as `dev` but route trades to TWS on 127.0.0.1:7497
 
 .PHONY: test
 test:	## run all backend pytest suites
-	cd backend && /opt/miniconda3/envs/fyer/bin/python -m pytest tests/ -q
+	cd backend && /opt/miniconda3/envs/openqnt/bin/python -m pytest tests/ -q
 
 .PHONY: e2e
 e2e:	## run Playwright (needs backend on :8000 + chromium)
@@ -93,6 +93,6 @@ docker-full-logs:	## tail logs from full stack services
 # ── safe nukes ────────────────────────────────────────────────────────
 .PHONY: docker-clean
 docker-clean:	## drop containers + named volumes (state under agents/ is LOST)
-	@echo "WARNING: this deletes the openqwnt-agents volume (dynamic tools, journals, telemetry)."
+	@echo "WARNING: this deletes the openqnt-agents volume (dynamic tools, journals, telemetry)."
 	@read -p "type 'yes' to continue: " confirm && [ "$$confirm" = "yes" ]
 	docker compose down -v

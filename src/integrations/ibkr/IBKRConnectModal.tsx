@@ -86,10 +86,10 @@ export function IBKRConnectModal({ open, onOpenChange, onConnected }: IBKRConnec
 
   return (
     <WindowModal
-      isOpen={open}
-      onClose={() => onOpenChange(false)}
+      open={open}
+      onOpenChange={onOpenChange}
       title="Connect Interactive Brokers"
-      size="md"
+      defaultWidth={520}
     >
       <div className="space-y-4 p-1">
         <div className="text-xs text-muted-foreground leading-relaxed">

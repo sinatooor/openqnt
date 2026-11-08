@@ -53,7 +53,7 @@ export const useArtifactStore = create<ArtifactState>()(
       toggleOpen: () => set((s) => ({ open: !s.open })),
     }),
     {
-      name: 'fyer-ai-artifacts',
+      name: 'openqnt-ai-artifacts',
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => ({ artifacts: s.artifacts }),
     },
