@@ -131,3 +131,8 @@ backend/voice_transcripts/
 # Mattpocock skills installer cache + lockfile (per-developer tooling)
 .agents/
 skills-lock.json
+
+# Local AI loop / tooling artifacts
+.last_prompt
+.last_ai_response
+.playwright-mcp/
