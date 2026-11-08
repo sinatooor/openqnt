@@ -30,12 +30,13 @@ export function StrategyNodesCard({ nodes, edges, message }: Props) {
   const setNodes = useStrategyFlowStore((s) => s.setNodes);
   const setEdges = useStrategyFlowStore((s) => s.setEdges);
 
-  if (!nodes || nodes.length === 0) return null;
-
   // Lay out once for both the preview and the "Add to Canvas" action so the
   // user sees the same graph in both places.
   const { nodes: layouted, edges: layoutedEdges } = useMemo(
-    () => layoutStrategyNodes(nodes, edges),
+    () =>
+      nodes && nodes.length > 0
+        ? layoutStrategyNodes(nodes, edges)
+        : { nodes: [], edges: [] },
     [nodes, edges],
   );
 
@@ -44,6 +45,8 @@ export function StrategyNodesCard({ nodes, edges, message }: Props) {
     () => new Set(layouted.map((n: any) => n.position.x)).size,
     [layouted],
   );
+
+  if (!nodes || nodes.length === 0) return null;
 
   const handleAdd = (replace: boolean) => {
     const { nodes: laid, edges: laidEdges } = layoutStrategyNodes(nodes, edges);

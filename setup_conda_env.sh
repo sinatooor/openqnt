@@ -1,29 +1,29 @@
 #!/bin/bash
-# Setup script to create openqwnt conda environment
+# Setup script to create openqnt conda environment
 
 set -e
 
-echo "🔧 Creating openqwnt conda environment..."
+echo "🔧 Creating openqnt conda environment..."
 
 # Initialize conda
 eval "$(/opt/miniconda3/bin/conda shell.bash hook)"
 
-# Check if openqwnt environment already exists
-if conda env list | grep -q "^openqwnt "; then
-    echo "⚠️  openqwnt environment already exists. Removing it first..."
-    conda env remove -n openqwnt -y
+# Check if openqnt environment already exists
+if conda env list | grep -q "^openqnt "; then
+    echo "⚠️  openqnt environment already exists. Removing it first..."
+    conda env remove -n openqnt -y
 fi
 
-# Create new openqwnt environment
-echo "📦 Creating openqwnt environment with Python 3.12..."
-conda create -n openqwnt python=3.12 -c conda-forge -y
+# Create new openqnt environment
+echo "📦 Creating openqnt environment with Python 3.12..."
+conda create -n openqnt python=3.12 -c conda-forge -y
 
 # Activate and install dependencies
 echo "📥 Installing dependencies..."
-conda activate openqwnt
+conda activate openqnt
 pip install -r backend/requirements.txt
 
-echo "✅ openqwnt conda environment created successfully!"
+echo "✅ openqnt conda environment created successfully!"
 echo ""
 echo "To activate it, run:"
-echo "  conda activate openqwnt"
+echo "  conda activate openqnt"

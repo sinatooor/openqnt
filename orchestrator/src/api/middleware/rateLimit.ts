@@ -3,9 +3,9 @@ import rateLimit from 'express-rate-limit';
 // In the bundled desktop app there's exactly one local user and the limiter's
 // abuse-prevention purpose disappears — meanwhile the supervisor's own
 // /api/health poll alone burns 240+ requests/min, exhausting the public default
-// in seconds. OPENQWNT_DESKTOP_MODE is injected by the Electron supervisor
+// in seconds. OPENQNT_DESKTOP_MODE is injected by the Electron supervisor
 // (matching the env-var name the FastAPI backend already honors).
-const DESKTOP = process.env.OPENQWNT_DESKTOP_MODE === 'true';
+const DESKTOP = process.env.OPENQNT_DESKTOP_MODE === 'true';
 
 /** General API rate limiter — 100 requests per 15 minutes per IP (10000 in desktop) */
 export const apiLimiter = rateLimit({

@@ -170,7 +170,7 @@ export const useApprovalStore = create<ApprovalState>()(
       pendingCount: () => get().queue.filter((o) => o.status === 'pending').length,
     }),
     {
-      name: 'openqwnt-approvals',
+      name: 'openqnt-approvals',
       storage: createJSONStorage(() => localStorage),
     }
   )

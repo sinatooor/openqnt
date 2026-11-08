@@ -95,7 +95,7 @@ export const useChartLayoutStore = create<LayoutState>()(
       },
     }),
     {
-      name: 'openqwnt-chart-layouts',
+      name: 'openqnt-chart-layouts',
       storage: createJSONStorage(() => localStorage),
     }
   )

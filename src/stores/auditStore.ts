@@ -72,7 +72,7 @@ export const useAuditStore = create<AuditState>()(
       recent: (n = 50) => [...get().events].slice(-n).reverse(),
     }),
     {
-      name: 'openqwnt-audit',
+      name: 'openqnt-audit',
       storage: createJSONStorage(() => localStorage),
     }
   )

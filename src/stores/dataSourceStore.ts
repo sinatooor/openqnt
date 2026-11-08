@@ -37,7 +37,7 @@ export const useDataSourceStore = create<DataSourceStore>()(
       setSource: (source) => set({ source }),
     }),
     {
-      name: 'openqwnt-data-source',
+      name: 'openqnt-data-source',
       storage: createJSONStorage(() => localStorage),
     },
   ),

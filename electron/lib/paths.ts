@@ -67,7 +67,7 @@ export function paths(): AppPaths {
     : path.join(resourcesRoot, 'redis', `redis-server-${archDir}`);
 
   const pythonBin = isDev
-    ? '/opt/miniconda3/envs/fyer/bin/python' // dev: use the conda env
+    ? '/opt/miniconda3/envs/openqnt/bin/python' // dev: use the conda env
     : path.join(resourcesRoot, 'python', 'bin', 'python3');
   const pythonLibs = path.join(resourcesRoot, 'python-libs');
   const modelsDir = path.join(resourcesRoot, 'models');

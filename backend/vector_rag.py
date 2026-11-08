@@ -513,9 +513,9 @@ def get_vector_rag() -> VectorRAG:
     """Get or create VectorRAG singleton."""
     global _vector_rag_instance
     if _vector_rag_instance is None:
-        # In desktop builds OPENQWNT_DATA_DIR is a writable user-data path;
+        # In desktop builds OPENQNT_DATA_DIR is a writable user-data path;
         # otherwise fall back to alongside this file (legacy dev behavior).
-        data_dir = os.environ.get("OPENQWNT_DATA_DIR") or os.path.dirname(os.path.abspath(__file__))
+        data_dir = os.environ.get("OPENQNT_DATA_DIR") or os.path.dirname(os.path.abspath(__file__))
         db_path = os.path.join(data_dir, "chroma_db_v2")
 
         _vector_rag_instance = VectorRAG(

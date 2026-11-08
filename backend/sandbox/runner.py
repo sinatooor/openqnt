@@ -148,7 +148,7 @@ def _walk_outputs(workdir: Path, exclude: Iterable[str]) -> list[FileOut]:
 def execute_python(req: ExecuteRequest) -> ExecuteResult:
     """Run `req.code` in a freshly-minted sandboxed subprocess."""
     t0 = time.time()
-    workdir = Path(tempfile.mkdtemp(prefix="fyer_sb_"))
+    workdir = Path(tempfile.mkdtemp(prefix="openqnt_sb_"))
     main_py = workdir / "main.py"
     inputs: list[str] = []
     try:

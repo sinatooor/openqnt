@@ -29,7 +29,7 @@ from sandbox import ExecuteRequest, execute_python
 
 import os
 REPO_ROOT = Path(__file__).resolve().parents[2]
-_DATA_DIR = Path(os.environ.get("OPENQWNT_DATA_DIR", str(REPO_ROOT)))
+_DATA_DIR = Path(os.environ.get("OPENQNT_DATA_DIR", str(REPO_ROOT)))
 DYNAMIC_TOOLS_DIR = _DATA_DIR / "agents" / "tools" / "dynamic"
 INDEX_FILE = DYNAMIC_TOOLS_DIR / "_index.json"
 

@@ -2,7 +2,7 @@
  * FastAPI backend lifecycle.
  *
  * Spawns the bundled CPython 3.12 (or, in dev, the local conda env) running
- * `uvicorn main:app --host 127.0.0.1 --port <ephemeral>`. OPENQWNT_DATA_DIR
+ * `uvicorn main:app --host 127.0.0.1 --port <ephemeral>`. OPENQNT_DATA_DIR
  * points the backend at the writable userData directory so it doesn't try to
  * write into the read-only resources tree.
  */
@@ -35,8 +35,8 @@ function buildEnv(opts: PythonStartOptions = {}): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {
     ...process.env,
     ...userKeys,
-    OPENQWNT_DATA_DIR: p.userDataRoot,
-    OPENQWNT_DESKTOP_MODE: 'true',
+    OPENQNT_DATA_DIR: p.userDataRoot,
+    OPENQNT_DESKTOP_MODE: 'true',
     SENTENCE_TRANSFORMERS_HOME: p.modelsDir,
     HF_HOME: p.modelsDir,
     PYTHONDONTWRITEBYTECODE: '1',

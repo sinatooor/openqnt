@@ -711,7 +711,7 @@ def build_default_registry() -> ToolRegistry:
                 try:
                     header, b64data = plot_data_url.split(",", 1)
                     ext = "png" if "png" in header else "jpg"
-                    tmp_dir = _Path(_tempfile.gettempdir()) / "openqwnt_plots"
+                    tmp_dir = _Path(_tempfile.gettempdir()) / "openqnt_plots"
                     tmp_dir.mkdir(parents=True, exist_ok=True)
                     plot_path = tmp_dir / f"mcpt_{symbol}_{_uuid.uuid4().hex[:8]}.{ext}"
                     plot_path.write_bytes(_b64.b64decode(b64data))

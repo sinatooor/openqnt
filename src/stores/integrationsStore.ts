@@ -60,7 +60,7 @@ export const useIntegrationsStore = create<IntegrationsStore>()(
         })),
     }),
     {
-      name: 'openqwnt-integrations',
+      name: 'openqnt-integrations',
       storage: createJSONStorage(() => localStorage),
     },
   ),

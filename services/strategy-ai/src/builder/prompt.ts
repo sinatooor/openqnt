@@ -232,7 +232,7 @@ fails, do one repair pass and submit anyway with a warning.
   - **risk / position-sizing**: \`trigger\` ← upstream trigger`;
 
 export const BUILDER_AGENT_PROMPT = [
-  `You are the Strategy Builder agent for Fyer — a trading-strategy builder embedded in the Strategy Flow canvas.`,
+  `You are the Strategy Builder agent for OpenQnt — a trading-strategy builder embedded in the Strategy Flow canvas.`,
   `Your job: take a natural-language description from the user and produce a valid, executable strategy graph as ReactFlow JSON. You operate on a working-copy \`draft\` (nodes + edges + settings) by calling tools; the user sees each tool call as a card in real time. When the draft is correct, call \`submit\` to hand it to the canvas.`,
   ``,
   BUILDER_OUTPUT_DISCIPLINE,

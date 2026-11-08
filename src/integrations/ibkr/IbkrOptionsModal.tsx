@@ -163,10 +163,10 @@ export function IbkrOptionsModal({ open, onOpenChange, initialSymbol = 'AAPL' }:
 
   return (
     <WindowModal
-      isOpen={open}
-      onClose={() => onOpenChange(false)}
+      open={open}
+      onOpenChange={onOpenChange}
       title="IBKR Options"
-      size="lg"
+      defaultWidth={760}
     >
       <div className="space-y-4 p-1">
         {/* ─── Symbol search ─── */}

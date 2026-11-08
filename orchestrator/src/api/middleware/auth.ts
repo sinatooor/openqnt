@@ -9,6 +9,7 @@ export interface JwtPayload {
 }
 
 declare global {
+    // eslint-disable-next-line @typescript-eslint/no-namespace -- Express type augmentation
     namespace Express {
         interface Request {
             user?: JwtPayload;
@@ -21,7 +22,7 @@ declare global {
 // routes without first walking through a real login flow against a backend
 // that hasn't been wired up yet.
 const SKIP_AUTH =
-    process.env.OPENQWNT_DESKTOP_MODE === 'true' ||
+    process.env.OPENQNT_DESKTOP_MODE === 'true' ||
     process.env.NODE_ENV === 'development';
 const LOCAL_USER: JwtPayload = { userId: 'local-user', email: 'you@openqnt.local' };
 

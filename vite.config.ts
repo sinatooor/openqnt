@@ -25,6 +25,6 @@ export default defineConfig(({ mode }) => ({
   },
   define: {
     // Compile-time flag the runtime shim and feature gates can inspect.
-    __DESKTOP_BUILD__: JSON.stringify(process.env.OPENQWNT_DESKTOP_BUILD === "true"),
+    __DESKTOP_BUILD__: JSON.stringify(process.env.OPENQNT_DESKTOP_BUILD === "true"),
   },
 }));

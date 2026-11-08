@@ -1,7 +1,7 @@
 """Voice services — realtime AI calls bridged across Twilio, browser WebRTC, iOS, and SIP.
 
 All transports plug into a single `GeminiLiveSession` so prompts, tools, and
-transcript handling are shared. See `/Users/sina/.claude/plans/build-this-realtime-api-fancy-graham.md`.
+transcript handling are shared.
 """
 
 from .audio_bridge import (

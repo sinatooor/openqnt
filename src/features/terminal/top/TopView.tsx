@@ -2,7 +2,7 @@ import { useTerminalData } from '../useTerminalData';
 import { topTool, type TopData } from './tool';
 
 export default function TopView() {
-  const data = useTerminalData<{}, TopData>(
+  const data = useTerminalData<Record<string, never>, TopData>(
     topTool,
     {},
     () => ({ source: 'mock' as const, items: [] }),

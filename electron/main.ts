@@ -21,7 +21,7 @@ import fs from 'node:fs';
 // so we have a trail even when paths.ts blows up.
 const diagPath = `/tmp/openqnt-electron-${process.pid}.log`;
 const diag = (msg: string) => {
-  try { fs.appendFileSync(diagPath, new Date().toISOString() + ' ' + msg + '\n'); } catch {}
+  try { fs.appendFileSync(diagPath, new Date().toISOString() + ' ' + msg + '\n'); } catch { /* best effort */ }
 };
 diag(`main.js loaded; argv=${process.argv.join(' ')}`);
 process.on('uncaughtException', (e) => diag(`uncaughtException: ${e.stack ?? e}`));

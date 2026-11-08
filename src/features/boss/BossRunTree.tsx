@@ -308,7 +308,7 @@ export function BossRunTree({ runId }: Props) {
       alive = false;
       try {
         ws.close();
-      } catch {}
+      } catch { /* ignore */ }
     };
   }, [runId]);
 

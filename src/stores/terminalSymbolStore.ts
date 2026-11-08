@@ -41,7 +41,7 @@ export const useTerminalSymbolStore = create<TerminalSymbolState>()(
       clearRecents: () => set({ recents: [] }),
     }),
     {
-      name: 'fyer:terminal-symbol',
+      name: 'openqnt:terminal-symbol',
       storage: createJSONStorage(() => localStorage),
     },
   ),

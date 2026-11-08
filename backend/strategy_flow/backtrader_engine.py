@@ -1104,7 +1104,7 @@ def _fetch_data_avanza(
         resolution = res_map.get(timeframe, 'day')
 
         headers = {
-            'User-Agent': 'Mozilla/5.0 (compatible; OpenQwnt/1.0)',
+            'User-Agent': 'Mozilla/5.0 (compatible; OpenQnt/1.0)',
             'Accept': 'application/json',
         }
         with httpx.Client(base_url='https://www.avanza.se', timeout=15.0, headers=headers) as client:

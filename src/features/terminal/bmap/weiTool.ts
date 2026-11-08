@@ -89,7 +89,7 @@ function formatWeiForAgent(data: WeiData): string {
   out.push('# WEI — World Equity Indices Snapshot');
   out.push(`> As-of: ${data.asOf}`);
   out.push(`> Universe: ${data.snapshots.length} country flagship indices`);
-  out.push('> Source: fyer-terminal mock (deterministic). Replace with live vendor feed when available.');
+  out.push('> Source: openqnt-terminal mock (deterministic). Replace with live vendor feed when available.');
   out.push('');
 
   // Headline regime

@@ -63,7 +63,6 @@ const getNodeIcon = (iconName: string): React.ComponentType<any> => {
   if (iconCache.has(iconName)) {
     return iconCache.get(iconName)!;
   }
-  // @ts-ignore
   const icon = Icons[iconName] || Activity;
   iconCache.set(iconName, icon);
   return icon;

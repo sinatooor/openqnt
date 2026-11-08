@@ -1,4 +1,4 @@
-# Full-stack overlay for openqwnt:
+# Full-stack overlay for openqnt:
 # - keeps backend + frontend from docker-compose.yml
 # - adds orchestrator + postgres + redis for the control-plane path
 
@@ -14,8 +14,8 @@ services:
       context: ./orchestrator
       dockerfile: Dockerfile
       target: development
-    image: openqwnt-orchestrator:dev
-    container_name: openqwnt-orchestrator
+    image: openqnt-orchestrator:dev
+    container_name: openqnt-orchestrator
     environment:
       NODE_ENV: development
       PORT: 3000
@@ -32,7 +32,7 @@ services:
       - "3000:3000"
     volumes:
       - ./orchestrator:/app
-      - openqwnt-orchestrator-node_modules:/app/node_modules
+      - openqnt-orchestrator-node_modules:/app/node_modules
     # First boot: generate Prisma client, push the schema (no migration
     # files exist under prisma/migrations/, so `migrate deploy` would
     # fail), seed sample data, then start the dev server.
@@ -55,7 +55,7 @@ services:
 
   postgres:
     image: postgres:16-alpine
-    container_name: openqwnt-postgres
+    container_name: openqnt-postgres
     environment:
       POSTGRES_DB: strategyflow
       POSTGRES_USER: postgres
@@ -63,7 +63,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - openqwnt-postgres-data:/var/lib/postgresql/data
+      - openqnt-postgres-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d strategyflow"]
       interval: 10s
@@ -73,11 +73,11 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: openqwnt-redis
+    container_name: openqnt-redis
     ports:
       - "6379:6379"
     volumes:
-      - openqwnt-redis-data:/data
+      - openqnt-redis-data:/data
     command: ["redis-server", "--appendonly", "yes"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -89,7 +89,7 @@ services:
   # Voice — TURN server (required for cellular WebRTC NAT traversal)
   coturn:
     image: coturn/coturn:4.6
-    container_name: openqwnt-coturn
+    container_name: openqnt-coturn
     network_mode: host    # TURN needs raw UDP/TCP across a wide port range
     volumes:
       - ./infra/coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro
@@ -99,7 +99,7 @@ services:
   # Voice — Asterisk (v3 SIP power-user path; Linphone clients register here)
   asterisk:
     image: andrius/asterisk:20-current
-    container_name: openqwnt-asterisk
+    container_name: openqnt-asterisk
     ports:
       - "5060:5060/udp"     # SIP signaling
       - "5060:5060/tcp"
@@ -107,20 +107,20 @@ services:
       - "10000-10100:10000-10100/udp"   # RTP media
     volumes:
       - ./infra/asterisk/etc:/etc/asterisk:ro
-      - openqwnt-asterisk-data:/var/lib/asterisk
+      - openqnt-asterisk-data:/var/lib/asterisk
     restart: unless-stopped
     profiles: ["voice"]
 
 volumes:
-  openqwnt-orchestrator-node_modules:
+  openqnt-orchestrator-node_modules:
     driver: local
-    name: openqwnt-orchestrator-node_modules
-  openqwnt-postgres-data:
+    name: openqnt-orchestrator-node_modules
+  openqnt-postgres-data:
     driver: local
-    name: openqwnt-postgres-data
-  openqwnt-redis-data:
+    name: openqnt-postgres-data
+  openqnt-redis-data:
     driver: local
-    name: openqwnt-redis-data
-  openqwnt-asterisk-data:
+    name: openqnt-redis-data
+  openqnt-asterisk-data:
     driver: local
-    name: openqwnt-asterisk-data
+    name: openqnt-asterisk-data

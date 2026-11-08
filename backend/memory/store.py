@@ -20,9 +20,9 @@ from typing import Any
 
 # ── Roots ─────────────────────────────────────────────────────────────
 # Reuse the same data-dir convention as backend/agent_runtime/storage.py so
-# desktop builds (OPENQWNT_DATA_DIR) and repo-local dev agree.
+# desktop builds (OPENQNT_DATA_DIR) and repo-local dev agree.
 _REPO_ROOT = Path(__file__).resolve().parents[2]
-_DATA_DIR = Path(os.environ.get("OPENQWNT_DATA_DIR", str(_REPO_ROOT)))
+_DATA_DIR = Path(os.environ.get("OPENQNT_DATA_DIR", str(_REPO_ROOT)))
 
 # Explicit override wins (tests set this); else <DATA_DIR>/memory.
 MEMORY_ROOT = Path(os.environ.get("MEMORY_ROOT", str(_DATA_DIR / "memory")))

@@ -51,7 +51,9 @@ export type IndicatorType =
   // Power
   | 'bearsPower' | 'bullsPower'
   // Other
-  | 'fractals' | 'highest' | 'lowest' | 'support' | 'resistance';
+  | 'fractals' | 'highest' | 'lowest' | 'support' | 'resistance'
+  // Regime & pairs
+  | 'hmm_regime' | 'spread';
 
 // =============================================================================
 // CONDITION NODE TYPES
@@ -115,7 +117,9 @@ export type ControlType =
   | 'repeatUntil'    // Repeat until condition
   | 'wait'           // Wait N seconds
   | 'waitUntil'      // Wait until condition
-  | 'stop';          // Stop execution
+  | 'stop'           // Stop execution
+  | 'switch'         // Route by value
+  | 'splitInBatches'; // Iterate in batches
 
 // =============================================================================
 // VARIABLE NODE TYPES
@@ -139,7 +143,8 @@ export type MathType =
   | 'multiply'       // A * B
   | 'divide'         // A / B
   | 'number'         // Literal number
-  | 'advancedMath';  // sqrt, abs, sin, cos, etc.
+  | 'advancedMath'   // sqrt, abs, sin, cos, etc.
+  | 'expression';    // Free-form math expression
 
 export type AdvancedMathFunction =
   | 'sqrt' | 'abs' | 'sin' | 'cos' | 'tan' | 'log' | 'exp' | 'floor' | 'ceil' | 'round';

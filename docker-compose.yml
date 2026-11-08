@@ -1,5 +1,5 @@
 # =============================================================================
-# openqwnt — production-shaped compose file.
+# openqnt — production-shaped compose file.
 #
 # Two services match what `scripts/start-all.sh` runs locally:
 #   - backend  : FastAPI (Phase B-J), port 8000
@@ -27,7 +27,7 @@ x-backend-base: &backend-base
     context: ./backend
     dockerfile: Dockerfile
     target: dev
-  image: openqwnt-backend:dev
+  image: openqnt-backend:dev
   environment:
     # ── broker selection (Phase H) ─────────────────────────────────────
     EXECUTION_BROKER: ${EXECUTION_BROKER:-paper}
@@ -61,7 +61,7 @@ x-backend-base: &backend-base
     #   _backtests, _execution (panic.lock, orders.jsonl), _telemetry,
     #   _cache (yfinance parquet + matplotlib font cache), tools/dynamic,
     #   boss/runs (incl. improvement_tree).
-    - openqwnt-agents:/app/agents
+    - openqnt-agents:/app/agents
   healthcheck:
     test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
     interval: 30s
@@ -73,7 +73,7 @@ x-backend-base: &backend-base
 services:
   backend:
     <<: *backend-base
-    container_name: openqwnt-backend
+    container_name: openqnt-backend
 
   frontend:
     build:
@@ -82,8 +82,8 @@ services:
       target: dev
       args:
         VITE_BACKEND_URL: http://localhost:8000
-    image: openqwnt-frontend:dev
-    container_name: openqwnt-frontend
+    image: openqnt-frontend:dev
+    container_name: openqnt-frontend
     environment:
       # In the browser, the backend URL must be reachable from the host.
       VITE_BACKEND_URL: http://localhost:8000
@@ -103,16 +103,16 @@ services:
       # Keep the container's own node_modules — never let the host
       # version (potentially built for darwin) shadow what `npm ci`
       # produced inside the image.
-      - openqwnt-frontend-node_modules:/app/node_modules
+      - openqnt-frontend-node_modules:/app/node_modules
     depends_on:
       backend:
         condition: service_started
     restart: unless-stopped
 
 volumes:
-  openqwnt-agents:
+  openqnt-agents:
     driver: local
-    name: openqwnt-agents
-  openqwnt-frontend-node_modules:
+    name: openqnt-agents
+  openqnt-frontend-node_modules:
     driver: local
-    name: openqwnt-frontend-node_modules
+    name: openqnt-frontend-node_modules

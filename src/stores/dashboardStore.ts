@@ -70,7 +70,7 @@ export const useDashboardStore = create<DashboardState>()(
     }),
     {
       // Bump persist key so the new terminal blueprint is applied immediately.
-      name: 'fyer-dashboard-layout-v3',
+      name: 'openqnt-dashboard-layout-v3',
     },
   ),
 );

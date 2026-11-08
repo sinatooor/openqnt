@@ -18,7 +18,7 @@ import type { Bar } from './engine/interpreter.js';
  * there.
  */
 async function ensureDesktopSchema(): Promise<void> {
-    if (process.env.OPENQWNT_DESKTOP_MODE !== 'true') return;
+    if (process.env.OPENQNT_DESKTOP_MODE !== 'true') return;
     try {
         // Probe — if the users table exists the schema has already been
         // applied. Prisma maps `User` model → "users" via @@map.
